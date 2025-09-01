@@ -150,7 +150,7 @@ namespace hrs
         constexpr M& operator+=(M& m, A value) noexcept
         {
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     m[i][j] += value;
 
             return m;
@@ -170,7 +170,7 @@ namespace hrs
         constexpr M& operator-=(M& m, A value) noexcept
         {
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     m[i][j] -= value;
 
             return m;
@@ -190,7 +190,7 @@ namespace hrs
         constexpr M& operator*=(M& m, A value) noexcept
         {
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     m[i][j] *= value;
 
             return m;
@@ -210,7 +210,7 @@ namespace hrs
         constexpr M& operator/=(M& m, A value) noexcept
         {
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     m[i][j] /= value;
 
             return m;
@@ -319,7 +319,7 @@ namespace hrs
         {
             std::remove_cvref_t<M> out_m = std::forward<M>(m);
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     out_m[i][j] += value;
 
             return out_m;
@@ -338,7 +338,7 @@ namespace hrs
         {
             std::remove_cvref_t<M> out_m = std::forward<M>(m);
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     out_m[i][j] -= value;
 
             return out_m;
@@ -357,7 +357,7 @@ namespace hrs
         {
             std::remove_cvref_t<M> out_m = std::forward<M>(m);
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     out_m[i][j] *= value;
 
             return out_m;
@@ -376,7 +376,7 @@ namespace hrs
         {
             std::remove_cvref_t<M> out_m = std::forward<M>(m);
             for(std::size_t i = 0; i < matrix_rows<M>; i++)
-                for(std::size_t j = 0; i < matrix_cols<M>; j++)
+                for(std::size_t j = 0; j < matrix_cols<M>; j++)
                     out_m[i][j] /= value;
 
             return out_m;

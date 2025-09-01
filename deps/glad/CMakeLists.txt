@@ -10,7 +10,7 @@ glad
         include/KHR/khrplatform.h
 )
 
-target_include_directories(glad PRIVATE include/)
+target_include_directories(glad PUBLIC include/)
 
 set_source_files_properties(src/gl.c PROPERTIES LANGUAGE CXX)
 set_target_properties(glad PROPERTIES LINKER_LANGUAGE CXX)

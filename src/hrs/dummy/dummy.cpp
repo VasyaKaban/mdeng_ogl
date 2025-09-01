@@ -1,0 +1,5 @@
+namespace hrs
+{
+    void dummy()
+    {}
+}
