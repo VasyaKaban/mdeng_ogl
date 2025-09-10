@@ -247,9 +247,10 @@ namespace OpenGL
         { \
             case Render::UniformType::Float: \
             { \
-                parent->GetLoader() \
-                    .Uniform##SIZE##fv(desc.location, data.size() / (sizeof(GLfloat) * SIZE), \ 
-                            reinterpret_cast<const GLfloat*>(data.data())); \
+                parent->GetLoader().Uniform##SIZE##fv( \
+                    desc.location, \
+                    data.size() / (sizeof(GLfloat) * SIZE), \
+                    reinterpret_cast<const GLfloat*>(data.data())); \
             } \
             break; \
             case Render::UniformType::Int: \

@@ -13,6 +13,8 @@ WindowSubsystem* WindowSubsystem::Init()
     if(SDL_Init(SDL_INIT_EVENTS | SDL_INIT_VIDEO) != 0)
         throw std::runtime_error(SDL_GetError());
 
+    subsystem = new WindowSubsystem;
+
     return subsystem;
 }
 
@@ -113,7 +115,7 @@ GraphicWindow* WindowSubsystem::GetGraphicWindow(std::uint32_t id) const noexcep
     return it->second.get();
 }
 
-void WindowSubsystem::ShowMessageBox(const GraphicWindow* parent,
+bool WindowSubsystem::ShowMessageBox(const GraphicWindow* parent,
                                      MessageBoxType type,
                                      const char* title,
                                      const char* message)
@@ -122,6 +124,6 @@ void WindowSubsystem::ShowMessageBox(const GraphicWindow* parent,
                                        title,
                                        message,
                                        parent ? parent->GetWindowHandle() : nullptr);
-    if(res != 0)
-        throw std::runtime_error(SDL_GetError());
+
+    return res == 0;
 }

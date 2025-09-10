@@ -28,7 +28,20 @@ namespace OpenGL
     }
 
     bool Fence::Wait(std::uint64_t timeout_ns) noexcept
-    {}
+    {
+        if(!handle)
+            return true;
+
+        auto res = parent->GetLoader().ClientWaitSync(handle, 0, timeout_ns);
+        if(res == GL_CONDITION_SATISFIED || res == GL_ALREADY_SIGNALED)
+        {
+            parent->GetLoader().DeleteSync(handle);
+            handle = nullptr;
+            return true;
+        }
+
+        return false;
+    }
 
     Render::FenceStatus Fence::GetStatus() const noexcept
     {

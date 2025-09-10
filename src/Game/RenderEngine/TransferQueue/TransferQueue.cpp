@@ -1,63 +1,92 @@
 #include "TransferQueue.h"
+#include "Core/Render/Context.h"
 #include "../../RenderEngine/RenderEngine.h"
 
-TransferQueue::TransferQueue(RenderEngine* _parent, Queue&& _handle)
-    : QueueTask(_parent, std::move(_handle)),
-      TaskTreeHolder<Task>(),
-      command_pool(parent->GetContext(), CommandPoolCreateInfo{.queue = &(QueueTask::handle)})
+TransferQueue::TransferQueue(RenderEngine* _parent,
+                             TaskKey&& key,
+                             std::unique_ptr<Render::Queue>&& _handle)
+    : QueueTask(_parent, std::move(key), std::move(_handle)),
+      command_pool(_parent->GetContext()->CreateCommandPool(
+          Render::CommandPoolInfo{.queue = QueueTask::handle.get()}))
 {
-    resources.reserve(parent->GetResourceSetCount());
-    for(std::size_t i = 0; i < parent->GetResourceSetCount(); i++)
+    resources.reserve(_parent->GetResourceSetCount());
+    for(std::size_t i = 0; i < _parent->GetResourceSetCount(); i++)
     {
-        resources.push_back(Resource{.command_buffer = command_pool.Allocate(),
-                                     .fence = Fence(parent->GetContext()),
-                                     .signal_semaphore = Semaphore(parent->GetContext())});
+        resources.push_back(Resource{
+            .command_buffer = std::unique_ptr<Render::CommandBuffer>(command_pool->Allocate()),
+            .fence = std::unique_ptr<Render::Fence>(_parent->GetContext()->CreateFence()),
+            .signal_semaphore =
+                std::unique_ptr<Render::Semaphore>(_parent->GetContext()->CreateSemaphore())});
     }
 }
 
 TransferQueue::~TransferQueue()
 {
     for(auto& res: resources)
-        res.fence.Wait(std::numeric_limits<std::uint64_t>::max());
+        res.fence->Wait(std::numeric_limits<std::uint64_t>::max());
 }
 
-void TransferQueue::Evaluate([[maybe_unused]] EvaluateDesc& eval_desc)
+EvaluateDesc TransferQueue::Begin([[maybe_unused]] const EvaluateDesc& eval_desc)
 {
-    auto& resource = resources[parent->GetCurrentResourceSetIndex()];
+    auto& resource = resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()];
 
-    auto fence = &resource.fence;
+    auto fence = resource.fence.get();
     if(!fence->Wait(std::numeric_limits<std::uint64_t>::max()))
         throw std::runtime_error("Failed to wait on TransferQueue fence");
 
-    EvaluateDesc local_eval_desc = {.cmd = &resource.command_buffer, .pipeline = nullptr};
-    QueueBeginInfo begin_info = {.wait_seamphores = {}};
+    EvaluateDesc local_eval_desc =
+        EvaluateDesc{.cmd = resource.command_buffer.get(), .pipeline = nullptr};
+    Render::QueueBeginInfo begin_info = {.wait_seamphores = {}};
 
-    handle.Begin(begin_info);
+    handle->Begin(begin_info);
     local_eval_desc.cmd->Begin();
-    task_tree.Evaluate(local_eval_desc);
-    local_eval_desc.cmd->End();
 
-    auto signal_sem = &resource.signal_semaphore;
-    QueueFlushInfo flush_info = {.signal_fence = fence,
-                                 .signal_seamphores = {&signal_sem, 1},
-                                 .command_buffers = {&local_eval_desc.cmd, 1}};
+    return local_eval_desc;
 }
 
-Semaphore* TransferQueue::GetCurrentSemaphore() noexcept
+void TransferQueue::End(const EvaluateDesc& eval_desc)
 {
-    return &resources[parent->GetCurrentResourceSetIndex()].signal_semaphore;
+    auto& resource = resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()];
+    auto fence = resource.fence.get();
+
+    eval_desc.cmd->End();
+
+    Render::CommandBuffer* cmd = eval_desc.cmd;
+
+    auto signal_sem = resource.signal_semaphore.get();
+    Render::QueueFlushInfo flush_info = {.signal_fence = fence,
+                                         .signal_seamphores = {&signal_sem, 1},
+                                         .command_buffers = {&cmd, 1}};
+
+    handle->Flush(flush_info);
 }
 
-Fence* TransferQueue::GetCurrentFence() noexcept
+void TransferQueue::Enable()
 {
-    return &resources[parent->GetCurrentResourceSetIndex()].fence;
+    is_enabled = true; //do not disable for semaphore consistence!
+}
+
+void TransferQueue::Disable()
+{
+    is_enabled = true; //do not disable for semaphore consistence!
+}
+
+Render::Semaphore* TransferQueue::GetCurrentSemaphore() const noexcept
+{
+    return resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()]
+        .signal_semaphore.get();
+}
+
+Render::Fence* TransferQueue::GetCurrentFence() const noexcept
+{
+    return resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()].fence.get();
 }
 
 void TransferQueue::WaitAllFences()
 {
     for(auto& res: resources)
     {
-        if(!res.fence.Wait(std::numeric_limits<std::uint64_t>::max()))
+        if(!res.fence->Wait(std::numeric_limits<std::uint64_t>::max()))
             throw std::runtime_error("Failed to wait on TransferQueue fence");
     }
 }

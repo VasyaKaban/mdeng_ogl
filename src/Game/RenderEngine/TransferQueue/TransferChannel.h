@@ -1,47 +1,59 @@
 #pragma once
 
+#include <functional>
 #include "hrs/non_creatable.hpp"
 #include "hrs/forward_pool.hpp"
-#include "Core/Render/Objects/Buffer/Buffer.h"
-#include "Core/Render/Objects/Fence/Fence.h"
-#include "../TaskTree/TaskTree.h"
-#include "TransferRegion.h"
+#include "../TaskTree/Task.h"
+#include "Core/Render/Render.h"
 
 struct TransferChannelInfo
 {
-    std::uint32_t size;
-    std::uint64_t regions_block_size;
-    std::uint32_t regions_reserve;
+    std::size_t pool_block_size;
+    std::size_t pool_blocks_reserve;
+};
+
+using TransferCallback = std::function<void()>;
+
+struct TransferBufferOperation
+{
+    Render::Buffer* buffer;
+    std::vector<Render::MemoryBufferCopyRegion> regions;
+};
+
+struct TransferImageOperation
+{
+    Render::Image* image;
+    std::vector<Render::MemoryImageCopyRegion> regions;
+};
+
+struct TransferCallbackOperation
+{
+    TransferCallback cback;
+};
+
+struct TransferRegion
+{
+    std::variant<TransferBufferOperation, TransferImageOperation, TransferCallbackOperation> op;
 };
 
 class TransferQueue;
-enum class Format;
 
-class TransferChannel : hrs::non_copyable, hrs::non_movable, public Task
+class TransferChannel : public Task
 {
 public:
-    TransferChannel(TransferQueue* _parent, const TransferChannelInfo& info);
+    TransferChannel(TransferQueue* _parent, TaskKey&& key, const TransferChannelInfo& info);
     virtual ~TransferChannel() override;
 
-    virtual void Evaluate(EvaluateDesc& eval_desc) override;
+    virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
+    virtual void End(const EvaluateDesc& eval_desc) override;
 
-    virtual Task* GetParent() noexcept override;
-    virtual const Task* GetParent() const noexcept override;
+    void Transfer(TransferBufferOperation&& op);
+    void Transfer(TransferImageOperation&& op);
+    void Transfer(TransferCallbackOperation&& op);
 
     void Reserve(std::size_t size);
-    void Transfer(std::span<const TransferRegion> regions);
-
-    bool CanTransfer(GLintptr size) const noexcept;
-    bool CanTransfer(Format format, const BufferImageCopyRegion& reg) const noexcept;
 private:
-    TransferQueue* parent;
-    Fence* wait_on_fence;
-
-    std::byte* mapped_ptr;
-    Buffer buffer;
-
-    GLintptr offset;
-    hrs::forward_pool<TransferRegion> regions_pool;
+    hrs::forward_pool<TransferRegion> staging_regions;
 };
 
 static_assert(!std::is_abstract_v<TransferChannel>);

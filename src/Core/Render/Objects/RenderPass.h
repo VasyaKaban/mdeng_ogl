@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class RenderPass
+    class RenderPass : public Object
     {
     public:
         virtual ~RenderPass()
@@ -12,7 +13,5 @@ namespace Render
 
         virtual void Begin(const CommandBuffer* cmd, const RenderPassBeginInfo& info) = 0;
         virtual void End(const CommandBuffer* cmd) = 0;
-
-        virtual Context* GetContext() const noexcept = 0;
     };
 };

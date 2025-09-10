@@ -7,448 +7,448 @@ namespace DDS
 {
     struct format_resolve_result
     {
-        Format ctx_format;
-        ImageCopyDataFormat data_format;
-        ImageCopyDataType data_type;
+        Render::Format ctx_format;
+        Render::ImageCopyDataFormat data_format;
+        Render::ImageCopyDataType data_type;
     };
 
-    static format_resolve_result resolve_format(DXGIFormat fmt)
+    static hrs::expected<format_resolve_result, std::runtime_error> resolve_format(DXGIFormat fmt)
     {
         format_resolve_result res;
         switch(fmt)
         {
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_TYPELESS:
-                res.ctx_format = Format::R32G32B32A32_UINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32G32B32A32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_FLOAT:
-                res.ctx_format = Format::R32G32B32A32_FLOAT;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::F32;
+                res.ctx_format = Render::Format::R32G32B32A32_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::F32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_UINT:
-                res.ctx_format = Format::R32G32B32A32_UINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32G32B32A32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_SINT:
-                res.ctx_format = Format::R32G32B32A32_SINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::I32;
+                res.ctx_format = Render::Format::R32G32B32A32_SINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::I32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_TYPELESS:
-                res.ctx_format = Format::R32G32B32_UINT;
-                res.data_format = ImageCopyDataFormat::RGB_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32G32B32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGB_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_FLOAT:
-                res.ctx_format = Format::R32G32B32_FLOAT;
-                res.data_format = ImageCopyDataFormat::RGB_NORM;
-                res.data_type = ImageCopyDataType::F32;
+                res.ctx_format = Render::Format::R32G32B32_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::RGB_NORM;
+                res.data_type = Render::ImageCopyDataType::F32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_UINT:
-                res.ctx_format = Format::R32G32B32_UINT;
-                res.data_format = ImageCopyDataFormat::RGB_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32G32B32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGB_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_SINT:
-                res.ctx_format = Format::R32G32B32A32_SINT;
-                res.data_format = ImageCopyDataFormat::RGB_INT;
-                res.data_type = ImageCopyDataType::I32;
+                res.ctx_format = Render::Format::R32G32B32A32_SINT;
+                res.data_format = Render::ImageCopyDataFormat::RGB_INT;
+                res.data_type = Render::ImageCopyDataType::I32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_TYPELESS:
-                res.ctx_format = Format::R16G16B16A16_UINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16G16B16A16_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_FLOAT:
-                res.ctx_format = Format::R16G16B16A16_FLOAT;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::F16;
+                res.ctx_format = Render::Format::R16G16B16A16_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::F16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_UNORM:
-                res.ctx_format = Format::R16G16B16A16_UNORM;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16G16B16A16_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_UINT:
-                res.ctx_format = Format::R16G16B16A16_UINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16G16B16A16_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_SNORM:
-                res.ctx_format = Format::R16G16B16A16_SNORM;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::I16;
+                res.ctx_format = Render::Format::R16G16B16A16_SNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::I16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_SINT:
-                res.ctx_format = Format::R16G16B16A16_SINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::I16;
+                res.ctx_format = Render::Format::R16G16B16A16_SINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::I16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_TYPELESS:
-                res.ctx_format = Format::R32G32_UINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32G32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_FLOAT:
-                res.ctx_format = Format::R32G32_FLOAT;
-                res.data_format = ImageCopyDataFormat::RG_NORM;
-                res.data_type = ImageCopyDataType::F32;
+                res.ctx_format = Render::Format::R32G32_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                res.data_type = Render::ImageCopyDataType::F32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_UINT:
-                res.ctx_format = Format::R32G32_UINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32G32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_SINT:
-                res.ctx_format = Format::R32G32_SINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::I32;
+                res.ctx_format = Render::Format::R32G32_SINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::I32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G8X24_TYPELESS:
-                res.ctx_format = Format::D32_FLOAT_S8X24_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::F32_U32_24_8_REV;
+                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::F32_U32_24_8_REV;
                 break;
             case DXGIFormat::DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-                res.ctx_format = Format::D32_FLOAT_S8X24_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::F32_U32_24_8_REV;
+                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::F32_U32_24_8_REV;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-                res.ctx_format = Format::D32_FLOAT_S8X24_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::F32_U32_24_8_REV;
+                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::F32_U32_24_8_REV;
                 break;
             case DXGIFormat::DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
-                res.ctx_format = Format::D32_FLOAT_S8X24_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::F32_U32_24_8_REV;
+                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::F32_U32_24_8_REV;
                 break;
             case DXGIFormat::DXGI_FORMAT_R10G10B10A2_TYPELESS:
-                res.ctx_format = Format::D32_FLOAT_S8X24_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::F32_U32_24_8_REV;
+                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::F32_U32_24_8_REV;
                 break;
             case DXGIFormat::DXGI_FORMAT_R10G10B10A2_UNORM:
-                res.ctx_format = Format::R10G10B10A2_UNORM;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::U32_10_10_10_2;
+                res.ctx_format = Render::Format::R10G10B10A2_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::U32_10_10_10_2;
                 break;
             case DXGIFormat::DXGI_FORMAT_R10G10B10A2_UINT:
-                res.ctx_format = Format::R10G10B10A2_UINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::U32_10_10_10_2;
+                res.ctx_format = Render::Format::R10G10B10A2_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::U32_10_10_10_2;
                 break;
             case DXGIFormat::DXGI_FORMAT_R11G11B10_FLOAT:
-                res.ctx_format = Format::R11G11B10_FLOAT;
-                res.data_format = ImageCopyDataFormat::RGB_NORM;
-                res.data_type = ImageCopyDataType::U32_10F_11F_11F_Rev;
+                res.ctx_format = Render::Format::R11G11B10_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::RGB_NORM;
+                res.data_type = Render::ImageCopyDataType::U32_10F_11F_11F_Rev;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_TYPELESS:
-                res.ctx_format = Format::R8G8B8A8_UINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_UNORM:
-                res.ctx_format = Format::R8G8B8A8_UNORM;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-                res.ctx_format = Format::R8G8B8A8_UNORM;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_UINT:
-                res.ctx_format = Format::R8G8B8A8_UINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_SNORM:
-                res.ctx_format = Format::R8G8B8A8_SNORM;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::I8;
+                res.ctx_format = Render::Format::R8G8B8A8_SNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::I8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_SINT:
-                res.ctx_format = Format::R8G8B8A8_SINT;
-                res.data_format = ImageCopyDataFormat::RGBA_INT;
-                res.data_type = ImageCopyDataType::I8;
+                res.ctx_format = Render::Format::R8G8B8A8_SINT;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_INT;
+                res.data_type = Render::ImageCopyDataType::I8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_TYPELESS:
-                res.ctx_format = Format::R16G16_UINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16G16_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_FLOAT:
-                res.ctx_format = Format::R16G16_FLOAT;
-                res.data_format = ImageCopyDataFormat::RG_NORM;
-                res.data_type = ImageCopyDataType::F16;
+                res.ctx_format = Render::Format::R16G16_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                res.data_type = Render::ImageCopyDataType::F16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_UNORM:
-                res.ctx_format = Format::R16G16_UNORM;
-                res.data_format = ImageCopyDataFormat::RG_NORM;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16G16_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_UINT:
-                res.ctx_format = Format::R16G16_UINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16G16_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_SNORM:
-                res.ctx_format = Format::R16G16_SNORM;
-                res.data_format = ImageCopyDataFormat::RG_NORM;
-                res.data_type = ImageCopyDataType::I16;
+                res.ctx_format = Render::Format::R16G16_SNORM;
+                res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                res.data_type = Render::ImageCopyDataType::I16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_SINT:
-                res.ctx_format = Format::R16G16_SINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::I16;
+                res.ctx_format = Render::Format::R16G16_SINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::I16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_TYPELESS:
-                res.ctx_format = Format::R32_UINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_D32_FLOAT:
-                res.ctx_format = Format::D32_FLOAT;
-                res.data_format = ImageCopyDataFormat::Depth;
-                res.data_type = ImageCopyDataType::F32;
+                res.ctx_format = Render::Format::D32_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::Depth;
+                res.data_type = Render::ImageCopyDataType::F32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_FLOAT:
-                res.ctx_format = Format::R32_FLOAT;
-                res.data_format = ImageCopyDataFormat::R_NORM;
-                res.data_type = ImageCopyDataType::F32;
+                res.ctx_format = Render::Format::R32_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                res.data_type = Render::ImageCopyDataType::F32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_UINT:
-                res.ctx_format = Format::R32_UINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::U32;
+                res.ctx_format = Render::Format::R32_UINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::U32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_SINT:
-                res.ctx_format = Format::R32_SINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::I32;
+                res.ctx_format = Render::Format::R32_SINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::I32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R24G8_TYPELESS:
-                res.ctx_format = Format::D24_UNORM_S8_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::U32_24_8;
+                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::U32_24_8;
                 break;
             case DXGIFormat::DXGI_FORMAT_D24_UNORM_S8_UINT:
-                res.ctx_format = Format::D24_UNORM_S8_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::U32_24_8;
+                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::U32_24_8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-                res.ctx_format = Format::D24_UNORM_S8_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::U32_24_8;
+                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::U32_24_8;
                 break;
             case DXGIFormat::DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-                res.ctx_format = Format::D24_UNORM_S8_UINT;
-                res.data_format = ImageCopyDataFormat::DepthStencil;
-                res.data_type = ImageCopyDataType::U32_24_8;
+                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::DepthStencil;
+                res.data_type = Render::ImageCopyDataType::U32_24_8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_TYPELESS:
-                res.ctx_format = Format::R8G8_UINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_UNORM:
-                res.ctx_format = Format::R8G8_UNORM;
-                res.data_format = ImageCopyDataFormat::RG_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_UINT:
-                res.ctx_format = Format::R8G8_UINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_SNORM:
-                res.ctx_format = Format::R8G8_SNORM;
-                res.data_format = ImageCopyDataFormat::RG_NORM;
-                res.data_type = ImageCopyDataType::I8;
+                res.ctx_format = Render::Format::R8G8_SNORM;
+                res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                res.data_type = Render::ImageCopyDataType::I8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_SINT:
-                res.ctx_format = Format::R8G8_SINT;
-                res.data_format = ImageCopyDataFormat::RG_INT;
-                res.data_type = ImageCopyDataType::I8;
+                res.ctx_format = Render::Format::R8G8_SINT;
+                res.data_format = Render::ImageCopyDataFormat::RG_INT;
+                res.data_type = Render::ImageCopyDataType::I8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_TYPELESS:
-                res.ctx_format = Format::R16_UINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16_UINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_FLOAT:
-                res.ctx_format = Format::R16_FLOAT;
-                res.data_format = ImageCopyDataFormat::R_NORM;
-                res.data_type = ImageCopyDataType::F16;
+                res.ctx_format = Render::Format::R16_FLOAT;
+                res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                res.data_type = Render::ImageCopyDataType::F16;
                 break;
             case DXGIFormat::DXGI_FORMAT_D16_UNORM:
-                res.ctx_format = Format::D16_UNORM;
-                res.data_format = ImageCopyDataFormat::Depth;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::D16_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::Depth;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_UNORM:
-                res.ctx_format = Format::R16_UNORM;
-                res.data_format = ImageCopyDataFormat::R_NORM;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_UINT:
-                res.ctx_format = Format::R16_UINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::U16;
+                res.ctx_format = Render::Format::R16_UINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::U16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_SNORM:
-                res.ctx_format = Format::R16_SNORM;
-                res.data_format = ImageCopyDataFormat::R_NORM;
-                res.data_type = ImageCopyDataType::I16;
+                res.ctx_format = Render::Format::R16_SNORM;
+                res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                res.data_type = Render::ImageCopyDataType::I16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_SINT:
-                res.ctx_format = Format::R16_SINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::I16;
+                res.ctx_format = Render::Format::R16_SINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::I16;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_TYPELESS:
-                res.ctx_format = Format::R8_UINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_UNORM:
-                res.ctx_format = Format::R8_UNORM;
-                res.data_format = ImageCopyDataFormat::R_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_UINT:
-                res.ctx_format = Format::R8_UINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_SNORM:
-                res.ctx_format = Format::R8_SNORM;
-                res.data_format = ImageCopyDataFormat::R_NORM;
-                res.data_type = ImageCopyDataType::I8;
+                res.ctx_format = Render::Format::R8_SNORM;
+                res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                res.data_type = Render::ImageCopyDataType::I8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_SINT:
-                res.ctx_format = Format::R8_SINT;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::I8;
+                res.ctx_format = Render::Format::R8_SINT;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::I8;
                 break;
             case DXGIFormat::DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-                res.ctx_format = Format::R9G9B9E5_SHAREDEXP;
-                res.data_format = ImageCopyDataFormat::R_INT;
-                res.data_type = ImageCopyDataType::U32_5_9_9_9_Rev;
+                res.ctx_format = Render::Format::R9G9B9E5_SHAREDEXP;
+                res.data_format = Render::ImageCopyDataFormat::R_INT;
+                res.data_type = Render::ImageCopyDataType::U32_5_9_9_9_Rev;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC1_TYPELESS:
-                res.ctx_format = Format::BC1_UNORM;
+                res.ctx_format = Render::Format::BC1_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC1_UNORM:
-                res.ctx_format = Format::BC1_UNORM;
+                res.ctx_format = Render::Format::BC1_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC1_UNORM_SRGB:
-                res.ctx_format = Format::BC1_UNORM_SRGB;
+                res.ctx_format = Render::Format::BC1_UNORM_SRGB;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC2_TYPELESS:
-                res.ctx_format = Format::BC2_UNORM;
+                res.ctx_format = Render::Format::BC2_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC2_UNORM:
-                res.ctx_format = Format::BC2_UNORM;
+                res.ctx_format = Render::Format::BC2_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC2_UNORM_SRGB:
-                res.ctx_format = Format::BC2_UNORM_SRGB;
+                res.ctx_format = Render::Format::BC2_UNORM_SRGB;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC3_TYPELESS:
-                res.ctx_format = Format::BC3_UNORM;
+                res.ctx_format = Render::Format::BC3_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC3_UNORM:
-                res.ctx_format = Format::BC3_UNORM;
+                res.ctx_format = Render::Format::BC3_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC3_UNORM_SRGB:
-                res.ctx_format = Format::BC3_UNORM_SRGB;
+                res.ctx_format = Render::Format::BC3_UNORM_SRGB;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC4_TYPELESS:
-                res.ctx_format = Format::BC4_UNORM;
+                res.ctx_format = Render::Format::BC4_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC4_UNORM:
-                res.ctx_format = Format::BC4_UNORM;
+                res.ctx_format = Render::Format::BC4_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC4_SNORM:
-                res.ctx_format = Format::BC4_SNORM;
+                res.ctx_format = Render::Format::BC4_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC5_TYPELESS:
-                res.ctx_format = Format::BC5_UNORM;
+                res.ctx_format = Render::Format::BC5_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC5_UNORM:
-                res.ctx_format = Format::BC5_UNORM;
+                res.ctx_format = Render::Format::BC5_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC5_SNORM:
-                res.ctx_format = Format::BC5_SNORM;
+                res.ctx_format = Render::Format::BC5_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_B5G6R5_UNORM:
-                res.ctx_format = Format::B5G6R5_UNORM;
-                res.data_format = ImageCopyDataFormat::RGB_NORM;
-                res.data_type = ImageCopyDataType::U16_5_6_5_Rev;
+                res.ctx_format = Render::Format::B5G6R5_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGB_NORM;
+                res.data_type = Render::ImageCopyDataType::U16_5_6_5_Rev;
                 break;
             case DXGIFormat::DXGI_FORMAT_B5G5R5A1_UNORM:
-                res.ctx_format = Format::B5G5R5A1_UNORM;
-                res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                res.data_type = ImageCopyDataType::U16_1_5_5_5_Rev;
+                res.ctx_format = Render::Format::B5G5R5A1_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                res.data_type = Render::ImageCopyDataType::U16_1_5_5_5_Rev;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8A8_UNORM:
-                res.ctx_format = Format::R8G8B8A8_UNORM;
-                res.data_format = ImageCopyDataFormat::BGRA_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::BGRA_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8X8_UNORM:
-                res.ctx_format = Format::R8G8B8A8_UNORM;
-                res.data_format = ImageCopyDataFormat::BGRA_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::BGRA_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8A8_TYPELESS:
-                res.ctx_format = Format::R8G8B8A8_UINT;
-                res.data_format = ImageCopyDataFormat::BGRA_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::BGRA_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-                res.ctx_format = Format::R8G8B8A8_UNORM_SRGB;
-                res.data_format = ImageCopyDataFormat::BGRA_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UNORM_SRGB;
+                res.data_format = Render::ImageCopyDataFormat::BGRA_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8X8_TYPELESS:
-                res.ctx_format = Format::R8G8B8A8_UINT;
-                res.data_format = ImageCopyDataFormat::BGRA_INT;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res.data_format = Render::ImageCopyDataFormat::BGRA_INT;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-                res.ctx_format = Format::R8G8B8A8_UNORM_SRGB;
-                res.data_format = ImageCopyDataFormat::BGRA_NORM;
-                res.data_type = ImageCopyDataType::U8;
+                res.ctx_format = Render::Format::R8G8B8A8_UNORM_SRGB;
+                res.data_format = Render::ImageCopyDataFormat::BGRA_NORM;
+                res.data_type = Render::ImageCopyDataType::U8;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC6H_TYPELESS:
-                res.ctx_format = Format::BC6H_UF16;
+                res.ctx_format = Render::Format::BC6H_UF16;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC6H_UF16:
-                res.ctx_format = Format::BC6H_UF16;
+                res.ctx_format = Render::Format::BC6H_UF16;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC6H_SF16:
-                res.ctx_format = Format::BC6H_SF16;
+                res.ctx_format = Render::Format::BC6H_SF16;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC7_TYPELESS:
-                res.ctx_format = Format::BC7_UNORM;
+                res.ctx_format = Render::Format::BC7_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC7_UNORM:
-                res.ctx_format = Format::BC7_UNORM;
+                res.ctx_format = Render::Format::BC7_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC7_UNORM_SRGB:
-                res.ctx_format = Format::BC7_UNORM_SRGB;
+                res.ctx_format = Render::Format::BC7_UNORM_SRGB;
                 break;
             case DXGIFormat::DXGI_FORMAT_B4G4R4A4_UNORM:
-                res.ctx_format = Format::B4G4R4A4_UNORM;
-                res.data_format = ImageCopyDataFormat::BGRA_INT;
-                res.data_type = ImageCopyDataType::U16_4_4_4_4;
+                res.ctx_format = Render::Format::B4G4R4A4_UNORM;
+                res.data_format = Render::ImageCopyDataFormat::BGRA_INT;
+                res.data_type = Render::ImageCopyDataType::U16_4_4_4_4;
                 break;
             case DXGIFormat::DXGI_FORMAT_UNKNOWN:
             case DXGIFormat::DXGI_FORMAT_A8_UNORM:
@@ -477,7 +477,7 @@ namespace DDS
             case DXGIFormat::DXGI_FORMAT_SAMPLER_FEEDBACK_MIN_MIP_OPAQUE:
             case DXGIFormat::DXGI_FORMAT_SAMPLER_FEEDBACK_MIP_REGION_USED_OPAQUE:
             default:
-                throw std::runtime_error(
+                return std::runtime_error(
                     std::format("DXGI format: {} is not supported in graphics context",
                                 static_cast<std::underlying_type_t<DXGIFormat>>(fmt)));
                 break;
@@ -486,7 +486,8 @@ namespace DDS
         return res;
     }
 
-    static format_resolve_result resolve_format(const PixelFormat& fmt)
+    static hrs::expected<format_resolve_result, std::runtime_error>
+    resolve_format(const PixelFormat& fmt)
     {
         format_resolve_result res;
         if(fmt.flags & PixelFormatFlagBits::DDPF_FOURCC)
@@ -494,74 +495,74 @@ namespace DDS
             switch(fmt.four_cc)
             {
                 case DDS::PixelFormatFourCC::DXT1:
-                    res.ctx_format = Format::BC1_UNORM;
+                    res.ctx_format = Render::Format::BC1_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::DXT2:
-                    res.ctx_format = Format::BC2_UNORM;
+                    res.ctx_format = Render::Format::BC2_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::DXT3:
-                    res.ctx_format = Format::BC2_UNORM;
+                    res.ctx_format = Render::Format::BC2_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::DXT4:
-                    res.ctx_format = Format::BC3_UNORM;
+                    res.ctx_format = Render::Format::BC3_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::DXT5:
-                    res.ctx_format = Format::BC3_UNORM;
+                    res.ctx_format = Render::Format::BC3_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::BC4U:
-                    res.ctx_format = Format::BC4_UNORM;
+                    res.ctx_format = Render::Format::BC4_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::BC4S:
-                    res.ctx_format = Format::BC4_SNORM;
+                    res.ctx_format = Render::Format::BC4_SNORM;
                     break;
                 case DDS::PixelFormatFourCC::BC4U_ATI1:
-                    res.ctx_format = Format::BC4_UNORM;
+                    res.ctx_format = Render::Format::BC4_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::BC5U:
-                    res.ctx_format = Format::BC5_UNORM;
+                    res.ctx_format = Render::Format::BC5_UNORM;
                     break;
                 case DDS::PixelFormatFourCC::BC5S:
-                    res.ctx_format = Format::BC5_SNORM;
+                    res.ctx_format = Render::Format::BC5_SNORM;
                     break;
                 case DDS::PixelFormatFourCC::R16G16B16A16_U:
-                    res.ctx_format = Format::R16G16B16A16_UNORM;
-                    res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                    res.data_type = ImageCopyDataType::U16;
+                    res.ctx_format = Render::Format::R16G16B16A16_UNORM;
+                    res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                    res.data_type = Render::ImageCopyDataType::U16;
                     break;
                 case DDS::PixelFormatFourCC::R16G16B16A16_S:
-                    res.ctx_format = Format::R16G16B16A16_SNORM;
-                    res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                    res.data_type = ImageCopyDataType::I16;
+                    res.ctx_format = Render::Format::R16G16B16A16_SNORM;
+                    res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                    res.data_type = Render::ImageCopyDataType::I16;
                     break;
                 case DDS::PixelFormatFourCC::R16_F:
-                    res.ctx_format = Format::R16_FLOAT;
-                    res.data_format = ImageCopyDataFormat::R_NORM;
-                    res.data_type = ImageCopyDataType::F16;
+                    res.ctx_format = Render::Format::R16_FLOAT;
+                    res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                    res.data_type = Render::ImageCopyDataType::F16;
                     break;
                 case DDS::PixelFormatFourCC::R16G16_F:
-                    res.ctx_format = Format::R16G16_FLOAT;
-                    res.data_format = ImageCopyDataFormat::RG_NORM;
-                    res.data_type = ImageCopyDataType::F16;
+                    res.ctx_format = Render::Format::R16G16_FLOAT;
+                    res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                    res.data_type = Render::ImageCopyDataType::F16;
                     break;
                 case DDS::PixelFormatFourCC::R16G16B16A16_F:
-                    res.ctx_format = Format::R16G16B16A16_FLOAT;
-                    res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                    res.data_type = ImageCopyDataType::F16;
+                    res.ctx_format = Render::Format::R16G16B16A16_FLOAT;
+                    res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                    res.data_type = Render::ImageCopyDataType::F16;
                     break;
                 case DDS::PixelFormatFourCC::R32_F:
-                    res.ctx_format = Format::R32_FLOAT;
-                    res.data_format = ImageCopyDataFormat::R_NORM;
-                    res.data_type = ImageCopyDataType::F32;
+                    res.ctx_format = Render::Format::R32_FLOAT;
+                    res.data_format = Render::ImageCopyDataFormat::R_NORM;
+                    res.data_type = Render::ImageCopyDataType::F32;
                     break;
                 case DDS::PixelFormatFourCC::R32G32_F:
-                    res.ctx_format = Format::R32G32_FLOAT;
-                    res.data_format = ImageCopyDataFormat::RG_NORM;
-                    res.data_type = ImageCopyDataType::F32;
+                    res.ctx_format = Render::Format::R32G32_FLOAT;
+                    res.data_format = Render::ImageCopyDataFormat::RG_NORM;
+                    res.data_type = Render::ImageCopyDataType::F32;
                     break;
                 case DDS::PixelFormatFourCC::R32G32B32A32_F:
-                    res.ctx_format = Format::R32G32B32A32_FLOAT;
-                    res.data_format = ImageCopyDataFormat::RGBA_NORM;
-                    res.data_type = ImageCopyDataType::F32;
+                    res.ctx_format = Render::Format::R32G32B32A32_FLOAT;
+                    res.data_format = Render::ImageCopyDataFormat::RGBA_NORM;
+                    res.data_type = Render::ImageCopyDataType::F32;
                     break;
                 case DDS::PixelFormatFourCC::R8G8_B8G8_U:
                 case DDS::PixelFormatFourCC::G8R8_G8B8_U:
@@ -571,7 +572,7 @@ namespace DDS
                 default:
                 {
                     auto four_cc = ToDwordFourCC(fmt.four_cc);
-                    throw std::runtime_error(std::format(
+                    return std::runtime_error(std::format(
                         "FourCC : {} -> {} is not supported in graphics context",
                         std::string_view(reinterpret_cast<const char*>(four_cc.data()),
                                          four_cc.size()),
@@ -597,7 +598,7 @@ namespace DDS
                     if(fmt.rgb_bit_count == 8)
                     {
                         if(fmt.red_bit_mask != 0xFF)
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
 
                         //DXGI_FORMAT_R8_TYPELESS = 60,
                         //DXGI_FORMAT_R8_UNORM = 61,
@@ -605,7 +606,7 @@ namespace DDS
                         //DXGI_FORMAT_R8_SNORM = 63,
                         //DXGI_FORMAT_R8_SINT = 64,
                         //DXGI_FORMAT_A8_UNORM = 65,
-                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R8_UNORM);
+                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R8_UNORM).value();
                     }
                     else if(fmt.rgb_bit_count == 16)
                     {
@@ -617,9 +618,9 @@ namespace DDS
                         //DXGI_FORMAT_R16_SINT = 59,
 
                         if(fmt.red_bit_mask != 0xFF'FF)
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
 
-                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R16_UNORM);
+                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R16_UNORM).value();
                     }
                     else if(fmt.rgb_bit_count == 32)
                     {
@@ -629,12 +630,12 @@ namespace DDS
                         //DXGI_FORMAT_R32_SINT = 43,
 
                         if(fmt.red_bit_mask != 0xFF'FF'FF'FF)
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
 
-                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R32_UINT);
+                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R32_UINT).value();
                     }
                     else
-                        throw std::runtime_error("Unsupported pixel format");
+                        return std::runtime_error("Unsupported pixel format");
                 }
                 else
                 {
@@ -648,9 +649,9 @@ namespace DDS
                         //DXGI_FORMAT_R8G8_SINT = 52,
 
                         if(!(fmt.red_bit_mask == 0x00'FF && fmt.alpha_bit_mask == 0xFF'00))
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
 
-                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R8G8_UNORM);
+                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R8G8_UNORM).value();
                     }
                     else if(fmt.rgb_bit_count == 32)
                     {
@@ -662,12 +663,12 @@ namespace DDS
                         //DXGI_FORMAT_R16G16_SINT = 38,
 
                         if(!(fmt.red_bit_mask == 0xFF'FF && fmt.alpha_bit_mask == 0xFF'FF'00'00))
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
 
-                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R16G16_UNORM);
+                        res = resolve_format(DXGIFormat::DXGI_FORMAT_R16G16_UNORM).value();
                     }
                     else
-                        throw std::runtime_error("Unsupported pixel format");
+                        return std::runtime_error("Unsupported pixel format");
                 }
             }
             else if(fmt.flags & PixelFormatFlagBits::DDPF_RGB)
@@ -681,9 +682,9 @@ namespace DDS
 
                         if(!(fmt.red_bit_mask == 0xF8'00 && fmt.green_bit_mask == 0x7E0 &&
                              fmt.blue_bit_mask == 0x1F))
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
 
-                        res = resolve_format(DXGIFormat::DXGI_FORMAT_B5G6R5_UNORM);
+                        res = resolve_format(DXGIFormat::DXGI_FORMAT_B5G6R5_UNORM).value();
                     }
                     else if(fmt.rgb_bit_count == 32)
                     {
@@ -697,18 +698,19 @@ namespace DDS
 
                         if(fmt.red_bit_mask == 0x7FF && fmt.green_bit_mask == 0x3F'F8'00 &&
                            fmt.blue_bit_mask == 0xFF'C0'00'00)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_R11G11B10_FLOAT);
+                            res = resolve_format(DXGIFormat::DXGI_FORMAT_R11G11B10_FLOAT).value();
                         else if(fmt.red_bit_mask == 0xFF'00'00 && fmt.green_bit_mask == 0xFF'00 &&
                                 fmt.blue_bit_mask == 0xFF)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B8G8R8X8_UNORM);
+                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B8G8R8X8_UNORM).value();
                         else if(fmt.red_bit_mask == 0x1FF && fmt.green_bit_mask == 0x3'FE'00 &&
                                 fmt.blue_bit_mask == 0x7'FC'00'00)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_R9G9B9E5_SHAREDEXP);
+                            res =
+                                resolve_format(DXGIFormat::DXGI_FORMAT_R9G9B9E5_SHAREDEXP).value();
                         else
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
                     }
                     else
-                        throw std::runtime_error("Unsupported pixel format");
+                        return std::runtime_error("Unsupported pixel format");
                 }
                 else
                 {
@@ -721,12 +723,12 @@ namespace DDS
 
                         if(fmt.red_bit_mask == 0x7C'00 && fmt.green_bit_mask == 0x3E0 &&
                            fmt.blue_bit_mask == 0x1F)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B5G5R5A1_UNORM);
+                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B5G5R5A1_UNORM).value();
                         else if(fmt.red_bit_mask == 0xF00 && fmt.green_bit_mask == 0xF0 &&
                                 fmt.blue_bit_mask == 0xF && fmt.alpha_bit_mask == 0xF0'00)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B4G4R4A4_UNORM);
+                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B4G4R4A4_UNORM).value();
                         else
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
                     }
                     else if(fmt.rgb_bit_count == 32)
                     {
@@ -747,23 +749,23 @@ namespace DDS
 
                         if(fmt.red_bit_mask == 0x3FF && fmt.green_bit_mask == 0xF'FC'00 &&
                            fmt.blue_bit_mask == 0x3F'F0'00'00)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_R10G10B10A2_UNORM);
+                            res = resolve_format(DXGIFormat::DXGI_FORMAT_R10G10B10A2_UNORM).value();
                         else if(fmt.red_bit_mask == 0xFF && fmt.green_bit_mask == 0xFF'00 &&
                                 fmt.blue_bit_mask == 0xFF'00'00 &&
                                 fmt.alpha_bit_mask == 0xFF'00'00'00)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_R8G8B8A8_UNORM);
+                            res = resolve_format(DXGIFormat::DXGI_FORMAT_R8G8B8A8_UNORM).value();
                         else if(fmt.red_bit_mask == 0xFF'00'00 && fmt.green_bit_mask == 0xFF'00 &&
                                 fmt.blue_bit_mask == 0xFF && fmt.alpha_bit_mask == 0xFF'00'00'00)
-                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B8G8R8A8_UNORM);
+                            res = resolve_format(DXGIFormat::DXGI_FORMAT_B8G8R8A8_UNORM).value();
                         else
-                            throw std::runtime_error("Unsupported pixel format");
+                            return std::runtime_error("Unsupported pixel format");
                     }
                     else
-                        throw std::runtime_error("Unsupported pixel format");
+                        return std::runtime_error("Unsupported pixel format");
                 }
             }
             else
-                throw std::runtime_error("Unsupported pixel format");
+                return std::runtime_error("Unsupported pixel format");
         }
         return res;
     }
@@ -794,17 +796,17 @@ namespace DDS
     //static void check_dds_dxt10_header(const DXT10Header* header)
     //{}
 
-    DDSResult Parse(std::span<const std::uint8_t> data)
+    hrs::expected<DDSResult, std::runtime_error> Parse(std::span<const std::uint8_t> data)
     {
         constexpr std::size_t MIN_DDS_SIZE = sizeof(DDS_MAGIC_NUMBER) + sizeof(Header);
 
         if(data.size() < MIN_DDS_SIZE)
-            throw std::runtime_error(
+            return std::runtime_error(
                 std::format("Size of data must be greater than or equal to MIN_DDS_SIZE({})",
                             MIN_DDS_SIZE));
 
         if(DDS_MAGIC_NUMBER != MafeFourCC(data[0], data[1], data[2], data[3]))
-            throw std::runtime_error(
+            return std::runtime_error(
                 std::format("Bad magic number. Must be: {}", DDS_MAGIC_NUMBER));
 
         DDSResult result = {};
@@ -819,7 +821,7 @@ namespace DDS
                 sizeof(DDS_MAGIC_NUMBER) + sizeof(Header) + sizeof(DXT10Header);
 
             if(data.size() < MIN_DDS_SIZE_DXT10)
-                throw std::runtime_error(std::format(
+                return std::runtime_error(std::format(
                     "Size of data must be greater than or equal to MIN_DDS_SIZE_DXT10({})",
                     MIN_DDS_SIZE_DXT10));
 
@@ -838,27 +840,27 @@ namespace DDS
         return result;
     }
 
-    ResolveResult Resolve(const DDSResult& result)
+    hrs::expected<ResolveResult, std::runtime_error> Resolve(const DDSResult& result)
     {
         ResolveResult resolve;
 
         resolve.image_info.extent.width = result.header->width;
         resolve.image_info.extent.height = result.header->height;
         resolve.image_info.extent.depth = 1;
-        resolve.image_info.image_type = ImageType::Image2D;
+        resolve.image_info.image_type = Render::ImageType::Image2D;
 
         if(result.header->flags & HeaderFlagBits::DDSD_DEPTH ||
            result.header->caps3 & HeaderCaps2FlagBits::DDSCAPS2_VOLUME ||
            (result.dxt10_header &&
             result.dxt10_header->resource_dimension == ResourceDimension::TEXTURE3D))
         {
-            resolve.image_info.image_type = ImageType::Image3D;
+            resolve.image_info.image_type = Render::ImageType::Image3D;
             resolve.image_info.extent.depth = result.header->depth;
         }
         else if(result.dxt10_header)
         {
             if(result.dxt10_header->resource_dimension == ResourceDimension::TEXTURE1D)
-                resolve.image_info.image_type = ImageType::Image1D;
+                resolve.image_info.image_type = Render::ImageType::Image1D;
         }
 
         if((result.header->flags & HeaderFlagBits::DDSD_MIPMAPCOUNT ||
@@ -868,7 +870,7 @@ namespace DDS
         else
             resolve.image_info.mip_levels = 1;
 
-        resolve.image_info.samples = SampleCount::SampleCount_1;
+        resolve.image_info.samples = Render::SampleCount::SampleCount_1;
         resolve.image_info.array_layers = 1;
 
         resolve.is_cubemap = false;
@@ -888,8 +890,14 @@ namespace DDS
         //format
         //array layers
 
-        auto resolved_format = (result.dxt10_header ? resolve_format(result.dxt10_header->format) :
-                                                      resolve_format(result.header->pixel_format));
+        auto resolved_format_exp =
+            (result.dxt10_header ? resolve_format(result.dxt10_header->format) :
+                                   resolve_format(result.header->pixel_format));
+
+        if(!resolved_format_exp)
+            return resolved_format_exp.error();
+
+        auto& resolved_format = *resolved_format_exp;
 
         resolve.regions.reserve(resolve.image_info.array_layers * resolve.image_info.mip_levels);
 
@@ -900,7 +908,7 @@ namespace DDS
         const std::uint8_t* sub_image_data_ptr = result.image_data.data();
         for(std::size_t layer = 0; layer < resolve.image_info.array_layers; layer++)
         {
-            Extent3D extent = resolve.image_info.extent;
+            Render::Extent3D extent = resolve.image_info.extent;
 
             for(std::size_t mipmap = 0; mipmap < resolve.image_info.mip_levels; mipmap++)
             {
@@ -933,21 +941,19 @@ namespace DDS
                         ((extent.width * bits_per_pixel + 7) / 8) * extent.height * extent.depth;
                 }
 
-                resolve.regions.push_back(ResolvedRegion{
-                    .copy_region =
-                        BufferImageCopyRegion{
-                            .buffer_offset = 0,
-                            .buffer_row_length = extent.width,
-                            .buffer_image_height = extent.height,
-                            .subresource_layers =
-                                ImageSubresourceLayers{.mip_level = static_cast<GLuint>(mipmap),
-                                                       .base_layer = static_cast<GLuint>(layer),
-                                                       .layer_count = 1},
-                            .offset = Offset3D{.x = 0, .y = 0, .z = 0},
-                            .extent = extent,
-                            .data_format = resolved_format.data_format,
-                            .data_type = resolved_format.data_type},
-                    .data = {sub_image_data_ptr, sub_image_size}});
+                resolve.regions.push_back(Render::MemoryImageCopyRegion{
+                    .data = sub_image_data_ptr,
+                    .buffer_row_length = extent.width,
+                    .buffer_image_height = extent.height,
+                    .subresource_layers =
+                        Render::ImageSubresourceLayers{
+                            .mip_level = static_cast<std::uint32_t>(mipmap),
+                            .base_layer = static_cast<std::uint32_t>(layer),
+                            .layer_count = 1},
+                    .offset = Render::Offset3D{.x = 0, .y = 0, .z = 0},
+                    .extent = extent,
+                    .data_format = resolved_format.data_format,
+                    .data_type = resolved_format.data_type});
 
                 sub_image_data_ptr += sub_image_size;
             }

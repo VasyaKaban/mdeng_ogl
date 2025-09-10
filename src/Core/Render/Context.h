@@ -31,6 +31,7 @@ namespace Render
         virtual Pipeline* CreatePipeline(const ComputePipelineInfo& info) = 0;
         virtual RenderPass* CreateRenderPass(const RenderPassInfo& info) = 0;
         virtual Sampler* CreateSampler(const SamplerInfo& info) = 0;
+        virtual Semaphore* CreateSemaphore() = 0;
         virtual Shader* CreateShader(const ShaderInfo& info) = 0;
     };
 };

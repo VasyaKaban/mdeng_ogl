@@ -1,27 +1,14 @@
 #include "QueueTask.h"
 #include "../RenderEngine.h"
 
-QueueTask::QueueTask(RenderEngine* _parent, Queue&& _handle) noexcept
-    : parent(_parent),
+QueueTask::QueueTask(RenderEngine* _parent,
+                     TaskKey&& key,
+                     std::unique_ptr<Render::Queue>&& _handle) noexcept
+    : Task(_parent, std::move(key)),
       handle(std::move(_handle))
 {}
 
-Task* QueueTask::GetParent() noexcept
+Render::Queue* QueueTask::GetHandle() const noexcept
 {
-    return parent;
-}
-
-const Task* QueueTask::GetParent() const noexcept
-{
-    return parent;
-}
-
-Queue& QueueTask::GetHandle() noexcept
-{
-    return handle;
-}
-
-const Queue& QueueTask::GetHandle() const noexcept
-{
-    return handle;
+    return handle.get();
 }

@@ -1,5 +1,4 @@
 #include "Camera.h"
-#include "Core/Render/Common.h"
 #include "hrs/math/vector.hpp"
 #include "hrs/math/matrix.hpp"
 
@@ -40,8 +39,8 @@ public:
     PerspectiveParameters& GetPerspective() noexcept;
     const PerspectiveParameters& GetPerspective() const noexcept;
 
-    Viewport& GetViewport() noexcept;
-    virtual const Viewport& GetViewport() const noexcept override;
+    Render::Viewport& GetViewport() noexcept;
+    virtual const Render::Viewport& GetViewport() const noexcept override;
 
     const hrs::math::glsl::std430::mat4x4& GetViewMatrix() const noexcept;
     const hrs::math::glsl::std430::mat4x4& GetProjectionMatrix() const noexcept;
@@ -61,7 +60,7 @@ private:
     PerspectiveParameters perspective;
 
     //viewport
-    Viewport viewport;
+    Render::Viewport viewport;
 
     //flag
     bool updated;

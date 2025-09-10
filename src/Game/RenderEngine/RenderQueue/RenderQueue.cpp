@@ -1,71 +1,104 @@
 #include "RenderQueue.h"
+#include "Core/Render/Context.h"
 #include "../../RenderEngine/RenderEngine.h"
 #include "../TransferQueue/TransferQueue.h"
 
-RenderQueue::RenderQueue(RenderEngine* _parent, Queue&& _handle)
-    : QueueTask(_parent, std::move(_handle)),
-      TaskTreeHolder<RenderPassTask>(),
-      command_pool(_parent->GetContext(), CommandPoolCreateInfo{.queue = &(QueueTask::handle)})
+RenderQueue::RenderQueue(RenderEngine* _parent,
+                         TaskKey&& key,
+                         std::unique_ptr<Render::Queue>&& _handle)
+    : QueueTask(_parent, std::move(key), std::move(_handle)),
+      command_pool(_parent->GetContext()->CreateCommandPool(
+          Render::CommandPoolInfo{.queue = QueueTask::handle.get()}))
 {
-    resources.reserve(parent->GetResourceSetCount());
-    for(std::size_t i = 0; i < parent->GetResourceSetCount(); i++)
+    resources.reserve(_parent->GetResourceSetCount());
+    for(std::size_t i = 0; i < _parent->GetResourceSetCount(); i++)
     {
-        resources.push_back(Resource{.command_buffer = command_pool.Allocate(),
-                                     .fence = Fence(parent->GetContext()),
-                                     .swapchain_wait_semaphore = Semaphore(parent->GetContext()),
-                                     .signal_semaphore = Semaphore(parent->GetContext())});
+        resources.push_back(Resource{
+            .command_buffer = std::unique_ptr<Render::CommandBuffer>(command_pool->Allocate()),
+            .fence = std::unique_ptr<Render::Fence>(_parent->GetContext()->CreateFence()),
+            .swapchain_wait_semaphore =
+                std::unique_ptr<Render::Semaphore>(_parent->GetContext()->CreateSemaphore()),
+            .signal_semaphore =
+                std::unique_ptr<Render::Semaphore>(_parent->GetContext()->CreateSemaphore())});
     }
 }
 
 RenderQueue::~RenderQueue()
 {
     for(auto& res: resources)
-        res.fence.Wait(std::numeric_limits<std::uint64_t>::max());
+        res.fence->Wait(std::numeric_limits<std::uint64_t>::max());
 }
 
-void RenderQueue::Evaluate([[maybe_unused]] EvaluateDesc& eval_desc)
+EvaluateDesc RenderQueue::Begin([[maybe_unused]] const EvaluateDesc& eval_desc)
 {
-    auto& resource = resources[parent->GetCurrentResourceSetIndex()];
+    auto& resource = resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()];
 
-    auto fence = &resource.fence;
+    auto fence = resource.fence.get();
     if(!fence->Wait(std::numeric_limits<std::uint64_t>::max()))
         throw std::runtime_error("Failed to wait on RenderQueue fence");
 
-    EvaluateDesc local_eval_desc = {.cmd = &resource.command_buffer, .pipeline = nullptr};
-    auto wait_sem = parent->GetTransferQueue()->GetCurrentSemaphore();
-    QueueBeginInfo begin_info = {.wait_seamphores = {&wait_sem, 1}};
+    EvaluateDesc local_eval_desc = {.cmd = resource.command_buffer.get(), .pipeline = nullptr};
+    std::array wait_sems = {
+        static_cast<RenderEngine*>(parent)->GetTransferQueue()->GetCurrentSemaphore(),
+        GetCurrentSwapchainWaitSemaphore()};
 
-    handle.Begin(begin_info);
+    Render::QueueBeginInfo begin_info = {.wait_seamphores = {wait_sems.data(), wait_sems.size()}};
+
+    handle->Begin(begin_info);
     local_eval_desc.cmd->Begin();
-    task_tree.Evaluate(local_eval_desc);
-    local_eval_desc.cmd->End();
 
-    auto signal_sem = &resource.signal_semaphore;
-    QueueFlushInfo flush_info = {.signal_fence = fence,
-                                 .signal_seamphores = {&signal_sem, 1},
-                                 .command_buffers = {&local_eval_desc.cmd, 1}};
+    return local_eval_desc;
 }
 
-Semaphore* RenderQueue::GetCurrentSwapchainWaitSemaphore() noexcept
+void RenderQueue::End(const EvaluateDesc& eval_desc)
 {
-    return &resources[parent->GetCurrentResourceSetIndex()].swapchain_wait_semaphore;
+    auto& resource = resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()];
+    auto fence = resource.fence.get();
+
+    eval_desc.cmd->End();
+
+    Render::CommandBuffer* cmd = eval_desc.cmd;
+
+    auto signal_sem = resource.signal_semaphore.get();
+    Render::QueueFlushInfo flush_info = {.signal_fence = fence,
+                                         .signal_seamphores = {&signal_sem, 1},
+                                         .command_buffers = {&cmd, 1}};
+
+    handle->Flush(flush_info);
 }
 
-Semaphore* RenderQueue::GetCurrentSignalSemaphore() noexcept
+void RenderQueue::Enable()
 {
-    return &resources[parent->GetCurrentResourceSetIndex()].signal_semaphore;
+    is_enabled = true; //do not disable for semaphore consistence!
 }
 
-Fence* RenderQueue::GetCurrentFence() noexcept
+void RenderQueue::Disable()
 {
-    return &resources[parent->GetCurrentResourceSetIndex()].fence;
+    is_enabled = true; //do not disable for semaphore consistence!
+}
+
+Render::Semaphore* RenderQueue::GetCurrentSwapchainWaitSemaphore() noexcept
+{
+    return resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()]
+        .swapchain_wait_semaphore.get();
+}
+
+Render::Semaphore* RenderQueue::GetCurrentSignalSemaphore() noexcept
+{
+    return resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()]
+        .signal_semaphore.get();
+}
+
+Render::Fence* RenderQueue::GetCurrentFence() noexcept
+{
+    return resources[static_cast<RenderEngine*>(parent)->GetCurrentResourceSetIndex()].fence.get();
 }
 
 void RenderQueue::WaitAllFences()
 {
     for(auto& res: resources)
     {
-        if(!res.fence.Wait(std::numeric_limits<std::uint64_t>::max()))
+        if(!res.fence->Wait(std::numeric_limits<std::uint64_t>::max()))
             throw std::runtime_error("Failed to wait on RenderQueue fence");
     }
 }

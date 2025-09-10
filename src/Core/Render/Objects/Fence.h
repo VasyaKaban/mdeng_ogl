@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class Fence
+    class Fence : public Object
     {
     public:
         virtual ~Fence()
@@ -12,7 +13,5 @@ namespace Render
 
         virtual bool Wait(std::uint64_t timeout_ns) noexcept = 0;
         virtual FenceStatus GetStatus() const noexcept = 0;
-
-        virtual Context* GetContext() const noexcept = 0;
     };
 };

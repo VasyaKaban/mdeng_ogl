@@ -1,41 +1,41 @@
 #pragma once
 
 #include <vector>
-#include "hrs/non_creatable.hpp"
 #include "../Tasks/QueueTask.h"
-#include "../Tasks/RenderPassTask.h"
-#include "Core/Render/Objects/Queue/Queue.h"
-#include "Core/Render/Objects/CommandBuffer/CommandBuffer.h"
-#include "Core/Render/Objects/CommandPool/CommandPool.h"
-#include "Core/Render/Objects/Fence/Fence.h"
-#include "Core/Render/Objects/Semaphore/Semaphore.h"
-#include "../TaskTree/TaskTree.h"
-#include "../TaskTree/TaskTreeHolder.hpp"
+#include "Core/Render/Objects/Queue.h"
+#include "Core/Render/Objects/CommandBuffer.h"
+#include "Core/Render/Objects/CommandPool.h"
+#include "Core/Render/Objects/Fence.h"
+#include "Core/Render/Objects/Semaphore.h"
 
 class RenderEngine;
 
-class RenderQueue : hrs::non_movable, public QueueTask, public TaskTreeHolder<RenderPassTask>
+class RenderQueue : public QueueTask
 {
 public:
-    RenderQueue(RenderEngine* _parent, Queue&& _handle);
+    RenderQueue(RenderEngine* _parent, TaskKey&& key, std::unique_ptr<Render::Queue>&& _handle);
     virtual ~RenderQueue() override;
 
-    virtual void Evaluate(EvaluateDesc& eval_desc) override;
+    virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
+    virtual void End(const EvaluateDesc& eval_desc) override;
 
-    Semaphore* GetCurrentSwapchainWaitSemaphore() noexcept;
-    Semaphore* GetCurrentSignalSemaphore() noexcept;
-    Fence* GetCurrentFence() noexcept;
+    virtual void Enable() override;
+    virtual void Disable() override;
+
+    Render::Semaphore* GetCurrentSwapchainWaitSemaphore() noexcept;
+    Render::Semaphore* GetCurrentSignalSemaphore() noexcept;
+    Render::Fence* GetCurrentFence() noexcept;
     void WaitAllFences();
 private:
     struct Resource
     {
-        CommandBuffer command_buffer;
-        Fence fence;
-        Semaphore swapchain_wait_semaphore;
-        Semaphore signal_semaphore;
+        std::unique_ptr<Render::CommandBuffer> command_buffer;
+        std::unique_ptr<Render::Fence> fence;
+        std::unique_ptr<Render::Semaphore> swapchain_wait_semaphore;
+        std::unique_ptr<Render::Semaphore> signal_semaphore;
     };
 
-    CommandPool command_pool;
+    std::unique_ptr<Render::CommandPool> command_pool;
     std::vector<Resource> resources;
 };
 

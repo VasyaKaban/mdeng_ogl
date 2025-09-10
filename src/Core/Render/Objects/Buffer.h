@@ -1,10 +1,12 @@
 #pragma once
 
+#include <span>
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class Buffer
+    class Buffer : public Object
     {
     public:
         virtual ~Buffer()
@@ -24,9 +26,6 @@ namespace Render
                                  std::span<const BufferImageCopyRegion> regions) = 0;
 
         virtual void Update(const CommandBuffer* cmd,
-                            std::int64_t offset,
-                            std::span<const std::byte*> data) noexcept = 0;
-
-        virtual Context* GetContext() const noexcept = 0;
+                            std::span<const MemoryBufferCopyRegion> regions) noexcept = 0;
     };
 };

@@ -1,15 +1,16 @@
 #pragma once
 
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class Semaphore
+    class Semaphore : public Object
     {
     public:
-        virtual ~Semaphore()
-        {}
-
-        virtual Context* GetContext() const noexcept = 0;
+        virtual ~Semaphore() = 0;
     };
+
+    inline Semaphore::~Semaphore()
+    {}
 };

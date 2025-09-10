@@ -1,27 +1,14 @@
 #include "RenderPassTask.h"
 #include "../RenderQueue/RenderQueue.h"
 
-RenderPassTask::RenderPassTask(RenderQueue* _parent, RenderPass&& _handle) noexcept
-    : parent(_parent),
+RenderPassTask::RenderPassTask(RenderQueue* _parent,
+                               TaskKey&& key,
+                               std::unique_ptr<Render::RenderPass>&& _handle) noexcept
+    : Task(_parent, std::move(key)),
       handle(std::move(_handle))
 {}
 
-Task* RenderPassTask::GetParent() noexcept
+Render::RenderPass* RenderPassTask::GetHandle() const noexcept
 {
-    return parent;
-}
-
-const Task* RenderPassTask::GetParent() const noexcept
-{
-    return parent;
-}
-
-RenderPass& RenderPassTask::GetHandle() noexcept
-{
-    return handle;
-}
-
-const RenderPass& RenderPassTask::GetHandle() const noexcept
-{
-    return handle;
+    return handle.get();
 }

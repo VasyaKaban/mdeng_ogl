@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class Pipeline
+    class Pipeline : public Object
     {
     public:
         virtual ~Pipeline() {};
@@ -58,7 +59,7 @@ namespace Render
 
         virtual void SetUniform(const CommandBuffer* cmd,
                                 const UniformDesc& desc,
-                                std::span<const std::byte> data);
+                                std::span<const std::byte> data) = 0;
 
         virtual Context* GetContext() const noexcept = 0;
     };

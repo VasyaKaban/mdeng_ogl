@@ -1,15 +1,16 @@
 #pragma once
 
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class Shader
+    class Shader : public Object
     {
     public:
-        virtual ~Shader()
-        {}
-
-        virtual Context* GetContext() const noexcept = 0;
+        virtual ~Shader() = 0;
     };
+
+    inline Shader::~Shader()
+    {}
 };

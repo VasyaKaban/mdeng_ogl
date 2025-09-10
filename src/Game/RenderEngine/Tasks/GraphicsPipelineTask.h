@@ -1,22 +1,19 @@
 #pragma once
 
 #include "../TaskTree/Task.h"
-#include "Core/Render/Objects/Pipeline/Pipeline.h"
+#include "Core/Render/Objects//Pipeline.h"
 
 class RenderPassTask;
 
 class GraphicsPipelineTask : public Task
 {
 public:
-    GraphicsPipelineTask(RenderPassTask* _parent, Pipeline&& _handle) noexcept;
+    GraphicsPipelineTask(RenderPassTask* _parent,
+                         TaskKey&& key,
+                         std::unique_ptr<Render::Pipeline>&& _handle) noexcept;
     virtual ~GraphicsPipelineTask() = default;
 
-    virtual Task* GetParent() noexcept override;
-    virtual const Task* GetParent() const noexcept override;
-
-    Pipeline& GetHandle() noexcept;
-    const Pipeline& GetHandle() const noexcept;
+    Render::Pipeline* GetHandle() const noexcept;
 protected:
-    RenderPassTask* parent;
-    Pipeline handle;
+    std::unique_ptr<Render::Pipeline> handle;
 };

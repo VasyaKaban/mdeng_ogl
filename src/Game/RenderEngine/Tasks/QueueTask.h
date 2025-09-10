@@ -1,22 +1,20 @@
 #pragma once
 
+#include <memory>
 #include "../TaskTree/Task.h"
-#include "Core/Render/Objects/Queue/Queue.h"
+#include "Core/Render/Objects/Queue.h"
 
 class RenderEngine;
 
 class QueueTask : public Task
 {
 public:
-    QueueTask(RenderEngine* _parent, Queue&& _handle) noexcept;
+    QueueTask(RenderEngine* _parent,
+              TaskKey&& key,
+              std::unique_ptr<Render::Queue>&& _handle) noexcept;
     virtual ~QueueTask() = default;
 
-    virtual Task* GetParent() noexcept override;
-    virtual const Task* GetParent() const noexcept override;
-
-    Queue& GetHandle() noexcept;
-    const Queue& GetHandle() const noexcept;
+    Render::Queue* GetHandle() const noexcept;
 protected:
-    RenderEngine* parent;
-    Queue handle;
+    std::unique_ptr<Render::Queue> handle;
 };

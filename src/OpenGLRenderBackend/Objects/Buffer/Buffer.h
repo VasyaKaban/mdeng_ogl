@@ -26,9 +26,9 @@ namespace OpenGL
                                  const Render::Image* dst,
                                  std::span<const Render::BufferImageCopyRegion> regions) override;
 
-        virtual void Update(const Render::CommandBuffer* cmd,
-                            std::int64_t offset,
-                            std::span<const std::byte*> data) noexcept override;
+        virtual void
+        Update(const Render::CommandBuffer* cmd,
+               std::span<const Render::MemoryBufferCopyRegion> regions) noexcept override;
 
         GLHandle GetHandle() const noexcept;
 

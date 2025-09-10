@@ -27,14 +27,14 @@ GraphicWindow::GraphicWindow(const GraphicWindowInfo& info, const RenderBackendI
     if(!_handle)
         throw std::runtime_error(SDL_GetError());
 
+    this->handle = _handle;
+    id = SDL_GetWindowID(_handle);
+
     if(render_info.type == RenderBackendType::OpenGL)
         render_backend.reset(
             new OpenGLBackend(this, static_cast<const OpenGLBackendInfo&>(render_info)));
 
     cleanup.drop();
-
-    handle = _handle;
-    id = SDL_GetWindowID(_handle);
 }
 
 GraphicWindow::~GraphicWindow()

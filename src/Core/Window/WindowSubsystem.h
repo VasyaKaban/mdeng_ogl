@@ -33,7 +33,7 @@ public:
 
     GraphicWindow* GetGraphicWindow(std::uint32_t id) const noexcept;
 
-    static void ShowMessageBox(const GraphicWindow* parent,
+    static bool ShowMessageBox(const GraphicWindow* parent,
                                MessageBoxType type,
                                const char* title,
                                const char* message);

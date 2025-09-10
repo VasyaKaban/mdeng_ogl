@@ -119,6 +119,11 @@ namespace OpenGL
         return new Sampler(this, info);
     }
 
+    Render::Semaphore* Context::CreateSemaphore()
+    {
+        return new Semaphore(this);
+    }
+
     Render::Shader* Context::CreateShader(const Render::ShaderInfo& info)
     {
         return new Shader(this, info);

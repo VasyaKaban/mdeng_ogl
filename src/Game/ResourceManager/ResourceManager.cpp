@@ -1,209 +1,183 @@
 #include "ResourceManager.h"
 #include <fstream>
 #include "../RenderEngine/RenderEngine.h"
+#include "../Engine.h"
+#include "Core/Render/Context.h"
 #include "Core/DDS/DDS.h"
 #include "../RenderEngine/TransferQueue/TransferChannel.h"
 #include "hrs/scoped_call.hpp"
 
-struct BinaryData
-{
-    std::uint8_t* ptr;
-    std::size_t size;
-};
+using BinaryData = std::vector<std::uint8_t>;
 
 static BinaryData read_file(const std::filesystem::path& path)
 {
     std::ifstream ifs;
-    ifs.open(path, std::ios::binary | std::ios::in);
+    ifs.open(path, std::ios::binary | std::ios::in | std::ios::ate);
     if(!ifs.is_open())
         throw std::runtime_error(std::format("Failed to open file: {}", path.string()));
 
-    ifs.seekg(0, std::ios::end);
     auto size = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
 
     BinaryData data;
-    data.ptr = new std::uint8_t[size];
-    data.size = size;
+    data.resize(size);
 
-    ifs.read(reinterpret_cast<char*>(data.ptr), size);
+    ifs.read(reinterpret_cast<char*>(data.data()), size);
 
     return data;
 }
 
-ResourceManager::ShaderEntry::ShaderEntry(Shader&& _shader) noexcept
-    : shader(std::move(_shader))
-{}
-
-Shader* ResourceManager::ShaderEntry::operator->() noexcept
-{
-    return &shader;
-}
-
-Shader* ResourceManager::ShaderEntry::Get() noexcept
-{
-    return &shader;
-}
-
-ResourceManager::ImageEntry::ImageEntry(Image&& _image) noexcept
-    : image(std::move(_image)),
-      state(ImageEntryState::NotReady)
-{}
-
-Image* ResourceManager::ImageEntry::operator->() noexcept
-{
-    return &image;
-}
-
-Image* ResourceManager::ImageEntry::Get() noexcept
-{
-    return &image;
-}
-
-ResourceManager::ImageEntryState ResourceManager::ImageEntry::GetState() const noexcept
-{
-    return state;
-}
-
-void ResourceManager::ImageEntry::SetState(ImageEntryState _state) noexcept
-{
-    state = _state;
-}
-
 ResourceManager::ResourceManager(const ResourceManagerInfo& info)
-    : prefixes{.shader_path_prefix = info.shader_path_prefix,
-               .image_path_prefix = info.image_path_prefix}
+    : prefixes{.shaders_path_prefix = info.shaders_path_prefix,
+               .images_path_prefix = info.images_path_prefix}
 {
     for(const auto& sh_ext_desc: info.shader_resource_descs)
         ext_mappings.shader_ext_mapping.insert(std::pair{sh_ext_desc.ext, sh_ext_desc.desc});
 }
 
-hrs::rc_ptr<ResourceManager::ShaderEntry> ResourceManager::CreateShader(std::string_view path)
+hrs::rc_ptr<ResourceManager::ShaderResource> ResourceManager::CreateShader(std::string_view path)
 {
     auto it = resources.shaders.find(path);
     if(it != resources.shaders.end())
         return it->second;
 
-    auto res_path = prefixes.shader_path_prefix / path;
+    std::filesystem::path res_path = path;
+    if(!std::filesystem::is_regular_file(res_path))
+        throw std::runtime_error(std::format("{} is not a file", path));
+
     auto ext = res_path.extension().string();
     auto ext_it = ext_mappings.shader_ext_mapping.find(ext);
     if(ext_it == ext_mappings.shader_ext_mapping.end())
         throw std::runtime_error(std::format("Undefined shader extension: {}", ext));
 
+    res_path = prefixes.shaders_path_prefix / path;
+
     auto data = read_file(res_path);
-    hrs::scoped_call cleanup(
-        [&data]()
-        {
-            delete[] data.ptr;
-        });
+    const Render::ShaderInfo info = {
+        .stage = ext_it->second.stage,
+        .code = std::span{reinterpret_cast<const char*>(data.data()), data.size()}};
 
-    const ShaderInfo info = {.stage = ext_it->second.stage,
-                             .code =
-                                 std::span{reinterpret_cast<const GLchar*>(data.ptr), data.size}};
+    Render::Shader* shader_handle =
+        Engine::GetInstance()->GetRenderEngine()->GetContext()->CreateShader(info);
+    hrs::scoped_call cleanup = [shader_handle]()
+    {
+        delete shader_handle;
+    };
 
-    Shader shader(RenderEngine::GetInstance()->GetContext(), info);
+    hrs::rc_ptr<ShaderResource> shader_ptr(new ShaderResource(shader_handle));
+    cleanup.drop();
 
-    auto ins_it = resources.shaders.insert(
-        std::pair{std::string(path), hrs::rc_ptr<ShaderEntry>(new ShaderEntry(std::move(shader)))});
+    auto ins_it = resources.shaders.insert(std::pair{std::string(path), shader_ptr});
 
     return ins_it.first->second;
 }
 
-hrs::rc_ptr<ResourceManager::ImageEntry> ResourceManager::CreateImage(std::string_view path,
-                                                                      bool prefer_image_host_copy)
+hrs::rc_ptr<ResourceManager::ImageResource> ResourceManager::CreateImage(std::string_view path)
 {
     auto it = resources.images.find(path);
     if(it != resources.images.end())
         return it->second;
 
-    auto res_path = prefixes.image_path_prefix / path;
+    std::filesystem::path res_path = path;
+    if(!std::filesystem::is_regular_file(res_path))
+        throw std::runtime_error(std::format("{} is not a file", path));
+
+    res_path = prefixes.shaders_path_prefix / path;
+
     auto data = read_file(res_path);
 
-    auto dds_result = DDS::Parse({data.ptr, data.size});
-    auto dds_resolve = DDS::Resolve(dds_result);
+    auto dds_result_exp = DDS::Parse({data.data(), data.size()});
+    if(!dds_result_exp)
+        throw dds_result_exp.error();
 
-    Image image(RenderEngine::GetInstance()->GetContext(), dds_resolve.image_info);
+    auto& dds_result = *dds_result_exp;
 
-    /*ImageViewType view_type;
+    auto dds_resolve_exp = DDS::Resolve(dds_result);
+    if(!dds_resolve_exp)
+        throw dds_resolve_exp.error();
+
+    auto& dds_resolve = *dds_resolve_exp;
+
+    Render::ImageViewType view_type;
     if(dds_resolve.is_cubemap)
     {
         if(dds_resolve.image_info.array_layers == 1)
-            view_type = ImageViewType::ImageViewCubeMap;
+            view_type = Render::ImageViewType::ImageViewCubeMap;
         else
-            view_type = ImageViewType::ImageViewCubeMapArray;
+            view_type = Render::ImageViewType::ImageViewCubeMapArray;
     }
     else
     {
         switch(dds_resolve.image_info.image_type)
         {
-            case ImageType::Image1D:
+            case Render::ImageType::Image1D:
                 if(dds_resolve.image_info.array_layers == 1)
-                    view_type = ImageViewType::ImageView1D;
+                    view_type = Render::ImageViewType::ImageView1D;
                 else
-                    view_type = ImageViewType::ImageView1DArray;
+                    view_type = Render::ImageViewType::ImageView1DArray;
                 break;
-            case ImageType::Image2D:
+            case Render::ImageType::Image2D:
                 if(dds_resolve.image_info.array_layers == 1)
-                    view_type = ImageViewType::ImageView2D;
+                    view_type = Render::ImageViewType::ImageView2D;
                 else
-                    view_type = ImageViewType::ImageView2DArray;
+                    view_type = Render::ImageViewType::ImageView2DArray;
                 break;
-            case ImageType::Image3D:
-                view_type = ImageViewType::ImageView3D;
+            case Render::ImageType::Image3D:
+                view_type = Render::ImageViewType::ImageView3D;
                 break;
         }
     }
 
-    const ImageViewInfo view_info = {
-        .image = &image,
+    Render::Image* image_handle = nullptr;
+    Render::ImageView* image_view_handle = nullptr;
+
+    hrs::scoped_call cleanup = [&image_handle, &image_view_handle]()
+    {
+        delete image_view_handle;
+        delete image_handle;
+    };
+
+    image_handle =
+        Engine::GetInstance()->GetRenderEngine()->GetContext()->CreateImage(dds_resolve.image_info);
+
+    const Render::ImageViewInfo view_info = {
+        .image = image_handle,
         .view_type = view_type,
         .format = dds_resolve.image_info.format,
-        .components = ComponentMapping{.r = ComponentSwizzle::SwizzleIdentity,
-                                       .g = ComponentSwizzle::SwizzleIdentity,
-                                       .b = ComponentSwizzle::SwizzleIdentity,
-                                       .a = ComponentSwizzle::SwizzleIdentity},
-        .subresource_range = ImageSubresourceRange{
-            .min_mip_level = 0,
-            .mip_level_count = static_cast<GLuint>(dds_resolve.image_info.mip_levels),
-            .min_layer = 0,
-            .layer_count = static_cast<GLuint>(dds_resolve.image_info.array_layers)}};
+        .components = Render::ComponentMapping{.r = Render::ComponentSwizzle::SwizzleIdentity,
+                                               .g = Render::ComponentSwizzle::SwizzleIdentity,
+                                               .b = Render::ComponentSwizzle::SwizzleIdentity,
+                                               .a = Render::ComponentSwizzle::SwizzleIdentity},
+        .subresource_range =
+            Render::ImageSubresourceRange{.min_mip_level = 0,
+                                          .mip_level_count = dds_resolve.image_info.mip_levels,
+                                          .min_layer = 0,
+                                          .layer_count = dds_resolve.image_info.array_layers}};
 
-    ImageView image_view(RenderEngine::GetInstance()->GetContext(), view_info);*/
+    image_view_handle =
+        Engine::GetInstance()->GetRenderEngine()->GetContext()->CreateImageView(view_info);
 
-    auto ins_it = resources.images.insert(
-        std::pair{std::string(path), hrs::rc_ptr<ImageEntry>(new ImageEntry(std::move(image)))});
+    hrs::rc_ptr<ImageResource> image(new ImageResource(image_handle, image_view_handle));
+    cleanup.drop();
 
-    TransferChannel* transfer_channel = RenderEngine::GetInstance()->GetTransferChannel();
+    auto ins_it = resources.images.insert(std::pair{std::string(path), image});
+
+    TransferChannel* transfer_channel =
+        Engine::GetInstance()->GetRenderEngine()->GetTransferChannel();
     transfer_channel->Reserve(dds_resolve.regions.size() + 1); //image regions itself + callback
-    for(const auto& reg: dds_resolve.regions)
-    {
-        const TransferRegion transfer_reg = {
-            .data = TransferImageRegion{.data = reg.data,
-                                        .buffer_row_length = reg.copy_region.buffer_row_length,
-                                        .buffer_image_height = reg.copy_region.buffer_image_height,
-                                        .subresource_layers = reg.copy_region.subresource_layers,
-                                        .offset = reg.copy_region.offset,
-                                        .extent = reg.copy_region.extent,
-                                        .data_format = reg.copy_region.data_format,
-                                        .data_type = reg.copy_region.data_type,
-                                        .image = ins_it.first->second->Get(),
-                                        .prefer_image_host_copy = prefer_image_host_copy}};
+    transfer_channel->Transfer(TransferImageOperation{.image = ins_it.first->second->GetImage(),
+                                                      .regions = std::move(dds_resolve.regions)});
 
-        RenderEngine::GetInstance()->GetTransferChannel()->Transfer({&transfer_reg, 1});
-    }
-
-    const TransferRegion cback_reg = {
-        .data = TransferCallback{[img_entry = ins_it.first->second, data = std::move(data)]()
-                                 {
-                                     delete[] data.ptr;
-                                     img_entry->SetState(ImageEntryState::Ready);
-                                 }}};
-    RenderEngine::GetInstance()->GetTransferChannel()->Transfer({&cback_reg, 1});
+    transfer_channel->Transfer(
+        TransferCallbackOperation{.cback = [img_entry = ins_it.first->second]()
+                                  {
+                                      img_entry->SetReady();
+                                  }});
 
     return ins_it.first->second;
 }
 
-hrs::rc_ptr<ResourceManager::ShaderEntry> ResourceManager::FindShader(std::string_view path)
+hrs::rc_ptr<ResourceManager::ShaderResource> ResourceManager::FindShader(std::string_view path)
 {
     auto it = resources.shaders.find(path);
     if(it == resources.shaders.end())
@@ -212,7 +186,7 @@ hrs::rc_ptr<ResourceManager::ShaderEntry> ResourceManager::FindShader(std::strin
     return it->second;
 }
 
-hrs::rc_ptr<ResourceManager::ImageEntry> ResourceManager::FindImage(std::string_view path)
+hrs::rc_ptr<ResourceManager::ImageResource> ResourceManager::FindImage(std::string_view path)
 {
     auto it = resources.images.find(path);
     if(it == resources.images.end())
@@ -224,28 +198,18 @@ hrs::rc_ptr<ResourceManager::ImageEntry> ResourceManager::FindImage(std::string_
 void ResourceManager::ClearUnused() noexcept
 {
     //shaders
-    {
-        auto it = resources.shaders.begin();
-        while(it != resources.shaders.end())
-        {
-            auto next = std::next(it);
-            if(it->second.get_refs() <= 1)
-                resources.shaders.erase(it);
-
-            it = next;
-        }
-    }
+    std::erase_if(resources.shaders,
+                  [](const auto& kv)
+                  {
+                      const auto& [k, v] = kv;
+                      return v.get_refs() <= 1;
+                  });
 
     //images
-    {
-        auto it = resources.images.begin();
-        while(it != resources.images.end())
-        {
-            auto next = std::next(it);
-            if(it->second.get_refs() <= 1 && it->second->GetState() == ImageEntryState::Ready)
-                resources.images.erase(it);
-
-            it = next;
-        }
-    }
+    std::erase_if(resources.images,
+                  [](const auto& kv)
+                  {
+                      const auto& [k, v] = kv;
+                      return v.get_refs() <= 1 && v->GetState() == ResourceState::Ready;
+                  });
 }

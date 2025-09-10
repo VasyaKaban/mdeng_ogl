@@ -78,12 +78,12 @@ const PerspectiveParameters& PerspectiveCamera::GetPerspective() const noexcept
     return perspective;
 }
 
-Viewport& PerspectiveCamera::GetViewport() noexcept
+Render::Viewport& PerspectiveCamera::GetViewport() noexcept
 {
     return viewport;
 }
 
-const Viewport& PerspectiveCamera::GetViewport() const noexcept
+const Render::Viewport& PerspectiveCamera::GetViewport() const noexcept
 {
     return viewport;
 }

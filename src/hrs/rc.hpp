@@ -8,12 +8,12 @@ namespace hrs
 {
     class rc;
 
-    template<std::derived_from<rc> T>
+    template<typename T>
     class rc_ptr;
 
     class rc : hrs::non_copyable, hrs::non_movable
     {
-        template<std::derived_from<rc> T>
+        template<typename T>
         friend class rc_ptr;
     public:
         constexpr rc() noexcept
@@ -41,15 +41,19 @@ namespace hrs
         std::size_t refs;
     };
 
-    template<std::derived_from<rc> T>
+    template<typename T>
     class rc_ptr
     {
+        template<typename U>
+        friend class rc_ptr;
     public:
         constexpr rc_ptr() noexcept
+        requires std::derived_from<T, rc>
             : ptr(nullptr)
         {}
 
         constexpr rc_ptr(T* p) noexcept
+        requires std::derived_from<T, rc>
             : ptr(p)
         {
             if(ptr)
@@ -68,9 +72,66 @@ namespace hrs
                 ptr->rc::inc_refs();
         }
 
+        constexpr rc_ptr& operator=(const rc_ptr& p) noexcept
+        {
+            drop();
+            ptr = p.ptr;
+            if(ptr)
+                ptr->rc::inc_refs();
+
+            return *this;
+        }
+
+        template<typename U>
+        requires std::convertible_to<U*, T*>
+        constexpr rc_ptr(const rc_ptr<U>& p) noexcept
+            : ptr(p.ptr)
+        {
+            if(ptr)
+                ptr->rc::inc_refs();
+        }
+
+        template<typename U>
+        requires std::convertible_to<U*, T*>
+        constexpr rc_ptr& operator=(const rc_ptr<U>& p) noexcept
+        {
+            drop();
+            ptr = p.ptr;
+            if(ptr)
+                ptr->rc::inc_refs();
+
+            return *this;
+        }
+
         constexpr rc_ptr(rc_ptr&& p) noexcept
             : ptr(std::exchange(p.ptr, nullptr))
         {}
+
+        constexpr rc_ptr& operator=(rc_ptr&& p) noexcept
+        {
+            drop();
+
+            ptr = std::exchange(p.ptr, nullptr);
+
+            return *this;
+        }
+
+        template<typename U>
+        requires std::convertible_to<U*, T*>
+        constexpr rc_ptr(rc_ptr<U>&& p) noexcept
+            : ptr(std::exchange(p.ptr, nullptr))
+        {}
+
+        template<typename U>
+        requires std::convertible_to<U*, T*>
+        constexpr rc_ptr& operator=(rc_ptr<U>&& p) noexcept
+        {
+            drop();
+
+            ptr = std::exchange(p.ptr, nullptr);
+
+            return *this;
+        }
 
         constexpr void reset(T* new_ptr = nullptr) noexcept
         {
@@ -121,27 +182,3 @@ namespace hrs
         T* ptr;
     };
 };
-
-class A : public hrs::rc
-{
-public:
-    int i;
-};
-
-constexpr int foo()
-{
-    int i = 0;
-    hrs::rc_ptr<A> p1(new A{.i = 1});
-    {
-        hrs::rc_ptr<A> p2(p1);
-    }
-
-    hrs::rc_ptr<A> p3(std::move(p1));
-    i = p3.get_refs();
-
-    A* ptr = p3.get();
-
-    return i;
-}
-
-constexpr int i = foo();

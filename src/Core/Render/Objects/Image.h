@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class Image
+    class Image : public Object
     {
     public:
         virtual ~Image()
@@ -18,7 +19,5 @@ namespace Render
 
         virtual void Update(const CommandBuffer* cmd,
                             std::span<const MemoryImageCopyRegion> regions) = 0;
-
-        virtual Context* GetContext() const noexcept = 0;
     };
 };

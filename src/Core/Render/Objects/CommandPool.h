@@ -1,17 +1,16 @@
 #pragma once
 
 #include "../Render.h"
+#include "Object.h"
 
 namespace Render
 {
-    class CommandPool
+    class CommandPool : public Object
     {
     public:
         virtual ~CommandPool()
         {}
 
         virtual CommandBuffer* Allocate() = 0;
-
-        virtual Context* GetContext() const noexcept = 0;
     };
 };

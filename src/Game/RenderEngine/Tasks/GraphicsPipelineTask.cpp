@@ -1,27 +1,14 @@
 #include "GraphicsPipelineTask.h"
 #include "RenderPassTask.h"
 
-GraphicsPipelineTask::GraphicsPipelineTask(RenderPassTask* _parent, Pipeline&& _handle) noexcept
-    : parent(_parent),
+GraphicsPipelineTask::GraphicsPipelineTask(RenderPassTask* _parent,
+                                           TaskKey&& key,
+                                           std::unique_ptr<Render::Pipeline>&& _handle) noexcept
+    : Task(_parent, std::move(key)),
       handle(std::move(_handle))
 {}
 
-Task* GraphicsPipelineTask::GetParent() noexcept
+Render::Pipeline* GraphicsPipelineTask::GetHandle() const noexcept
 {
-    return parent;
-}
-
-const Task* GraphicsPipelineTask::GetParent() const noexcept
-{
-    return parent;
-}
-
-Pipeline& GraphicsPipelineTask::GetHandle() noexcept
-{
-    return handle;
-}
-
-const Pipeline& GraphicsPipelineTask::GetHandle() const noexcept
-{
-    return handle;
+    return handle.get();
 }

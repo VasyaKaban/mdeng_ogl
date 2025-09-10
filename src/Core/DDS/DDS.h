@@ -3,9 +3,10 @@
 #include <cstdint>
 #include <type_traits>
 #include <span>
-#include <optional>
 #include <vector>
-#include "../Render/Objects/Image/Image.h"
+#include <stdexcept>
+#include "hrs/expected.hpp"
+#include "../Render/Render.h"
 
 namespace DDS
 {
@@ -327,20 +328,14 @@ namespace DDS
         std::span<const std::uint8_t> image_data;
     };
 
-    DDSResult Parse(std::span<const std::uint8_t> data);
-
-    struct ResolvedRegion
-    {
-        BufferImageCopyRegion copy_region;
-        std::span<const std::uint8_t> data;
-    };
+    hrs::expected<DDSResult, std::runtime_error> Parse(std::span<const std::uint8_t> data);
 
     struct ResolveResult
     {
-        ImageInfo image_info;
+        Render::ImageInfo image_info;
         bool is_cubemap;
-        std::vector<ResolvedRegion> regions;
+        std::vector<Render::MemoryImageCopyRegion> regions;
     };
 
-    ResolveResult Resolve(const DDSResult& result);
+    hrs::expected<ResolveResult, std::runtime_error> Resolve(const DDSResult& result);
 };

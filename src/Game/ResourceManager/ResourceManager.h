@@ -6,8 +6,9 @@
 #include "hrs/string_transparent.hpp"
 #include "hrs/non_creatable.hpp"
 #include "hrs/rc.hpp"
-#include "Core/Render/Objects/Shader/Shader.h"
-#include "Core/Render/Objects/Image/Image.h"
+#include "Core/Render/Objects/ImageView.h"
+#include "Core/Render/Objects/Shader.h"
+#include "Core/Render/Objects/Image.h"
 
 template<typename T>
 struct ResourceExtensionDesc
@@ -18,13 +19,13 @@ struct ResourceExtensionDesc
 
 struct ShaderResourceDesc
 {
-    ShaderStage stage;
+    Render::ShaderStage stage;
 };
 
 struct ResourceManagerInfo
 {
-    std::filesystem::path shader_path_prefix;
-    std::filesystem::path image_path_prefix;
+    std::filesystem::path shaders_path_prefix;
+    std::filesystem::path images_path_prefix;
 
     std::span<const ResourceExtensionDesc<ShaderResourceDesc>> shader_resource_descs;
 };
@@ -32,55 +33,87 @@ struct ResourceManagerInfo
 class ResourceManager : hrs::non_copyable, hrs::non_movable
 {
 public:
-    class ShaderEntry : public hrs::rc
-    {
-    public:
-        ShaderEntry(Shader&& _shader) noexcept;
-        ~ShaderEntry() = default;
-
-        Shader* operator->() noexcept;
-        Shader* Get() noexcept;
-    private:
-        Shader shader;
-    };
-
-    enum class ImageEntryState
+    enum class ResourceState
     {
         NotReady,
         Ready
     };
 
-    class ImageEntry : public hrs::rc
+    class ShaderResource : public hrs::rc
     {
     public:
-        ImageEntry(Image&& _image) noexcept;
-        ~ImageEntry() = default;
+        ShaderResource(Render::Shader* _shader) noexcept
+            : shader(_shader)
+        {}
 
-        Image* operator->() noexcept;
-        Image* Get() noexcept;
+        ~ShaderResource()
+        {
+            delete shader;
+        }
 
-        ImageEntryState GetState() const noexcept;
-        void SetState(ImageEntryState _state) noexcept;
+        Render::Shader* operator->() const noexcept
+        {
+            return shader;
+        }
     private:
-        Image image;
-        ImageEntryState state;
+        Render::Shader* shader;
+    };
+
+    class ImageResource : public hrs::rc
+    {
+    public:
+        ImageResource(Render::Image* _image, Render::ImageView* _image_view) noexcept
+            : image(_image),
+              image_view(_image_view),
+              state(ResourceState::NotReady)
+        {}
+
+        ~ImageResource()
+        {
+            delete image_view;
+            delete image;
+        }
+
+        Render::Image* GetImage() const noexcept
+        {
+            return image;
+        }
+
+        Render::ImageView* GetImageView() const noexcept
+        {
+            return image_view;
+        }
+
+        void SetReady() noexcept
+        {
+            state = ResourceState::Ready;
+        }
+
+        ResourceState GetState() const noexcept
+        {
+            return state;
+        }
+    private:
+        Render::Image* image;
+        Render::ImageView* image_view;
+        ResourceState state;
     };
 
     ResourceManager(const ResourceManagerInfo& info);
     ~ResourceManager() = default;
 
-    hrs::rc_ptr<ShaderEntry> CreateShader(std::string_view path);
-    hrs::rc_ptr<ImageEntry> CreateImage(std::string_view path, bool prefer_image_host_copy);
+    hrs::rc_ptr<ShaderResource> CreateShader(std::string_view path);
+    hrs::rc_ptr<ImageResource> CreateImage(std::string_view path);
 
-    hrs::rc_ptr<ShaderEntry> FindShader(std::string_view path);
-    hrs::rc_ptr<ImageEntry> FindImage(std::string_view path);
+    hrs::rc_ptr<ShaderResource> FindShader(std::string_view path);
+    hrs::rc_ptr<ImageResource> FindImage(std::string_view path);
 
     void ClearUnused() noexcept;
 private:
     struct Prefixes
     {
-        std::filesystem::path shader_path_prefix;
-        std::filesystem::path image_path_prefix;
+        std::filesystem::path shaders_path_prefix;
+        std::filesystem::path images_path_prefix;
     } prefixes;
 
     struct ResourceExtensionMappings
@@ -101,8 +134,8 @@ private:
                                hrs::transparent_string_hasher<std::string>,
                                hrs::transparent_string_equal_comparator<std::string>>;
 
-        resource_map<ShaderEntry> shaders;
-        resource_map<ImageEntry> images;
+        resource_map<ShaderResource> shaders;
+        resource_map<ImageResource> images;
     } resources;
 
     //shaders[Shader -> handle]

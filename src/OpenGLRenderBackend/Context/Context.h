@@ -39,6 +39,7 @@ namespace OpenGL
         virtual Render::Pipeline* CreatePipeline(const Render::ComputePipelineInfo& info) override;
         virtual Render::RenderPass* CreateRenderPass(const Render::RenderPassInfo& info) override;
         virtual Render::Sampler* CreateSampler(const Render::SamplerInfo& info) override;
+        virtual Render::Semaphore* CreateSemaphore() override;
         virtual Render::Shader* CreateShader(const Render::ShaderInfo& info) override;
 
         void MakeCurrent() noexcept;

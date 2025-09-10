@@ -254,10 +254,10 @@ namespace OpenGL
     }
 
     void Buffer::Update(const Render::CommandBuffer* cmd,
-                        std::int64_t offset,
-                        std::span<const std::byte*> data) noexcept
+                        std::span<const Render::MemoryBufferCopyRegion> regions) noexcept
     {
-        parent->GetLoader().NamedBufferSubData(handle, offset, data.size(), data.data());
+        for(const auto& reg: regions)
+            parent->GetLoader().NamedBufferSubData(handle, reg.offset, reg.size, reg.data);
     }
 
     GLHandle Buffer::GetHandle() const noexcept

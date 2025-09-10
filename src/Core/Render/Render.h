@@ -8,6 +8,7 @@
 namespace Render
 {
     class Context;
+    class Object;
     class Buffer;
     class CommandBuffer;
     class CommandPool;
@@ -164,6 +165,13 @@ namespace Render
         Extent3D extent;
         ImageCopyDataFormat data_format;
         ImageCopyDataType data_type;
+    };
+
+    struct MemoryBufferCopyRegion
+    {
+        const std::uint8_t* data;
+        std::int64_t offset;
+        std::uint64_t size;
     };
 
     struct MemoryImageCopyRegion
