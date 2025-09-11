@@ -91,7 +91,7 @@ namespace Events
     }
 
     template<typename E>
-    void erase(EventListener<E>& listener, EventEmitter<E>& emitter)
+    void Disconnect(EventListener<E>& listener, EventEmitter<E>& emitter)
     {
         listener.EventListener<E>::Disconnect(&emitter);
     }
@@ -134,11 +134,11 @@ namespace Events
         Emitter emitter;
         Listener listener;
 
-        listen<const Event>(listener, emitter);
+        Connect<const Event>(listener, emitter);
 
         emitter.Foo();
 
-        erase<const Event>(listener, emitter);
+        Disconnect<const Event>(listener, emitter);
 
         emitter.Foo();
     }*/
