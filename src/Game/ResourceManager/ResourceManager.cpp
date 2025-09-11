@@ -31,6 +31,14 @@ ResourceManager::ResourceManager(const ResourceManagerInfo& info)
     : prefixes{.shaders_path_prefix = info.shaders_path_prefix,
                .images_path_prefix = info.images_path_prefix}
 {
+    auto transfer_channel = new Task<TransferChannel>(
+        static_cast<Task<TransferQueue>*>(
+            Engine::GetInstance()->GetRenderEngine()->Find(std::string_view("TransferQueue"))),
+        TaskBase::TaskKey{.priority = 0, .name = std::string_view("TransferChannel")},
+        info.transfer_channel_state_info);
+
+    transfer_channel_state = transfer_channel->GetState();
+
     for(const auto& sh_ext_desc: info.shader_resource_descs)
         ext_mappings.shader_ext_mapping.insert(std::pair{sh_ext_desc.ext, sh_ext_desc.desc});
 }
@@ -162,13 +170,13 @@ hrs::rc_ptr<ResourceManager::ImageResource> ResourceManager::CreateImage(std::st
 
     auto ins_it = resources.images.insert(std::pair{std::string(path), image});
 
-    TransferChannel* transfer_channel =
-        Engine::GetInstance()->GetRenderEngine()->GetTransferChannel();
-    transfer_channel->Reserve(dds_resolve.regions.size() + 1); //image regions itself + callback
-    transfer_channel->Transfer(TransferImageOperation{.image = ins_it.first->second->GetImage(),
-                                                      .regions = std::move(dds_resolve.regions)});
+    transfer_channel_state->Reserve(dds_resolve.regions.size() +
+                                    1); //image regions itself + callback
+    transfer_channel_state->Transfer(
+        TransferImageOperation{.image = ins_it.first->second->GetImage(),
+                               .regions = std::move(dds_resolve.regions)});
 
-    transfer_channel->Transfer(
+    transfer_channel_state->Transfer(
         TransferCallbackOperation{.cback = [img_entry = ins_it.first->second]()
                                   {
                                       img_entry->SetReady();

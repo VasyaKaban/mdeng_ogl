@@ -1,11 +1,13 @@
 #include "QueueTask.h"
 #include "../RenderEngine.h"
+#include "Core/Render/Context.h"
+#include "../RenderEngine.h"
 
-QueueTask::QueueTask(RenderEngine* _parent,
+QueueTask::QueueTask(Task<RenderEngine>* _parent,
                      TaskKey&& key,
-                     std::unique_ptr<Render::Queue>&& _handle) noexcept
-    : Task(_parent, std::move(key)),
-      handle(std::move(_handle))
+                     Render::QueueSpecialization spec) noexcept
+    : TaskBase(_parent, std::move(key)),
+      handle(parent->GetRoot()->GetContext()->GetQueue(spec))
 {}
 
 Render::Queue* QueueTask::GetHandle() const noexcept

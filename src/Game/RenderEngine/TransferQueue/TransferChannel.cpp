@@ -1,14 +1,13 @@
 #include "TransferChannel.h"
 #include "TransferQueue.h"
-#include "../RenderEngine.h"
 #include "Core/Render/Objects/Buffer.h"
 #include "Core/Render/Objects/Image.h"
 
-TransferChannel::TransferChannel(TransferQueue* _parent,
+TransferChannel::TransferChannel(Task<TransferQueue>* _parent,
                                  TaskKey&& key,
-                                 const TransferChannelInfo& info)
-    : Task(_parent, std::move(key)),
-      staging_regions(info.pool_block_size, info.pool_blocks_reserve)
+                                 const TransferChannelStateInfo& info)
+    : TaskBase(_parent, std::move(key)),
+      state(new TransferChannelState(info))
 {}
 
 TransferChannel::~TransferChannel()
@@ -16,11 +15,13 @@ TransferChannel::~TransferChannel()
 
 EvaluateDesc TransferChannel::Begin(const EvaluateDesc& eval_desc)
 {
-    if(!staging_regions.pick())
+    TransferChannelState& state_ref = *state;
+
+    if(!state_ref.staging_regions.pick())
         return eval_desc;
 
     TransferRegion* reg;
-    while((reg = staging_regions.pick()))
+    while((reg = state_ref.staging_regions.pick()))
     {
         if(std::holds_alternative<TransferBufferOperation>(reg->op))
         {
@@ -49,31 +50,7 @@ void TransferChannel::End([[maybe_unused]] const EvaluateDesc& eval_desc)
     //noop
 }
 
-void TransferChannel::Transfer(TransferBufferOperation&& op)
+hrs::rc_ptr<TransferChannelState> TransferChannel::GetState() const noexcept
 {
-    if(!op.regions.empty())
-    {
-        TransferRegion& reg = staging_regions.acquire();
-        reg.op = std::move(op);
-    }
-}
-
-void TransferChannel::Transfer(TransferImageOperation&& op)
-{
-    if(!op.regions.empty())
-    {
-        TransferRegion& reg = staging_regions.acquire();
-        reg.op = std::move(op);
-    }
-}
-
-void TransferChannel::Transfer(TransferCallbackOperation&& op)
-{
-    TransferRegion& reg = staging_regions.acquire();
-    reg.op = std::move(op);
-}
-
-void TransferChannel::Reserve(std::size_t size)
-{
-    staging_regions.reserve_next(size);
+    return state.Get();
 }

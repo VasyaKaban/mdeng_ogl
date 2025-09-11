@@ -3,10 +3,8 @@
 #include "../../RenderEngine/RenderEngine.h"
 #include "../TransferQueue/TransferQueue.h"
 
-RenderQueue::RenderQueue(RenderEngine* _parent,
-                         TaskKey&& key,
-                         std::unique_ptr<Render::Queue>&& _handle)
-    : QueueTask(_parent, std::move(key), std::move(_handle)),
+RenderQueue::RenderQueue(Task<RenderEngine>* _parent, TaskKey&& key)
+    : QueueTask(_parent, std::move(key), Render::QueueSpecialization::Graphics),
       command_pool(_parent->GetContext()->CreateCommandPool(
           Render::CommandPoolInfo{.queue = QueueTask::handle.get()}))
 {
@@ -65,16 +63,6 @@ void RenderQueue::End(const EvaluateDesc& eval_desc)
                                          .command_buffers = {&cmd, 1}};
 
     handle->Flush(flush_info);
-}
-
-void RenderQueue::Enable()
-{
-    is_enabled = true; //do not disable for semaphore consistence!
-}
-
-void RenderQueue::Disable()
-{
-    is_enabled = true; //do not disable for semaphore consistence!
 }
 
 Render::Semaphore* RenderQueue::GetCurrentSwapchainWaitSemaphore() noexcept

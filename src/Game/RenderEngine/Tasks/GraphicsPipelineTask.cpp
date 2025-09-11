@@ -1,11 +1,13 @@
 #include "GraphicsPipelineTask.h"
 #include "RenderPassTask.h"
+#include "../RenderEngine.h"
+#include "Core/Render/Context.h"
 
-GraphicsPipelineTask::GraphicsPipelineTask(RenderPassTask* _parent,
+GraphicsPipelineTask::GraphicsPipelineTask(Task<RenderPassTask>* _parent,
                                            TaskKey&& key,
-                                           std::unique_ptr<Render::Pipeline>&& _handle) noexcept
-    : Task(_parent, std::move(key)),
-      handle(std::move(_handle))
+                                           const Render::GraphicsPipelineInfo& info) noexcept
+    : TaskBase(_parent, std::move(key)),
+      handle(parent->GetRoot()->GetContext()->CreatePipeline(info))
 {}
 
 Render::Pipeline* GraphicsPipelineTask::GetHandle() const noexcept

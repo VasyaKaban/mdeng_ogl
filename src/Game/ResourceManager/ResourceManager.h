@@ -9,6 +9,7 @@
 #include "Core/Render/Objects/ImageView.h"
 #include "Core/Render/Objects/Shader.h"
 #include "Core/Render/Objects/Image.h"
+#include "../RenderEngine/TransferQueue/TransferChannelState.h"
 
 template<typename T>
 struct ResourceExtensionDesc
@@ -28,6 +29,8 @@ struct ResourceManagerInfo
     std::filesystem::path images_path_prefix;
 
     std::span<const ResourceExtensionDesc<ShaderResourceDesc>> shader_resource_descs;
+
+    TransferChannelStateInfo transfer_channel_state_info;
 };
 
 class ResourceManager : hrs::non_copyable, hrs::non_movable
@@ -137,6 +140,8 @@ private:
         resource_map<ShaderResource> shaders;
         resource_map<ImageResource> images;
     } resources;
+
+    hrs::rc_ptr<TransferChannelState> transfer_channel_state;
 
     //shaders[Shader -> handle]
     //textures[Texture -> handle + TextureView handle]

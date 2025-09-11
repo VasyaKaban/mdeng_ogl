@@ -5,12 +5,12 @@
 
 class RenderQueue;
 
-class RenderPassTask : public Task
+class RenderPassTask : public TaskBase
 {
 public:
-    RenderPassTask(RenderQueue* _parent,
+    RenderPassTask(Task<RenderQueue>* _parent,
                    TaskKey&& key,
-                   std::unique_ptr<Render::RenderPass>&& _handle) noexcept;
+                   const Render::RenderPassInfo& info) noexcept;
     virtual ~RenderPassTask() = default;
 
     Render::RenderPass* GetHandle() const noexcept;

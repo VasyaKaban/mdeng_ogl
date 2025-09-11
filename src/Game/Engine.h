@@ -22,5 +22,5 @@ private:
 
     GraphicWindow* window;
     std::unique_ptr<ResourceManager> resource_manager;
-    std::unique_ptr<RenderEngine> render_engine;
+    std::unique_ptr<Task<RenderEngine>> render_engine;
 };

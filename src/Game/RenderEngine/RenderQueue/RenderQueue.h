@@ -13,14 +13,11 @@ class RenderEngine;
 class RenderQueue : public QueueTask
 {
 public:
-    RenderQueue(RenderEngine* _parent, TaskKey&& key, std::unique_ptr<Render::Queue>&& _handle);
+    RenderQueue(Task<RenderEngine>* _parent, TaskKey&& key);
     virtual ~RenderQueue() override;
 
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
     virtual void End(const EvaluateDesc& eval_desc) override;
-
-    virtual void Enable() override;
-    virtual void Disable() override;
 
     Render::Semaphore* GetCurrentSwapchainWaitSemaphore() noexcept;
     Render::Semaphore* GetCurrentSignalSemaphore() noexcept;
@@ -39,4 +36,4 @@ private:
     std::vector<Resource> resources;
 };
 
-static_assert(!std::is_abstract_v<RenderQueue>);
+CHECK_TASK_IS_READY(RenderQueue)

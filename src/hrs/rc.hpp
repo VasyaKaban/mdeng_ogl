@@ -48,12 +48,12 @@ namespace hrs
         friend class rc_ptr;
     public:
         constexpr rc_ptr() noexcept
-        requires std::derived_from<T, rc>
+        requires std::is_base_of_v<rc, T>
             : ptr(nullptr)
         {}
 
         constexpr rc_ptr(T* p) noexcept
-        requires std::derived_from<T, rc>
+        requires std::is_base_of_v<rc, T>
             : ptr(p)
         {
             if(ptr)

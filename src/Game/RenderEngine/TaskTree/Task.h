@@ -1,8 +1,6 @@
 #pragma once
 
 #include <string>
-#include <optional>
-#include "hrs/rc.hpp"
 #include "hrs/multikey_map/multikey_map.hpp"
 #include "Core/Render/Render.h"
 
@@ -113,7 +111,12 @@ struct EvaluateDesc
     Render::Pipeline* pipeline;
 };
 
-class Task : public hrs::rc
+class RenderEngine;
+
+template<typename T>
+class Task;
+
+class TaskBase
 {
 public:
     using Priority = std::uint32_t;
@@ -124,15 +127,15 @@ public:
     };
 
     using Container =
-        hrs::multikey_map<hrs::rc_ptr<Task>,
+        hrs::multikey_map<std::unique_ptr<TaskBase>,
                           hrs::key<Priority, hrs::map_shared_key, std::less<Priority>>,
                           hrs::key<HashedString, hrs::map_unique_key, HashedStringComparator>>;
 
-    template<typename T = Task>
+    template<typename T = TaskBase>
     class TaskHandle
     {
     private:
-        friend class Task;
+        friend class TaskBase;
         TaskHandle(Container::entry_t<0>::iterator _it) noexcept
             : it(_it)
         {}
@@ -146,7 +149,7 @@ public:
 
         T* operator*() const noexcept
         {
-            static_assert(std::same_as<T, Task> || std::derived_from<T, Task>);
+            static_assert(std::same_as<T, TaskBase> || std::derived_from<T, TaskBase>);
 
             return static_cast<T*>(it.value().get());
         }
@@ -165,32 +168,78 @@ public:
         Container::entry_t<0>::iterator it;
     };
 
-    Task(Task* _parent, TaskKey&& key, bool _is_enabled = true) noexcept;
-    virtual ~Task();
+    TaskBase(TaskBase* _parent, TaskKey&& key) noexcept;
+    virtual ~TaskBase();
 
     void Erase();
-    hrs::rc_ptr<Task> Find(const HashedStringView& name) noexcept;
+    TaskBase* Find(const HashedStringView& name) noexcept;
 
     void Evaluate(const EvaluateDesc& eval_desc);
 
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) = 0;
     virtual void End(const EvaluateDesc& eval_desc) = 0;
 
-    virtual bool IsEnabled() const noexcept;
-    virtual void Enable();
-    virtual void Disable();
-
-    virtual Task* GetParent() const noexcept;
-
-    virtual bool IsDetached() const noexcept;
+    RenderEngine* GetRoot() const noexcept;
+    virtual TaskBase* GetParent() const noexcept;
 private:
-    virtual void Detach() noexcept;
-    TaskHandle<> Insert(TaskKey&& key, Task* task);
+    template<typename T>
+    friend class Task;
+
+    virtual void task_dummy_virtual() const noexcept = 0;
+
+    TaskHandle<> Insert(TaskKey&& key, TaskBase* task);
     void Drop(TaskHandle<> handle);
 protected:
-    Task* parent;
-    bool is_enabled;
+    TaskBase* parent;
 private:
+    RenderEngine* root;
     TaskHandle<> handle;
     Container tasks;
 };
+
+template<typename T>
+class Task : public T
+{
+    static_assert(std::is_base_of_v<TaskBase, T>);
+public:
+    using T::T;
+
+    virtual ~Task() override
+    {
+        TaskBase::tasks.clear();
+    }
+private:
+    virtual void task_dummy_virtual() const noexcept override
+    {}
+};
+
+#define CHECK_TASK_IS_READY(CLASS) static_assert(!std::is_abstract_v<Task<CLASS>>);
+
+/*
+iface
+T
+tasks
+
+*/
+
+/*
+EVENTS:
+
+CLASS:
+    void EmitEvent(const EventType& event)
+    {
+        for(auto& listener : listeners)
+        {
+            listener.Handle(event);
+        }
+    }
+
+    Handle Listen(Object* obj, const EventType& event)
+    {
+
+    }
+
+    void Handle(const Event& event)
+    {
+    }
+*/

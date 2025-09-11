@@ -168,6 +168,12 @@ namespace hrs
                 size -= block_size;
             }
         }
+
+        void clear()
+        {
+            acquired_blocks.clear();
+            free_blocks.clear();
+        }
     private:
         using container_t = std::list<block>;
 

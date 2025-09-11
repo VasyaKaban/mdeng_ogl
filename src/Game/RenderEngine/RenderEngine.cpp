@@ -6,29 +6,18 @@
 
 RenderEngine::RenderEngine(const RenderEngineInfo& info,
                            std::unique_ptr<Render::Context>&& _context)
-    : Task(nullptr, TaskKey{}),
+    : TaskBase(nullptr, TaskKey{}),
       context(std::move(_context)),
       resource_set_count(info.resource_set_count),
       current_resource_set_index(0)
 {
-    auto transfer_queue_handle =
-        std::unique_ptr<Render::Queue>(context->GetQueue(Render::QueueSpecialization::Transfer));
-    transfer_queue = hrs::rc_ptr<TransferQueue>(
-        new TransferQueue(this,
-                          TaskKey{.priority = 0, .name = std::string_view("TransferQueue")},
-                          std::move(transfer_queue_handle)));
+    transfer_queue =
+        new Task<TransferQueue>(static_cast<Task<RenderEngine>*>(this),
+                                TaskKey{.priority = 0, .name = std::string_view("TransferQueue")});
 
-    transfer_channel = hrs::rc_ptr<TransferChannel>(
-        new TransferChannel(transfer_queue.get(),
-                            TaskKey{.priority = 0, .name = std::string_view("TransferChannel")},
-                            info.transfer_channel_info));
-
-    auto render_queue_handle =
-        std::unique_ptr<Render::Queue>(context->GetQueue(Render::QueueSpecialization::Graphics));
-    render_queue = hrs::rc_ptr<RenderQueue>(
-        new RenderQueue(this,
-                        TaskKey{.priority = 1, .name = std::string_view("RenderQueue")},
-                        std::move(render_queue_handle)));
+    render_queue =
+        new Task<RenderQueue>(static_cast<Task<RenderEngine>*>(this),
+                              TaskKey{.priority = 1, .name = std::string_view("RenderQueue")});
 }
 
 RenderEngine::~RenderEngine()
@@ -74,19 +63,14 @@ void RenderEngine::End([[maybe_unused]] const EvaluateDesc& eval_desc)
     //noop
 }
 
-TransferQueue* RenderEngine::GetTransferQueue() const noexcept
+Task<TransferQueue>* RenderEngine::GetTransferQueue() const noexcept
 {
-    return transfer_queue.get();
+    return transfer_queue;
 }
 
-RenderQueue* RenderEngine::GetRenderQueue() const noexcept
+Task<RenderQueue>* RenderEngine::GetRenderQueue() const noexcept
 {
-    return render_queue.get();
-}
-
-TransferChannel* RenderEngine::GetTransferChannel() const noexcept
-{
-    return transfer_channel.get();
+    return render_queue;
 }
 
 Render::Context* RenderEngine::GetContext() const noexcept

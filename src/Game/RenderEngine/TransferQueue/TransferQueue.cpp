@@ -2,10 +2,8 @@
 #include "Core/Render/Context.h"
 #include "../../RenderEngine/RenderEngine.h"
 
-TransferQueue::TransferQueue(RenderEngine* _parent,
-                             TaskKey&& key,
-                             std::unique_ptr<Render::Queue>&& _handle)
-    : QueueTask(_parent, std::move(key), std::move(_handle)),
+TransferQueue::TransferQueue(Task<RenderEngine>* _parent, TaskKey&& key)
+    : QueueTask(_parent, std::move(key), Render::QueueSpecialization::Transfer),
       command_pool(_parent->GetContext()->CreateCommandPool(
           Render::CommandPoolInfo{.queue = QueueTask::handle.get()}))
 {
@@ -59,16 +57,6 @@ void TransferQueue::End(const EvaluateDesc& eval_desc)
                                          .command_buffers = {&cmd, 1}};
 
     handle->Flush(flush_info);
-}
-
-void TransferQueue::Enable()
-{
-    is_enabled = true; //do not disable for semaphore consistence!
-}
-
-void TransferQueue::Disable()
-{
-    is_enabled = true; //do not disable for semaphore consistence!
 }
 
 Render::Semaphore* TransferQueue::GetCurrentSemaphore() const noexcept

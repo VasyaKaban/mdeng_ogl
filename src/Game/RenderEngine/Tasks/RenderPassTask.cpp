@@ -1,11 +1,13 @@
 #include "RenderPassTask.h"
 #include "../RenderQueue/RenderQueue.h"
+#include "Core/Render/Context.h"
+#include "../RenderEngine.h"
 
-RenderPassTask::RenderPassTask(RenderQueue* _parent,
+RenderPassTask::RenderPassTask(Task<RenderQueue>* _parent,
                                TaskKey&& key,
-                               std::unique_ptr<Render::RenderPass>&& _handle) noexcept
-    : Task(_parent, std::move(key)),
-      handle(std::move(_handle))
+                               const Render::RenderPassInfo& info) noexcept
+    : TaskBase(_parent, std::move(key)),
+      handle(parent->GetRoot()->GetContext()->CreateRenderPass(info))
 {}
 
 Render::RenderPass* RenderPassTask::GetHandle() const noexcept

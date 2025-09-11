@@ -13,14 +13,11 @@ class RenderEngine;
 class TransferQueue : public QueueTask
 {
 public:
-    TransferQueue(RenderEngine* _parent, TaskKey&& key, std::unique_ptr<Render::Queue>&& _handle);
+    TransferQueue(Task<RenderEngine>* _parent, TaskKey&& key);
     virtual ~TransferQueue() override;
 
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
     virtual void End(const EvaluateDesc& eval_desc) override;
-
-    virtual void Enable() override;
-    virtual void Disable() override;
 
     Render::Semaphore* GetCurrentSemaphore() const noexcept;
     Render::Fence* GetCurrentFence() const noexcept;
@@ -37,4 +34,4 @@ private:
     std::vector<Resource> resources;
 };
 
-static_assert(!std::is_abstract_v<TransferQueue>);
+CHECK_TASK_IS_READY(TransferQueue)

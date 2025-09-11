@@ -5,12 +5,12 @@
 
 class RenderPassTask;
 
-class GraphicsPipelineTask : public Task
+class GraphicsPipelineTask : public TaskBase
 {
 public:
-    GraphicsPipelineTask(RenderPassTask* _parent,
+    GraphicsPipelineTask(Task<RenderPassTask>* _parent,
                          TaskKey&& key,
-                         std::unique_ptr<Render::Pipeline>&& _handle) noexcept;
+                         const Render::GraphicsPipelineInfo& info) noexcept;
     virtual ~GraphicsPipelineTask() = default;
 
     Render::Pipeline* GetHandle() const noexcept;

@@ -2,18 +2,15 @@
 
 #include "Tasks/QueueTask.h"
 #include "TransferQueue/TransferChannel.h"
-
-class TransferQueue;
-class RenderQueue;
-class TransferChannel;
+#include "TransferQueue/TransferQueue.h"
+#include "RenderQueue/RenderQueue.h"
 
 struct RenderEngineInfo
 {
     std::uint16_t resource_set_count;
-    TransferChannelInfo transfer_channel_info;
 };
 
-class RenderEngine : public Task
+class RenderEngine : public TaskBase
 {
 public:
     RenderEngine(const RenderEngineInfo& info, std::unique_ptr<Render::Context>&& _context);
@@ -25,12 +22,12 @@ public:
     std::uint16_t GetNextResourceSetIndex() const noexcept;
 
     void AcquireNextResourceSet() noexcept;
+
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
     virtual void End(const EvaluateDesc& eval_desc) override;
 
-    TransferQueue* GetTransferQueue() const noexcept;
-    RenderQueue* GetRenderQueue() const noexcept;
-    TransferChannel* GetTransferChannel() const noexcept;
+    Task<TransferQueue>* GetTransferQueue() const noexcept;
+    Task<RenderQueue>* GetRenderQueue() const noexcept;
     Render::Context* GetContext() const noexcept;
 private:
     std::unique_ptr<Render::Context> context;
@@ -38,7 +35,6 @@ private:
     std::uint16_t resource_set_count;
     std::uint16_t current_resource_set_index;
 
-    hrs::rc_ptr<TransferQueue> transfer_queue;
-    hrs::rc_ptr<RenderQueue> render_queue;
-    hrs::rc_ptr<TransferChannel> transfer_channel;
+    Task<TransferQueue>* transfer_queue;
+    Task<RenderQueue>* render_queue;
 };

@@ -6,12 +6,12 @@
 
 class RenderEngine;
 
-class QueueTask : public Task
+class QueueTask : public TaskBase
 {
 public:
-    QueueTask(RenderEngine* _parent,
+    QueueTask(Task<RenderEngine>* _parent,
               TaskKey&& key,
-              std::unique_ptr<Render::Queue>&& _handle) noexcept;
+              Render::QueueSpecialization spec) noexcept;
     virtual ~QueueTask() = default;
 
     Render::Queue* GetHandle() const noexcept;
