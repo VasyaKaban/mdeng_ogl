@@ -2,6 +2,7 @@
 
 #include <list>
 #include <map>
+#include "hrs/non_creatable.hpp"
 
 namespace Events
 {
@@ -9,11 +10,13 @@ namespace Events
     class EventEmitter;
 
     template<typename E>
-    class EventListener
+    class EventListener : hrs::non_copyable, hrs::non_movable
     {
         friend class EventEmitter<E>;
         using ListenerHandle = EventEmitter<E>::ListenerHandle;
     public:
+        EventListener() = default;
+
         virtual ~EventListener()
         {
             for(auto& [obj, handle]: handles_mapping)
@@ -52,12 +55,14 @@ namespace Events
     };
 
     template<typename E>
-    class EventEmitter
+    class EventEmitter : hrs::non_copyable, hrs::non_movable
     {
         friend class EventListener<E>;
         using Container = std::list<EventListener<E>*>;
         using ListenerHandle = std::list<EventListener<E>*>::iterator;
     public:
+        EventEmitter() = default;
+
         ~EventEmitter()
         {
             for(auto& listener: listeners)
