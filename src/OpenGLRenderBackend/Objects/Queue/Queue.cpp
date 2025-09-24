@@ -14,13 +14,13 @@ namespace OpenGL
         //noop
     }
 
-    void Queue::Begin(Render::QueueBeginInfo& info)
+    void Queue::Begin(const Render::QueueBeginInfo& info)
     {
         for(auto& sem: info.wait_seamphores)
             static_cast<Semaphore*>(sem)->Wait();
     }
 
-    void Queue::Flush(Render::QueueFlushInfo& info)
+    void Queue::Flush(const Render::QueueFlushInfo& info)
     {
         parent->GetLoader().MemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
@@ -31,6 +31,11 @@ namespace OpenGL
             static_cast<Fence*>(info.signal_fence)->Set();
 
         parent->GetLoader().Flush();
+    }
+
+    void Queue::WaitIdle()
+    {
+        parent->GetLoader().Finish();
     }
 
     Render::Context* Queue::GetContext() const noexcept

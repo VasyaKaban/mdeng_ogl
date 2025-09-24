@@ -29,9 +29,16 @@ namespace OpenGL
     void RenderPass::Begin(const Render::CommandBuffer* cmd,
                            const Render::RenderPassBeginInfo& info)
     {
+        parent->GetLoader().Disable(GL_SCISSOR_TEST); //explicitly disable scissors test
+
         //bind framebuffer
         GLHandle fb_handle = static_cast<const Framebuffer*>(info.framebuffer)->GetHandle();
-        parent->GetLoader().BindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_handle);
+        if(fb_handle != OGL_NULL_HANDLE)
+            parent->GetLoader().BindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_handle);
+        else
+            parent->GetLoader().BindFramebuffer(
+                GL_FRAMEBUFFER,
+                fb_handle); //Bind default framebuffer for read and draw
 
         //clear attachments
         for(const auto& clear_color_att: clear_color_attachment_descriptions)

@@ -3,11 +3,11 @@
 #include "Core/Render/Context.h"
 #include "../RenderEngine.h"
 
-RenderPassTask::RenderPassTask(Task<RenderQueue>* _parent,
+RenderPassTask::RenderPassTask(RenderQueue* _parent,
                                TaskKey&& key,
                                const Render::RenderPassInfo& info) noexcept
     : TaskBase(_parent, std::move(key)),
-      handle(parent->GetRoot()->GetContext()->CreateRenderPass(info))
+      handle(parent->GetRoot()->GetContext()->CreateRenderPassUnique(info))
 {}
 
 Render::RenderPass* RenderPassTask::GetHandle() const noexcept

@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include "hrs/non_creatable.hpp"
 #include "../RenderBackend.h"
+#include "../../Render/Render.h"
 
 class GraphicWindow;
 
@@ -42,19 +43,21 @@ constexpr inline bool IsOpenGLVersionCoreprofile(OpenGLVersion version) noexcept
 
 struct OpenGLBackendDefaultFramebufferInfo
 {
-    std::uint8_t red_channel_bits;
-    std::uint8_t green_channel_bits;
-    std::uint8_t blue_channel_bits;
-    std::uint8_t alpha_channel_bits;
-
-    std::uint8_t depth_channel_bits;
-    std::uint8_t stencil_channel_bits;
+    Render::Format format;
 };
+
+enum OpenGLBackendFlagBits
+{
+    DebugContext = 1 << 0
+};
+
+using OpenGLBackendFlags = std::underlying_type_t<OpenGLBackendFlagBits>;
 
 struct OpenGLBackendInfo : public RenderBackendInfo
 {
     OpenGLBackendDefaultFramebufferInfo default_framebuffer_info;
     OpenGLVersion version;
+    OpenGLBackendFlags flags;
 };
 
 using OpenGLGetProcAddr_PFN = void* (*)(const char* name);

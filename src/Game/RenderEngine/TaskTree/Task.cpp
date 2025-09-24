@@ -1,8 +1,9 @@
 #include "Task.h"
 #include "../RenderEngine.h"
 
-TaskBase::TaskBase(TaskBase* _parent, TaskKey&& key) noexcept
-    : parent(_parent)
+TaskBase::TaskBase(TaskBase* _parent, TaskKey&& key, bool _enabled) noexcept
+    : parent(_parent) /*,
+      enabled_counter(0)*/
 {
     if(parent)
     {
@@ -45,6 +46,25 @@ void TaskBase::Evaluate(const EvaluateDesc& eval_desc)
 
     this->End(after_begin_eval_desc);
 }
+
+/*void TaskBase::Enable()
+{
+    enabled_counter--;
+    if(enabled_counter == 0)
+        Events::Emit<TaskEnabledStateSwitchEvent>(this, TaskEnabledStateSwitchEvent{});
+}
+
+void TaskBase::Disable()
+{
+    auto prev_enabled_counter = enabled_counter++;
+    if(prev_enabled_counter == 0)
+        Events::Emit<TaskEnabledStateSwitchEvent>(this, TaskEnabledStateSwitchEvent{});
+}
+
+bool TaskBase::IsEnabled() const noexcept
+{
+    return enabled_counter == 0;
+}*/
 
 RenderEngine* TaskBase::GetRoot() const noexcept
 {

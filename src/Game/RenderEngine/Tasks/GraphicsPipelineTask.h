@@ -8,7 +8,7 @@ class RenderPassTask;
 class GraphicsPipelineTask : public TaskBase
 {
 public:
-    GraphicsPipelineTask(Task<RenderPassTask>* _parent,
+    GraphicsPipelineTask(RenderPassTask* _parent,
                          TaskKey&& key,
                          const Render::GraphicsPipelineInfo& info) noexcept;
     virtual ~GraphicsPipelineTask() = default;

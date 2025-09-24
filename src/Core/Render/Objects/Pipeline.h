@@ -39,15 +39,13 @@ namespace Render
         virtual void Draw(const CommandBuffer* cmd,
                           std::uint32_t vertex_count,
                           std::uint32_t instance_count,
-                          std::uint32_t first_vertex,
-                          std::uint32_t first_instance) = 0;
+                          std::uint32_t first_vertex) = 0;
 
         virtual void DrawIndexed(const CommandBuffer* cmd,
                                  std::uint32_t index_count,
                                  std::uint32_t instance_count,
                                  std::uint32_t first_index,
-                                 std::int32_t vertex_offset,
-                                 std::uint32_t first_instance) = 0;
+                                 std::int32_t vertex_offset) = 0;
 
         //Dynamic state
         virtual void SetViewport(const CommandBuffer* cmd,

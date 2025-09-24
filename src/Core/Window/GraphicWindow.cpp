@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include "hrs/scoped_call.hpp"
 #include "OpenGL/OpenGLBackend.h"
+#include <SDL2/SDL_syswm.h>
 
 GraphicWindow::GraphicWindow(const GraphicWindowInfo& info, const RenderBackendInfo& render_info)
 {
@@ -80,16 +81,6 @@ WindowResolution GraphicWindow::GetDrawableResolution() const
     return resolution;
 }
 
-EventHandlers& GraphicWindow::GetEventHandlers() noexcept
-{
-    return event_handlers;
-}
-
-const EventHandlers& GraphicWindow::GetEventHandlers() const noexcept
-{
-    return event_handlers;
-}
-
 RenderBackend* GraphicWindow::GetRenderBackend() const noexcept
 {
     return render_backend.get();
@@ -98,4 +89,65 @@ RenderBackend* GraphicWindow::GetRenderBackend() const noexcept
 std::uint32_t GraphicWindow::GetID() const noexcept
 {
     return id;
+}
+
+std::string_view GraphicWindow::GetWindowManagerName() const
+{
+    SDL_SysWMinfo info;
+    SDL_VERSION(&info.version)
+
+    if(SDL_GetWindowWMInfo(handle, &info) != SDL_TRUE)
+        throw std::runtime_error(SDL_GetError());
+
+    std::string_view name;
+    switch(info.subsystem)
+    {
+        case SDL_SYSWM_UNKNOWN:
+            name = "Unknown";
+            break;
+        case SDL_SYSWM_WINDOWS:
+            name = "Windows";
+            break;
+        case SDL_SYSWM_X11:
+            name = "X11";
+            break;
+        case SDL_SYSWM_DIRECTFB:
+            name = "DirectFB";
+            break;
+        case SDL_SYSWM_COCOA:
+            name = "Cocoa";
+            break;
+        case SDL_SYSWM_UIKIT:
+            name = "UIKit";
+            break;
+        case SDL_SYSWM_WAYLAND:
+            name = "Wayland";
+            break;
+        case SDL_SYSWM_MIR:
+            name = "Mir";
+            break;
+        case SDL_SYSWM_WINRT:
+            name = "WinRT";
+            break;
+        case SDL_SYSWM_ANDROID:
+            name = "Android";
+            break;
+        case SDL_SYSWM_VIVANTE:
+            name = "Vivante";
+            break;
+        case SDL_SYSWM_OS2:
+            name = "OS/2";
+            break;
+        case SDL_SYSWM_HAIKU:
+            name = "Unknown";
+            break;
+        case SDL_SYSWM_KMSDRM:
+            name = "KMSDRM";
+            break;
+        case SDL_SYSWM_RISCOS:
+            name = "RISCOS";
+            break;
+    }
+
+    return name;
 }

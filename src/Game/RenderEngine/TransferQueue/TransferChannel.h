@@ -1,25 +1,34 @@
 #pragma once
 
-#include "hrs/rc.hpp"
+#include <functional>
+#include "hrs/forward_pool.hpp"
 #include "../TaskTree/Task.h"
-#include "TransferChannelState.h"
+#include "TransferOperation.h"
 
 class TransferQueue;
+
+struct TransferChannelInfo
+{
+    std::size_t pool_block_size;
+    std::size_t pool_blocks_reserve;
+};
 
 class TransferChannel : public TaskBase
 {
 public:
-    TransferChannel(Task<TransferQueue>* _parent,
-                    TaskKey&& key,
-                    const TransferChannelStateInfo& info);
+    TransferChannel(TransferQueue* _parent, TaskKey&& key, const TransferChannelInfo& info);
     virtual ~TransferChannel() override;
 
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
     virtual void End(const EvaluateDesc& eval_desc) override;
 
-    hrs::rc_ptr<TransferChannelState> GetState() const noexcept;
+    void Transfer(TransferBufferOperation&& op);
+    void Transfer(TransferImageOperation&& op);
+    void Transfer(TransferCallbackOperation&& op);
+
+    void Reserve(std::size_t size);
 private:
-    TaskStateOwner<TransferChannelState> state;
+    hrs::forward_pool<TransferRegion> staging_regions;
 };
 
 CHECK_TASK_IS_READY(TransferChannel)

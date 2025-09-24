@@ -9,7 +9,8 @@
 #include "Core/Render/Objects/ImageView.h"
 #include "Core/Render/Objects/Shader.h"
 #include "Core/Render/Objects/Image.h"
-#include "../RenderEngine/TransferQueue/TransferChannelState.h"
+#include "../RenderEngine/TransferQueue/TransferChannel.h"
+#include "../RenderEngine/TransferQueue/TransferStorage.h"
 
 template<typename T>
 struct ResourceExtensionDesc
@@ -30,7 +31,13 @@ struct ResourceManagerInfo
 
     std::span<const ResourceExtensionDesc<ShaderResourceDesc>> shader_resource_descs;
 
-    TransferChannelStateInfo transfer_channel_state_info;
+    TransferChannelInfo transfer_channel_info;
+};
+
+enum class TransferMode
+{
+    Storage,
+    Channel
 };
 
 class ResourceManager : hrs::non_copyable, hrs::non_movable
@@ -54,7 +61,7 @@ public:
             delete shader;
         }
 
-        Render::Shader* operator->() const noexcept
+        Render::Shader* GetShader() const noexcept
         {
             return shader;
         }
@@ -106,12 +113,15 @@ public:
     ~ResourceManager() = default;
 
     hrs::rc_ptr<ShaderResource> CreateShader(std::string_view path);
-    hrs::rc_ptr<ImageResource> CreateImage(std::string_view path);
+    hrs::rc_ptr<ImageResource> CreateImage(std::string_view path, TransferMode mode);
 
     hrs::rc_ptr<ShaderResource> FindShader(std::string_view path);
     hrs::rc_ptr<ImageResource> FindImage(std::string_view path);
 
     void ClearUnused() noexcept;
+
+    TransferStorage& GetTransferStorage() noexcept;
+    TransferChannel* GetTransferChannel() const noexcept;
 private:
     struct Prefixes
     {
@@ -141,7 +151,8 @@ private:
         resource_map<ImageResource> images;
     } resources;
 
-    hrs::rc_ptr<TransferChannelState> transfer_channel_state;
+    TransferStorage transfer_storage;
+    TransferChannel* transfer_channel;
 
     //shaders[Shader -> handle]
     //textures[Texture -> handle + TextureView handle]

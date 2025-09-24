@@ -29,15 +29,22 @@ static BinaryData read_file(const std::filesystem::path& path)
 
 ResourceManager::ResourceManager(const ResourceManagerInfo& info)
     : prefixes{.shaders_path_prefix = info.shaders_path_prefix,
-               .images_path_prefix = info.images_path_prefix}
+               .images_path_prefix = info.images_path_prefix},
+      transfer_storage(Engine::GetInstance()->GetRenderEngine())
 {
-    auto transfer_channel = new Task<TransferChannel>(
+    transfer_channel = new Task<TransferChannel>(
         static_cast<Task<TransferQueue>*>(
             Engine::GetInstance()->GetRenderEngine()->Find(std::string_view("TransferQueue"))),
         TaskBase::TaskKey{.priority = 0, .name = std::string_view("TransferChannel")},
-        info.transfer_channel_state_info);
+        info.transfer_channel_info);
 
-    transfer_channel_state = transfer_channel->GetState();
+    Events::Connect<TaskEraseEvent>(transfer_channel,
+                                    [this](const TaskEraseEvent&)
+                                    {
+                                        transfer_channel = nullptr;
+
+                                        return Events::HandlerAction::Erase;
+                                    });
 
     for(const auto& sh_ext_desc: info.shader_resource_descs)
         ext_mappings.shader_ext_mapping.insert(std::pair{sh_ext_desc.ext, sh_ext_desc.desc});
@@ -45,20 +52,19 @@ ResourceManager::ResourceManager(const ResourceManagerInfo& info)
 
 hrs::rc_ptr<ResourceManager::ShaderResource> ResourceManager::CreateShader(std::string_view path)
 {
-    auto it = resources.shaders.find(path);
+    auto res_path = prefixes.shaders_path_prefix / path;
+
+    auto it = resources.shaders.find(res_path.string());
     if(it != resources.shaders.end())
         return it->second;
 
-    std::filesystem::path res_path = path;
     if(!std::filesystem::is_regular_file(res_path))
-        throw std::runtime_error(std::format("{} is not a file", path));
+        throw std::runtime_error(std::format("{} is not a file", res_path.string()));
 
     auto ext = res_path.extension().string();
     auto ext_it = ext_mappings.shader_ext_mapping.find(ext);
     if(ext_it == ext_mappings.shader_ext_mapping.end())
         throw std::runtime_error(std::format("Undefined shader extension: {}", ext));
-
-    res_path = prefixes.shaders_path_prefix / path;
 
     auto data = read_file(res_path);
     const Render::ShaderInfo info = {
@@ -80,17 +86,17 @@ hrs::rc_ptr<ResourceManager::ShaderResource> ResourceManager::CreateShader(std::
     return ins_it.first->second;
 }
 
-hrs::rc_ptr<ResourceManager::ImageResource> ResourceManager::CreateImage(std::string_view path)
+hrs::rc_ptr<ResourceManager::ImageResource> ResourceManager::CreateImage(std::string_view path,
+                                                                         TransferMode mode)
 {
-    auto it = resources.images.find(path);
+    auto res_path = prefixes.images_path_prefix / path;
+
+    auto it = resources.images.find(res_path.string());
     if(it != resources.images.end())
         return it->second;
 
-    std::filesystem::path res_path = path;
     if(!std::filesystem::is_regular_file(res_path))
-        throw std::runtime_error(std::format("{} is not a file", path));
-
-    res_path = prefixes.shaders_path_prefix / path;
+        throw std::runtime_error(std::format("{} is not a file", res_path.string()));
 
     auto data = read_file(res_path);
 
@@ -170,17 +176,32 @@ hrs::rc_ptr<ResourceManager::ImageResource> ResourceManager::CreateImage(std::st
 
     auto ins_it = resources.images.insert(std::pair{std::string(path), image});
 
-    transfer_channel_state->Reserve(dds_resolve.regions.size() +
-                                    1); //image regions itself + callback
-    transfer_channel_state->Transfer(
-        TransferImageOperation{.image = ins_it.first->second->GetImage(),
-                               .regions = std::move(dds_resolve.regions)});
+    if(mode == TransferMode::Channel && transfer_channel)
+    {
+        transfer_channel->Reserve(dds_resolve.regions.size() + 1); //image regions itself + callback
+        transfer_channel->Transfer(
+            TransferImageOperation{.image = ins_it.first->second->GetImage(),
+                                   .regions = std::move(dds_resolve.regions)});
 
-    transfer_channel_state->Transfer(
-        TransferCallbackOperation{.cback = [img_entry = ins_it.first->second]()
-                                  {
-                                      img_entry->SetReady();
-                                  }});
+        transfer_channel->Transfer(TransferCallbackOperation{
+            .cback = [img_entry = ins_it.first->second, _ = std::move(data)]()
+            {
+                img_entry->SetReady();
+            }});
+    }
+    else //use storage or just fallback
+    {
+        transfer_storage.Reserve(dds_resolve.regions.size() + 1); //image regions itself + callback
+        transfer_storage.Transfer(
+            TransferImageOperation{.image = ins_it.first->second->GetImage(),
+                                   .regions = std::move(dds_resolve.regions)});
+
+        transfer_storage.Transfer(TransferCallbackOperation{
+            .cback = [img_entry = ins_it.first->second, _ = std::move(data)]()
+            {
+                img_entry->SetReady();
+            }});
+    }
 
     return ins_it.first->second;
 }
@@ -220,4 +241,14 @@ void ResourceManager::ClearUnused() noexcept
                       const auto& [k, v] = kv;
                       return v.get_refs() <= 1 && v->GetState() == ResourceState::Ready;
                   });
+}
+
+TransferStorage& ResourceManager::GetTransferStorage() noexcept
+{
+    return transfer_storage;
+}
+
+TransferChannel* ResourceManager::GetTransferChannel() const noexcept
+{
+    return transfer_channel;
 }

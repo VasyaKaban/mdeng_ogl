@@ -3,6 +3,7 @@
 #include <string>
 #include "hrs/multikey_map/multikey_map.hpp"
 #include "Core/Render/Render.h"
+#include "Core/Events/Events.hpp"
 
 class HashedStringView
 {
@@ -113,10 +114,17 @@ struct EvaluateDesc
 
 class RenderEngine;
 
+struct TaskEraseEvent
+{};
+
+//struct TaskEnabledStateSwitchEvent
+//{};
+
 template<typename T>
 class Task;
 
-class TaskBase
+class TaskBase : public Events::EventEmitter<TaskEraseEvent> /*,
+                 public Events::EventEmitter<TaskEnabledStateSwitchEvent>*/
 {
 public:
     using Priority = std::uint32_t;
@@ -168,7 +176,7 @@ public:
         Container::entry_t<0>::iterator it;
     };
 
-    TaskBase(TaskBase* _parent, TaskKey&& key) noexcept;
+    TaskBase(TaskBase* _parent, TaskKey&& key, bool _enabled = true) noexcept;
     virtual ~TaskBase();
 
     void Erase();
@@ -178,6 +186,10 @@ public:
 
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) = 0;
     virtual void End(const EvaluateDesc& eval_desc) = 0;
+
+    //virtual void Enable();
+    //virtual void Disable();
+    //bool IsEnabled() const noexcept;
 
     RenderEngine* GetRoot() const noexcept;
     virtual TaskBase* GetParent() const noexcept;
@@ -192,6 +204,7 @@ private:
 protected:
     TaskBase* parent;
 private:
+    //std::uint32_t enabled_counter; //0 -> enabled; >= 1 -> disabled
     RenderEngine* root;
     TaskHandle<> handle;
     Container tasks;
@@ -206,6 +219,7 @@ public:
 
     virtual ~Task() override
     {
+        Events::Emit(this, TaskEraseEvent{});
         TaskBase::tasks.clear();
     }
 private:

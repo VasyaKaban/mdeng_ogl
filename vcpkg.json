@@ -1,6 +1,16 @@
 {
   "dependencies": [
-    "sdl2",
-    "opengl"
+    {
+      "name": "sdl2"
+    },
+    {
+      "name": "opengl"
+    },
+    {
+      "name": "glslang",
+      "features": [
+        "tools"
+      ]
+    }
   ]
 }

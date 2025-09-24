@@ -8,7 +8,7 @@ namespace OpenGL
     {
 #ifndef OPENGL_NOOP_SEMAPHORE
         if(!handle)
-            throw std::runtime_error("Wait on unset semaphore");
+            return; //skip waiting on non-created semaphore like in Fence class
 
         parent->GetLoader().WaitSync(handle, 0, GL_TIMEOUT_IGNORED);
 #endif

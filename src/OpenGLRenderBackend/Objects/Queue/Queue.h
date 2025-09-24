@@ -13,8 +13,10 @@ namespace OpenGL
 
         virtual ~Queue() override;
 
-        virtual void Begin(Render::QueueBeginInfo& info) override;
-        virtual void Flush(Render::QueueFlushInfo& info) override;
+        virtual void Begin(const Render::QueueBeginInfo& info) override;
+        virtual void Flush(const Render::QueueFlushInfo& info) override;
+
+        virtual void WaitIdle() override;
 
         virtual Render::Context* GetContext() const noexcept override;
     private:

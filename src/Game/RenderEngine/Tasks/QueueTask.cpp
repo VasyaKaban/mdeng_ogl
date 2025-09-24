@@ -3,7 +3,7 @@
 #include "Core/Render/Context.h"
 #include "../RenderEngine.h"
 
-QueueTask::QueueTask(Task<RenderEngine>* _parent,
+QueueTask::QueueTask(RenderEngine* _parent,
                      TaskKey&& key,
                      Render::QueueSpecialization spec) noexcept
     : TaskBase(_parent, std::move(key)),
@@ -12,5 +12,5 @@ QueueTask::QueueTask(Task<RenderEngine>* _parent,
 
 Render::Queue* QueueTask::GetHandle() const noexcept
 {
-    return handle.get();
+    return handle;
 }

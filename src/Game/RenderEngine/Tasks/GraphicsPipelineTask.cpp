@@ -3,11 +3,11 @@
 #include "../RenderEngine.h"
 #include "Core/Render/Context.h"
 
-GraphicsPipelineTask::GraphicsPipelineTask(Task<RenderPassTask>* _parent,
+GraphicsPipelineTask::GraphicsPipelineTask(RenderPassTask* _parent,
                                            TaskKey&& key,
                                            const Render::GraphicsPipelineInfo& info) noexcept
     : TaskBase(_parent, std::move(key)),
-      handle(parent->GetRoot()->GetContext()->CreatePipeline(info))
+      handle(parent->GetRoot()->GetContext()->CreatePipelineUnique(info))
 {}
 
 Render::Pipeline* GraphicsPipelineTask::GetHandle() const noexcept

@@ -2,6 +2,7 @@
 #include "../../Context/Context.h"
 #include <stdexcept>
 #include "../CommandBuffer/CommandBuffer.h"
+#include "../Buffer/Buffer.h"
 
 namespace OpenGL
 {
@@ -114,6 +115,9 @@ namespace OpenGL
         inner_type = _inner_type;
         inner_format = _inner_format;
         handle = _handle;
+
+        if(!Render::IsFormatCompressed(info.format))
+            transfer_type_format_pair = DecodeTransferTypeFormatPair(info.format);
     }
 
     Image::~Image()
@@ -136,6 +140,8 @@ namespace OpenGL
         bool is_compressed = IsFormatCompressed(info.format);
         std::uint16_t format_texel_alignment = GetFormatTexelAlignment(info.format);
 
+        parent->GetLoader().BindBuffer(GL_PIXEL_PACK_BUFFER,
+                                       static_cast<const Buffer*>(dst)->GetHandle());
         parent->GetLoader().PixelStorei(GL_PACK_ALIGNMENT, format_texel_alignment);
 
         for(const auto& reg: regions)
@@ -144,9 +150,6 @@ namespace OpenGL
             parent->GetLoader().PixelStorei(GL_PACK_IMAGE_HEIGHT, reg.buffer_image_height);
 
             auto region_size = GetFormatRegionSize(info.format, reg);
-
-            GLenum data_type = ImageCopyDataTypeToNative(reg.data_type);
-            GLenum data_format = ImageCopyDataFormatToNative(reg.data_format);
 
             switch(inner_type)
             {
@@ -176,8 +179,8 @@ namespace OpenGL
                             reg.extent.width,
                             1,
                             1,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             region_size,
                             reinterpret_cast<void*>(reg.buffer_offset));
                     }
@@ -208,8 +211,8 @@ namespace OpenGL
                             reg.extent.width,
                             reg.subresource_layers.layer_count,
                             1,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             region_size,
                             reinterpret_cast<void*>(reg.buffer_offset));
                     }
@@ -240,8 +243,8 @@ namespace OpenGL
                             reg.extent.width,
                             reg.extent.height,
                             1,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             region_size,
                             reinterpret_cast<void*>(reg.buffer_offset));
                     }
@@ -272,8 +275,8 @@ namespace OpenGL
                             reg.extent.width,
                             reg.extent.height,
                             reg.subresource_layers.layer_count,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             region_size,
                             reinterpret_cast<void*>(reg.buffer_offset));
                     }
@@ -304,8 +307,8 @@ namespace OpenGL
                             reg.extent.width,
                             reg.extent.height,
                             reg.extent.depth,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             region_size,
                             reinterpret_cast<void*>(reg.buffer_offset));
                     }
@@ -333,9 +336,6 @@ namespace OpenGL
 
             auto region_size = GetFormatRegionSize(info.format, reg);
 
-            GLenum data_type = ImageCopyDataTypeToNative(reg.data_type);
-            GLenum data_format = ImageCopyDataFormatToNative(reg.data_format);
-
             switch(inner_type)
             {
                 case GL_TEXTURE_1D:
@@ -356,8 +356,8 @@ namespace OpenGL
                                                               reg.subresource_layers.mip_level,
                                                               reg.offset.x,
                                                               reg.extent.width,
-                                                              data_format,
-                                                              data_type,
+                                                              transfer_type_format_pair.format,
+                                                              transfer_type_format_pair.type,
                                                               reg.data);
                     }
                     break;
@@ -383,8 +383,8 @@ namespace OpenGL
                                                               reg.subresource_layers.base_layer,
                                                               reg.extent.width,
                                                               reg.subresource_layers.layer_count,
-                                                              data_format,
-                                                              data_type,
+                                                              transfer_type_format_pair.format,
+                                                              transfer_type_format_pair.type,
                                                               reg.data);
                     }
                     break;
@@ -410,8 +410,8 @@ namespace OpenGL
                                                               reg.offset.y,
                                                               reg.extent.width,
                                                               reg.extent.height,
-                                                              data_format,
-                                                              data_type,
+                                                              transfer_type_format_pair.format,
+                                                              transfer_type_format_pair.type,
                                                               reg.data);
                     }
                     break;
@@ -441,8 +441,8 @@ namespace OpenGL
                                                               reg.extent.width,
                                                               reg.extent.height,
                                                               reg.subresource_layers.layer_count,
-                                                              data_format,
-                                                              data_type,
+                                                              transfer_type_format_pair.format,
+                                                              transfer_type_format_pair.type,
                                                               reg.data);
                     }
                     break;
@@ -472,8 +472,8 @@ namespace OpenGL
                                                               reg.extent.width,
                                                               reg.extent.height,
                                                               reg.extent.depth,
-                                                              data_format,
-                                                              data_type,
+                                                              transfer_type_format_pair.format,
+                                                              transfer_type_format_pair.type,
                                                               reg.data);
                     }
                     break;
@@ -489,6 +489,11 @@ namespace OpenGL
     GLenum Image::GetInnerFormat() const noexcept
     {
         return inner_format;
+    }
+
+    const TransferImageTypeFormat& Image::GetTransferImageTypeFormatPair() const noexcept
+    {
+        return transfer_type_format_pair;
     }
 
     GLHandle Image::GetHandle() const noexcept

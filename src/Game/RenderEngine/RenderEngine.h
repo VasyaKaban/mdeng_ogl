@@ -4,16 +4,19 @@
 #include "TransferQueue/TransferChannel.h"
 #include "TransferQueue/TransferQueue.h"
 #include "RenderQueue/RenderQueue.h"
+#include "Core/Window/GraphicWindow.h"
 
 struct RenderEngineInfo
 {
     std::uint16_t resource_set_count;
 };
 
-class RenderEngine : public TaskBase
+class RenderEngine : public TaskBase, public Events::EventListener<WindowResizedEvent>
 {
 public:
-    RenderEngine(const RenderEngineInfo& info, std::unique_ptr<Render::Context>&& _context);
+    RenderEngine(const RenderEngineInfo& info,
+                 std::unique_ptr<Render::Context>&& _context,
+                 GraphicWindow* window);
     virtual ~RenderEngine() override;
 
     std::uint16_t GetResourceSetCount() const noexcept;
@@ -29,6 +32,8 @@ public:
     Task<TransferQueue>* GetTransferQueue() const noexcept;
     Task<RenderQueue>* GetRenderQueue() const noexcept;
     Render::Context* GetContext() const noexcept;
+private:
+    Events::HandlerAction Handle(const WindowResizedEvent& event);
 private:
     std::unique_ptr<Render::Context> context;
 

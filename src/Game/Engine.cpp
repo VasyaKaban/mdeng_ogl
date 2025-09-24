@@ -6,8 +6,633 @@
 #include "OpenGLRenderBackend/Context/Context.h"
 #include "RenderEngine/RenderQueue/RenderQueue.h"
 
+#pragma message("SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???")
+/*
+TestRenderPass:
+    TestPipeline: Draw texture into image -> set resolve and screenshot renderpasses state
+ScreenShotRenderPass:
+    ScreenShotPipeline: Draw blit textures from state to image -> then copy 
+ResolveRenderPass:
+    ResolvePipeline: Draw blit textures from state to default framebuffer 
+
+*/
+
 #include "RenderEngine/Tasks/RenderPassTask.h"
-class TestRenderPass : public RenderPassTask
+#include "RenderEngine/Tasks/GraphicsPipelineTask.h"
+#include "Core/TGA/TGA.h"
+
+struct ResolveRenderPassState
+{
+    Render::ImageView* input_image;
+};
+
+class ResolveRenderPass : public RenderPassTask
+{
+    static Render::RenderPassInfo get_info()
+    {
+        static Render::AttachmentDescription desc = {.clear_load = false};
+        return Render::RenderPassInfo{.color_attachment_descriptions = {&desc, 1},
+                                      .depth_stencil_attachment_description = nullptr};
+    }
+public:
+    ResolveRenderPass(RenderQueue* _parent, TaskKey&& key)
+        : RenderPassTask(_parent, std::move(key), get_info()),
+          state(ResolveRenderPassState{.input_image = nullptr})
+    {}
+
+    virtual ~ResolveRenderPass() override = default;
+
+    EvaluateDesc Begin(const EvaluateDesc& eval_desc) override
+    {
+        const Render::RenderPassBeginInfo info = {
+            .framebuffer = parent->GetRoot()->GetContext()->GetCurrentDefaultFramebuffer(),
+            .clear_color_values = {},
+            .clear_depth_stencil_value = Render::ClearDepthStencilValue{}};
+        handle->Begin(eval_desc.cmd, info);
+
+        return eval_desc;
+    }
+
+    void End(const EvaluateDesc& eval_desc) override
+    {
+        handle->End(eval_desc.cmd);
+        state.input_image = nullptr; //clear state
+    }
+
+    ResolveRenderPassState& GetState() noexcept
+    {
+        return state;
+    }
+private:
+    ResolveRenderPassState state;
+};
+
+CHECK_TASK_IS_READY(ResolveRenderPass)
+
+class ResolvePipeline : public GraphicsPipelineTask,
+                        public Events::EventListener<WindowResizedEvent>
+{
+    static Render::GraphicsPipelineInfo get_info()
+    {
+        auto vert = Engine::GetInstance()->GetResourceManager()->CreateShader("blit.vert");
+        auto frag = Engine::GetInstance()->GetResourceManager()->CreateShader("blit.frag");
+
+        static std::array shaders = {vert->GetShader(), frag->GetShader()};
+
+        return Render::GraphicsPipelineInfo{
+            .shaders = {shaders.data(), shaders.size()},
+            .state_info = Render::GraphicsPipelineStateInfo{
+                .vertex_input_state_info = Render::GraphicsPipelineVertexInputStateInfo{},
+                .input_assembly_state_info =
+                    Render::GraphicsPipelineInputAssemblyStateInfo{
+                        .topology = Render::PrimitiveTopology::Triangles,
+                        .primitive_restart_enabled = false},
+                .blend_state_info = Render::GraphicsPipelineBlendStateInfo{.blend_enabled = false},
+                .depth_stencil_state_info =
+                    Render::GraphicsPipelineDepthStencilStateInfo{.depth_test_enabled = false,
+                                                                  .stencil_test_enabled = false},
+                .multisample_state_info =
+                    Render::GraphicsPipelineMultisampleStateInfo{.multisample_enabled = false},
+                .rasterization_state_info =
+                    Render::GraphicsPipelineRasterizationStateInfo{
+                        .depth_clamp_enabled = false,
+                        .rasterizer_discard_enabled = false,
+                        .polygon_mode = Render::PolygonMode::Fill,
+                        .cull_mode = Render::CullMode::None,
+                        .front_face = Render::FrontFace::Clockwise,
+                        .line_width = 1.0f},
+                .viewport_state_info =
+                    Render::GraphicsPipelineViewportStateInfo{.viewport_enabled = false}}};
+    }
+public:
+    ResolvePipeline(ResolveRenderPass* _parent, TaskKey&& key)
+        : GraphicsPipelineTask(_parent, std::move(key), get_info())
+    {
+        WindowResolution resolution = Engine::GetInstance()->GetWindow()->GetDrawableResolution();
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = resolution.width;
+        viewport.height = resolution.height;
+        viewport.min_depth = 0.0f;
+        viewport.max_depth = 1.0f;
+
+        scissors.extent.width = resolution.width;
+        scissors.extent.height = resolution.height;
+        scissors.offset.x = 0;
+        scissors.offset.y = 0;
+
+        Events::Connect<WindowResizedEvent>(this,
+                                            Engine::GetInstance()->GetWindow(),
+                                            &ResolvePipeline::Handle);
+    }
+
+    virtual ~ResolvePipeline() override = default;
+
+    EvaluateDesc Begin(const EvaluateDesc& eval_desc) override
+    {
+        constexpr Render::UniformDesc uniform_desc = {.type = Render::UniformType::Int,
+                                                      .extent = Render::UniformExtent::Scalar,
+                                                      .count = 1,
+                                                      .location = 0};
+
+        std::int32_t msaa_enabled = false;
+
+        handle->Bind(eval_desc.cmd);
+        handle->SetViewport(eval_desc.cmd, 0, {&viewport, 1});
+        handle->SetScissor(eval_desc.cmd, 0, {&scissors, 1});
+        handle->BindImageView(eval_desc.cmd,
+                              static_cast<ResolveRenderPass*>(parent)->GetState().input_image,
+                              0);
+
+        handle->SetUniform(
+            eval_desc.cmd,
+            uniform_desc,
+            {reinterpret_cast<const std::byte*>(&msaa_enabled), sizeof(std::int32_t)});
+        handle->Draw(eval_desc.cmd, 6, 1, 0);
+
+        return EvaluateDesc{.cmd = eval_desc.cmd, .pipeline = handle.get()};
+    }
+
+    void End(const EvaluateDesc& eval_desc) override
+    {
+        //noop
+    }
+private:
+    Events::HandlerAction Handle(const WindowResizedEvent& event) noexcept
+    {
+        viewport.width = event.drawable_resolution.width;
+        viewport.height = event.drawable_resolution.height;
+
+        scissors.extent.width = event.drawable_resolution.width;
+        scissors.extent.height = event.drawable_resolution.height;
+
+        return Events::HandlerAction::None;
+    }
+private:
+    Render::Viewport viewport;
+    Render::Rect2D scissors;
+};
+
+CHECK_TASK_IS_READY(ResolvePipeline)
+
+/*class ScreenShotTask : public TaskBase,
+                       public Events::EventListener<WindowResizedEvent>,
+                       public Events::EventListener<WindowMovedEvent>
+{
+public:
+    ScreenShotTask(ResolveRenderPass* _parent, TaskBase::TaskKey&& key)
+        : TaskBase(_parent, std::move(key)),
+          in_progress(false),
+          is_requested(false)
+    {
+        recreate_buffer(Engine::GetInstance()->GetWindow()->GetDrawableResolution(),
+                        Engine::GetInstance()->GetRenderEngine());
+
+        Events::Connect<WindowResizedEvent>(this,
+                                            Engine::GetInstance()->GetWindow(),
+                                            &ScreenShotTask::Handle);
+
+        Events::Connect<WindowMovedEvent>(this,
+                                          Engine::GetInstance()->GetWindow(),
+                                          &ScreenShotTask::Handle);
+    }
+
+    virtual ~ScreenShotTask() = default;
+
+    virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override
+    {
+        if(in_progress)
+        {
+            if(parent->GetRoot()->GetCurrentResourceSetIndex() == in_progress_frame_index)
+            {
+                flush();
+                in_progress = false;
+            }
+
+            return eval_desc;
+        }
+
+        if(!is_requested)
+            return eval_desc;
+
+#pragma message("ADD CHECK FOR FRAMEBUFFER FORMAT(NORMALIZED OR INTEGRAL)")
+        const Render::DefaultFramebufferCopyRegion region = {
+            .buffer_offset = 0,
+            .buffer_row_length = static_cast<std::uint32_t>(resolution.width),
+            .offset = Render::Offset2D{.x = 0, .y = 0},
+            .extent = Render::Extent2D{.width = static_cast<std::uint32_t>(resolution.width),
+                                       .height = static_cast<std::uint32_t>(resolution.height)},
+            .data_format = Render::ImageCopyDataFormat::BGRA_NORM,
+            .data_type = Render::ImageCopyDataType::U32_8_8_8_8_Rev};
+
+        parent->GetRoot()->GetContext()->CopyDefaultFramebufferImageToBuffer(eval_desc.cmd,
+                                                                             buffer.get(),
+                                                                             region);
+
+        in_progress = true;
+        in_progress_frame_index = parent->GetRoot()->GetCurrentResourceSetIndex();
+        is_requested = false;
+
+        return eval_desc;
+    }
+
+    virtual void End(const EvaluateDesc& eval_desc) override
+    {
+        //noop
+    }
+private:
+    void Handle(const WindowResizedEvent& event)
+    {
+        if(in_progress)
+        {
+            flush();
+            in_progress = false;
+        }
+
+        recreate_buffer(event.drawable_resolution, Engine::GetInstance()->GetRenderEngine());
+    }
+
+    void Handle(const WindowMovedEvent& event)
+    {
+        is_requested = true;
+    }
+
+    void flush()
+    {
+        mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = buffer->GetSize()});
+
+        auto now = std::chrono::system_clock::now();
+
+        auto filename =
+            std::format("screenshot_{0:%d}.{0:%m}.{0:%Y}T{0:%H}.{0:%M}.{0:%S}.tga", now);
+
+        Render::RenderOrigin origin = parent->GetRoot()->GetContextProperties().origin;
+        const TGA::WriteInfo write_info = {.filename = filename.c_str(),
+                                           .width = static_cast<std::uint16_t>(resolution.width),
+                                           .height = static_cast<std::uint16_t>(resolution.height),
+                                           .data_type = TGA::DataType::UncompressedRGB,
+                                           .pixel_depth = TGA::PixelDepth::Bits32,
+                                           .top_to_bottom =
+                                               (origin == Render::RenderOrigin::TopLeft),
+                                           .data = mapped_ptr,
+                                           .id = ""};
+
+        auto res = TGA::Write(write_info);
+        buffer->Unmap();
+        if(res.has_value())
+            throw res.value();
+    }
+
+    void recreate_buffer(const WindowResolution& res, RenderEngine* engine)
+    {
+        buffer.reset();
+
+        const Render::BufferInfo info = {.size = res.width * res.height * sizeof(std::uint32_t),
+                                         .flags = Render::BufferFlagBits::MapRead};
+        buffer = engine->GetContext()->CreateBufferUnique(info);
+
+        resolution = res;
+    }
+private:
+    std::unique_ptr<Render::Buffer> buffer;
+    std::byte* mapped_ptr;
+    WindowResolution resolution;
+    bool in_progress;
+    std::uint16_t in_progress_frame_index;
+    bool is_requested;
+};*/
+
+/*struct ScreenshotRenderPassState
+{
+    Render::ImageView* input_image;
+};
+
+class ScreenshotRenderPass : public RenderPassTask
+{
+    static Render::RenderPassInfo get_info()
+    {
+        static Render::AttachmentDescription desc = {.clear_load = false};
+        return Render::RenderPassInfo{.color_attachment_descriptions = {&desc, 1},
+                                      .depth_stencil_attachment_description = nullptr};
+    }
+public:
+    ScreenshotRenderPass(RenderQueue* _parent, TaskKey&& key)
+        : RenderPassTask(_parent, std::move(key), get_info()),
+          in_progress(false),
+          state(ScreenshotRenderPassState{.input_image = nullptr})
+    {}
+
+    virtual ~ScreenshotRenderPass() override = default;
+
+    EvaluateDesc Begin(const EvaluateDesc& eval_desc) override
+    {
+        if()
+
+            const Render::RenderPassBeginInfo info = {
+                .framebuffer = parent->GetRoot()->GetContext()->GetCurrentDefaultFramebuffer(),
+                .clear_color_values = {},
+                .clear_depth_stencil_value = Render::ClearDepthStencilValue{}};
+        handle->Begin(eval_desc.cmd, info);
+
+        return eval_desc;
+    }
+
+    void End(const EvaluateDesc& eval_desc) override
+    {
+        handle->End(eval_desc.cmd);
+    }
+
+    ScreenshotRenderPassState& GetState() noexcept
+    {
+        return state;
+    }
+private:
+    bool in_progress;
+
+    std::unique_ptr<Render::Image> image;
+    std::unique_ptr<Render::ImageView> image_view;
+    std::unique_ptr<Render::Framebuffer> framebuffer;
+
+    ScreenshotRenderPassState state;
+};
+
+CHECK_TASK_IS_READY(ScreenshotRenderPass)*/
+
+struct ScreenShotTaskState
+{
+    Render::ImageView* input_image;
+};
+
+class ScreenShotTask : public TaskBase,
+                       public Events::EventListener<WindowResizedEvent>,
+                       public Events::EventListener<MouseButtonEvent>
+{
+public:
+    ScreenShotTask(RenderQueue* _parent, TaskBase::TaskKey&& key)
+        : TaskBase(_parent, std::move(key)),
+          in_progress_frame_index(-1),
+          is_requested(false),
+          state(nullptr)
+    {
+        auto res = Engine::GetInstance()->GetWindow()->GetDrawableResolution();
+        const Render::AttachmentDescription desc = {.clear_load = false};
+
+        renderpass = parent->GetRoot()->GetContext()->CreateRenderPassUnique(
+            Render::RenderPassInfo{.color_attachment_descriptions = {&desc, 1},
+                                   .depth_stencil_attachment_description = nullptr});
+
+        auto vert = Engine::GetInstance()->GetResourceManager()->CreateShader("blit.vert");
+        auto frag = Engine::GetInstance()->GetResourceManager()->CreateShader("blit.frag");
+
+        static std::array shaders = {vert->GetShader(), frag->GetShader()};
+
+        pipeline =
+            parent->GetRoot()->GetContext()->CreatePipelineUnique(Render::GraphicsPipelineInfo{
+                .shaders = {shaders.data(), shaders.size()},
+                .state_info = Render::GraphicsPipelineStateInfo{
+                    .vertex_input_state_info = Render::GraphicsPipelineVertexInputStateInfo{},
+                    .input_assembly_state_info =
+                        Render::GraphicsPipelineInputAssemblyStateInfo{
+                            .topology = Render::PrimitiveTopology::Triangles,
+                            .primitive_restart_enabled = false},
+                    .blend_state_info =
+                        Render::GraphicsPipelineBlendStateInfo{.blend_enabled = false},
+                    .depth_stencil_state_info =
+                        Render::GraphicsPipelineDepthStencilStateInfo{.depth_test_enabled = false,
+                                                                      .stencil_test_enabled =
+                                                                          false},
+                    .multisample_state_info =
+                        Render::GraphicsPipelineMultisampleStateInfo{.multisample_enabled = false},
+                    .rasterization_state_info =
+                        Render::GraphicsPipelineRasterizationStateInfo{
+                            .depth_clamp_enabled = false,
+                            .rasterizer_discard_enabled = false,
+                            .polygon_mode = Render::PolygonMode::Fill,
+                            .cull_mode = Render::CullMode::None,
+                            .front_face = Render::FrontFace::Clockwise,
+                            .line_width = 1.0f},
+                    .viewport_state_info =
+                        Render::GraphicsPipelineViewportStateInfo{.viewport_enabled = false}}});
+
+        recreate_images(Engine::GetInstance()->GetWindow()->GetDrawableResolution());
+
+        Events::Connect<WindowResizedEvent>(this,
+                                            Engine::GetInstance()->GetWindow(),
+                                            &ScreenShotTask::Handle);
+
+        Events::Connect<MouseButtonEvent>(this,
+                                          Engine::GetInstance()->GetWindow(),
+                                          &ScreenShotTask::Handle);
+    }
+
+    ~ScreenShotTask() = default;
+
+    virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override
+    {
+        if(in_progress_frame_index != -1 &&
+           in_progress_frame_index == parent->GetRoot()->GetCurrentResourceSetIndex())
+        {
+            flush();
+        }
+
+        if(is_requested && state.input_image != nullptr)
+        {
+            const Render::RenderPassBeginInfo info = {.framebuffer = framebuffer.get(),
+                                                      .clear_color_values = {},
+                                                      .clear_depth_stencil_value = {}};
+            renderpass->Begin(eval_desc.cmd, info);
+
+            constexpr Render::UniformDesc uniform_desc = {.type = Render::UniformType::Int,
+                                                          .extent = Render::UniformExtent::Scalar,
+                                                          .count = 1,
+                                                          .location = 0};
+
+            std::int32_t msaa_enabled = false;
+
+            pipeline->Bind(eval_desc.cmd);
+            pipeline->SetViewport(eval_desc.cmd, 0, {&viewport, 1});
+            pipeline->SetScissor(eval_desc.cmd, 0, {&scissors, 1});
+            pipeline->BindImageView(eval_desc.cmd, state.input_image, 0);
+
+            pipeline->SetUniform(
+                eval_desc.cmd,
+                uniform_desc,
+                {reinterpret_cast<const std::byte*>(&msaa_enabled), sizeof(std::int32_t)});
+            pipeline->Draw(eval_desc.cmd, 6, 1, 0);
+
+            const Render::BufferImageCopyRegion region = {
+                .buffer_offset = 0,
+                .buffer_row_length = scissors.extent.width,
+                .buffer_image_height = scissors.extent.height,
+                .subresource_layers = Render::ImageSubresourceLayers{.mip_level = 0,
+                                                                     .base_layer = 0,
+                                                                     .layer_count = 1},
+                .offset = Render::Offset3D{.x = 0, .y = 0, .z = 0},
+                .extent = Render::Extent3D{.width = scissors.extent.width,
+                                           .height = scissors.extent.height,
+                                           .depth = 1}};
+
+            /*static_cast<OpenGL::Context*>(parent->GetRoot()->GetContext())
+                ->GetLoader()
+                .MemoryBarrier(GL_ALL_BARRIER_BITS);*/
+
+            image->CopyToBuffer(eval_desc.cmd, buffer.get(), {&region, 1});
+
+            /*static_cast<OpenGL::Context*>(parent->GetRoot()->GetContext())
+                ->GetLoader()
+                .MemoryBarrier(GL_ALL_BARRIER_BITS);*/
+
+            in_progress_frame_index = parent->GetRoot()->GetCurrentResourceSetIndex();
+            is_requested = false;
+
+            return EvaluateDesc{.cmd = eval_desc.cmd, .pipeline = pipeline.get()};
+        }
+
+        return eval_desc;
+    }
+
+    virtual void End(const EvaluateDesc& eval_desc) override
+    {
+        renderpass->End(eval_desc.cmd);
+
+        state.input_image = nullptr; //clear state
+    }
+
+    ScreenShotTaskState& GetState() noexcept
+    {
+        return state;
+    }
+private:
+    Events::HandlerAction Handle(const WindowResizedEvent& event)
+    {
+        if(in_progress_frame_index != -1)
+            flush();
+
+        recreate_images(event.drawable_resolution);
+
+        return Events::HandlerAction::None;
+    }
+
+    Events::HandlerAction Handle(const MouseButtonEvent& event)
+    {
+        if(event.state == ButtonState::Pressed)
+            is_requested = true;
+
+        return Events::HandlerAction::None;
+    }
+
+    void flush()
+    {
+#pragma warning("BARRIER???!!!")
+        //#error SWAP R AND B!!! -> TGA have BGRA order!!!
+        auto mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = buffer->GetSize()});
+        for(std::size_t i = 0; i < buffer->GetSize(); i += 4)
+            std::swap(mapped_ptr[i], mapped_ptr[i + 2]);
+
+        auto now = std::chrono::system_clock::now();
+
+        auto filename = std::format(
+            "userdata/screenshots/screenshot_{0:%d}.{0:%m}.{0:%Y}T{0:%H}.{0:%M}.{0:%S}.tga",
+            now);
+
+        std::filesystem::create_directories("userdata/screenshots/");
+
+        //Render::RenderOrigin origin = parent->GetRoot()->GetContextProperties().origin;
+        const TGA::WriteInfo write_info = {
+            .filename = filename.c_str(),
+            .width = static_cast<std::uint16_t>(scissors.extent.width),
+            .height = static_cast<std::uint16_t>(scissors.extent.height),
+            .data_type = TGA::DataType::UncompressedRGB,
+            .pixel_depth = TGA::PixelDepth::Bits32,
+            .top_to_bottom = /*(origin == Render::RenderOrigin::TopLeft)*/ false,
+            .data = mapped_ptr,
+            .id = ""};
+
+        auto res = TGA::Write(write_info);
+        buffer->Unmap();
+        if(res.has_value())
+            throw res.value();
+
+        in_progress_frame_index = -1;
+    }
+
+    void recreate_images(const WindowResolution& res)
+    {
+        viewport = Render::Viewport{.x = 0,
+                                    .y = 0,
+                                    .width = static_cast<float>(res.width),
+                                    .height = static_cast<float>(res.height),
+                                    .min_depth = 0.0f,
+                                    .max_depth = 1.0f};
+
+        scissors =
+            Render::Rect2D{.offset = Render::Offset2D{.x = 0, .y = 0},
+                           .extent = Render::Extent2D{.width = static_cast<uint32_t>(res.width),
+                                                      .height = static_cast<uint32_t>(res.height)}};
+
+        framebuffer.reset();
+        image_view.reset();
+        image.reset();
+        buffer.reset();
+
+        image = parent->GetRoot()->GetContext()->CreateImageUnique(Render::ImageInfo{
+            .image_type = Render::ImageType::Image2D,
+            .format = Render::Format::R8G8B8A8_UNORM,
+            .extent = Render::Extent3D{.width = static_cast<uint32_t>(res.width),
+                                       .height = static_cast<uint32_t>(res.height),
+                                       .depth = 1},
+            .mip_levels = 1,
+            .array_layers = 1,
+            .samples = Render::SampleCount::SampleCount_1});
+
+        image_view = parent->GetRoot()->GetContext()->CreateImageViewUnique(Render::ImageViewInfo{
+            .image = image.get(),
+            .view_type = Render::ImageViewType::ImageView2D,
+            .format = Render::Format::R8G8B8A8_UNORM,
+            .components =
+                Render::ComponentMapping{
+                    .r = Render::ComponentSwizzle::SwizzleIdentity,
+                    .g = Render::ComponentSwizzle::SwizzleIdentity,
+                    .b = Render::ComponentSwizzle::SwizzleIdentity,
+                    .a = Render::ComponentSwizzle::SwizzleIdentity,
+                },
+            .subresource_range = Render::ImageSubresourceRange{.min_mip_level = 0,
+                                                               .mip_level_count = 1,
+                                                               .min_layer = 0,
+                                                               .layer_count = 1}});
+        std::array attachments = {Render::AttachmentRef{.attachment = image_view.get()}};
+        framebuffer = parent->GetRoot()->GetContext()->CreateFramebufferUnique(
+            Render::FramebufferInfo{.color_attachments = attachments,
+                                    .depth_stencil_attachment = nullptr});
+
+        buffer = parent->GetRoot()->GetContext()->CreateBufferUnique(Render::BufferInfo{
+            .size = static_cast<uint64_t>(
+                res.width * res.height *
+                (Render::GetFormatBitsPerPixel(Render::Format::R8G8B8A8_UNORM) / 8)),
+            .flags = Render::BufferFlagBits::MapRead});
+    }
+private:
+    std::int32_t in_progress_frame_index;
+    bool is_requested;
+
+    Render::Viewport viewport;
+    Render::Rect2D scissors;
+
+    std::unique_ptr<Render::RenderPass> renderpass;
+    std::unique_ptr<Render::Pipeline> pipeline;
+
+    std::unique_ptr<Render::Image> image;
+    std::unique_ptr<Render::ImageView> image_view;
+    std::unique_ptr<Render::Framebuffer> framebuffer;
+
+    std::unique_ptr<Render::Buffer> buffer;
+
+    ScreenShotTaskState state;
+};
+
+CHECK_TASK_IS_READY(ScreenShotTask)
+
+class TestRenderPass : public RenderPassTask, public Events::EventListener<WindowResizedEvent>
 {
     constexpr static Render::RenderPassInfo get_info()
     {
@@ -16,9 +641,37 @@ class TestRenderPass : public RenderPassTask
                                       .depth_stencil_attachment_description = nullptr};
     }
 public:
-    TestRenderPass(Task<RenderQueue>* _parent, TaskKey&& key)
-        : RenderPassTask(_parent, std::move(key), get_info())
-    {}
+    TestRenderPass(RenderQueue* _parent,
+                   TaskKey&& key,
+                   ResolveRenderPass* _resolve_renderpass,
+                   ScreenShotTask* _screenshot_task)
+        : RenderPassTask(_parent, std::move(key), get_info()),
+          resolve_renderpass(_resolve_renderpass),
+          screenshot_task(_screenshot_task)
+    {
+        recreate_images(Engine::GetInstance()->GetWindow()->GetDrawableResolution(),
+                        parent->GetRoot());
+
+        Events::Connect<WindowResizedEvent>(this,
+                                            Engine::GetInstance()->GetWindow(),
+                                            &TestRenderPass::Handle);
+
+        Events::Connect<TaskEraseEvent>(resolve_renderpass,
+                                        [this](const TaskEraseEvent&)
+                                        {
+                                            resolve_renderpass = nullptr;
+
+                                            return Events::HandlerAction::None;
+                                        });
+
+        Events::Connect<TaskEraseEvent>(screenshot_task,
+                                        [this](const TaskEraseEvent&)
+                                        {
+                                            screenshot_task = nullptr;
+
+                                            return Events::HandlerAction::None;
+                                        });
+    }
 
     virtual ~TestRenderPass() override
     {}
@@ -26,14 +679,14 @@ public:
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override
     {
         constexpr std::array colors = {
-            Render::ClearColorValue{.value = Render::ClearColorFloatValue{0.0f, 0.0f, 0.0f, 0.0f}},
+            /*Render::ClearColorValue{.value = Render::ClearColorFloatValue{0.0f, 0.0f, 0.0f, 0.0f}},
             Render::ClearColorValue{.value = Render::ClearColorFloatValue{1.0f, 0.0f, 0.0f, 0.0f}},
             Render::ClearColorValue{.value = Render::ClearColorFloatValue{0.0f, 1.0f, 0.0f, 0.0f}},
             Render::ClearColorValue{.value = Render::ClearColorFloatValue{0.0f, 0.0f, 1.0f, 0.0f}},
             Render::ClearColorValue{.value = Render::ClearColorFloatValue{1.0f, 1.0f, 0.0f, 0.0f}},
-            Render::ClearColorValue{.value = Render::ClearColorFloatValue{1.0f, 0.0f, 1.0f, 0.0f}},
+            Render::ClearColorValue{.value = Render::ClearColorFloatValue{1.0f, 0.0f, 1.0f, 0.0f}},*/
             Render::ClearColorValue{.value = Render::ClearColorFloatValue{0.0f, 1.0f, 1.0f, 0.0f}},
-            Render::ClearColorValue{.value = Render::ClearColorFloatValue{1.0f, 1.0f, 1.0f, 0.0f}}};
+            /*Render::ClearColorValue{.value = Render::ClearColorFloatValue{1.0f, 1.0f, 1.0f, 0.0f}}*/};
 
         static std::size_t i = 0;
         static auto prev = std::chrono::system_clock::now();
@@ -47,7 +700,8 @@ public:
         }
 
         const Render::RenderPassBeginInfo info = {
-            .framebuffer = parent->GetRoot()->GetContext()->GetCurrentDefaultFramebuffer(),
+            .framebuffer =
+                resources[parent->GetRoot()->GetCurrentResourceSetIndex()].framebuffer.get(),
             .clear_color_values = {&colors[i], 1},
             .clear_depth_stencil_value = Render::ClearDepthStencilValue{}};
         handle->Begin(eval_desc.cmd, info);
@@ -58,10 +712,199 @@ public:
     virtual void End(const EvaluateDesc& eval_desc) override
     {
         handle->End(eval_desc.cmd);
+
+        if(resolve_renderpass)
+            resolve_renderpass->GetState().input_image =
+                resources[parent->GetRoot()->GetCurrentResourceSetIndex()].image_view.get();
+
+        if(screenshot_task)
+            screenshot_task->GetState().input_image =
+                resources[parent->GetRoot()->GetCurrentResourceSetIndex()].image_view.get();
     }
+private:
+    struct PerFrameResource
+    {
+        std::unique_ptr<Render::Image> image;
+        std::unique_ptr<Render::ImageView> image_view;
+        std::unique_ptr<Render::Framebuffer> framebuffer;
+    };
+
+    Events::HandlerAction Handle(const WindowResizedEvent& event)
+    {
+        recreate_images(event.drawable_resolution, parent->GetRoot());
+
+        return Events::HandlerAction::None;
+    }
+
+    void recreate_images(const WindowResolution& res, RenderEngine* engine)
+    {
+        resources.clear();
+
+        auto frame_count = engine->GetResourceSetCount();
+
+        resources.reserve(frame_count);
+
+        const Render::ImageInfo image_info = {
+            .image_type = Render::ImageType::Image2D,
+            .format = Render::Format::R8G8B8A8_SNORM,
+            .extent = Render::Extent3D{.width = static_cast<std::uint32_t>(res.width),
+                                       .height = static_cast<std::uint32_t>(res.height),
+                                       .depth = 1},
+            .mip_levels = 1,
+            .array_layers = 1,
+            .samples = Render::SampleCount::SampleCount_1};
+
+        Render::ImageViewInfo image_view_info = {
+            .image = nullptr,
+            .view_type = Render::ImageViewType::ImageView2D,
+            .format = Render::Format::R8G8B8A8_SNORM,
+            .components = Render::ComponentMapping{.r = Render::ComponentSwizzle::SwizzleIdentity,
+                                                   .g = Render::ComponentSwizzle::SwizzleIdentity,
+                                                   .b = Render::ComponentSwizzle::SwizzleIdentity,
+                                                   .a = Render::ComponentSwizzle::SwizzleIdentity},
+            .subresource_range = Render::ImageSubresourceRange{.min_mip_level = 0,
+                                                               .mip_level_count = 1,
+                                                               .min_layer = 0,
+                                                               .layer_count = 1}};
+
+        Render::FramebufferInfo fb_info = {.color_attachments = {},
+                                           .depth_stencil_attachment = nullptr};
+        for(std::size_t i = 0; i < frame_count; i++)
+        {
+            resources.push_back({});
+            resources.back().image = engine->GetContext()->CreateImageUnique(image_info);
+
+            image_view_info.image = resources.back().image.get();
+            resources.back().image_view =
+                engine->GetContext()->CreateImageViewUnique(image_view_info);
+
+            Render::AttachmentRef att_ref{.attachment = resources.back().image_view.get()};
+            fb_info.color_attachments = {&att_ref, 1};
+            resources.back().framebuffer = engine->GetContext()->CreateFramebufferUnique(fb_info);
+        }
+    }
+private:
+    std::vector<PerFrameResource> resources;
+
+    ResolveRenderPass* resolve_renderpass;
+    ScreenShotTask* screenshot_task;
 };
 
 CHECK_TASK_IS_READY(TestRenderPass)
+
+class TestPipeline : public GraphicsPipelineTask, public Events::EventListener<WindowResizedEvent>
+{
+    static Render::GraphicsPipelineInfo get_info()
+    {
+        auto vert = Engine::GetInstance()->GetResourceManager()->CreateShader("test.vert");
+        auto frag = Engine::GetInstance()->GetResourceManager()->CreateShader("test.frag");
+
+        static std::array shaders = {vert->GetShader(), frag->GetShader()};
+
+        return Render::GraphicsPipelineInfo{
+            .shaders = {shaders.data(), shaders.size()},
+            .state_info = Render::GraphicsPipelineStateInfo{
+                .vertex_input_state_info = Render::GraphicsPipelineVertexInputStateInfo{},
+                .input_assembly_state_info =
+                    Render::GraphicsPipelineInputAssemblyStateInfo{
+                        .topology = Render::PrimitiveTopology::Triangles,
+                        .primitive_restart_enabled = false},
+                .blend_state_info = Render::GraphicsPipelineBlendStateInfo{.blend_enabled = false},
+                .depth_stencil_state_info =
+                    Render::GraphicsPipelineDepthStencilStateInfo{.depth_test_enabled = false,
+                                                                  .stencil_test_enabled = false},
+                .multisample_state_info =
+                    Render::GraphicsPipelineMultisampleStateInfo{.multisample_enabled = false},
+                .rasterization_state_info =
+                    Render::GraphicsPipelineRasterizationStateInfo{
+                        .depth_clamp_enabled = false,
+                        .rasterizer_discard_enabled = false,
+                        .polygon_mode = Render::PolygonMode::Fill,
+                        .cull_mode = Render::CullMode::None,
+                        .front_face = Render::FrontFace::Clockwise,
+                        .line_width = 1.0f},
+                .viewport_state_info =
+                    Render::GraphicsPipelineViewportStateInfo{.viewport_enabled = false}}};
+    }
+public:
+    TestPipeline(TestRenderPass* _parent, TaskKey&& key)
+        : GraphicsPipelineTask(_parent, std::move(key), get_info())
+    {
+        image = Engine::GetInstance()->GetResourceManager()->CreateImage("test2.dds",
+                                                                         TransferMode::Storage);
+
+        sampler = parent->GetRoot()->GetContext()->CreateSamplerUnique(
+            Render::SamplerInfo{.mag_filter = Render::Filter::Nearest,
+                                .min_filter = Render::Filter::Nearest,
+                                .mipmap_mode = Render::Filter::Nearest,
+                                .address_mode_u = Render::AddressMode::Repeat,
+                                .address_mode_v = Render::AddressMode::Repeat,
+                                .address_mode_w = Render::AddressMode::Repeat,
+                                .mip_lod_bias = 1000.0f,
+                                .anisotropy_enable = false,
+                                .max_anisotropy = 1.0f,
+                                .compare_enable = false,
+                                .min_lod = -1000.0f,
+                                .max_lod = 1000.0f,
+                                .border_color = Render::BorderColor{}});
+
+        WindowResolution resolution = Engine::GetInstance()->GetWindow()->GetDrawableResolution();
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = resolution.width;
+        viewport.height = resolution.height;
+        viewport.min_depth = 0.0f;
+        viewport.max_depth = 1.0f;
+
+        scissors.extent.width = resolution.width;
+        scissors.extent.height = resolution.height;
+        scissors.offset.x = 0;
+        scissors.offset.y = 0;
+
+        Events::Connect<WindowResizedEvent>(this,
+                                            Engine::GetInstance()->GetWindow(),
+                                            &TestPipeline::Handle);
+    }
+
+    virtual ~TestPipeline() override = default;
+
+    EvaluateDesc Begin(const EvaluateDesc& eval_desc) override
+    {
+        //if(image->GetState() == ResourceManager::ResourceState::NotReady)//do not handle this right now!?
+        handle->Bind(eval_desc.cmd);
+        handle->SetViewport(eval_desc.cmd, 0, {&viewport, 1});
+        handle->SetScissor(eval_desc.cmd, 0, {&scissors, 1});
+        handle->BindImageView(eval_desc.cmd, image->GetImageView(), 0);
+        handle->BindSampler(eval_desc.cmd, sampler.get(), 0);
+
+        handle->Draw(eval_desc.cmd, 6, 1, 0);
+
+        return EvaluateDesc{.cmd = eval_desc.cmd, .pipeline = handle.get()};
+    }
+
+    void End(const EvaluateDesc& eval_desc) override
+    {
+        //noop
+    }
+private:
+    Events::HandlerAction Handle(const WindowResizedEvent& event) noexcept
+    {
+        viewport.width = event.drawable_resolution.width;
+        viewport.height = event.drawable_resolution.height;
+
+        scissors.extent.width = event.drawable_resolution.width;
+        scissors.extent.height = event.drawable_resolution.height;
+
+        return Events::HandlerAction::None;
+    }
+private:
+    Render::Viewport viewport;
+    Render::Rect2D scissors;
+    hrs::rc_ptr<ResourceManager::ImageResource> image;
+    std::unique_ptr<Render::Sampler> sampler;
+};
+
+CHECK_TASK_IS_READY(TestPipeline)
 
 #define SHOW_INIT_ERROR(STR, ...) \
     if(!WindowSubsystem::ShowMessageBox(nullptr, \
@@ -79,15 +922,11 @@ Engine::Engine()
         GraphicWindowInfo{.resolution = WindowResolution{.width = 800, .height = 600},
                           .title = "game"};
 
-    const OpenGLBackendInfo render_info =
-        OpenGLBackendInfo{RenderBackendInfo{.type = RenderBackendType::OpenGL},
-                          OpenGLBackendDefaultFramebufferInfo{.red_channel_bits = 8,
-                                                              .green_channel_bits = 8,
-                                                              .blue_channel_bits = 8,
-                                                              .alpha_channel_bits = 0,
-                                                              .depth_channel_bits = 0,
-                                                              .stencil_channel_bits = 0},
-                          OpenGLVersion::OpenGL_4_6_Core};
+    const OpenGLBackendInfo render_info = OpenGLBackendInfo{
+        RenderBackendInfo{.type = RenderBackendType::OpenGL},
+        OpenGLBackendDefaultFramebufferInfo{.format = Render::Format::R8G8B8A8_UNORM},
+        OpenGLVersion::OpenGL_4_6_Core,
+        OpenGLBackendFlagBits::DebugContext};
 
     window = win_sys->CreateGraphicWindow(window_info, render_info);
 
@@ -105,6 +944,10 @@ Engine::Engine()
     game:
         shaders
         images
+
+    userdata:
+        screenshots
+        logs
 
     config.json/toml
 
@@ -140,7 +983,8 @@ rpasses:
         chain*
         
 
-    TestRenderPass(state ref) -> ScreenShot(state ref) -> Resolve[state]
+    TestRenderPass(state ref) ->
+        Rpass[out: default fb] ScreenShot(state ref) -> Resolve[state]
     
     */
     std::array shader_resource_descs = {
@@ -149,18 +993,67 @@ rpasses:
             .desc = ShaderResourceDesc{.stage = Render::ShaderStage::Vertex}},
         ResourceExtensionDesc<ShaderResourceDesc>{
             .ext = ".frag",
-            .desc = ShaderResourceDesc{.stage = Render::ShaderStage::Fragment}}};
+            .desc = ShaderResourceDesc{.stage = Render::ShaderStage::Fragment}},
+    };
 
     const RenderEngineInfo render_engine_info = RenderEngineInfo{.resource_set_count = 3};
     render_engine = std::unique_ptr<Task<RenderEngine>>(
-        new Task<RenderEngine>(render_engine_info, std::move(_context)));
+        new Task<RenderEngine>(render_engine_info, std::move(_context), window));
+
+    const Render::DebugMessengerInfo debug_messenger_info = {
+        .severities = Render::DebugMessengerSeverityFlagBits::Info |
+                      Render::DebugMessengerSeverityFlagBits::Error |
+                      Render::DebugMessengerSeverityFlagBits::Verbose |
+                      Render::DebugMessengerSeverityFlagBits::Warning,
+        .types = Render::DebugMessengerTypeFlagBits::General |
+                 Render::DebugMessengerTypeFlagBits::Performance |
+                 Render::DebugMessengerTypeFlagBits::Validation,
+        .callback = [](Render::DebugMessengerSeverityFlagBits severity,
+                       Render::DebugMessengerTypeFlags types,
+                       std::int64_t id,
+                       std::string_view message)
+        {
+            std::string_view severity_name;
+            switch(severity)
+            {
+                case Render::DebugMessengerSeverityFlagBits::Info:
+                    severity_name = "Info";
+                    break;
+                case Render::DebugMessengerSeverityFlagBits::Error:
+                    severity_name = "Error";
+                    break;
+                case Render::DebugMessengerSeverityFlagBits::Verbose:
+                    severity_name = "Verbose";
+                    break;
+                case Render::DebugMessengerSeverityFlagBits::Warning:
+                    severity_name = "Warning";
+                    break;
+            }
+
+            std::string_view type_name;
+            switch(types) //just select cooler one :)
+            {
+                case Render::DebugMessengerTypeFlagBits::Validation:
+                    type_name = "Validation";
+                    break;
+                case Render::DebugMessengerTypeFlagBits::Performance:
+                    type_name = "Performance";
+                    break;
+                case Render::DebugMessengerTypeFlagBits::General:
+                    type_name = "General";
+                    break;
+            }
+
+            std::cerr << std::format("[{}][{}]({}) -> {}\n", severity_name, type_name, id, message);
+        }};
+    render_engine->GetContext()->SetDebugMessenger(debug_messenger_info);
 
     const ResourceManagerInfo resource_manager_info = ResourceManagerInfo{
         .shaders_path_prefix = "game/shaders",
         .images_path_prefix = "game/images",
         .shader_resource_descs = shader_resource_descs,
-        .transfer_channel_state_info =
-            TransferChannelStateInfo{.pool_block_size = 8192, .pool_blocks_reserve = 16}};
+        .transfer_channel_info =
+            TransferChannelInfo{.pool_block_size = 8192, .pool_blocks_reserve = 16}};
     resource_manager = std::unique_ptr<ResourceManager>(new ResourceManager(resource_manager_info));
 }
 
@@ -211,24 +1104,86 @@ RenderEngine* Engine::GetRenderEngine() const noexcept
     return render_engine.get();
 }
 
+std::uint64_t Engine::GetFrameIndex() const noexcept
+{
+    return frame_index;
+}
+
 void Engine::loop()
 {
-    auto test = new Task<TestRenderPass>(
-        render_engine->GetRenderQueue(),
-        TaskBase::TaskKey{.priority = 0, .name = std::string_view("Test")});
+    auto wm_name = window->GetWindowManagerName();
+    std::cerr << std::format("Window manager: {}\n", wm_name);
+    auto props = render_engine->GetContext()->GetProperties();
+    std::cerr << std::format("Vendor = {}\n", props.vendor_name);
+    std::cerr << std::format("Device = {}\n", props.device_name);
+    if(props.extensions.empty())
+        std::cerr << "No extensions\n";
+    else
+        std::cerr << "Extensions:\n";
+
+    for(std::size_t i = 0; i < props.extensions.size(); i++)
+        std::cerr << std::format("#{:3}: {}\n", i, props.extensions[i]);
+
+    update_factor = REFERENCE_UPDATE_FACTOR;
+
+    constexpr float max_fps = 300.0f;
+    auto max_fps_duration = Timer::DurationFromFPS(max_fps);
 
     bool is_run = true;
-    auto close_handler = [&is_run](const EventHandlers::WindowCloseEvent&)
-    {
-        is_run = false;
-    };
+    Events::Connect<WindowCloseEvent>(window,
+                                      [&is_run](const WindowCloseEvent&)
+                                      {
+                                          is_run = false;
 
-    window->GetEventHandlers().AddHandler(std::move(close_handler));
+                                          return Events::HandlerAction::Erase;
+                                      });
+
+    auto resolve_rpass = new Task<ResolveRenderPass>(
+        render_engine->GetRenderQueue(),
+        TaskBase::TaskKey{.priority = 1000, .name = std::string_view("Resolve")});
+
+    auto resolve_pipeline = new Task<ResolvePipeline>(
+        resolve_rpass,
+        TaskBase::TaskKey{.priority = 1000, .name = std::string_view("Resolve")});
+
+    auto screenshot_task = new Task<ScreenShotTask>(
+        render_engine->GetRenderQueue(),
+        TaskBase::TaskKey{.priority = 1000, .name = std::string_view("Screenshot")});
+
+    auto test_rpass =
+        new Task<TestRenderPass>(render_engine->GetRenderQueue(),
+                                 TaskBase::TaskKey{.priority = 0, .name = std::string_view("Test")},
+                                 resolve_rpass,
+                                 screenshot_task);
+
+    auto test_pipeline =
+        new Task<TestPipeline>(test_rpass,
+                               TaskBase::TaskKey{.priority = 0, .name = std::string_view("Test")});
+
+    /*
+    ScreenShotRenderPass:
+        Enable() -> if in_progress -> Disable() else send cmd
+    
+    */
+    /*auto screenshot = new Task<ScreenShotTask>(
+        resolve_rpass,
+        TaskBase::TaskKey{.priority = 2000,
+                          .name = std::string_view("Screenshot")}); //right after resolve pipeline*/
 
     WindowSubsystem* win_sys = WindowSubsystem::GetSubsystem();
 
+    static_cast<OpenGLBackend*>(window->GetRenderBackend())
+        ->SetPresentMode(WindowPresentMode::Immediate);
+
+    EngineNextLoopIteratrionEvent next_iter_event = {};
     while(is_run)
     {
+        frame_timer.Begin();
+
+        Events::Emit(this, next_iter_event);
+
+        resource_manager->GetTransferStorage().Flush();
+
         render_engine->AcquireNextResourceSet();
 
         render_engine->GetContext()->AcquireNextSwapchainImage(
@@ -241,7 +1196,22 @@ void Engine::loop()
 
         Render::Semaphore* present_wait_sem =
             render_engine->GetRenderQueue()->GetCurrentSignalSemaphore();
-        Render::PresentInfo present_info = {.wait_semaphores = {&present_wait_sem, 1}};
+        const Render::PresentInfo present_info = {.wait_semaphores = {&present_wait_sem, 1}};
         render_engine->GetContext()->ReleaseSwapchainImage(present_info);
+
+        frame_timer.End();
+
+        frame_timer.CorrectOnExceeded(max_fps_duration);
+
+        update_factor = frame_timer.AdjustUpdateFactor(REFERENCE_UPDATE_FACTOR);
+
+        auto title =
+            std::format("FPS = {:4.3f}, frametime = {:2.3f}ms, update_factor = {:2.3f}",
+                        frame_timer.GetFPS(),
+                        std::chrono::duration<float, std::milli>(frame_timer.GetDuration()).count(),
+                        update_factor);
+        window->SetTitle(title.c_str());
+
+        frame_index++;
     }
 }

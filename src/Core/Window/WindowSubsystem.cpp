@@ -49,22 +49,22 @@ void WindowSubsystem::PollEvents()
                         GraphicWindow* window = GetGraphicWindow(window_event.windowID);
                         if(window)
                         {
-                            const EventHandlers::WindowCloseEvent event = {};
-                            window->GetEventHandlers().Apply(event);
+                            const WindowCloseEvent event = {};
+                            Events::Emit<WindowCloseEvent>(window, event);
                         }
                     }
                     break;
-                    case SDL_WINDOWEVENT_RESIZED:
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
                     {
                         GraphicWindow* window = GetGraphicWindow(window_event.windowID);
                         if(window)
                         {
-                            const EventHandlers::WindowResizedEvent event = {
+                            const WindowResizedEvent event = {
                                 .resolution = WindowResolution{.width = window_event.data1,
                                                                .height = window_event.data2},
                                 .drawable_resolution = window->GetDrawableResolution()};
 
-                            window->GetEventHandlers().Apply(event);
+                            Events::Emit<WindowResizedEvent>(window, event);
                         }
                     }
                     break;
@@ -73,8 +73,8 @@ void WindowSubsystem::PollEvents()
                         GraphicWindow* window = GetGraphicWindow(window_event.windowID);
                         if(window)
                         {
-                            const EventHandlers::WindowExposedEvent event = {};
-                            window->GetEventHandlers().Apply(event);
+                            const WindowExposedEvent event = {};
+                            Events::Emit<WindowExposedEvent>(window, event);
                         }
                     }
                     break;
@@ -83,14 +83,64 @@ void WindowSubsystem::PollEvents()
                         GraphicWindow* window = GetGraphicWindow(window_event.windowID);
                         if(window)
                         {
-                            const EventHandlers::WindowMovedEvent event = {
+                            const WindowMovedEvent event = {
                                 .position = WindowPosition{.x = window_event.data1,
                                                            .y = window_event.data2}};
 
-                            window->GetEventHandlers().Apply(event);
+                            Events::Emit<WindowMovedEvent>(window, event);
                         }
                     }
                     break;
+                }
+            }
+            break;
+            case SDL_MOUSEMOTION:
+            {
+                SDL_MouseMotionEvent& motion_event = event.motion;
+                GraphicWindow* window = GetGraphicWindow(motion_event.windowID);
+                if(window)
+                {
+                    const MouseMotionEvent event = {.mask = motion_event.state,
+                                                    .x = motion_event.x,
+                                                    .y = motion_event.y,
+                                                    .motion_x = motion_event.xrel,
+                                                    .motion_y = motion_event.yrel};
+
+                    Events::Emit<MouseMotionEvent>(window, event);
+                }
+            }
+            break;
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+            {
+                SDL_MouseButtonEvent& button_event = event.button;
+                GraphicWindow* window = GetGraphicWindow(button_event.windowID);
+                if(window)
+                {
+                    const MouseButtonEvent event = {
+                        .button = static_cast<MouseButtonBits>(1u << button_event.button),
+                        .state = (button_event.type == SDL_MOUSEBUTTONDOWN ? ButtonState::Pressed :
+                                                                             ButtonState::Released),
+                        .clicks = button_event.clicks,
+                        .x = button_event.x,
+                        .y = button_event.y};
+
+                    Events::Emit<MouseButtonEvent>(window, event);
+                }
+            }
+            break;
+            case SDL_MOUSEWHEEL:
+            {
+                SDL_MouseWheelEvent& wheel_event = event.wheel;
+                GraphicWindow* window = GetGraphicWindow(wheel_event.windowID);
+                if(window)
+                {
+                    const MouseWheelEvent event = {.scrolled_x = wheel_event.x,
+                                                   .scrolled_y = wheel_event.y,
+                                                   .x = wheel_event.mouseX,
+                                                   .y = wheel_event.mouseY};
+
+                    Events::Emit<MouseWheelEvent>(window, event);
                 }
             }
             break;

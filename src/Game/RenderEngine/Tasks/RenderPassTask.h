@@ -8,7 +8,7 @@ class RenderQueue;
 class RenderPassTask : public TaskBase
 {
 public:
-    RenderPassTask(Task<RenderQueue>* _parent,
+    RenderPassTask(RenderQueue* _parent,
                    TaskKey&& key,
                    const Render::RenderPassInfo& info) noexcept;
     virtual ~RenderPassTask() = default;

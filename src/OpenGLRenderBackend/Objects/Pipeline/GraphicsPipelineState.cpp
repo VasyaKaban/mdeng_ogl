@@ -19,11 +19,11 @@ namespace OpenGL
         const auto& loader = get_loader(parent);
 
         GLHandle _vao = OGL_NULL_HANDLE;
+        BindingStridesMap _binding_strides_map;
+
         loader.CreateVertexArrays(1, &_vao);
         if(_vao == OGL_NULL_HANDLE)
             throw std::runtime_error("Failed to create vertex array");
-
-        BindingStridesMap _binding_strides_map;
 
         for(const auto& binding: info.vertex_input_bindings)
         {
@@ -36,12 +36,13 @@ namespace OpenGL
 
         for(auto& attr: info.vertex_input_attributes)
         {
+            const auto& vertex_input_type_size_pair = DecodeVertexInputTypeSizePair(attr.format);
             loader.EnableVertexArrayAttrib(_vao, attr.location);
             loader.VertexArrayAttribFormat(_vao,
                                            attr.location,
-                                           VertexInputAttributeSizeToNative(attr.size),
-                                           VertexInputAttributeTypeToNative(attr.type),
-                                           GL_FALSE,
+                                           vertex_input_type_size_pair.size,
+                                           vertex_input_type_size_pair.type,
+                                           vertex_input_type_size_pair.normalized,
                                            attr.offset);
 
             loader.VertexArrayAttribBinding(_vao, attr.location, attr.binding);
@@ -59,6 +60,7 @@ namespace OpenGL
     void GraphicsPipelineVertexInputState::Destroy(Pipeline& parent) noexcept
     {
         get_loader(parent).DeleteVertexArrays(1, &vao);
+
         vao = OGL_NULL_HANDLE;
         binding_strides_map.clear();
     }
@@ -99,24 +101,27 @@ namespace OpenGL
               {info.blend_color[0], info.blend_color[1], info.blend_color[2], info.blend_color[3]})
     //blend_eq_info(info.blend_eq_info.begin(), info.blend_eq_info.end())
     {
-        blend_function_info.reserve(info.blend_function_info.size());
-        for(const auto& f_info: info.blend_function_info)
+        if(blend_enabled)
         {
-            blend_function_info.push_back(
-                BlendFunctionInfoNative{.buffer_index = f_info.buffer_index,
-                                        .src_rgb = BlendFactorToNative(f_info.src_rgb),
-                                        .src_alpha = BlendFactorToNative(f_info.src_alpha),
-                                        .dst_rgb = BlendFactorToNative(f_info.dst_rgb),
-                                        .dst_alpha = BlendFactorToNative(f_info.dst_alpha)});
-        }
+            blend_function_info.reserve(info.blend_function_info.size());
+            for(const auto& f_info: info.blend_function_info)
+            {
+                blend_function_info.push_back(
+                    BlendFunctionInfoNative{.buffer_index = f_info.buffer_index,
+                                            .src_rgb = BlendFactorToNative(f_info.src_rgb),
+                                            .src_alpha = BlendFactorToNative(f_info.src_alpha),
+                                            .dst_rgb = BlendFactorToNative(f_info.dst_rgb),
+                                            .dst_alpha = BlendFactorToNative(f_info.dst_alpha)});
+            }
 
-        blend_eq_info.reserve(info.blend_eq_info.size());
-        for(const auto& eq_info: info.blend_eq_info)
-        {
-            blend_eq_info.push_back(
-                BlendEquationInfoNative{.buffer_index = eq_info.buffer_index,
-                                        .eq_rgb = BlendEquationToNative(eq_info.eq_rgb),
-                                        .eq_alpha = BlendEquationToNative(eq_info.eq_alpha)});
+            blend_eq_info.reserve(info.blend_eq_info.size());
+            for(const auto& eq_info: info.blend_eq_info)
+            {
+                blend_eq_info.push_back(
+                    BlendEquationInfoNative{.buffer_index = eq_info.buffer_index,
+                                            .eq_rgb = BlendEquationToNative(eq_info.eq_rgb),
+                                            .eq_alpha = BlendEquationToNative(eq_info.eq_alpha)});
+            }
         }
     }
 
@@ -331,7 +336,7 @@ namespace OpenGL
           viewports(info.viewports.begin(), info.viewports.end()),
           scissors(info.scissors.begin(), info.scissors.end())
     {
-        if(viewport_enabled && scissors_enabled)
+        if(viewport_enabled)
         {
             if(viewports.size() != scissors.size())
                 throw std::runtime_error("Count of scissor boxes must be equal to viewport count");

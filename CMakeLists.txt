@@ -15,8 +15,11 @@ add_subdirectory("src/Core")
 add_subdirectory("src/Game")
 add_subdirectory("src/OpenGLRenderBackend")
 
+find_package(Python COMPONENTS Interpreter REQUIIRED)
+
 add_custom_target(
     out ALL
+    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/game/shaders/check.py ${PROJECT_SOURCE_DIR}/game/shaders/ glslangvalidator
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/game ${OUTPUT_DIRECTORY}/game)
 
 

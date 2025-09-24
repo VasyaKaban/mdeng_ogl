@@ -144,26 +144,40 @@ namespace Render
     {
 #pragma message( \
     "Only cares about row and height. So it must be well defined. No '0' value like in VK")
-        auto block_size = (IsFormatCompressed(format) ? GetFormatBlockSize(format) :
-                                                        GetFormatBitsPerPixel(format) / 8);
+        if(IsFormatCompressed(format))
+        {
+#pragma message( \
+    "Omit GetFormatBlockSize(format) for compressed formats only for BC(S3TC) family!!!")
 
-        return reg.buffer_row_length * reg.buffer_image_height * block_size;
-        //return ((reg.extent.width - reg.offset.x) * block_size) +
-        //       ((reg.extent.height - reg.offset.y) * reg.buffer_row_length) +
-        //       ((reg.extent.depth - reg.offset.z) * reg.buffer_row_length * reg.buffer_image_height);
+            return std::max<std::uint32_t>(1, ((reg.buffer_row_length + 3) / 4)) *
+                   std::max<std::uint32_t>(1, ((reg.buffer_image_height + 3) / 4)) *
+                   GetFormatBlockSize(format);
+        }
+        else
+        {
+            return reg.buffer_row_length * reg.buffer_image_height *
+                   (GetFormatBitsPerPixel(format) / 8);
+        }
     }
 
     std::uint32_t GetFormatRegionSize(Format format, const MemoryImageCopyRegion& reg) noexcept
     {
 #pragma message( \
     "Only cares about row and height. So it must be well defined. No '0' value like in VK")
-        auto block_size = (IsFormatCompressed(format) ? GetFormatBlockSize(format) :
-                                                        GetFormatBitsPerPixel(format) / 8);
+        if(IsFormatCompressed(format))
+        {
+#pragma message( \
+    "Omit GetFormatBlockSize(format) for compressed formats only for BC(S3TC) family!!!")
 
-        return reg.buffer_row_length * reg.buffer_image_height * block_size;
-        //return ((reg.extent.width - reg.offset.x) * block_size) +
-        //       ((reg.extent.height - reg.offset.y) * reg.buffer_row_length) +
-        //       ((reg.extent.depth - reg.offset.z) * reg.buffer_row_length * reg.buffer_image_height);
+            return std::max<std::uint32_t>(1, ((reg.buffer_row_length + 3) / 4)) *
+                   std::max<std::uint32_t>(1, ((reg.buffer_image_height + 3) / 4)) *
+                   GetFormatBlockSize(format);
+        }
+        else
+        {
+            return reg.buffer_row_length * reg.buffer_image_height *
+                   (GetFormatBitsPerPixel(format) / 8);
+        }
     }
 
     /*#error WRONG!!!
@@ -339,5 +353,102 @@ constexpr std::uint32_t GetFormatRegionSize(Format format, const Extent3D& exten
         }
 
         return alignment;
+    }
+
+    FormatComponentsBitSize GetFormatComponentsBitSize(Format format) noexcept
+    {
+        FormatComponentsBitSize components;
+        switch(format)
+        {
+            case Format::R32G32B32A32_FLOAT:
+            case Format::R32G32B32A32_UINT:
+            case Format::R32G32B32A32_SINT:
+                components =
+                    FormatComponentsBitSize{.red = 32, .green = 32, .blue = 32, .alpha = 32};
+                break;
+            case Format::R32G32B32_FLOAT:
+            case Format::R32G32B32_UINT:
+            case Format::R32G32B32_SINT:
+                components =
+                    FormatComponentsBitSize{.red = 32, .green = 32, .blue = 32, .alpha = 0};
+                break;
+            case Format::R16G16B16A16_FLOAT:
+            case Format::R16G16B16A16_UNORM:
+            case Format::R16G16B16A16_UINT:
+            case Format::R16G16B16A16_SNORM:
+            case Format::R16G16B16A16_SINT:
+                components =
+                    FormatComponentsBitSize{.red = 16, .green = 16, .blue = 16, .alpha = 16};
+                break;
+            case Format::R32G32_FLOAT:
+            case Format::R32G32_UINT:
+            case Format::R32G32_SINT:
+                components = FormatComponentsBitSize{.red = 32, .green = 32, .blue = 0, .alpha = 0};
+                break;
+            case Format::R10G10B10A2_UNORM:
+            case Format::R10G10B10A2_UINT:
+                components =
+                    FormatComponentsBitSize{.red = 10, .green = 10, .blue = 10, .alpha = 2};
+                break;
+            case Format::R11G11B10_FLOAT:
+                components =
+                    FormatComponentsBitSize{.red = 11, .green = 11, .blue = 11, .alpha = 0};
+                break;
+            case Format::R8G8B8A8_UNORM:
+            case Format::R8G8B8A8_UNORM_SRGB:
+            case Format::R8G8B8A8_UINT:
+            case Format::R8G8B8A8_SNORM:
+            case Format::R8G8B8A8_SINT:
+                components = FormatComponentsBitSize{.red = 8, .green = 8, .blue = 8, .alpha = 8};
+                break;
+            case Format::R16G16_FLOAT:
+            case Format::R16G16_UNORM:
+            case Format::R16G16_UINT:
+            case Format::R16G16_SNORM:
+            case Format::R16G16_SINT:
+                components = FormatComponentsBitSize{.red = 16, .green = 16, .blue = 0, .alpha = 0};
+                break;
+            case Format::R32_FLOAT:
+            case Format::R32_UINT:
+            case Format::R32_SINT:
+                components = FormatComponentsBitSize{.red = 32, .green = 0, .blue = 0, .alpha = 0};
+                break;
+            case Format::R8G8_UNORM:
+            case Format::R8G8_UINT:
+            case Format::R8G8_SNORM:
+            case Format::R8G8_SINT:
+                components = FormatComponentsBitSize{.red = 8, .green = 8, .blue = 0, .alpha = 0};
+                break;
+            case Format::R16_FLOAT:
+            case Format::R16_UNORM:
+            case Format::R16_UINT:
+            case Format::R16_SNORM:
+            case Format::R16_SINT:
+                components = FormatComponentsBitSize{.red = 16, .green = 0, .blue = 0, .alpha = 0};
+                break;
+            case Format::R8_UNORM:
+            case Format::R8_UINT:
+            case Format::R8_SNORM:
+            case Format::R8_SINT:
+                components = FormatComponentsBitSize{.red = 8, .green = 0, .blue = 0, .alpha = 0};
+                break;
+            case Format::R9G9B9E5_SHAREDEXP:
+                components = FormatComponentsBitSize{.red = 9, .green = 9, .blue = 9, .alpha = 0};
+                break;
+            case Format::B5G6R5_UNORM:
+                components = FormatComponentsBitSize{.red = 5, .green = 6, .blue = 5, .alpha = 0};
+                break;
+            case Format::B5G5R5A1_UNORM:
+                components = FormatComponentsBitSize{.red = 5, .green = 5, .blue = 5, .alpha = 1};
+                break;
+            case Format::B4G4R4A4_UNORM:
+                components = FormatComponentsBitSize{.red = 4, .green = 4, .blue = 4, .alpha = 4};
+                break;
+            default:
+                components = FormatComponentsBitSize{.red = 0, .green = 0, .blue = 0, .alpha = 0};
+                break;
+        }
+
+        return components;
     }
 };

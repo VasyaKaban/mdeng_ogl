@@ -5,20 +5,21 @@
 
 RenderQueue::RenderQueue(Task<RenderEngine>* _parent, TaskKey&& key)
     : QueueTask(_parent, std::move(key), Render::QueueSpecialization::Graphics),
-      command_pool(_parent->GetContext()->CreateCommandPool(
-          Render::CommandPoolInfo{.queue = QueueTask::handle.get()}))
+      command_pool(_parent->GetContext()->CreateCommandPoolUnique(
+          Render::CommandPoolInfo{.queue = QueueTask::handle})),
+      transfer_queue(_parent->GetTransferQueue())
 {
     resources.reserve(_parent->GetResourceSetCount());
     for(std::size_t i = 0; i < _parent->GetResourceSetCount(); i++)
     {
-        resources.push_back(Resource{
-            .command_buffer = std::unique_ptr<Render::CommandBuffer>(command_pool->Allocate()),
-            .fence = std::unique_ptr<Render::Fence>(_parent->GetContext()->CreateFence()),
-            .swapchain_wait_semaphore =
-                std::unique_ptr<Render::Semaphore>(_parent->GetContext()->CreateSemaphore()),
-            .signal_semaphore =
-                std::unique_ptr<Render::Semaphore>(_parent->GetContext()->CreateSemaphore())});
+        resources.push_back(
+            Resource{.command_buffer = command_pool->AllocateUnique(),
+                     .fence = _parent->GetContext()->CreateFenceUnique(),
+                     .swapchain_wait_semaphore = _parent->GetContext()->CreateSemaphoreUnique(),
+                     .signal_semaphore = _parent->GetContext()->CreateSemaphoreUnique()});
     }
+
+    Events::Connect<TaskEraseEvent>(this, transfer_queue, &RenderQueue::Handle);
 }
 
 RenderQueue::~RenderQueue()
@@ -36,11 +37,15 @@ EvaluateDesc RenderQueue::Begin([[maybe_unused]] const EvaluateDesc& eval_desc)
         throw std::runtime_error("Failed to wait on RenderQueue fence");
 
     EvaluateDesc local_eval_desc = {.cmd = resource.command_buffer.get(), .pipeline = nullptr};
-    std::array wait_sems = {
-        static_cast<RenderEngine*>(parent)->GetTransferQueue()->GetCurrentSemaphore(),
-        GetCurrentSwapchainWaitSemaphore()};
+    std::array<Render::Semaphore*, 2> wait_sems;
+    wait_sems[0] = GetCurrentSwapchainWaitSemaphore();
+    if(transfer_queue)
+        wait_sems[1] =
+            static_cast<RenderEngine*>(parent)->GetTransferQueue()->GetCurrentSemaphore();
 
-    Render::QueueBeginInfo begin_info = {.wait_seamphores = {wait_sems.data(), wait_sems.size()}};
+    Render::QueueBeginInfo begin_info = {
+        .wait_seamphores = {wait_sems.data(),
+                            static_cast<std::size_t>((transfer_queue == nullptr ? 1 : 2))}};
 
     handle->Begin(begin_info);
     local_eval_desc.cmd->Begin();
@@ -89,4 +94,11 @@ void RenderQueue::WaitAllFences()
         if(!res.fence->Wait(std::numeric_limits<std::uint64_t>::max()))
             throw std::runtime_error("Failed to wait on RenderQueue fence");
     }
+}
+
+Events::HandlerAction RenderQueue::Handle(const TaskEraseEvent& event)
+{
+    transfer_queue = nullptr;
+
+    return Events::HandlerAction::None;
 }

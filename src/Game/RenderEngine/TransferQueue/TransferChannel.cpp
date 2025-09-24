@@ -3,11 +3,11 @@
 #include "Core/Render/Objects/Buffer.h"
 #include "Core/Render/Objects/Image.h"
 
-TransferChannel::TransferChannel(Task<TransferQueue>* _parent,
+TransferChannel::TransferChannel(TransferQueue* _parent,
                                  TaskKey&& key,
-                                 const TransferChannelStateInfo& info)
+                                 const TransferChannelInfo& info)
     : TaskBase(_parent, std::move(key)),
-      state(new TransferChannelState(info))
+      staging_regions(info.pool_block_size, info.pool_blocks_reserve)
 {}
 
 TransferChannel::~TransferChannel()
@@ -15,13 +15,11 @@ TransferChannel::~TransferChannel()
 
 EvaluateDesc TransferChannel::Begin(const EvaluateDesc& eval_desc)
 {
-    TransferChannelState& state_ref = *state;
-
-    if(!state_ref.staging_regions.pick())
+    if(!staging_regions.pick())
         return eval_desc;
 
     TransferRegion* reg;
-    while((reg = state_ref.staging_regions.pick()))
+    while((reg = staging_regions.pick()))
     {
         if(std::holds_alternative<TransferBufferOperation>(reg->op))
         {
@@ -40,6 +38,8 @@ EvaluateDesc TransferChannel::Begin(const EvaluateDesc& eval_desc)
             TransferCallbackOperation& op = std::get<TransferCallbackOperation>(reg->op);
             op.cback();
         }
+
+        staging_regions.pop();
     }
 
     return eval_desc;
@@ -50,7 +50,31 @@ void TransferChannel::End([[maybe_unused]] const EvaluateDesc& eval_desc)
     //noop
 }
 
-hrs::rc_ptr<TransferChannelState> TransferChannel::GetState() const noexcept
+void TransferChannel::Transfer(TransferBufferOperation&& op)
 {
-    return state.Get();
+    if(!op.regions.empty())
+    {
+        TransferRegion& reg = staging_regions.acquire();
+        reg.op = std::move(op);
+    }
+}
+
+void TransferChannel::Transfer(TransferImageOperation&& op)
+{
+    if(!op.regions.empty())
+    {
+        TransferRegion& reg = staging_regions.acquire();
+        reg.op = std::move(op);
+    }
+}
+
+void TransferChannel::Transfer(TransferCallbackOperation&& op)
+{
+    TransferRegion& reg = staging_regions.acquire();
+    reg.op = std::move(op);
+}
+
+void TransferChannel::Reserve(std::size_t size)
+{
+    staging_regions.reserve_next(size);
 }

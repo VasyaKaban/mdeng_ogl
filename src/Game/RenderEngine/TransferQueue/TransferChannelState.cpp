@@ -1,6 +1,6 @@
 #include "TransferChannelState.h"
 
-TransferChannelState::TransferChannelState(const TransferChannelStateInfo& info)
+/*TransferChannelState::TransferChannelState(const TransferChannelStateInfo& info)
     : staging_regions(info.pool_block_size, info.pool_blocks_reserve),
       detached(false)
 {}
@@ -45,3 +45,8 @@ void TransferChannelState::Detach() noexcept
     detached = true;
     staging_regions.clear();
 }
+
+bool TransferChannelState::IsDetached() const noexcept
+{
+    return detached;
+}*/

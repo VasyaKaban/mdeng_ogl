@@ -4,6 +4,13 @@
 
 namespace OpenGL
 {
+#define CHECK_MAPPING_IS_SORTED(NAME) \
+    static_assert(std::ranges::is_sorted(NAME, \
+                                         [](const auto& pr1, const auto& pr2) \
+                                         { \
+                                             return pr1.first < pr2.first; \
+                                         }));
+
     GLenum ComapreOpToNative(Render::CompareOp op)
     {
         constexpr static std::pair<Render::CompareOp, GLenum> mapping[] = {
@@ -16,6 +23,8 @@ namespace OpenGL
             {Render::CompareOp::GreaterOrEqual, GL_GEQUAL},
             {Render::CompareOp::Always, GL_ALWAYS},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, op);
         if(native == nullptr)
@@ -36,76 +45,13 @@ namespace OpenGL
             {Render::SampleCount::SampleCount_64, 64},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, samples);
         if(native == nullptr)
             throw std::runtime_error("No native SampleCount found");
 
         return *native;
-    }
-
-    GLenum ImageCopyDataFormatToNative(Render::ImageCopyDataFormat format)
-    {
-        constexpr static std::pair<Render::ImageCopyDataFormat, GLenum> mapping[] = {
-            {Render::ImageCopyDataFormat::R_NORM, GL_RED},
-            {Render::ImageCopyDataFormat::RG_NORM, GL_RG},
-            {Render::ImageCopyDataFormat::RGB_NORM, GL_RGB},
-            {Render::ImageCopyDataFormat::BGR_NORM, GL_BGR},
-            {Render::ImageCopyDataFormat::RGBA_NORM, GL_RGBA},
-            {Render::ImageCopyDataFormat::BGRA_NORM, GL_BGRA},
-
-            {Render::ImageCopyDataFormat::R_INT, GL_RED_INTEGER},
-            {Render::ImageCopyDataFormat::RG_INT, GL_RG_INTEGER},
-            {Render::ImageCopyDataFormat::RGB_INT, GL_RGB_INTEGER},
-            {Render::ImageCopyDataFormat::BGR_INT, GL_BGR_INTEGER},
-            {Render::ImageCopyDataFormat::RGBA_INT, GL_RGBA_INTEGER},
-            {Render::ImageCopyDataFormat::BGRA_INT, GL_BGRA_INTEGER},
-
-            {Render::ImageCopyDataFormat::Depth, GL_DEPTH_COMPONENT},
-            {Render::ImageCopyDataFormat::Stencil, GL_STENCIL_INDEX},
-            {Render::ImageCopyDataFormat::DepthStencil, GL_DEPTH_STENCIL},
-        };
-
-        const GLenum* native = hrs::mapping_search(mapping, format);
-        if(native == nullptr)
-            throw std::runtime_error("No native ImageCopyDataFormat found");
-
-        return *native;
-    }
-
-    GLenum ImageCopyDataTypeToNative(Render::ImageCopyDataType type)
-    {
-        constexpr static std::pair<Render::ImageCopyDataType, GLenum> mapping[] = {
-            {Render::ImageCopyDataType::U8, GL_UNSIGNED_BYTE},
-            {Render::ImageCopyDataType::I8, GL_BYTE},
-            {Render::ImageCopyDataType::U16, GL_UNSIGNED_SHORT},
-            {Render::ImageCopyDataType::I16, GL_SHORT},
-            {Render::ImageCopyDataType::U32, GL_UNSIGNED_INT},
-            {Render::ImageCopyDataType::I32, GL_INT},
-            {Render::ImageCopyDataType::F16, GL_HALF_FLOAT},
-            {Render::ImageCopyDataType::F32, GL_FLOAT},
-
-            {Render::ImageCopyDataType::U8_3_3_2, GL_UNSIGNED_BYTE_3_3_2},
-            {Render::ImageCopyDataType::U8_2_3_3_Rev, GL_UNSIGNED_BYTE_2_3_3_REV},
-            {Render::ImageCopyDataType::U16_5_6_5, GL_UNSIGNED_SHORT_5_6_5},
-            {Render::ImageCopyDataType::U16_5_6_5_Rev, GL_UNSIGNED_SHORT_5_6_5_REV},
-            {Render::ImageCopyDataType::U16_4_4_4_4, GL_UNSIGNED_SHORT_4_4_4_4},
-            {Render::ImageCopyDataType::U16_4_4_4_4_Rev, GL_UNSIGNED_SHORT_4_4_4_4_REV},
-            {Render::ImageCopyDataType::U16_5_5_5_1, GL_UNSIGNED_SHORT_5_5_5_1},
-            {Render::ImageCopyDataType::U16_1_5_5_5_Rev, GL_UNSIGNED_SHORT_1_5_5_5_REV},
-            {Render::ImageCopyDataType::U32_8_8_8_8, GL_UNSIGNED_INT_8_8_8_8},
-            {Render::ImageCopyDataType::U32_8_8_8_8_Rev, GL_UNSIGNED_INT_8_8_8_8_REV},
-
-            {Render::ImageCopyDataType::U32_10_10_10_2, GL_UNSIGNED_INT_10_10_10_2},
-            {Render::ImageCopyDataType::U32_2_10_10_10_Rev, GL_UNSIGNED_INT_2_10_10_10_REV},
-            {Render::ImageCopyDataType::U32_24_8, GL_UNSIGNED_INT_24_8},
-            {Render::ImageCopyDataType::U32_10F_11F_11F_Rev, GL_UNSIGNED_INT_10F_11F_11F_REV},
-            {Render::ImageCopyDataType::U32_5_9_9_9_Rev, GL_UNSIGNED_INT_5_9_9_9_REV},
-            {Render::ImageCopyDataType::F32_U32_24_8_REV, GL_FLOAT_32_UNSIGNED_INT_24_8_REV},
-        };
-
-        const GLenum* native = hrs::mapping_search(mapping, type);
-        if(native == nullptr)
-            throw std::runtime_error("No native ImageCopyDataType found");
     }
 
     GLbitfield BufferFlagsToNative(Render::BufferFlags flags)
@@ -117,6 +63,8 @@ namespace OpenGL
             {Render::BufferFlagBits::CoherentMapping, GL_MAP_COHERENT_BIT},
             {Render::BufferFlagBits::DynamicStorage, GL_DYNAMIC_STORAGE_BIT},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         GLbitfield mask = 0;
         for(const auto& pr: mapping)
@@ -134,6 +82,8 @@ namespace OpenGL
             {Render::FenceStatus::Signaled, GL_SIGNALED},
             {Render::FenceStatus::Unsignaled, GL_UNSIGNALED},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, status);
         if(native == nullptr)
@@ -230,6 +180,8 @@ namespace OpenGL
             {Render::Format::B4G4R4A4_UNORM, GL_RGBA4},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, format);
         if(native == nullptr)
             throw std::runtime_error("No native format found");
@@ -299,6 +251,8 @@ namespace OpenGL
             {Render::ImageViewType::ImageView2DMultisampleArray, GL_TEXTURE_2D_MULTISAMPLE_ARRAY},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, type);
         if(native == nullptr)
             throw std::runtime_error("No native ImageViewType found");
@@ -318,6 +272,8 @@ namespace OpenGL
             {Render::ComponentSwizzle::SwizzleIdentity, OGL_IDENTITY_SWIZZLE},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, swizzle);
         if(native == nullptr)
             throw std::runtime_error("No native ComponentSwizzle found");
@@ -331,6 +287,8 @@ namespace OpenGL
             {Render::Filter::Nearest, GL_NEAREST},
             {Render::Filter::Linear, GL_LINEAR},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, filter);
         if(native == nullptr)
@@ -348,6 +306,8 @@ namespace OpenGL
             {Render::AddressMode::ClampToBorder, GL_CLAMP_TO_BORDER},
             {Render::AddressMode::MirrorClampToEdge, GL_MIRROR_CLAMP_TO_EDGE},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, mode);
         if(native == nullptr)
@@ -367,6 +327,8 @@ namespace OpenGL
             {Render::ShaderStage::Compute, GL_COMPUTE_SHADER},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, stage);
         if(native == nullptr)
             throw std::runtime_error("No native ShaderStage found");
@@ -378,54 +340,14 @@ namespace OpenGL
     {
         constexpr static std::pair<Render::InputRate, GLenum> mapping[] = {
             {Render::InputRate::VertexRate, 0},
-            {Render::InputRate::InstanceRate, 1}};
+            {Render::InputRate::InstanceRate, 1},
+        };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, rate);
         if(native == nullptr)
             throw std::runtime_error("No native InputRate found");
-
-        return *native;
-    }
-
-    GLenum VertexInputAttributeSizeToNative(Render::VertexInputAttributeSize size)
-    {
-        constexpr static std::pair<Render::VertexInputAttributeSize, GLenum> mapping[] = {
-            {Render::VertexInputAttributeSize::Scalar, 1},
-            {Render::VertexInputAttributeSize::Vec2, 2},
-            {Render::VertexInputAttributeSize::Vec3, 3},
-            {Render::VertexInputAttributeSize::Vec4, 4},
-        };
-
-        const GLenum* native = hrs::mapping_search(mapping, size);
-        if(native == nullptr)
-            throw std::runtime_error("No native VertexInputAttributeSize found");
-
-        return *native;
-    }
-
-    GLenum VertexInputAttributeTypeToNative(Render::VertexInputAttributeType type)
-    {
-        constexpr static std::pair<Render::VertexInputAttributeType, GLenum> mapping[] = {
-            {Render::VertexInputAttributeType::Byte, GL_BYTE},
-            {Render::VertexInputAttributeType::Short, GL_SHORT},
-            {Render::VertexInputAttributeType::Int, GL_INT},
-            {Render::VertexInputAttributeType::Fixed, GL_FIXED},
-            {Render::VertexInputAttributeType::Float, GL_FLOAT},
-            {Render::VertexInputAttributeType::HalfFloat, GL_HALF_FLOAT},
-            {Render::VertexInputAttributeType::Double, GL_DOUBLE},
-            {Render::VertexInputAttributeType::UnsignedByte, GL_UNSIGNED_BYTE},
-            {Render::VertexInputAttributeType::UnsignedShort, GL_UNSIGNED_SHORT},
-            {Render::VertexInputAttributeType::UnsignedInt, GL_UNSIGNED_INT},
-            {Render::VertexInputAttributeType::Int_2_10_10_10_REV, GL_INT_2_10_10_10_REV},
-            {Render::VertexInputAttributeType::UnsignedInt_2_10_10_10_REV,
-             GL_UNSIGNED_INT_2_10_10_10_REV},
-            {Render::VertexInputAttributeType::UnsignedInt_10F_11F_11F_REV,
-             GL_UNSIGNED_INT_10F_11F_11F_REV},
-        };
-
-        const GLenum* native = hrs::mapping_search(mapping, type);
-        if(native == nullptr)
-            throw std::runtime_error("No native VertexInputAttributeType found");
 
         return *native;
     }
@@ -445,6 +367,8 @@ namespace OpenGL
             {Render::PrimitiveTopology::TriangleStrIpAdjacency, GL_TRIANGLE_STRIP_ADJACENCY},
             {Render::PrimitiveTopology::Patches, GL_PATCHES},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, topology);
         if(native == nullptr)
@@ -478,6 +402,8 @@ namespace OpenGL
             {Render::BlendFactor::OneMinusSrc1Alpha, GL_ONE_MINUS_SRC1_ALPHA},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, factor);
         if(native == nullptr)
             throw std::runtime_error("No native BlendFactor found");
@@ -507,6 +433,8 @@ namespace OpenGL
             {Render::BlendLogicOp::OrInverted, GL_OR_INVERTED},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, op);
         if(native == nullptr)
             throw std::runtime_error("No native BlendLogicOp found");
@@ -523,6 +451,8 @@ namespace OpenGL
             {Render::BlendEquation::Min, GL_MIN},
             {Render::BlendEquation::Max, GL_MAX},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, eq);
         if(native == nullptr)
@@ -544,6 +474,8 @@ namespace OpenGL
             {Render::StencilOp::Invert, GL_INVERT},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, op);
         if(native == nullptr)
             throw std::runtime_error("No native StencilOp found");
@@ -558,6 +490,8 @@ namespace OpenGL
             {Render::PolygonMode::Line, GL_LINE},
             {Render::PolygonMode::Fill, GL_FILL},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, mode);
         if(native == nullptr)
@@ -575,6 +509,8 @@ namespace OpenGL
             {Render::CullMode::FrontAndBack, GL_FRONT_AND_BACK},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, mode);
         if(native == nullptr)
             throw std::runtime_error("No native CullMode found");
@@ -588,6 +524,8 @@ namespace OpenGL
             {Render::FrontFace::CounterClockwise, GL_CCW},
             {Render::FrontFace::Clockwise, GL_CW},
         };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
 
         const GLenum* native = hrs::mapping_search(mapping, face);
         if(native == nullptr)
@@ -604,9 +542,448 @@ namespace OpenGL
             {Render::IndexType::u32, GL_UNSIGNED_INT},
         };
 
+        CHECK_MAPPING_IS_SORTED(mapping)
+
         const GLenum* native = hrs::mapping_search(mapping, type);
         if(native == nullptr)
             throw std::runtime_error("No native IndexType found");
+
+        return *native;
+    }
+
+    TransferImageTypeFormat DecodeTransferTypeFormatPair(Render::Format format)
+    {
+        constexpr static std::pair<Render::Format, TransferImageTypeFormat> mapping[] = {
+            {Render::Format::R32G32B32A32_FLOAT,
+             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RGBA}},
+            {Render::Format::R32G32B32A32_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RGBA_INTEGER}},
+            {Render::Format::R32G32B32A32_SINT,
+             TransferImageTypeFormat{.type = GL_INT, .format = GL_RGBA_INTEGER}},
+
+            {Render::Format::R32G32B32_FLOAT,
+             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RGB}},
+            {Render::Format::R32G32B32_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RGB_INTEGER}},
+            {Render::Format::R32G32B32_SINT,
+             TransferImageTypeFormat{.type = GL_INT, .format = GL_RGB_INTEGER}},
+
+            {Render::Format::R16G16B16A16_FLOAT,
+             TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RGBA}},
+            {Render::Format::R16G16B16A16_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGBA}},
+            {Render::Format::R16G16B16A16_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGBA_INTEGER}},
+            {Render::Format::R16G16B16A16_SNORM,
+             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGBA}},
+            {Render::Format::R16G16B16A16_SINT,
+             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGBA_INTEGER}},
+
+            {Render::Format::R32G32_FLOAT,
+             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RG}},
+            {Render::Format::R32G32_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RG_INTEGER}},
+            {Render::Format::R32G32_SINT,
+             TransferImageTypeFormat{.type = GL_INT, .format = GL_RG_INTEGER}},
+
+            {Render::Format::D32_FLOAT_S8X24_UINT,
+             TransferImageTypeFormat{.type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV,
+                                     .format = GL_DEPTH_STENCIL}},
+
+            {Render::Format::R10G10B10A2_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV, .format = GL_RGBA}},
+            {Render::Format::R10G10B10A2_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10_10_10_2,
+                                     .format = GL_RGBA_INTEGER}},
+            {Render::Format::R11G11B10_FLOAT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10F_11F_11F_REV, .format = GL_BGR}},
+
+            {Render::Format::R8G8B8A8_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA}},
+            {Render::Format::R8G8B8A8_UNORM_SRGB,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA}},
+            {Render::Format::R8G8B8A8_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA_INTEGER}},
+            {Render::Format::R8G8B8A8_SNORM,
+             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGBA}},
+            {Render::Format::R8G8B8A8_SINT,
+             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGBA_INTEGER}},
+
+            {Render::Format::R16G16_FLOAT,
+             TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RG}},
+            {Render::Format::R16G16_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG}},
+            {Render::Format::R16G16_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG_INTEGER}},
+            {Render::Format::R16G16_SNORM,
+             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RG}},
+            {Render::Format::R16G16_SINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG_INTEGER}},
+
+            {Render::Format::D32_FLOAT,
+             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_DEPTH_COMPONENT}},
+            {Render::Format::R32_FLOAT,
+             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RED}},
+            {Render::Format::R32_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RED_INTEGER}},
+            {Render::Format::R32_SINT,
+             TransferImageTypeFormat{.type = GL_INT, .format = GL_RED_INTEGER}},
+
+            {Render::Format::D24_UNORM_S8_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_24_8, .format = GL_DEPTH_STENCIL}},
+
+            {Render::Format::R8G8_UNORM, TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG}},
+            {Render::Format::R8G8_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG_INTEGER}},
+            {Render::Format::R8G8_SNORM, TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG}},
+            {Render::Format::R8G8_SINT,
+             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG_INTEGER}},
+
+            {Render::Format::R16_FLOAT,
+             TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RED}},
+            {Render::Format::D16_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_DEPTH_COMPONENT}},
+            {Render::Format::R16_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RED}},
+            {Render::Format::R16_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RED_INTEGER}},
+            {Render::Format::R16_SNORM,
+             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RED}},
+            {Render::Format::R16_SINT,
+             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RED_INTEGER}},
+
+            {Render::Format::R8_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RED}},
+            {Render::Format::R8_UINT,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RED_INTEGER}},
+            {Render::Format::R8_SNORM, TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RED}},
+            {Render::Format::R8_SINT,
+             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RED_INTEGER}},
+
+            {Render::Format::R9G9B9E5_SHAREDEXP,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_5_9_9_9_REV,
+                                     .format = GL_BGR_INTEGER}},
+
+            {Render::Format::B5G6R5_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_6_5, .format = GL_BGR}},
+            {Render::Format::B5G5R5A1_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_5_5_1, .format = GL_BGRA}},
+
+            {Render::Format::B4G4R4A4_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4, .format = GL_BGRA}},
+        };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
+
+        const TransferImageTypeFormat* native = hrs::mapping_search(mapping, format);
+        if(native == nullptr)
+            throw std::runtime_error("No native format found");
+
+        return *native;
+
+        //RGB
+        //R3G3B2_Unorm = GL_R3_G3_B2,
+        //RGB4_UNorm = GL_RGB4,
+        //RGB5_Unorm = GL_RGB5,
+
+        //RGB10_UNorm = GL_RGB10,
+        //RGB12_UNorm = GL_RGB12,
+
+        //RGB8_UNorm = GL_RGB8,
+        //RGB8_SNorm = GL_RGB8_SNORM,
+        //RGB8_Int = GL_RGB8I,
+        //RGB8_UInt = GL_RGB8UI,
+
+        //RGB16_UNorm = GL_RGB16,
+        //RGB16_SNorm = GL_RGB16_SNORM,
+        //RGB16_Int = GL_RGB16I,
+        //RGB16_UInt = GL_RGB16UI,
+        //RGB16_Float = GL_RGB16F,
+
+        //SRGB8_UNorm = GL_SRGB8,
+
+        //RGBA
+        //RGBA2_UNorm = GL_RGBA2,
+
+        //RGBA12_UNorm = GL_RGBA12,
+
+        //Depth
+        //D24 = GL_DEPTH_COMPONENT24,
+        //D32 = GL_DEPTH_COMPONENT32,
+
+        //StencilIndex
+        //S1 = GL_STENCIL_INDEX1,
+        //S4 = GL_STENCIL_INDEX4,
+        //S8 = GL_STENCIL_INDEX8,
+        //S16 = GL_STENCIL_INDEX16,
+
+        //Compressed EAC/ETC2
+        //R11_EAC_UNorm = GL_COMPRESSED_R11_EAC,
+        //RG11_EAC_UNorm = GL_COMPRESSED_RG11_EAC,
+        //RGBA8_ETC2_EAC_UNorm = GL_COMPRESSED_RGBA8_ETC2_EAC,
+        //R11_EAC_SNorm = GL_COMPRESSED_SIGNED_R11_EAC,
+        //RG11_EAC_SNorm = GL_COMPRESSED_SIGNED_RG11_EAC,
+        //RGB8_ETC2 = GL_COMPRESSED_RGB8_ETC2,
+        //RGB8_A1_ETC2 = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+        //SRGBA8_ETC2_EAC = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC,
+        //SRGB8_ETC2 = GL_COMPRESSED_SRGB8_ETC2,
+        //SRGB8_A1_ET2 = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+    }
+
+    VertexInputTypeSize DecodeVertexInputTypeSizePair(Render::Format format)
+    {
+        constexpr static std::pair<Render::Format, VertexInputTypeSize> mapping[] = {
+            {Render::Format::R32G32B32A32_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 4, .normalized = false}},
+            {Render::Format::R32G32B32A32_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT, .size = 4, .normalized = false}},
+            {Render::Format::R32G32B32A32_SINT,
+             VertexInputTypeSize{.type = GL_INT, .size = 4, .normalized = false}},
+
+            {Render::Format::R32G32B32_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 3, .normalized = false}},
+            {Render::Format::R32G32B32_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT, .size = 3, .normalized = false}},
+            {Render::Format::R32G32B32_SINT,
+             VertexInputTypeSize{.type = GL_INT, .size = 3, .normalized = false}},
+
+            {Render::Format::R16G16B16A16_FLOAT,
+             VertexInputTypeSize{.type = GL_HALF_FLOAT, .size = 4, .normalized = false}},
+            {Render::Format::R16G16B16A16_UNORM,
+             VertexInputTypeSize{.type = GL_UNSIGNED_SHORT, .size = 4, .normalized = true}},
+            {Render::Format::R16G16B16A16_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_SHORT, .size = 4, .normalized = false}},
+            {Render::Format::R16G16B16A16_SNORM,
+             VertexInputTypeSize{.type = GL_SHORT, .size = 4, .normalized = true}},
+            {Render::Format::R16G16B16A16_SINT,
+             VertexInputTypeSize{.type = GL_SHORT, .size = 4, .normalized = false}},
+
+            {Render::Format::R32G32_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 2, .normalized = false}},
+            {Render::Format::R32G32_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT, .size = 2, .normalized = false}},
+            {Render::Format::R32G32_SINT,
+             VertexInputTypeSize{.type = GL_INT, .size = 2, .normalized = false}},
+
+            {Render::Format::R10G10B10A2_UNORM,
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
+                                 .size = GL_BGRA,
+                                 .normalized = true}},
+            {Render::Format::R10G10B10A2_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
+                                 .size = GL_BGRA,
+                                 .normalized = false}},
+            {Render::Format::R11G11B10_FLOAT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT_10F_11F_11F_REV,
+                                 .size = 3,
+                                 .normalized = false}},
+
+            {Render::Format::R8G8B8A8_UNORM,
+             VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 4, .normalized = true}},
+            {Render::Format::R8G8B8A8_UNORM_SRGB,
+             VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 4, .normalized = true}},
+            {Render::Format::R8G8B8A8_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 4, .normalized = false}},
+            {Render::Format::R8G8B8A8_SNORM,
+             VertexInputTypeSize{.type = GL_BYTE, .size = 4, .normalized = true}},
+            {Render::Format::R8G8B8A8_SINT,
+             VertexInputTypeSize{.type = GL_BYTE, .size = 4, .normalized = false}},
+
+            {Render::Format::R16G16_FLOAT,
+             VertexInputTypeSize{.type = GL_HALF_FLOAT, .size = 2, .normalized = false}},
+            {Render::Format::R16G16_UNORM,
+             VertexInputTypeSize{.type = GL_UNSIGNED_SHORT, .size = 2, .normalized = true}},
+            {Render::Format::R16G16_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_SHORT, .size = 2, .normalized = false}},
+            {Render::Format::R16G16_SNORM,
+             VertexInputTypeSize{.type = GL_SHORT, .size = 2, .normalized = true}},
+            {Render::Format::R16G16_SINT,
+             VertexInputTypeSize{.type = GL_SHORT, .size = 2, .normalized = false}},
+
+            {Render::Format::R32_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 1, .normalized = false}},
+            {Render::Format::R32_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT, .size = 1, .normalized = false}},
+            {Render::Format::R32_SINT,
+             VertexInputTypeSize{.type = GL_INT, .size = 1, .normalized = false}},
+
+            {Render::Format::R8G8_UNORM,
+             VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 2, .normalized = true}},
+            {Render::Format::R8G8_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 2, .normalized = false}},
+            {Render::Format::R8G8_SNORM,
+             VertexInputTypeSize{.type = GL_BYTE, .size = 2, .normalized = true}},
+            {Render::Format::R8G8_SINT,
+             VertexInputTypeSize{.type = GL_BYTE, .size = 2, .normalized = false}},
+
+            {Render::Format::R16_FLOAT,
+             VertexInputTypeSize{.type = GL_HALF_FLOAT, .size = 1, .normalized = false}},
+            {Render::Format::R16_UNORM,
+             VertexInputTypeSize{.type = GL_UNSIGNED_SHORT, .size = 1, .normalized = true}},
+            {Render::Format::R16_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_SHORT, .size = 1, .normalized = false}},
+            {Render::Format::R16_SNORM,
+             VertexInputTypeSize{.type = GL_SHORT, .size = 1, .normalized = true}},
+            {Render::Format::R16_SINT,
+             VertexInputTypeSize{.type = GL_SHORT, .size = 1, .normalized = false}},
+
+            {Render::Format::R8_UNORM,
+             VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 1, .normalized = true}},
+            {Render::Format::R8_UINT,
+             VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 1, .normalized = false}},
+            {Render::Format::R8_SNORM,
+             VertexInputTypeSize{.type = GL_BYTE, .size = 1, .normalized = true}},
+            {Render::Format::R8_SINT,
+             VertexInputTypeSize{.type = GL_BYTE, .size = 1, .normalized = false}},
+        };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
+
+        const VertexInputTypeSize* native = hrs::mapping_search(mapping, format);
+        if(native == nullptr)
+            throw std::runtime_error("No native format found");
+
+        return *native;
+
+        //RGB
+        //R3G3B2_Unorm = GL_R3_G3_B2,
+        //RGB4_UNorm = GL_RGB4,
+        //RGB5_Unorm = GL_RGB5,
+
+        //RGB10_UNorm = GL_RGB10,
+        //RGB12_UNorm = GL_RGB12,
+
+        //RGB8_UNorm = GL_RGB8,
+        //RGB8_SNorm = GL_RGB8_SNORM,
+        //RGB8_Int = GL_RGB8I,
+        //RGB8_UInt = GL_RGB8UI,
+
+        //RGB16_UNorm = GL_RGB16,
+        //RGB16_SNorm = GL_RGB16_SNORM,
+        //RGB16_Int = GL_RGB16I,
+        //RGB16_UInt = GL_RGB16UI,
+        //RGB16_Float = GL_RGB16F,
+
+        //SRGB8_UNorm = GL_SRGB8,
+
+        //RGBA
+        //RGBA2_UNorm = GL_RGBA2,
+
+        //RGBA12_UNorm = GL_RGBA12,
+
+        //Depth
+        //D24 = GL_DEPTH_COMPONENT24,
+        //D32 = GL_DEPTH_COMPONENT32,
+
+        //StencilIndex
+        //S1 = GL_STENCIL_INDEX1,
+        //S4 = GL_STENCIL_INDEX4,
+        //S8 = GL_STENCIL_INDEX8,
+        //S16 = GL_STENCIL_INDEX16,
+
+        //Compressed EAC/ETC2
+        //R11_EAC_UNorm = GL_COMPRESSED_R11_EAC,
+        //RG11_EAC_UNorm = GL_COMPRESSED_RG11_EAC,
+        //RGBA8_ETC2_EAC_UNorm = GL_COMPRESSED_RGBA8_ETC2_EAC,
+        //R11_EAC_SNorm = GL_COMPRESSED_SIGNED_R11_EAC,
+        //RG11_EAC_SNorm = GL_COMPRESSED_SIGNED_RG11_EAC,
+        //RGB8_ETC2 = GL_COMPRESSED_RGB8_ETC2,
+        //RGB8_A1_ETC2 = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+        //SRGBA8_ETC2_EAC = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC,
+        //SRGB8_ETC2 = GL_COMPRESSED_SRGB8_ETC2,
+        //SRGB8_A1_ET2 = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+    }
+
+    ArrayDecodeResult<9>
+    DebugMessengerTypeFlagsToNativeInverted(Render::DebugMessengerTypeFlags types)
+    {
+        ArrayDecodeResult<9> res = {.data = {}, .size = 0};
+
+        if(!(types & Render::DebugMessengerTypeFlagBits::General))
+        {
+            res.data[res.size++] = GL_DEBUG_TYPE_PORTABILITY;
+            res.data[res.size++] = GL_DEBUG_TYPE_OTHER;
+        }
+
+        if(!(types & Render::DebugMessengerTypeFlagBits::Validation))
+        {
+            res.data[res.size++] = GL_DEBUG_TYPE_ERROR;
+            res.data[res.size++] = GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR;
+            res.data[res.size++] = GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR;
+        }
+
+        if(!(types & Render::DebugMessengerTypeFlagBits::Performance))
+        {
+            res.data[res.size++] = GL_DEBUG_TYPE_PERFORMANCE;
+        }
+
+        res.data[res.size++] = GL_DEBUG_TYPE_MARKER;
+        res.data[res.size++] = GL_DEBUG_TYPE_PUSH_GROUP;
+        res.data[res.size++] = GL_DEBUG_TYPE_POP_GROUP;
+
+        return res;
+    }
+
+    ArrayDecodeResult<4>
+    DebugMessengerSeverityFlagsToNativeInverted(Render::DebugMessengerSeverityFlags severities)
+    {
+        ArrayDecodeResult<4> res = {.data = {}, .size = 0};
+
+        if(!(severities & Render::DebugMessengerSeverityFlagBits::Verbose))
+            res.data[res.size++] = GL_DEBUG_SEVERITY_NOTIFICATION;
+
+        if(!(severities & Render::DebugMessengerSeverityFlagBits::Info))
+            res.data[res.size++] = GL_DEBUG_SEVERITY_LOW;
+
+        if(!(severities & Render::DebugMessengerSeverityFlagBits::Warning))
+            res.data[res.size++] = GL_DEBUG_SEVERITY_MEDIUM;
+
+        if(!(severities & Render::DebugMessengerSeverityFlagBits::Error))
+            res.data[res.size++] = GL_DEBUG_SEVERITY_HIGH;
+
+        return res;
+    }
+
+    Render::DebugMessengerTypeFlagBits NativeDebugMessengerTypeFlagBitToSpec(GLenum type)
+    {
+        constexpr static std::pair<GLenum, Render::DebugMessengerTypeFlagBits> mapping[] = {
+            {GL_DEBUG_TYPE_ERROR, Render::DebugMessengerTypeFlagBits::Validation}, //56
+            {GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR,
+             Render::DebugMessengerTypeFlagBits::Validation}, //57
+            {GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR, Render::DebugMessengerTypeFlagBits::Validation}, //58
+            {GL_DEBUG_TYPE_PORTABILITY, Render::DebugMessengerTypeFlagBits::General}, //59
+            {GL_DEBUG_TYPE_PERFORMANCE, Render::DebugMessengerTypeFlagBits::Performance}, //60
+            {GL_DEBUG_TYPE_OTHER, Render::DebugMessengerTypeFlagBits::General}, //61
+        };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
+
+        const Render::DebugMessengerTypeFlagBits* native = hrs::mapping_search(mapping, type);
+        if(native == nullptr)
+            return Render::DebugMessengerTypeFlagBits::
+                General; //return General due to driver-specific codes
+
+        return *native;
+    }
+
+    Render::DebugMessengerSeverityFlagBits
+    NativeDebugMessengerSeverityFlagBitToSpec(GLenum severity)
+    {
+        constexpr static std::pair<GLenum, Render::DebugMessengerSeverityFlagBits> mapping[] = {
+            {GL_DEBUG_SEVERITY_NOTIFICATION,
+             Render::DebugMessengerSeverityFlagBits::Verbose}, //33387
+            {GL_DEBUG_SEVERITY_HIGH, Render::DebugMessengerSeverityFlagBits::Error}, //37190
+            {GL_DEBUG_SEVERITY_MEDIUM, Render::DebugMessengerSeverityFlagBits::Warning}, //37191
+            {GL_DEBUG_SEVERITY_LOW, Render::DebugMessengerSeverityFlagBits::Info}, //37192
+        };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
+
+        const Render::DebugMessengerSeverityFlagBits* native =
+            hrs::mapping_search(mapping, severity);
+        if(native == nullptr)
+            return Render::DebugMessengerSeverityFlagBits::
+                Verbose; //return Verbose due to driver-specific codes
 
         return *native;
     }

@@ -1,12 +1,12 @@
 #pragma once
 
+#include <vector>
 #include "hrs/non_creatable.hpp"
 #include "../Render.h"
 #include "Core/Window/OpenGL/OpenGLBackend.h"
 #include "Core/Render/Context.h"
 #include "../Objects/Framebuffer/Framebuffer.h"
-
-class GraphicWindow;
+#include "../Objects/Queue/Queue.h"
 
 namespace OpenGL
 {
@@ -16,6 +16,8 @@ namespace OpenGL
         Context(OpenGLBackend* _parent);
         virtual ~Context() override;
 
+        virtual Render::ContextProperties GetProperties() const override;
+
         virtual Render::Queue* GetQueue(Render::QueueSpecialization spec) override;
 
         virtual void WaitIdle() noexcept override;
@@ -23,7 +25,10 @@ namespace OpenGL
         virtual void
         AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore) override; //OGL -> noop
         virtual Render::Framebuffer* GetCurrentDefaultFramebuffer() noexcept override;
-        virtual void ReleaseSwapchainImage(Render::PresentInfo& info) override; //SDL_SwapWindow();
+        virtual void
+        ReleaseSwapchainImage(const Render::PresentInfo& info) override; //SDL_SwapWindow();
+
+        virtual void SetDebugMessenger(const Render::DebugMessengerInfo& info) override;
 
         virtual RenderBackend* GetBackend() const noexcept override;
 
@@ -50,5 +55,11 @@ namespace OpenGL
         GladGLContext loader; //Split into CommandBufferLoader and ImmediateLoader
 
         Framebuffer default_framebuffer;
+        Queue default_queue;
+
+        Render::ContextProperties properties;
+        std::vector<std::string_view> extensions;
+
+        std::function<Render::DebugMessengerCallback> debug_callback;
     };
 };

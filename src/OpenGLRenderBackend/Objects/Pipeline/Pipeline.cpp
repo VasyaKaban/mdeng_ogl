@@ -189,27 +189,39 @@ namespace OpenGL
     void Pipeline::Draw(const Render::CommandBuffer* cmd,
                         std::uint32_t vertex_count,
                         std::uint32_t instance_count,
-                        std::uint32_t first_vertex,
-                        std::uint32_t first_instance)
+                        std::uint32_t first_vertex)
     {
-        parent->GetLoader().DrawArraysInstancedBaseInstance(
+        parent->GetLoader().DrawArraysInstanced(graphics_state->input_assembly_state.topology,
+                                                first_vertex,
+                                                vertex_count,
+                                                instance_count);
+
+        /*parent->GetLoader().DrawArraysInstancedBaseInstance(
             graphics_state->input_assembly_state.topology,
             first_vertex,
             vertex_count,
             instance_count,
-            first_instance);
+            first_instance);*/
     }
 
     void Pipeline::DrawIndexed(const Render::CommandBuffer* cmd,
                                std::uint32_t index_count,
                                std::uint32_t instance_count,
                                std::uint32_t first_index,
-                               std::int32_t vertex_offset,
-                               std::uint32_t first_instance)
+                               std::int32_t vertex_offset)
     {
         //indices = index_buffer_offset + sizoef(indexType) * first_index;
 
-        parent->GetLoader().DrawElementsInstancedBaseVertexBaseInstance(
+        parent->GetLoader().DrawElementsInstancedBaseVertex(
+            graphics_state->input_assembly_state.topology,
+            index_count,
+            graphics_state->draw_state.index_type,
+            reinterpret_cast<const void*>(graphics_state->draw_state.index_buffer_offset +
+                                          graphics_state->draw_state.index_size * first_index),
+            instance_count,
+            vertex_offset);
+
+        /*parent->GetLoader().DrawElementsInstancedBaseVertexBaseInstance(
             graphics_state->input_assembly_state.topology,
             index_count,
             graphics_state->draw_state.index_type,
@@ -217,7 +229,7 @@ namespace OpenGL
                                           graphics_state->draw_state.index_size * first_index),
             instance_count,
             vertex_offset,
-            first_instance);
+            first_instance);*/
     }
 
     void Pipeline::SetViewport(const Render::CommandBuffer* cmd,

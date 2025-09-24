@@ -27,8 +27,6 @@ namespace OpenGL
 
     GLenum ComapreOpToNative(Render::CompareOp op);
     GLenum SampleCountToNative(Render::SampleCount samples);
-    GLenum ImageCopyDataFormatToNative(Render::ImageCopyDataFormat format);
-    GLenum ImageCopyDataTypeToNative(Render::ImageCopyDataType type);
     GLbitfield BufferFlagsToNative(Render::BufferFlags flags);
     GLenum FenceStatusToNative(Render::FenceStatus status);
     GLenum FormatToNative(Render::Format format);
@@ -40,8 +38,6 @@ namespace OpenGL
     GLenum AddressModeToNative(Render::AddressMode mode);
     GLenum ShaderStageToNative(Render::ShaderStage stage);
     GLenum InputRateToNative(Render::InputRate rate);
-    GLenum VertexInputAttributeSizeToNative(Render::VertexInputAttributeSize size);
-    GLenum VertexInputAttributeTypeToNative(Render::VertexInputAttributeType type);
     GLenum PrimitiveTopologyToNative(Render::PrimitiveTopology topology);
     GLenum BlendFactorToNative(Render::BlendFactor factor);
     GLenum BlendLogicOpToNative(Render::BlendLogicOp op);
@@ -53,6 +49,39 @@ namespace OpenGL
     GLenum CullModeToNative(Render::CullMode mode);
     GLenum FrontFaceToNative(Render::FrontFace face);
     GLenum IndexTypeToNative(Render::IndexType type);
+
+    struct TransferImageTypeFormat
+    {
+        GLenum type;
+        GLenum format;
+    };
+
+    TransferImageTypeFormat DecodeTransferTypeFormatPair(Render::Format format);
+
+    struct VertexInputTypeSize
+    {
+        GLenum type;
+        GLenum size;
+        bool normalized;
+    };
+
+    VertexInputTypeSize DecodeVertexInputTypeSizePair(Render::Format format);
+
+    template<std::size_t N>
+    struct ArrayDecodeResult
+    {
+        std::array<GLenum, N> data;
+        std::size_t size;
+    };
+
+    ArrayDecodeResult<9>
+    DebugMessengerTypeFlagsToNativeInverted(Render::DebugMessengerTypeFlags types);
+    ArrayDecodeResult<4>
+    DebugMessengerSeverityFlagsToNativeInverted(Render::DebugMessengerSeverityFlags severities);
+
+    Render::DebugMessengerTypeFlagBits NativeDebugMessengerTypeFlagBitToSpec(GLenum type);
+    Render::DebugMessengerSeverityFlagBits
+    NativeDebugMessengerSeverityFlagBitToSpec(GLenum severity);
 };
 
 /*enum MemoryBarrierFlagBits

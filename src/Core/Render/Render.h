@@ -4,6 +4,8 @@
 #include <array>
 #include <variant>
 #include <span>
+#include <string_view>
+#include <functional>
 
 namespace Render
 {
@@ -99,55 +101,6 @@ namespace Render
         std::uint64_t size;
     };
 
-    enum class ImageCopyDataFormat
-    {
-        R_NORM,
-        RG_NORM,
-        RGB_NORM,
-        BGR_NORM,
-        RGBA_NORM,
-        BGRA_NORM,
-
-        R_INT,
-        RG_INT,
-        RGB_INT,
-        BGR_INT,
-        RGBA_INT,
-        BGRA_INT,
-
-        Depth,
-        Stencil,
-        DepthStencil
-    };
-
-    enum class ImageCopyDataType
-    {
-        U8,
-        I8,
-        U16,
-        I16,
-        U32,
-        I32,
-        F16,
-        F32,
-        U8_3_3_2,
-        U8_2_3_3_Rev,
-        U16_5_6_5,
-        U16_5_6_5_Rev,
-        U16_4_4_4_4,
-        U16_4_4_4_4_Rev,
-        U16_5_5_5_1,
-        U16_1_5_5_5_Rev,
-        U32_8_8_8_8,
-        U32_8_8_8_8_Rev,
-        U32_10_10_10_2,
-        U32_2_10_10_10_Rev,
-        U32_24_8,
-        U32_10F_11F_11F_Rev,
-        U32_5_9_9_9_Rev,
-        F32_U32_24_8_REV
-    };
-
     struct ImageSubresourceLayers
     {
         std::uint32_t mip_level;
@@ -163,8 +116,6 @@ namespace Render
         ImageSubresourceLayers subresource_layers;
         Offset3D offset;
         Extent3D extent;
-        ImageCopyDataFormat data_format;
-        ImageCopyDataType data_type;
     };
 
     struct MemoryBufferCopyRegion
@@ -182,8 +133,6 @@ namespace Render
         ImageSubresourceLayers subresource_layers;
         Offset3D offset;
         Extent3D extent;
-        ImageCopyDataFormat data_format;
-        ImageCopyDataType data_type;
     };
 
     struct BufferBindDesc
@@ -482,37 +431,11 @@ namespace Render
         InputRate input_rate;
     };
 
-    enum class VertexInputAttributeSize
-    {
-        Scalar,
-        Vec2,
-        Vec3,
-        Vec4
-    };
-
-    enum class VertexInputAttributeType
-    {
-        Byte,
-        Short,
-        Int,
-        Fixed,
-        Float,
-        HalfFloat,
-        Double,
-        UnsignedByte,
-        UnsignedShort,
-        UnsignedInt,
-        Int_2_10_10_10_REV,
-        UnsignedInt_2_10_10_10_REV,
-        UnsignedInt_10F_11F_11F_REV
-    };
-
     struct VertexInputAttributeDescription
     {
         std::uint32_t location;
         std::uint32_t binding;
-        VertexInputAttributeSize size;
-        VertexInputAttributeType type;
+        Format format;
         std::uint32_t offset;
     };
 
@@ -749,6 +672,9 @@ namespace Render
         const Shader* shader;
     };
 
+#pragma message( \
+    "Change UniformType and UniformExtent to single Format. -> so add R64G64B64A64 formats + RXGXBX formats also!")
+
     enum class UniformType
     {
         Float,
@@ -794,6 +720,49 @@ namespace Render
         std::span<Semaphore*> wait_semaphores;
     };
 
+    struct ContextProperties
+    {
+        std::string_view vendor_name;
+        std::string_view device_name;
+        std::span<std::string_view> extensions;
+#pragma message("Add limits!!!")
+    };
+
+    enum DebugMessengerSeverityFlagBits
+    {
+        Verbose = 1 << 0, //GL_DEBUG_SEVERITY_NOTIFICATION
+        Info = 1 << 1, //GL_DEBUG_SEVERITY_LOW
+        Warning = 1 << 2, //GL_DEBUG_SEVERITY_MEDIUM
+        Error = 1 << 3 //GL_DEBUG_SEVERITY_HIGH
+    };
+
+    using DebugMessengerSeverityFlags = std::underlying_type_t<DebugMessengerSeverityFlagBits>;
+
+    enum DebugMessengerTypeFlagBits
+    {
+        General = 1 << 0, //GL_DEBUG_TYPE_PORTABILITY, GL_DEBUG_TYPE_OTHER
+        Validation =
+            1
+            << 1, //GL_DEBUG_TYPE_ERROR, GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR, GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR
+        Performance = 1 << 2 //GL_DEBUG_TYPE_PERFORMANCE,
+
+        //GL_DEBUG_TYPE_MARKER, GL_DEBUG_TYPE_PUSH_GROUP, GL_DEBUG_TYPE_POP_GROUP -> not presented
+    };
+
+    using DebugMessengerTypeFlags = std::underlying_type_t<DebugMessengerTypeFlagBits>;
+
+    using DebugMessengerCallback = void(DebugMessengerSeverityFlagBits severity,
+                                        DebugMessengerTypeFlags types,
+                                        std::int64_t id,
+                                        std::string_view message);
+
+    struct DebugMessengerInfo
+    {
+        DebugMessengerSeverityFlags severities;
+        DebugMessengerTypeFlags types;
+        std::function<DebugMessengerCallback> callback;
+    };
+
     bool IsFormatCompressed(Format format) noexcept;
 
     std::uint8_t GetFormatBlockSize(Format format) noexcept;
@@ -805,4 +774,14 @@ namespace Render
     std::uint32_t GetFormatRegionSize(Format format, const MemoryImageCopyRegion& reg) noexcept;
 
     std::uint16_t GetFormatTexelAlignment(Format format) noexcept;
+
+    struct FormatComponentsBitSize
+    {
+        std::uint8_t red;
+        std::uint8_t green;
+        std::uint8_t blue;
+        std::uint8_t alpha;
+    };
+
+    FormatComponentsBitSize GetFormatComponentsBitSize(Format format) noexcept;
 };

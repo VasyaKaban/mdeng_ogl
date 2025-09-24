@@ -23,6 +23,9 @@ namespace OpenGL
 
         GLenum GetInnerType() const noexcept;
         GLenum GetInnerFormat() const noexcept;
+
+        const TransferImageTypeFormat& GetTransferImageTypeFormatPair() const noexcept;
+
         GLHandle GetHandle() const noexcept;
 
         virtual Render::Context* GetContext() const noexcept override;
@@ -31,7 +34,10 @@ namespace OpenGL
         GLHandle handle;
 
         Render::ImageInfo info;
+
         GLenum inner_type;
         GLenum inner_format;
+
+        TransferImageTypeFormat transfer_type_format_pair;
     };
 };

@@ -3,8 +3,36 @@
 #include "hrs/rc.hpp"
 #include "hrs/non_creatable.hpp"
 
-template<typename T>
-concept TaskState = requires(T* ptr) { ptr->Detach(); };
+/*template<typename T>
+concept TaskState = requires(T* ptr, const T* c_ptr) {
+    ptr->Detach();
+    { c_ptr->IsDetached() } noexcept -> std::same_as<bool>;
+};
+
+class DefaultTaskStateBase
+{
+public:
+    DefaultTaskStateBase(bool _detached = false) noexcept
+        : detached(_detached)
+    {}
+    ~DefaultTaskStateBase() = default;
+    DefaultTaskStateBase(const DefaultTaskStateBase&) = default;
+    DefaultTaskStateBase(DefaultTaskStateBase&&) = default;
+    DefaultTaskStateBase& operator=(const DefaultTaskStateBase&) = default;
+    DefaultTaskStateBase& operator=(DefaultTaskStateBase&&) = default;
+
+    void Detach() noexcept
+    {
+        detached = true;
+    }
+
+    bool IsDeatched() const noexcept
+    {
+        return detached;
+    }
+private:
+    bool detached;
+};
 
 template<typename T>
 class TaskStateOwner : hrs::non_copyable
@@ -41,4 +69,4 @@ public:
     }
 private:
     hrs::rc_ptr<T> state;
-};
+};*/

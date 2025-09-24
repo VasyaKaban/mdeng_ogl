@@ -2,19 +2,18 @@
 #include "Core/Render/Context.h"
 #include "../../RenderEngine/RenderEngine.h"
 
-TransferQueue::TransferQueue(Task<RenderEngine>* _parent, TaskKey&& key)
+TransferQueue::TransferQueue(RenderEngine* _parent, TaskKey&& key)
     : QueueTask(_parent, std::move(key), Render::QueueSpecialization::Transfer),
-      command_pool(_parent->GetContext()->CreateCommandPool(
-          Render::CommandPoolInfo{.queue = QueueTask::handle.get()}))
+      command_pool(_parent->GetContext()->CreateCommandPoolUnique(
+          Render::CommandPoolInfo{.queue = QueueTask::handle}))
 {
     resources.reserve(_parent->GetResourceSetCount());
     for(std::size_t i = 0; i < _parent->GetResourceSetCount(); i++)
     {
-        resources.push_back(Resource{
-            .command_buffer = std::unique_ptr<Render::CommandBuffer>(command_pool->Allocate()),
-            .fence = std::unique_ptr<Render::Fence>(_parent->GetContext()->CreateFence()),
-            .signal_semaphore =
-                std::unique_ptr<Render::Semaphore>(_parent->GetContext()->CreateSemaphore())});
+        resources.push_back(
+            Resource{.command_buffer = command_pool->AllocateUnique(),
+                     .fence = _parent->GetContext()->CreateFenceUnique(),
+                     .signal_semaphore = _parent->GetContext()->CreateSemaphoreUnique()});
     }
 }
 

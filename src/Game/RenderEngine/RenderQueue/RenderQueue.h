@@ -9,8 +9,9 @@
 #include "Core/Render/Objects/Semaphore.h"
 
 class RenderEngine;
+class TransferQueue;
 
-class RenderQueue : public QueueTask
+class RenderQueue : public QueueTask, public Events::EventListener<TaskEraseEvent>
 {
 public:
     RenderQueue(Task<RenderEngine>* _parent, TaskKey&& key);
@@ -24,6 +25,8 @@ public:
     Render::Fence* GetCurrentFence() noexcept;
     void WaitAllFences();
 private:
+    Events::HandlerAction Handle(const TaskEraseEvent& event);
+private:
     struct Resource
     {
         std::unique_ptr<Render::CommandBuffer> command_buffer;
@@ -34,6 +37,8 @@ private:
 
     std::unique_ptr<Render::CommandPool> command_pool;
     std::vector<Resource> resources;
+
+    TransferQueue* transfer_queue;
 };
 
 CHECK_TASK_IS_READY(RenderQueue)

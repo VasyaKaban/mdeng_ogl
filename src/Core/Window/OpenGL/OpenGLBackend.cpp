@@ -17,19 +17,18 @@ void OpenGLBackend::SetAttributes(const OpenGLBackendInfo& info)
 {
     SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_DOUBLEBUFFER, true);
 
-    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_RED_SIZE,
-                        info.default_framebuffer_info.red_channel_bits);
-    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_GREEN_SIZE,
-                        info.default_framebuffer_info.green_channel_bits);
-    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_BLUE_SIZE,
-                        info.default_framebuffer_info.blue_channel_bits);
-    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_ALPHA_SIZE,
-                        info.default_framebuffer_info.alpha_channel_bits);
+    auto components = Render::GetFormatComponentsBitSize(info.default_framebuffer_info.format);
+    if(components.red == 0 && components.green == 0 && components.blue == 0 &&
+       components.alpha == 0)
+        throw std::runtime_error("Bad format for OpenGL's default framebuffer");
 
-    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_DEPTH_SIZE,
-                        info.default_framebuffer_info.depth_channel_bits);
-    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_STENCIL_SIZE,
-                        info.default_framebuffer_info.stencil_channel_bits);
+    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_RED_SIZE, components.red);
+    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_GREEN_SIZE, components.green);
+    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_BLUE_SIZE, components.blue);
+    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_ALPHA_SIZE, components.alpha);
+
+    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_DEPTH_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_STENCIL_SIZE, 0);
 
     SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_CONTEXT_MAJOR_VERSION,
                         GetOpenGLMajorVersion(info.version));
@@ -39,6 +38,17 @@ void OpenGLBackend::SetAttributes(const OpenGLBackendInfo& info)
                         IsOpenGLVersionCoreprofile(info.version) ?
                             SDL_GLprofile::SDL_GL_CONTEXT_PROFILE_CORE :
                             SDL_GLprofile::SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+
+    if(info.flags & OpenGLBackendFlagBits::DebugContext)
+        SDL_GL_SetAttribute(SDL_GLattr::SDL_GL_CONTEXT_FLAGS,
+                            SDL_GLcontextFlag::SDL_GL_CONTEXT_DEBUG_FLAG);
+
+#pragma warning("SDL_GL_FRAMEBUFFER_SRGB_CAPABLE check as color space!")
+    //SDL_GL_CONTEXT_RELEASE_BEHAVIOR,    /**< sets context the release behavior; defaults to 1. (>= SDL 2.0.4) */
+    //SDL_GL_CONTEXT_RESET_NOTIFICATION,
+    //SDL_GL_CONTEXT_NO_ERROR,
+    //SDL_GL_FLOATBUFFERS
+    //SDL_GLcontextFlag::SDL_GL_CONTEXT_DEBUG_FLAG
 }
 
 OpenGLBackend::~OpenGLBackend()

@@ -13,7 +13,7 @@ class RenderEngine;
 class TransferQueue : public QueueTask
 {
 public:
-    TransferQueue(Task<RenderEngine>* _parent, TaskKey&& key);
+    TransferQueue(RenderEngine* _parent, TaskKey&& key);
     virtual ~TransferQueue() override;
 
     virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;

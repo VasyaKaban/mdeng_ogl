@@ -176,8 +176,6 @@ namespace OpenGL
     private:
         bool viewport_enabled;
         std::vector<Render::Viewport> viewports;
-
-        bool scissors_enabled;
         std::vector<Render::Rect2D> scissors;
     };
 

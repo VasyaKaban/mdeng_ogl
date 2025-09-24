@@ -3,8 +3,12 @@
 #include "Core/Window/GraphicWindow.h"
 #include "RenderEngine/RenderEngine.h"
 #include "ResourceManager/ResourceManager.h"
+#include "Timer/Timer.h"
 
-class Engine : hrs::non_copyable, hrs::non_movable
+struct EngineNextLoopIteratrionEvent
+{};
+
+class Engine : public Events::EventEmitter<EngineNextLoopIteratrionEvent>
 {
     Engine();
     ~Engine();
@@ -15,12 +19,21 @@ public:
     GraphicWindow* GetWindow() const noexcept;
     ResourceManager* GetResourceManager() const noexcept;
     RenderEngine* GetRenderEngine() const noexcept;
+
+    std::uint64_t GetFrameIndex() const noexcept;
+    const Timer& GetTimer() const noexcept;
 private:
     void loop();
 private:
+    constexpr static float REFERENCE_UPDATE_FACTOR = 120;
+
     static inline Engine* instance = nullptr;
 
     GraphicWindow* window;
-    std::unique_ptr<ResourceManager> resource_manager;
     std::unique_ptr<Task<RenderEngine>> render_engine;
+    std::unique_ptr<ResourceManager> resource_manager;
+
+    std::uint64_t frame_index;
+    Timer frame_timer;
+    float update_factor;
 };

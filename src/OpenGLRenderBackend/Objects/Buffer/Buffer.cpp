@@ -31,12 +31,21 @@ namespace OpenGL
         if(handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Usage of null buffer handle");
 
+        //MAP_READ -> !GL_MAP_UNSYNCHRONIZED_BIT
+        //FLUSH_EXPLICIT -> MAP_WRITE
+        //
+
+        auto new_flags = flags & ~(GL_CLIENT_STORAGE_BIT);
+        if(new_flags & GL_MAP_WRITE_BIT)
+            new_flags &= GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_UNSYNCHRONIZED_BIT;
+
         std::byte* map_ptr = reinterpret_cast<std::byte*>(parent->GetLoader().MapNamedBufferRange(
             handle,
             rng.offset,
             rng.size,
-            (flags | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT) &
-                ~(GL_CLIENT_STORAGE_BIT)));
+            new_flags
+            /*(flags | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT) &
+                ~(GL_CLIENT_STORAGE_BIT)*/));
         if(!map_ptr)
             throw std::runtime_error("Failed to map buffer");
 
@@ -86,6 +95,9 @@ namespace OpenGL
         std::uint16_t format_texel_alignment = GetFormatTexelAlignment(image_info.format);
         GLenum format = dst_image->GetInnerFormat();
 
+        const TransferImageTypeFormat& transfer_type_format_pair =
+            dst_image->GetTransferImageTypeFormatPair();
+
         parent->GetLoader().BindBuffer(GL_PIXEL_UNPACK_BUFFER, handle);
         parent->GetLoader().PixelStorei(GL_UNPACK_ALIGNMENT, format_texel_alignment);
 
@@ -95,9 +107,6 @@ namespace OpenGL
             parent->GetLoader().PixelStorei(GL_UNPACK_IMAGE_HEIGHT, reg.buffer_image_height);
 
             auto region_size = GetFormatRegionSize(image_info.format, reg);
-
-            GLenum data_format = ImageCopyDataFormatToNative(reg.data_format);
-            GLenum data_type = ImageCopyDataTypeToNative(reg.data_type);
 
             switch(inner_type)
             {
@@ -120,8 +129,8 @@ namespace OpenGL
                             reg.subresource_layers.mip_level,
                             reg.offset.x,
                             reg.extent.width,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             reinterpret_cast<const void*>(reg.buffer_offset));
                     }
                     break;
@@ -148,8 +157,8 @@ namespace OpenGL
                             reg.subresource_layers.base_layer,
                             reg.extent.width,
                             reg.subresource_layers.layer_count,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             reinterpret_cast<const void*>(reg.buffer_offset));
                     }
                     break;
@@ -176,8 +185,8 @@ namespace OpenGL
                             reg.offset.y,
                             reg.extent.width,
                             reg.extent.height,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             reinterpret_cast<const void*>(reg.buffer_offset));
                     }
                     break;
@@ -208,8 +217,8 @@ namespace OpenGL
                             reg.extent.width,
                             reg.extent.height,
                             reg.subresource_layers.layer_count,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             reinterpret_cast<const void*>(reg.buffer_offset));
                     }
                     break;
@@ -244,8 +253,8 @@ namespace OpenGL
                             reg.extent.width,
                             reg.extent.height,
                             reg.extent.depth,
-                            data_format,
-                            data_type,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
                             reinterpret_cast<const void*>(reg.buffer_offset));
                     }
                     break;

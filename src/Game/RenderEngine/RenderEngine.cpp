@@ -5,12 +5,16 @@
 #include "RenderQueue/RenderQueue.h"
 
 RenderEngine::RenderEngine(const RenderEngineInfo& info,
-                           std::unique_ptr<Render::Context>&& _context)
+                           std::unique_ptr<Render::Context>&& _context,
+                           GraphicWindow* window)
     : TaskBase(nullptr, TaskKey{}),
       context(std::move(_context)),
       resource_set_count(info.resource_set_count),
       current_resource_set_index(0)
 {
+    Events::Connect<WindowResizedEvent>(this, window, &RenderEngine::Handle);
+
+#pragma message("MOVE QUEUES OUTSIDE THE RENDER ENGINE!!! AS SCOPE OF STATE TRANSFER TASKS!!!")
     transfer_queue =
         new Task<TransferQueue>(static_cast<Task<RenderEngine>*>(this),
                                 TaskKey{.priority = 0, .name = std::string_view("TransferQueue")});
@@ -76,4 +80,11 @@ Task<RenderQueue>* RenderEngine::GetRenderQueue() const noexcept
 Render::Context* RenderEngine::GetContext() const noexcept
 {
     return context.get();
+}
+
+Events::HandlerAction RenderEngine::Handle(const WindowResizedEvent& event)
+{
+    context->WaitIdle();
+
+    return Events::HandlerAction::None;
 }
