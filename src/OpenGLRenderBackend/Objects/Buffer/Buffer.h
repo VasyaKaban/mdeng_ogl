@@ -18,18 +18,6 @@ namespace OpenGL
 
         virtual std::uint64_t GetSize() const noexcept override;
 
-        virtual void
-        CopyToBuffer(const Render::CommandBuffer* cmd,
-                     const Render::Buffer* dst,
-                     std::span<const Render::BufferCopyRegion> regions) noexcept override;
-        virtual void CopyToImage(const Render::CommandBuffer* cmd,
-                                 const Render::Image* dst,
-                                 std::span<const Render::BufferImageCopyRegion> regions) override;
-
-        virtual void
-        Update(const Render::CommandBuffer* cmd,
-               std::span<const Render::MemoryBufferCopyRegion> regions) noexcept override;
-
         GLHandle GetHandle() const noexcept;
 
         virtual Render::Context* GetContext() const noexcept override;

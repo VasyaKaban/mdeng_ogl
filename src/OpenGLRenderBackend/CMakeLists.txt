@@ -16,7 +16,6 @@ target_include_directories(opengl_render_backend PUBLIC "../")
 find_package(OpenGL REQUIRED)
 
 target_link_libraries(opengl_render_backend
-	                    PUBLIC hrs
 						PUBLIC core
 						PUBLIC glad
 						PUBLIC OpenGL::GL

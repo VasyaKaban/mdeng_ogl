@@ -27,7 +27,7 @@ namespace OpenGL
 
     GLenum ComapreOpToNative(Render::CompareOp op);
     GLenum SampleCountToNative(Render::SampleCount samples);
-    GLbitfield BufferFlagsToNative(Render::BufferFlags flags);
+    GLbitfield DecodeBufferFlagsToNative(Render::BufferFlags mapping_flags);
     GLenum FenceStatusToNative(Render::FenceStatus status);
     GLenum FormatToNative(Render::Format format);
     GLenum ImageViewTypeToNative(Render::ImageViewType type);
@@ -82,26 +82,6 @@ namespace OpenGL
     Render::DebugMessengerTypeFlagBits NativeDebugMessengerTypeFlagBitToSpec(GLenum type);
     Render::DebugMessengerSeverityFlagBits
     NativeDebugMessengerSeverityFlagBitToSpec(GLenum severity);
+
+    GLbitfield AccessFlagsToNative(Render::AccessFlags flags);
 };
-
-/*enum MemoryBarrierFlagBits
-    {
-        VertexAttribArrayBarrier = GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT,
-        ElementArrayBarrier = GL_ELEMENT_ARRAY_BARRIER_BIT,
-        UniformBarrier = GL_UNIFORM_BARRIER_BIT,
-        TextureFetchBarrier = GL_TEXTURE_FETCH_BARRIER_BIT,
-        ShaderImageAccessBarrier = GL_SHADER_IMAGE_ACCESS_BARRIER_BIT,
-        CommandBarrier = GL_COMMAND_BARRIER_BIT,
-        PixelBufferBarrier = GL_PIXEL_BUFFER_BARRIER_BIT,
-        TextureUpdateBarrier = GL_TEXTURE_UPDATE_BARRIER_BIT,
-        QueyBufferbarrier = GL_QUERY_BUFFER_BARRIER_BIT,
-        BufferUpdateBarrier = GL_BUFFER_UPDATE_BARRIER_BIT,
-        FramebufferBarrier = GL_FRAMEBUFFER_BARRIER_BIT,
-        TransformFeedbackBarrier = GL_TRANSFORM_FEEDBACK_BARRIER_BIT,
-        AtomicCounterBarrier = GL_ATOMIC_COUNTER_BARRIER_BIT,
-        ShaderStorageBarrier = GL_SHADER_STORAGE_BARRIER_BIT,
-        ClientMappedBufferBarrier = GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT,
-        AllBarrier = GL_ALL_BARRIER_BITS
-    };
-
-    using MemoryBarrierFlags = std::underlying_type_t<MemoryBarrierFlagBits>;*/

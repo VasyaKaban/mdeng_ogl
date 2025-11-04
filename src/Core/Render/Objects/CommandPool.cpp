@@ -6,5 +6,4 @@ namespace Render
     {
         return std::unique_ptr<CommandBuffer>(Allocate());
     }
-
 };

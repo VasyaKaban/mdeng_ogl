@@ -9,17 +9,10 @@ namespace OpenGL
     class Image : public Render::Image, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Image(Context* _parent, const Render::ImageInfo& info);
+        Image(Context* _parent, const Render::ImageInfo& _info);
         virtual ~Image() override;
 
         virtual const Render::ImageInfo& GetInfo() const noexcept override;
-
-        virtual void CopyToBuffer(const Render::CommandBuffer* cmd,
-                                  const Render::Buffer* dst,
-                                  std::span<const Render::BufferImageCopyRegion> regions) override;
-
-        virtual void Update(const Render::CommandBuffer* cmd,
-                            std::span<const Render::MemoryImageCopyRegion> regions) override;
 
         GLenum GetInnerType() const noexcept;
         GLenum GetInnerFormat() const noexcept;

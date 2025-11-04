@@ -13,18 +13,20 @@ namespace OpenGL
     class Context : public Render::Context, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Context(OpenGLBackend* _parent);
+        Context(OpenGLBackend* _parent, const Render::ContextSelector& selector);
         virtual ~Context() override;
 
         virtual Render::ContextProperties GetProperties() const override;
 
-        virtual Render::Queue* GetQueue(Render::QueueSpecialization spec) override;
+        virtual Render::Queue* GetQueue(Render::QueueSpecializationFlags spec) override;
 
         virtual void WaitIdle() noexcept override;
 
         virtual void
         AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore) override; //OGL -> noop
         virtual Render::Framebuffer* GetCurrentDefaultFramebuffer() noexcept override;
+        virtual void BeginDefaultFramebufferImageUsage() override; //OGL -> noop
+        virtual void EndDefaultFramebufferImageUsage() override; //OGL -> noop
         virtual void
         ReleaseSwapchainImage(const Render::PresentInfo& info) override; //SDL_SwapWindow();
 
@@ -52,7 +54,7 @@ namespace OpenGL
         const GladGLContext& GetLoader() const noexcept;
     private:
         OpenGLBackend* parent;
-        GladGLContext loader; //Split into CommandBufferLoader and ImmediateLoader
+        GladGLContext loader;
 
         Framebuffer default_framebuffer;
         Queue default_queue;

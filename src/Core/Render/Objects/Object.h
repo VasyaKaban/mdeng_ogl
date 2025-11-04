@@ -7,6 +7,6 @@ namespace Render
     class Object
     {
     public:
-        virtual Render::Context* GetContext() const noexcept = 0;
+        virtual Context* GetContext() const noexcept = 0;
     };
 };

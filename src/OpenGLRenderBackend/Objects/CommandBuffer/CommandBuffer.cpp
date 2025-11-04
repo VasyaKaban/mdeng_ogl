@@ -1,11 +1,20 @@
 #include "CommandBuffer.h"
 #include "../../Context/Context.h"
+#include "../Buffer/Buffer.h"
+#include "../Image/Image.h"
+#include "../Pipeline/Pipeline.h"
+#include "../ImageView/ImageView.h"
+#include "../Sampler/Sampler.h"
+#include "../RenderPass/RenderPass.h"
+#include <stdexcept>
+#include <cassert>
 
 namespace OpenGL
 {
     CommandBuffer::CommandBuffer(Context* _parent, CommandPool* _pool) noexcept
         : parent(_parent),
-          pool(_pool)
+          pool(_pool),
+          bound_pipeline(nullptr)
     {}
 
     CommandBuffer::~CommandBuffer()
@@ -23,20 +32,702 @@ namespace OpenGL
     }
     void CommandBuffer::End()
     {
-        //noop
+        bound_pipeline = nullptr;
     }
 
     Render::Context* CommandBuffer::GetContext() const noexcept
     {
         return parent;
     }
-};
 
-//Commands:
-/*void CommandBuffer::SetMemoryBarrier(MemoryBarrierFlags flags, bool by_region) const noexcept
-{
-    if(!by_region)
-        parent->GetLoader().MemoryBarrier(static_cast<GLbitfield>(flags));
-    else
-        parent->GetLoader().MemoryBarrierByRegion(static_cast<GLbitfield>(flags));
-}*/
+    //Buffer
+    void
+    CommandBuffer::CopyBufferToBuffer(Render::Buffer* src,
+                                      Render::Buffer* dst,
+                                      std::span<const Render::BufferCopyRegion> regions) noexcept
+    {
+        Buffer* src_buffer = static_cast<Buffer*>(src);
+        Buffer* dst_buffer = static_cast<Buffer*>(dst);
+        for(const auto& reg: regions)
+        {
+            parent->GetLoader().CopyNamedBufferSubData(src_buffer->GetHandle(),
+                                                       dst_buffer->GetHandle(),
+                                                       reg.src_offset,
+                                                       reg.dst_offset,
+                                                       reg.size);
+        }
+    }
+    void CommandBuffer::CopyBufferToImage(Render::Buffer* src,
+                                          Render::Image* dst,
+                                          std::span<const Render::BufferImageCopyRegion> regions)
+    {
+        Buffer* src_buffer = static_cast<Buffer*>(src);
+        Image* dst_image = static_cast<Image*>(dst);
+
+        const auto& image_info = dst_image->GetInfo();
+        bool is_compressed = IsFormatCompressed(image_info.format);
+        GLenum inner_type = dst_image->GetInnerType();
+        GLHandle image_handle = dst_image->GetHandle();
+        std::uint16_t format_texel_alignment = GetFormatTexelAlignment(image_info.format);
+        GLenum format = dst_image->GetInnerFormat();
+
+        const TransferImageTypeFormat& transfer_type_format_pair =
+            dst_image->GetTransferImageTypeFormatPair();
+
+        parent->GetLoader().BindBuffer(GL_PIXEL_UNPACK_BUFFER, src_buffer->GetHandle());
+        parent->GetLoader().PixelStorei(GL_UNPACK_ALIGNMENT, format_texel_alignment);
+
+        for(const auto& reg: regions)
+        {
+            parent->GetLoader().PixelStorei(GL_UNPACK_ROW_LENGTH, reg.buffer_row_length);
+            parent->GetLoader().PixelStorei(GL_UNPACK_IMAGE_HEIGHT, reg.buffer_image_height);
+
+            auto region_size = GetFormatRegionSize(image_info.format, reg);
+
+            switch(inner_type)
+            {
+                case GL_TEXTURE_1D:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().CompressedTextureSubImage1D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.extent.width,
+                            format,
+                            region_size,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().TextureSubImage1D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.extent.width,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_1D_ARRAY:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().CompressedTextureSubImage2D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.subresource_layers.layer_count,
+                            format,
+                            region_size,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().TextureSubImage2D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.subresource_layers.layer_count,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_2D:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().CompressedTextureSubImage2D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.extent.width,
+                            reg.extent.height,
+                            format,
+                            region_size,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().TextureSubImage2D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.extent.width,
+                            reg.extent.height,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_2D_ARRAY:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().CompressedTextureSubImage3D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
+                            format,
+                            region_size,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().TextureSubImage3D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_2D_MULTISAMPLE:
+                case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+                    //noop
+                    break;
+                case GL_TEXTURE_3D:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().CompressedTextureSubImage3D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.offset.z,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.extent.depth,
+                            format,
+                            region_size,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().TextureSubImage3D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.offset.z,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.extent.depth,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    break;
+            }
+        }
+    }
+
+    //Image
+    void CommandBuffer::TransferToGeneralImageLayout(Render::Image* src)
+    {
+        //noop
+    }
+
+    void CommandBuffer::CopyImageToBuffer(Render::Image* src,
+                                          Render::Buffer* dst,
+                                          std::span<const Render::BufferImageCopyRegion> regions)
+    {
+        Image* src_image = static_cast<Image*>(src);
+        Buffer* dst_buffer = static_cast<Buffer*>(dst);
+
+        auto inner_type = src_image->GetInnerType();
+
+        if(inner_type == GL_TEXTURE_2D_MULTISAMPLE || inner_type == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
+            throw std::runtime_error("Multisampled images are not supported");
+
+        const auto& info = src_image->GetInfo();
+        const auto& transfer_type_format_pair = src_image->GetTransferImageTypeFormatPair();
+
+        bool is_compressed = IsFormatCompressed(info.format);
+        std::uint16_t format_texel_alignment = GetFormatTexelAlignment(info.format);
+
+        parent->GetLoader().BindBuffer(GL_PIXEL_PACK_BUFFER, dst_buffer->GetHandle());
+        parent->GetLoader().PixelStorei(GL_PACK_ALIGNMENT, format_texel_alignment);
+
+        for(const auto& reg: regions)
+        {
+            parent->GetLoader().PixelStorei(GL_PACK_ROW_LENGTH, reg.buffer_row_length);
+            parent->GetLoader().PixelStorei(GL_PACK_IMAGE_HEIGHT, reg.buffer_image_height);
+
+            auto region_size = GetFormatRegionSize(info.format, reg);
+
+            switch(inner_type)
+            {
+                case GL_TEXTURE_1D:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().GetCompressedTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            0,
+                            0,
+                            reg.extent.width,
+                            1,
+                            1,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().GetTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            0,
+                            0,
+                            reg.extent.width,
+                            1,
+                            1,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_1D_ARRAY:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().GetCompressedTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.subresource_layers.base_layer,
+                            0,
+                            reg.extent.width,
+                            reg.subresource_layers.layer_count,
+                            1,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().GetTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.subresource_layers.base_layer,
+                            0,
+                            reg.extent.width,
+                            reg.subresource_layers.layer_count,
+                            1,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_2D:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().GetCompressedTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            0,
+                            reg.extent.width,
+                            reg.extent.height,
+                            1,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().GetTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            0,
+                            reg.extent.width,
+                            reg.extent.height,
+                            1,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_2D_ARRAY:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().GetCompressedTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().GetTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_3D:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().GetCompressedTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.offset.z,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.extent.depth,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().GetTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.offset.z,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.extent.depth,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    break;
+            }
+        }
+    }
+
+    //Pipeline
+    void CommandBuffer::Bind(Render::Pipeline* pipeline)
+    {
+        Pipeline* pipe = static_cast<Pipeline*>(pipeline);
+        auto state = pipe->GetGraphicsPipelineState();
+
+        parent->GetLoader().UseProgram(pipe->GetHandle());
+        if(state)
+            state->Set(*pipe);
+
+        bound_pipeline = pipe;
+    }
+
+    void CommandBuffer::BindVertexBuffer(Render::Buffer* buffer,
+                                         std::uint32_t binding,
+                                         std::int64_t offset)
+    {
+        auto state = bound_pipeline->GetGraphicsPipelineState();
+
+        parent->GetLoader().VertexArrayVertexBuffer(
+            state->vertex_input_state.vao,
+            binding,
+            static_cast<const Buffer*>(buffer)->GetHandle(),
+            offset,
+            state->vertex_input_state.binding_strides_map[binding]);
+    }
+
+    void CommandBuffer::BindIndexBuffer(Render::Buffer* buffer,
+                                        Render::IndexType type,
+                                        std::uintptr_t offset)
+    {
+        auto state = bound_pipeline->GetGraphicsPipelineState();
+
+        parent->GetLoader().VertexArrayElementBuffer(
+            state->vertex_input_state.vao,
+            static_cast<const Buffer*>(buffer)->GetHandle());
+
+        state->draw_state.index_type = IndexTypeToNative(type);
+        switch(type)
+        {
+            case Render::IndexType::u8:
+                state->draw_state.index_size = 1;
+                break;
+            case Render::IndexType::u16:
+                state->draw_state.index_size = 2;
+                break;
+            case Render::IndexType::u32:
+                state->draw_state.index_size = 4;
+                break;
+        }
+
+        state->draw_state.index_buffer_offset = offset;
+    }
+
+    void CommandBuffer::Draw(std::uint32_t vertex_count,
+                             std::uint32_t instance_count,
+                             std::uint32_t first_vertex)
+    {
+        auto state = bound_pipeline->GetGraphicsPipelineState();
+
+        parent->GetLoader().DrawArraysInstanced(state->input_assembly_state.topology,
+                                                first_vertex,
+                                                vertex_count,
+                                                instance_count);
+
+        /*parent->GetLoader().DrawArraysInstancedBaseInstance(
+            graphics_state->input_assembly_state.topology,
+            first_vertex,
+            vertex_count,
+            instance_count,
+            first_instance);*/
+    }
+
+    void CommandBuffer::DrawIndexed(std::uint32_t index_count,
+                                    std::uint32_t instance_count,
+                                    std::uint32_t first_index,
+                                    std::int32_t vertex_offset)
+    {
+        auto state = bound_pipeline->GetGraphicsPipelineState();
+
+        //indices = index_buffer_offset + sizoef(indexType) * first_index;
+
+        parent->GetLoader().DrawElementsInstancedBaseVertex(
+            state->input_assembly_state.topology,
+            index_count,
+            state->draw_state.index_type,
+            reinterpret_cast<const void*>(state->draw_state.index_buffer_offset +
+                                          state->draw_state.index_size * first_index),
+            instance_count,
+            vertex_offset);
+
+        /*parent->GetLoader().DrawElementsInstancedBaseVertexBaseInstance(
+            graphics_state->input_assembly_state.topology,
+            index_count,
+            graphics_state->draw_state.index_type,
+            reinterpret_cast<const void*>(graphics_state->draw_state.index_buffer_offset +
+                                          graphics_state->draw_state.index_size * first_index),
+            instance_count,
+            vertex_offset,
+            first_instance);*/
+    }
+
+    void
+    CommandBuffer::Dispatch(std::uint32_t x_groups, std::uint32_t y_groups, std::uint32_t z_groups)
+    {
+        parent->GetLoader().DispatchCompute(x_groups, y_groups, z_groups);
+    }
+
+    void CommandBuffer::BindUniformBuffer(const Render::DescriptorBufferDesc& desc)
+    {
+        parent->GetLoader().BindBufferRange(GL_UNIFORM_BUFFER,
+                                            desc.binding,
+                                            static_cast<const Buffer*>(desc.buffer)->GetHandle(),
+                                            desc.offset,
+                                            desc.size);
+    }
+
+    void CommandBuffer::BindShaderStorageBuffer(const Render::DescriptorBufferDesc& desc)
+    {
+        parent->GetLoader().BindBufferRange(GL_SHADER_STORAGE_BUFFER,
+                                            desc.binding,
+                                            static_cast<const Buffer*>(desc.buffer)->GetHandle(),
+                                            desc.offset,
+                                            desc.size);
+    }
+
+    void CommandBuffer::BindCombinedImageSampler(const Render::DescriptorImageDesc& desc)
+    {
+        parent->GetLoader().BindTextureUnit(
+            desc.binding,
+            static_cast<const ImageView*>(desc.image_view)->GetHandle());
+
+        parent->GetLoader().BindSampler(desc.binding,
+                                        static_cast<const Sampler*>(desc.sampler)->GetHandle());
+    }
+
+    void CommandBuffer::BindStorageImage(const Render::DescriptorImageDesc& desc)
+    {
+        GLuint image_handle = static_cast<ImageView*>(desc.image_view)->GetHandle();
+        parent->GetLoader().BindImageTextures(desc.binding, 1, &image_handle);
+    }
+
+    //Dynamic state
+    void CommandBuffer::SetViewport(std::uint32_t first_viewport,
+                                    std::span<const Render::Viewport> viewports)
+    {
+        parent->GetLoader().ViewportArrayv(first_viewport, viewports.size(), &viewports.data()->x);
+    }
+
+    void CommandBuffer::SetScissors(std::uint32_t first_scissor,
+                                    std::span<const Render::Rect2D> scissors)
+    {
+        parent->GetLoader().Enable(GL_SCISSOR_TEST);
+        parent->GetLoader().ScissorArrayv(first_scissor,
+                                          scissors.size(),
+                                          &scissors.data()->offset.x);
+    }
+
+    void CommandBuffer::SetUniform(const Render::UniformDesc& desc, std::span<const std::byte> data)
+    {
+        GLHandle handle = bound_pipeline->GetHandle();
+
+#define VECTOR_CASE(EXTENT, SIZE) \
+    case EXTENT: \
+        switch(desc.type) \
+        { \
+            case Render::UniformType::Float: \
+            { \
+                parent->GetLoader().ProgramUniform##SIZE##fv( \
+                    handle, \
+                    desc.location, \
+                    data.size() / (sizeof(GLfloat) * SIZE), \
+                    reinterpret_cast<const GLfloat*>(data.data())); \
+            } \
+            break; \
+            case Render::UniformType::Int: \
+            { \
+                parent->GetLoader().ProgramUniform##SIZE##iv( \
+                    handle, \
+                    desc.location, \
+                    data.size() / (sizeof(GLint) * SIZE), \
+                    reinterpret_cast<const GLint*>(data.data())); \
+            } \
+            break; \
+            case Render::UniformType::UInt: \
+            { \
+                parent->GetLoader().ProgramUniform##SIZE##uiv( \
+                    handle, \
+                    desc.location, \
+                    data.size() / (sizeof(GLuint) * SIZE), \
+                    reinterpret_cast<const GLuint*>(data.data())); \
+            } \
+            break; \
+            case Render::UniformType::Double: \
+            { \
+                parent->GetLoader().ProgramUniform##SIZE##dv( \
+                    handle, \
+                    desc.location, \
+                    data.size() / (sizeof(GLdouble) * SIZE), \
+                    reinterpret_cast<const GLdouble*>(data.data())); \
+            } \
+            break; \
+        } \
+        break;
+
+//__VA_ARGS__ -> COLS
+#define MATRIX_CASE(EXTENT, ROWS, ...) \
+    case EXTENT: \
+        switch(desc.type) \
+        { \
+            case Render::UniformType::Float: \
+            { \
+                parent->GetLoader().ProgramUniformMatrix##ROWS##__VA_OPT__(x##__VA_ARGS__)##fv( \
+                    handle, \
+                    desc.location, \
+                    data.size() / (sizeof(GLfloat) * ROWS __VA_OPT__(*__VA_ARGS__)), \
+                    GL_FALSE, \
+                    reinterpret_cast<const GLfloat*>(data.data())); \
+            } \
+            break; \
+            case Render::UniformType::Double: \
+            { \
+                parent->GetLoader().ProgramUniformMatrix##ROWS##__VA_OPT__(x##__VA_ARGS__)##dv( \
+                    handle, \
+                    desc.location, \
+                    data.size() / (sizeof(GLdouble) * ROWS __VA_OPT__(*__VA_ARGS__)), \
+                    GL_FALSE, \
+                    reinterpret_cast<const GLdouble*>(data.data())); \
+            } \
+            break; \
+            default: \
+                assert(false); \
+                break; \
+        } \
+        break;
+
+        if(desc.extent == Render::UniformExtent::Scalar ||
+           desc.extent == Render::UniformExtent::Vec2 ||
+           desc.extent == Render::UniformExtent::Vec3 || desc.extent == Render::UniformExtent::Vec4)
+        {
+            switch(desc.extent)
+            {
+                VECTOR_CASE(Render::UniformExtent::Scalar, 1)
+                VECTOR_CASE(Render::UniformExtent::Vec2, 2)
+                VECTOR_CASE(Render::UniformExtent::Vec3, 3)
+                VECTOR_CASE(Render::UniformExtent::Vec4, 4)
+                default:
+                    assert(false);
+                    break;
+            }
+        }
+        else
+        {
+            switch(desc.extent)
+            {
+                MATRIX_CASE(Render::UniformExtent::Mat2x2, 2)
+                MATRIX_CASE(Render::UniformExtent::Mat2x3, 2, 3)
+                MATRIX_CASE(Render::UniformExtent::Mat2x4, 2, 4)
+                MATRIX_CASE(Render::UniformExtent::Mat3x2, 3, 2)
+                MATRIX_CASE(Render::UniformExtent::Mat3x3, 3)
+                MATRIX_CASE(Render::UniformExtent::Mat3x4, 3, 4)
+                MATRIX_CASE(Render::UniformExtent::Mat4x2, 4, 2)
+                MATRIX_CASE(Render::UniformExtent::Mat4x3, 4, 3)
+                MATRIX_CASE(Render::UniformExtent::Mat4x4, 4)
+                default:
+                    assert(false);
+                    break;
+            }
+        }
+    }
+
+    //Renderpass
+    void CommandBuffer::BeginRenderPass(Render::RenderPass* renderpass,
+                                        const Render::RenderPassBeginInfo& info)
+    {
+        RenderPass* rpass = static_cast<RenderPass*>(renderpass);
+        rpass->Begin(info);
+    }
+
+    void CommandBuffer::EndRenderPass()
+    {
+        //noop
+    }
+
+    //Common
+    void CommandBuffer::SetPipelineBarrier(const Render::PipelineBarrier& barrier)
+    {
+        if(barrier.dependency & Render::DependencyFlagBits::ByRegion)
+            parent->GetLoader().MemoryBarrierByRegion(AccessFlagsToNative(barrier.access));
+        else
+            parent->GetLoader().MemoryBarrier(AccessFlagsToNative(barrier.access));
+    }
+};

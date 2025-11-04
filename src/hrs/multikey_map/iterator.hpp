@@ -145,7 +145,7 @@ namespace hrs
                 return std::get<Index>(node->keys);
             }
 
-            constexpr decltype(auto) keys() const noexcept
+            constexpr auto& keys() const noexcept
             {
                 return n->to_node()->keys;
             }

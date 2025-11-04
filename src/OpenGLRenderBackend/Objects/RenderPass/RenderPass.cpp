@@ -26,8 +26,7 @@ namespace OpenGL
         //noop
     }
 
-    void RenderPass::Begin(const Render::CommandBuffer* cmd,
-                           const Render::RenderPassBeginInfo& info)
+    void RenderPass::Begin(const Render::RenderPassBeginInfo& info)
     {
         parent->GetLoader().Disable(GL_SCISSOR_TEST); //explicitly disable scissors test
 
@@ -78,11 +77,6 @@ namespace OpenGL
                                                         info.clear_depth_stencil_value.depth,
                                                         info.clear_depth_stencil_value.stencil);
         }
-    }
-
-    void RenderPass::End(const Render::CommandBuffer* cmd)
-    {
-        //noop
     }
 
     Render::Context* RenderPass::GetContext() const noexcept

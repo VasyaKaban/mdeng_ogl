@@ -12,9 +12,13 @@
 #include "../Objects/Sampler/Sampler.h"
 #include "../Objects/Shader/Shader.h"
 #include <stdexcept>
+#include <format>
 
 namespace OpenGL
 {
+    constexpr static std::string_view REQUIRED_EXTENSIONS[] = {"GL_EXT_texture_compression_s3tc",
+                                                               "GL_EXT_texture_sRGB"};
+
     static void GLAPIENTRY debug_messenger_callback(GLenum source,
                                                     GLenum type,
                                                     GLuint id,
@@ -30,7 +34,7 @@ namespace OpenGL
             {reinterpret_cast<const char*>(message), static_cast<std::size_t>(length)});
     }
 
-    Context::Context(OpenGLBackend* _parent)
+    Context::Context(OpenGLBackend* _parent, const Render::ContextSelector& selector)
         : parent(_parent),
           default_framebuffer(this),
           default_queue(this)
@@ -52,9 +56,27 @@ namespace OpenGL
         for(std::size_t i = 0; i < extensions_number; i++)
             extensions[i] = reinterpret_cast<const char*>(loader.GetStringi(GL_EXTENSIONS, i));
 
+        for(const auto& req_ext: REQUIRED_EXTENSIONS)
+        {
+            auto it = std::ranges::find(extensions, req_ext);
+            if(it == extensions.end())
+                throw std::runtime_error(std::format("{} extension is not supported", req_ext));
+        }
+
+        GLint major = 0;
+        GLint minor = 0;
+        loader.GetIntegerv(GL_MAJOR_VERSION, &major);
+        loader.GetIntegerv(GL_MINOR_VERSION, &minor);
+
+        properties.context_name = "OpenGL";
+        properties.supported_backend_type = RenderBackendType::OpenGL;
+        properties.version = Render::MakeVersion(major, minor);
         properties.vendor_name = reinterpret_cast<const char*>(loader.GetString(GL_VENDOR));
         properties.device_name = reinterpret_cast<const char*>(loader.GetString(GL_RENDERER));
         properties.extensions = extensions;
+        properties.supported_syntax = Render::ShaderSyntaxFlagBits::GLSL;
+        [[maybe_unused]] auto selected_context =
+            selector({&properties, 1}); //just simply do not care
     }
 
     Context::~Context()
@@ -67,7 +89,7 @@ namespace OpenGL
         return properties;
     }
 
-    Render::Queue* Context::GetQueue([[maybe_unused]] Render::QueueSpecialization spec)
+    Render::Queue* Context::GetQueue(Render::QueueSpecializationFlags spec)
     {
         //just return 'empty' queue -> we don't have a 'Queue' concept in opengl! Only implicit queue exists
         return &default_queue;
@@ -87,6 +109,16 @@ namespace OpenGL
     Render::Framebuffer* Context::GetCurrentDefaultFramebuffer() noexcept
     {
         return &default_framebuffer;
+    }
+
+    void Context::BeginDefaultFramebufferImageUsage() //OGL -> noop
+    {
+        //noop
+    }
+
+    void Context::EndDefaultFramebufferImageUsage() //OGL -> noop
+    {
+        //noop
     }
 
     void Context::ReleaseSwapchainImage(const Render::PresentInfo& info) //SDL_SwapWindow();

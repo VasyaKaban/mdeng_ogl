@@ -15,54 +15,8 @@ namespace OpenGL
 
         virtual ~Pipeline() override;
 
-        virtual void Bind(const Render::CommandBuffer* cmd) override;
-
-        virtual void BindVertexBuffer(const Render::CommandBuffer* cmd,
-                                      const Render::Buffer* buffer,
-                                      std::uint32_t binding,
-                                      std::int64_t offset) override;
-        virtual void BindIndexBuffer(const Render::CommandBuffer* cmd,
-                                     const Render::Buffer* buffer,
-                                     Render::IndexType type,
-                                     std::uintptr_t offset) override;
-
-        virtual void BindUniformBuffer(const Render::CommandBuffer* cmd,
-                                       const Render::Buffer* buffer,
-                                       const Render::BufferBindDesc& bind_desc) noexcept override;
-        virtual void
-        BindShaderStorageBuffer(const Render::CommandBuffer* cmd,
-                                const Render::Buffer* buffer,
-                                const Render::BufferBindDesc& bind_desc) noexcept override;
-
-        virtual void BindImageView(const Render::CommandBuffer* cmd,
-                                   const Render::ImageView* view,
-                                   std::uint32_t index) noexcept override;
-
-        virtual void BindSampler(const Render::CommandBuffer* cmd,
-                                 const Render::Sampler* sampler,
-                                 std::uint32_t index) noexcept override;
-
-        virtual void Draw(const Render::CommandBuffer* cmd,
-                          std::uint32_t vertex_count,
-                          std::uint32_t instance_count,
-                          std::uint32_t first_vertex) override;
-
-        virtual void DrawIndexed(const Render::CommandBuffer* cmd,
-                                 std::uint32_t index_count,
-                                 std::uint32_t instance_count,
-                                 std::uint32_t first_index,
-                                 std::int32_t vertex_offset) override;
-
-        virtual void SetViewport(const Render::CommandBuffer* cmd,
-                                 std::uint32_t first_viewport,
-                                 std::span<const Render::Viewport> viewports) override;
-        virtual void SetScissor(const Render::CommandBuffer* cmd,
-                                std::uint32_t first_scissor,
-                                std::span<const Render::Rect2D> scissors) override;
-
-        virtual void SetUniform(const Render::CommandBuffer* cmd,
-                                const Render::UniformDesc& desc,
-                                std::span<const std::byte> data) override;
+        GLHandle GetHandle() const noexcept;
+        GraphicsPipelineState* GetGraphicsPipelineState() noexcept;
 
         virtual Render::Context* GetContext() const noexcept override;
     private:

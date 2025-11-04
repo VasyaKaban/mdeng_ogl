@@ -91,71 +91,60 @@ namespace OpenGL
         //noop
     }
 
-    GraphicsPipelineBlendState::GraphicsPipelineBlendState(
-        const Render::GraphicsPipelineBlendStateInfo& info)
-        : blend_enabled(info.blend_enabled),
-          //blend_function_info(info.blend_function_info.begin(), info.blend_function_info.end()),
-          logic_op_enabled(info.logic_op_enabled),
+    GraphicsPipelineColorBlendState::GraphicsPipelineColorBlendState(
+        const Render::GraphicsPipelineColorBlendStateInfo& info)
+        : logic_op_enabled(info.logic_op_enabled),
           logic_op(BlendLogicOpToNative(info.logic_op)),
           blend_color(
               {info.blend_color[0], info.blend_color[1], info.blend_color[2], info.blend_color[3]})
-    //blend_eq_info(info.blend_eq_info.begin(), info.blend_eq_info.end())
     {
-        if(blend_enabled)
+        attachments.reserve(info.attachments.size());
+        for(const auto& att: info.attachments)
         {
-            blend_function_info.reserve(info.blend_function_info.size());
-            for(const auto& f_info: info.blend_function_info)
-            {
-                blend_function_info.push_back(
-                    BlendFunctionInfoNative{.buffer_index = f_info.buffer_index,
-                                            .src_rgb = BlendFactorToNative(f_info.src_rgb),
-                                            .src_alpha = BlendFactorToNative(f_info.src_alpha),
-                                            .dst_rgb = BlendFactorToNative(f_info.dst_rgb),
-                                            .dst_alpha = BlendFactorToNative(f_info.dst_alpha)});
-            }
-
-            blend_eq_info.reserve(info.blend_eq_info.size());
-            for(const auto& eq_info: info.blend_eq_info)
-            {
-                blend_eq_info.push_back(
-                    BlendEquationInfoNative{.buffer_index = eq_info.buffer_index,
-                                            .eq_rgb = BlendEquationToNative(eq_info.eq_rgb),
-                                            .eq_alpha = BlendEquationToNative(eq_info.eq_alpha)});
-            }
+            attachments.push_back(
+                ColorBlendAttachmentStateNative{.blend_enabled = att.blend_enabled,
+                                                .src_rgb = BlendFactorToNative(att.src_rgb),
+                                                .eq_rgb = BlendEquationToNative(att.eq_rgb),
+                                                .dst_rgb = BlendFactorToNative(att.dst_rgb),
+                                                .src_alpha = BlendFactorToNative(att.src_alpha),
+                                                .eq_alpha = BlendEquationToNative(att.eq_alpha),
+                                                .dst_alpha = BlendFactorToNative(att.dst_alpha)});
         }
     }
 
-    void GraphicsPipelineBlendState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineColorBlendState::Set(Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
 
-        if(!blend_enabled)
-            loader.Disable(GL_BLEND);
+        if(!logic_op_enabled)
+            loader.Disable(GL_COLOR_LOGIC_OP);
         else
         {
-            loader.Enable(GL_BLEND);
-            for(const auto& func: blend_function_info)
-                loader.BlendFuncSeparatei(func.buffer_index,
-                                          func.src_rgb,
-                                          func.dst_rgb,
-                                          func.src_alpha,
-                                          func.dst_alpha);
+            loader.Enable(GL_COLOR_LOGIC_OP);
+            loader.LogicOp(logic_op);
+        }
 
-            if(!logic_op_enabled)
-                loader.Disable(GL_COLOR_LOGIC_OP);
+        loader.BlendColor(blend_color[0], blend_color[1], blend_color[2], blend_color[3]);
+
+        for(std::size_t i = 0; i < attachments.size(); i++)
+        {
+            if(!attachments[i].blend_enabled)
+                loader.Disablei(GL_BLEND, i);
             else
             {
-                loader.Enable(GL_COLOR_LOGIC_OP);
-                loader.LogicOp(logic_op);
-            }
+                loader.Enablei(GL_BLEND, i);
+                loader.BlendFuncSeparatei(i,
+                                          attachments[i].src_rgb,
+                                          attachments[i].dst_rgb,
+                                          attachments[i].src_alpha,
+                                          attachments[i].dst_alpha);
 
-            loader.BlendColor(blend_color[0], blend_color[1], blend_color[2], blend_color[3]);
-            for(const auto& eq: blend_eq_info)
-                loader.BlendEquationSeparatei(eq.buffer_index, eq.eq_rgb, eq.eq_alpha);
+                loader.BlendEquationSeparatei(i, attachments[i].eq_rgb, attachments[i].eq_alpha);
+            }
         }
     }
 
-    void GraphicsPipelineBlendState::Destroy(Pipeline& parent) noexcept
+    void GraphicsPipelineColorBlendState::Destroy(Pipeline& parent) noexcept
     {
         //noop
     }
@@ -374,7 +363,7 @@ namespace OpenGL
     {
         std::optional<GraphicsPipelineVertexInputState> _vertex_input_state;
         std::optional<GraphicsPipelineInputAssemblyState> _input_assembly_state;
-        std::optional<GraphicsPipelineBlendState> _blend_state;
+        std::optional<GraphicsPipelineColorBlendState> _color_blend_state;
         std::optional<GraphicsPipelineDepthStencilState> _depth_stencil_state;
         std::optional<GraphicsPipelineMultisampleState> _multisample_state;
         std::optional<GraphicsPipelineRasterizationState> _rasterization_state;
@@ -395,8 +384,8 @@ namespace OpenGL
                 if(_depth_stencil_state)
                     _depth_stencil_state->Destroy(parent);
 
-                if(_blend_state)
-                    _blend_state->Destroy(parent);
+                if(_color_blend_state)
+                    _color_blend_state->Destroy(parent);
 
                 if(_input_assembly_state)
                     _input_assembly_state->Destroy(parent);
@@ -408,7 +397,7 @@ namespace OpenGL
         _vertex_input_state =
             GraphicsPipelineVertexInputState(parent, info.vertex_input_state_info);
         _input_assembly_state = GraphicsPipelineInputAssemblyState(info.input_assembly_state_info);
-        _blend_state = GraphicsPipelineBlendState(info.blend_state_info);
+        _color_blend_state = GraphicsPipelineColorBlendState(info.color_blend_state_info);
         _depth_stencil_state = GraphicsPipelineDepthStencilState(info.depth_stencil_state_info);
         _multisample_state = GraphicsPipelineMultisampleState(info.multisample_state_info);
         _rasterization_state = GraphicsPipelineRasterizationState(info.rasterization_state_info);
@@ -418,7 +407,7 @@ namespace OpenGL
 
         vertex_input_state = std::move(*_vertex_input_state);
         input_assembly_state = std::move(*_input_assembly_state);
-        blend_state = std::move(*_blend_state);
+        color_blend_state = std::move(*_color_blend_state);
         depth_stencil_state = std::move(*_depth_stencil_state);
         multisample_state = std::move(*_multisample_state);
         rasterization_state = std::move(*_rasterization_state);
@@ -429,7 +418,7 @@ namespace OpenGL
     {
         vertex_input_state.Set(parent);
         input_assembly_state.Set(parent);
-        blend_state.Set(parent);
+        color_blend_state.Set(parent);
         depth_stencil_state.Set(parent);
         multisample_state.Set(parent);
         rasterization_state.Set(parent);
@@ -440,7 +429,7 @@ namespace OpenGL
     {
         vertex_input_state.Destroy(parent);
         input_assembly_state.Destroy(parent);
-        blend_state.Destroy(parent);
+        color_blend_state.Destroy(parent);
         depth_stencil_state.Destroy(parent);
         multisample_state.Destroy(parent);
         rasterization_state.Destroy(parent);

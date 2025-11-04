@@ -6,6 +6,15 @@
 #include <span>
 #include <string_view>
 #include <functional>
+#include <string>
+#include "Core/Window/RenderBackend.h"
+
+#pragma message("MOVE FORWARD POOL TO CORE!!! -> maybe get rid of hrs at all??? + allocators...")
+#pragma message("MAKE COMMON NAMESPACES FOR CORE -> CORE or inner like Render???")
+#pragma message( \
+    "SPLIT GAME INTO DLL + ADD ENGINE EXE + ADD INTO PLUGINS INTERFACE AND RENDER INTERFACE START, STOP AND CREATE GLOBAL FUNCTIONS + RESOLVE!!!")
+#pragma message("std::list and std::map TO CHAIN-LIKE STRUCTURES FOR EVENTS!!!")
+#pragma message("LINK HRS AS STATIC WITH CORE ONLY!!!")
 
 namespace Render
 {
@@ -14,6 +23,9 @@ namespace Render
     class Buffer;
     class CommandBuffer;
     class CommandPool;
+    class DescriptorPool;
+    class DescriptorSet;
+    class DescriptorSetLayout;
     class Fence;
     class Framebuffer;
     class Image;
@@ -96,8 +108,8 @@ namespace Render
 
     struct BufferCopyRegion
     {
-        std::int64_t src_offset;
-        std::int64_t dst_offset;
+        std::uint64_t src_offset;
+        std::uint64_t dst_offset;
         std::uint64_t size;
     };
 
@@ -121,7 +133,7 @@ namespace Render
     struct MemoryBufferCopyRegion
     {
         const std::uint8_t* data;
-        std::int64_t offset;
+        std::uint64_t offset;
         std::uint64_t size;
     };
 
@@ -133,13 +145,6 @@ namespace Render
         ImageSubresourceLayers subresource_layers;
         Offset3D offset;
         Extent3D extent;
-    };
-
-    struct BufferBindDesc
-    {
-        std::uint32_t index;
-        std::int64_t offset;
-        std::uint64_t size;
     };
 
     struct ClearColorValue
@@ -160,31 +165,79 @@ namespace Render
         ClearDepthStencilValue clear_depth_stencil_value;
     };
 
-    enum BufferFlagBits
+    enum BufferUsageFlagBits
+    {
+        BufferUsageTransferSource = 1 << 0, //VK_BUFFER_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
+        BufferUsageTransferDestination = 1 << 1, //VK_BUFFER_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
+        //VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = 0x00'00'00'04,
+        //VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT = 0x00'00'00'08,
+        BufferUsageUniformBuffer = 1 << 2, //VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT = 0x00'00'00'10,
+        BufferUsageStorageBuffer = 1 << 3, //VK_BUFFER_USAGE_STORAGE_BUFFER_BIT = 0x00'00'00'20,
+        BufferUsageIndexBuffer = 1 << 4, //VK_BUFFER_USAGE_INDEX_BUFFER_BIT = 0x00'00'00'40,
+        BufferUsageVertexBuffer = 1 << 5, //VK_BUFFER_USAGE_VERTEX_BUFFER_BIT = 0x00'00'00'80,
+        //VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT = 0x00'00'01'00,
+    };
+
+    using BufferUsageFlags = std::underlying_type_t<BufferUsageFlagBits>;
+
+    enum class AllocateMemoryPolicy
+    {
+        AnyBits,
+        OnlyBits
+    };
+
+    enum MemoryPropertyFlagBits
+    {
+        DeviceLocal = 1 << 0, //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT = 0x00'00'00'01,
+        HostVisible = 1 << 1, //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT = 0x00'00'00'02,
+        HostCoherent =
+            1 << 2, //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00'00'00'04, + GL_MAPPING_COHERENT
+        HostCached =
+            1 << 3, //VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00'00'00'08, + GL_CLIENT_STORAGE
+        //VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT = 0x00000010,
+    };
+
+    using MemoryPropertyFlags = std::underlying_type_t<MemoryPropertyFlagBits>;
+
+    struct MemoryRequest
+    {
+        AllocateMemoryPolicy policy;
+        MemoryPropertyFlags flags;
+    };
+
+    enum BufferMappingFlagBits
     {
         MapRead = 1 << 0,
         MapWrite = 1 << 1,
         PersistentMapping = 1 << 2,
-        CoherentMapping = 1 << 3,
-        DynamicStorage = 1 << 4
     };
 
-    using BufferFlags = std::underlying_type_t<BufferFlagBits>;
+    using BufferMappingFlags = std::underlying_type_t<BufferMappingFlagBits>;
 
     struct BufferInfo
     {
+        std::span<const MemoryRequest> memory_requests;
         std::uint64_t size;
-        BufferFlags flags;
+        BufferMappingFlags mapping_flags;
+        BufferUsageFlags usage;
     };
 
     struct MappedRange
     {
-        std::int64_t offset;
+        std::uint64_t offset;
         std::uint64_t size;
     };
 
+    enum CommandPoolFlagBits
+    {
+        ResetableCommandBuffer = 1 << 0
+    };
+
+    using CommandPoolFlags = std::underlying_type_t<CommandPoolFlagBits>;
+
     struct CommandPoolInfo
     {
+        CommandPoolFlags flags;
         const Queue* queue;
     };
 
@@ -194,15 +247,11 @@ namespace Render
         Unsignaled
     };
 
-    struct AttachmentRef
-    {
-        std::variant<const Image*, const ImageView*> attachment;
-    };
-
     struct FramebufferInfo
     {
-        std::span<const AttachmentRef> color_attachments;
-        const AttachmentRef* depth_stencil_attachment;
+        RenderPass* renderpass;
+        std::span<const ImageView*> color_attachments;
+        const ImageView* depth_stencil_attachment;
     };
 
     enum class ImageType
@@ -281,14 +330,39 @@ namespace Render
         B4G4R4A4_UNORM
     };
 
+    enum ImageFlagBits
+    {
+        CubeCompatible = 1 << 0 //VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT = 0x00000010,
+    };
+
+    using ImageFlags = std::underlying_type_t<ImageFlagBits>;
+
+    enum ImageUsageFlagBits
+    {
+        ImageUsageTransferSource = 1 << 0, //VK_IMAGE_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
+        ImageUsageTransferDestination = 1 << 1, //VK_IMAGE_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
+        ImageUsageSampled = 1 << 2, //VK_IMAGE_USAGE_SAMPLED_BIT = 0x00'00'00'04,
+        ImageUsageStorage = 1 << 3, //VK_IMAGE_USAGE_STORAGE_BIT = 0x00'00'00'08,
+        ImageUsagecolorAttachment = 1 << 4, //VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT = 0x00'00'00'10,
+        ImageUsageDepthStencilAttachment =
+            1 << 5, //VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00'00'00'20,
+        //VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT = 0x00'00'00'40,
+        //VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT = 0x00'00'00'80,
+    };
+
+    using ImageUsageFlags = std::underlying_type_t<ImageUsageFlagBits>;
+
     struct ImageInfo
     {
+        std::span<const MemoryRequest> memory_requests;
+        ImageFlags flags;
         ImageType image_type;
         Format format;
         Extent3D extent;
         std::uint32_t mip_levels;
         std::uint32_t array_layers;
         SampleCount samples;
+        ImageUsageFlags usage;
     };
 
     enum class ImageViewType
@@ -352,15 +426,27 @@ namespace Render
         std::span<CommandBuffer*> command_buffers;
     };
 
+    enum class ImageLayout
+    {
+        Undefined, //VK_IMAGE_LAYOUT_UNDEFINED = 0, -> on image init
+        General, //VK_IMAGE_LAYOUT_GENERAL = 1, -> after image init
+        PresentSource, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> for renderpass + default framebuffer
+    };
+
     struct AttachmentDescription
     {
         bool clear_load;
+        Format format; //wtf
+        SampleCount samples; ///wtf???
+        ImageLayout initial_layout;
+        ImageLayout final_layout;
     };
 
     struct RenderPassInfo
     {
         std::span<const AttachmentDescription> color_attachment_descriptions;
         const AttachmentDescription* depth_stencil_attachment_description;
+        //just skip subpass dependency between external subpass -> too hard...
     };
 
     enum class Filter
@@ -401,19 +487,31 @@ namespace Render
         BorderColor border_color; //GL_TEXTURE_BORDER_COLOR
     };
 
-    enum class ShaderStage
+    enum ShaderSyntaxFlagBits
     {
-        Vertex,
-        Geometry,
-        TessellationControl,
-        TessellationEvaluation,
-        Fragment,
-        Compute,
+        GLSL = 1 << 0
     };
+
+    using ShaderSyntaxFlags = std::underlying_type_t<ShaderSyntaxFlagBits>;
+
+    enum ShaderStageFlagBits
+    {
+        Vertex = 1 << 0, //VK_SHADER_STAGE_VERTEX_BIT = 0x00000001,
+        TessellationControl = 1 << 1, //VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT = 0x00000002,
+        TessellationEvaluation = 1 << 2, //VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT = 0x00000004,
+        Geometry = 1 << 3, //VK_SHADER_STAGE_GEOMETRY_BIT = 0x00000008,
+        Fragment = 1 << 4, //VK_SHADER_STAGE_FRAGMENT_BIT = 0x00000010,
+        Compute = 1 << 5, //VK_SHADER_STAGE_COMPUTE_BIT = 0x00000020,
+        AllGraphics = 1 << 6, //VK_SHADER_STAGE_ALL_GRAPHICS = 0x0000001F,
+        AllStages = 1 << 7, //VK_SHADER_STAGE_ALL = 0x7FFFFFFF,
+    };
+
+    using ShaderStageFlags = std::underlying_type_t<ShaderStageFlagBits>;
 
     struct ShaderInfo
     {
-        ShaderStage stage;
+        ShaderSyntaxFlagBits syntax;
+        ShaderStageFlagBits stage;
         std::span<const char> code;
     };
 
@@ -515,15 +613,6 @@ namespace Render
         OrInverted
     };
 
-    struct BlendFunctionInfo
-    {
-        std::uint32_t buffer_index;
-        BlendFactor src_rgb;
-        BlendFactor src_alpha;
-        BlendFactor dst_rgb;
-        BlendFactor dst_alpha;
-    };
-
     enum class BlendEquation
     {
         Add,
@@ -533,21 +622,23 @@ namespace Render
         Max
     };
 
-    struct BlendEquationInfo
-    {
-        std::uint32_t buffer_index;
-        BlendEquation eq_rgb;
-        BlendEquation eq_alpha;
-    };
-
-    struct GraphicsPipelineBlendStateInfo
+    struct ColorBlendAttachmentState
     {
         bool blend_enabled;
-        std::span<BlendFunctionInfo> blend_function_info;
+        BlendFactor src_rgb;
+        BlendEquation eq_rgb;
+        BlendFactor dst_rgb;
+        BlendFactor src_alpha;
+        BlendEquation eq_alpha;
+        BlendFactor dst_alpha;
+    };
+
+    struct GraphicsPipelineColorBlendStateInfo
+    {
         bool logic_op_enabled;
         BlendLogicOp logic_op;
+        std::span<const ColorBlendAttachmentState> attachments;
         float blend_color[4];
-        std::span<BlendEquationInfo> blend_eq_info;
     };
     //~Blend
 
@@ -650,15 +741,100 @@ namespace Render
     };
     //~Draw
 
+    struct UniformRange
+    {
+        ShaderStageFlags stages;
+        std::uint32_t words_offset;
+        std::uint32_t words_size;
+    };
+
+    enum class DescriptorType
+    {
+        //VK_DESCRIPTOR_TYPE_SAMPLER = 0,
+        CombinedImageSampler = 1 << 0, //VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER = 1,
+        //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE = 2,
+        StorageImage = 1 << 1, //VK_DESCRIPTOR_TYPE_STORAGE_IMAGE = 3,
+        //VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER = 4,
+        //VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER = 5,
+        UnifromBuffer = 1 << 2, //VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER = 6,
+        StorageBuffer = 1 << 3, //VK_DESCRIPTOR_TYPE_STORAGE_BUFFER = 7,
+        //VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC = 8,
+        //VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC = 9,
+        //VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT = 10,
+    };
+
+    struct DescriptorBinding
+    {
+        std::uint32_t set_binding;
+        std::uint32_t linear_binding;
+    };
+
+    struct DescriptorSetLayoutLayoutBinding
+    {
+        DescriptorBinding binding;
+        DescriptorType type;
+        ShaderStageFlags stages;
+    };
+
+    struct DescriptorSetLayoutInfo
+    {
+        std::span<const DescriptorSetLayoutLayoutBinding> bindings;
+    };
+
+    struct DescriptorPoolSize
+    {
+        DescriptorType type;
+        std::uint32_t count;
+    };
+
+    struct DescriptorPoolInfo
+    {
+        std::uint32_t max_sets;
+        std::span<const DescriptorPoolSize> sizes;
+    };
+
+    struct DescriptorSetAllocateInfo
+    {
+        std::span<const DescriptorSetLayout> layouts;
+    };
+
+    struct DescriptorImageDesc
+    {
+        Sampler* sampler;
+        ImageView* image_view;
+    };
+
+    struct DescriptorBufferDesc
+    {
+        Buffer* buffer;
+        std::uint64_t offset;
+        std::uint64_t size;
+    };
+
+    struct UpdateDescriptorDesc
+    {
+        DescriptorBinding binding;
+        DescriptorType type;
+        union
+        {
+            DescriptorImageDesc image_desc;
+            DescriptorBufferDesc buffer_desc;
+        } desc;
+    };
+
+#error CHANGE MEMORY BARRIER!!!
+
     struct GraphicsPipelineStateInfo
     {
         GraphicsPipelineVertexInputStateInfo vertex_input_state_info;
         GraphicsPipelineInputAssemblyStateInfo input_assembly_state_info;
-        GraphicsPipelineBlendStateInfo blend_state_info;
+        GraphicsPipelineColorBlendStateInfo color_blend_state_info;
         GraphicsPipelineDepthStencilStateInfo depth_stencil_state_info;
         GraphicsPipelineMultisampleStateInfo multisample_state_info;
         GraphicsPipelineRasterizationStateInfo rasterization_state_info;
         GraphicsPipelineViewportStateInfo viewport_state_info;
+        std::span<const UniformRange> uniform_ranges;
+        std::span<const DescriptorSetLayout> descriptor_set_layouts;
     };
 
     struct GraphicsPipelineInfo
@@ -671,9 +847,6 @@ namespace Render
     {
         const Shader* shader;
     };
-
-#pragma message( \
-    "Change UniformType and UniformExtent to single Format. -> so add R64G64B64A64 formats + RXGXBX formats also!")
 
     enum class UniformType
     {
@@ -700,19 +873,12 @@ namespace Render
         Mat4x4,
     };
 
-    enum class QueueSpecialization
-    {
-        Graphics,
-        Compute,
-        Transfer
-    };
-
     struct UniformDesc
     {
         UniformType type;
         UniformExtent extent;
         std::uint32_t count;
-        std::uint32_t location; //in std::uint32_t
+        std::uint32_t location;
     };
 
     struct PresentInfo
@@ -720,11 +886,74 @@ namespace Render
         std::span<Semaphore*> wait_semaphores;
     };
 
+    enum DependencyFlagBits
+    {
+        ByRegion = 1 << 0
+    };
+
+    using DependencyFlags = std::underlying_type_t<DependencyFlagBits>;
+
+    enum AccessFlagBits
+    {
+        VertexAttributeBarrier = 1 << 0, //GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT
+        IndexBufferBarrier = 1 << 1, //GL_ELEMENT_ARRAY_BARRIER_BIT
+        UniformBufferBarrier = 1 << 2, //GL_UNIFORM_BARRIER_BIT
+        TextureFetchBarrier = 1 << 3, //GL_TEXTURE_FETCH_BARRIER_BIT
+        ShaderImageAccessBarrier = 1 << 4, //GL_SHADER_IMAGE_ACCESS_BARRIER_BIT
+        IndirectCommandBarrier = 1 << 5, //GL_COMMAND_BARRIER_BIT
+        PixelBufferBarrier = 1 << 6, //GL_PIXEL_BUFFER_BARRIER_BIT
+        TextureReadWriteBarrier = 1 << 7, //GL_TEXTURE_UPDATE_BARRIER_BIT
+        BufferReadWriteBarrier = 1 << 8, //GL_BUFFER_UPDATE_BARRIER_BIT
+        PersistentMappedBufferBarrier = 1 << 9, //GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT
+        FramebufferReadWriteBarrier = 1 << 10, //GL_FRAMEBUFFER_BARRIER_BIT
+        ShaderStorageBufferBarrier = 1 << 11, //GL_SHADER_STORAGE_BARRIER_BIT,
+        AllBarriers = 1 << 12, //GL_ALL_BARRIER_BITS
+        //GL_TRANSFORM_FEEDBACK_BARRIER_BIT
+        //GL_ATOMIC_COUNTER_BARRIER_BIT
+        //GL_QUERY_BUFFER_BARRIER_BIT
+    };
+
+    using AccessFlags = std::underlying_type_t<AccessFlagBits>;
+
+    struct PipelineBarrier
+    {
+        DependencyFlags dependency;
+        AccessFlagBits access;
+    };
+
+    enum QueueSpecializationFlagBits
+    {
+        GraphicsSpec = 1 << 0,
+        ComputeSpec = 1 << 1,
+        TransferSpec = 1 << 2
+    };
+
+    using QueueSpecializationFlags = std::underlying_type_t<QueueSpecializationFlagBits>;
+
+    constexpr std::uint32_t MakeVersion(std::uint32_t major, std::uint32_t minor) noexcept
+    {
+        return major << 16 | minor;
+    }
+
+    constexpr std::uint32_t GetMajorVersion(std::uint32_t version) noexcept
+    {
+        return version >> 16;
+    }
+
+    constexpr std::uint32_t GetMinorVersion(std::uint32_t version) noexcept
+    {
+        return version & 0xFF'FF;
+    }
+
     struct ContextProperties
     {
+        std::string context_name;
+        RenderBackendType supported_backend_type;
+        std::uint32_t version; //major << 16 | minor
         std::string_view vendor_name;
         std::string_view device_name;
-        std::span<std::string_view> extensions;
+        std::vector<std::string> extensions;
+        ShaderSyntaxFlags supported_syntax;
 #pragma message("Add limits!!!")
     };
 
@@ -784,4 +1013,29 @@ namespace Render
     };
 
     FormatComponentsBitSize GetFormatComponentsBitSize(Format format) noexcept;
+
+#error MOVE TO ENGINE!!!
+    struct SelectedContextDesc
+    {
+        std::uint32_t index;
+    };
+
+    using ContextSelector = std::function<SelectedContextDesc(
+        std::span<
+            const ContextProperties>)>; //in OpenGL we have only one queue -> so we return index=0
+
+    using PFN_RenderInit = void (*)();
+    using PFN_RenderDestroy = void (*)();
+    using PFN_RenderCreateContext = Context* (*)(RenderBackend* backend,
+                                                 const ContextSelector& selector);
+
+    struct RenderResolve
+    {
+        PFN_RenderInit init;
+        PFN_RenderCreateContext create_context;
+        PFN_RenderDestroy destroy;
+    };
+
+    constexpr inline auto RENDER_RESOLVE_FUNCTION_NAME = "RenderResolve";
+    using PFN_RenderResolve = RenderResolve (*)();
 };

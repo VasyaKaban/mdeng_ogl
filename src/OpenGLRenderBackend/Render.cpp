@@ -54,22 +54,19 @@ namespace OpenGL
         return *native;
     }
 
-    GLbitfield BufferFlagsToNative(Render::BufferFlags flags)
+    GLbitfield DecodeBufferFlagsToNative(Render::BufferFlags mapping_flags)
     {
-        constexpr static std::pair<Render::BufferFlagBits, GLenum> mapping[] = {
+        constexpr static std::pair<Render::BufferFlags, GLbitfield> map_mapping[] = {
             {Render::BufferFlagBits::MapRead, GL_MAP_READ_BIT},
             {Render::BufferFlagBits::MapWrite, GL_MAP_WRITE_BIT},
             {Render::BufferFlagBits::PersistentMapping, GL_MAP_PERSISTENT_BIT},
             {Render::BufferFlagBits::CoherentMapping, GL_MAP_COHERENT_BIT},
-            {Render::BufferFlagBits::DynamicStorage, GL_DYNAMIC_STORAGE_BIT},
-        };
-
-        CHECK_MAPPING_IS_SORTED(mapping)
+            {Render::BufferFlagBits::HostStorage, GL_CLIENT_STORAGE_BIT}};
 
         GLbitfield mask = 0;
-        for(const auto& pr: mapping)
+        for(const auto& pr: map_mapping)
         {
-            if(flags & pr.first)
+            if(mapping_flags & pr.first)
                 mask |= pr.second;
         }
 
@@ -986,5 +983,34 @@ namespace OpenGL
                 Verbose; //return Verbose due to driver-specific codes
 
         return *native;
+    }
+
+    GLbitfield AccessFlagsToNative(Render::AccessFlags flags)
+    {
+        constexpr static std::pair<Render::AccessFlagBits, GLbitfield> mapping[] = {
+            {Render::AccessFlagBits::VertexAttributeBarrier, GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT},
+            {Render::AccessFlagBits::IndexBufferBarrier, GL_ELEMENT_ARRAY_BARRIER_BIT},
+            {Render::AccessFlagBits::UniformBufferBarrier, GL_UNIFORM_BARRIER_BIT},
+            {Render::AccessFlagBits::TextureFetchBarrier, GL_TEXTURE_FETCH_BARRIER_BIT},
+            {Render::AccessFlagBits::ShaderImageAccessBarrier, GL_SHADER_IMAGE_ACCESS_BARRIER_BIT},
+            {Render::AccessFlagBits::IndirectCommandBarrier, GL_COMMAND_BARRIER_BIT},
+            {Render::AccessFlagBits::PixelBufferBarrier, GL_PIXEL_BUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::TextureReadWriteBarrier, GL_TEXTURE_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::BufferReadWriteBarrier, GL_BUFFER_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::PersistentMappedBufferBarrier,
+             GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::FramebufferReadWriteBarrier, GL_FRAMEBUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::ShaderStorageBufferBarrier, GL_SHADER_STORAGE_BARRIER_BIT},
+            {Render::AccessFlagBits::AllBarriers, GL_ALL_BARRIER_BITS},
+        };
+
+        GLbitfield native = 0;
+        for(const auto& pr: mapping)
+        {
+            if(pr.first & flags)
+                native |= pr.second;
+        }
+
+        return native;
     }
 };

@@ -9,6 +9,7 @@ namespace OpenGL
     class GraphicsPipelineVertexInputState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
     public:
         GraphicsPipelineVertexInputState(const Pipeline& parent,
                                          const Render::GraphicsPipelineVertexInputStateInfo& info);
@@ -28,6 +29,8 @@ namespace OpenGL
     class GraphicsPipelineInputAssemblyState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
+        friend class CommandBuffer;
     public:
         GraphicsPipelineInputAssemblyState(
             const Render::GraphicsPipelineInputAssemblyStateInfo& info);
@@ -44,41 +47,35 @@ namespace OpenGL
         bool primitive_restart_enabled;
     };
 
-    struct BlendFunctionInfoNative
+    struct ColorBlendAttachmentStateNative
     {
-        std::uint32_t buffer_index;
+        bool blend_enabled;
         GLenum src_rgb;
-        GLenum src_alpha;
+        GLenum eq_rgb;
         GLenum dst_rgb;
+        GLenum src_alpha;
+        GLenum eq_alpha;
         GLenum dst_alpha;
     };
 
-    struct BlendEquationInfoNative
-    {
-        std::uint32_t buffer_index;
-        GLenum eq_rgb;
-        GLenum eq_alpha;
-    };
-
-    class GraphicsPipelineBlendState : hrs::non_copyable
+    class GraphicsPipelineColorBlendState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
     public:
-        GraphicsPipelineBlendState(const Render::GraphicsPipelineBlendStateInfo& info);
-        GraphicsPipelineBlendState() = default;
-        ~GraphicsPipelineBlendState() = default;
-        GraphicsPipelineBlendState(GraphicsPipelineBlendState&&) = default;
-        GraphicsPipelineBlendState& operator=(GraphicsPipelineBlendState&&) = default;
+        GraphicsPipelineColorBlendState(const Render::GraphicsPipelineColorBlendStateInfo& info);
+        GraphicsPipelineColorBlendState() = default;
+        ~GraphicsPipelineColorBlendState() = default;
+        GraphicsPipelineColorBlendState(GraphicsPipelineColorBlendState&&) = default;
+        GraphicsPipelineColorBlendState& operator=(GraphicsPipelineColorBlendState&&) = default;
 
         void Set(Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
     private:
-        bool blend_enabled;
-        std::vector<BlendFunctionInfoNative> blend_function_info;
         bool logic_op_enabled;
         GLenum logic_op;
+        std::vector<ColorBlendAttachmentStateNative> attachments;
         std::array<GLfloat, 4> blend_color;
-        std::vector<BlendEquationInfoNative> blend_eq_info;
     };
 
     struct StencilStateOpNative
@@ -97,6 +94,7 @@ namespace OpenGL
     class GraphicsPipelineDepthStencilState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
     public:
         GraphicsPipelineDepthStencilState(
             const Render::GraphicsPipelineDepthStencilStateInfo& info);
@@ -119,6 +117,7 @@ namespace OpenGL
     class GraphicsPipelineMultisampleState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
     public:
         GraphicsPipelineMultisampleState(const Render::GraphicsPipelineMultisampleStateInfo& info);
         GraphicsPipelineMultisampleState() = default;
@@ -141,6 +140,7 @@ namespace OpenGL
     class GraphicsPipelineRasterizationState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
     public:
         GraphicsPipelineRasterizationState(
             const Render::GraphicsPipelineRasterizationStateInfo& info);
@@ -164,6 +164,7 @@ namespace OpenGL
     class GraphicsPipelineViewportState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
     public:
         GraphicsPipelineViewportState(const Render::GraphicsPipelineViewportStateInfo& info);
         GraphicsPipelineViewportState() = default;
@@ -182,6 +183,7 @@ namespace OpenGL
     struct GraphicsPipelineDrawState : hrs::non_copyable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
 
         int index_size;
         GLenum index_type;
@@ -191,6 +193,7 @@ namespace OpenGL
     class GraphicsPipelineState : hrs::non_copyable, hrs::non_movable
     {
         friend class Pipeline;
+        friend class CommandBuffer;
     public:
         GraphicsPipelineState(Pipeline& parent, const Render::GraphicsPipelineStateInfo& info);
         ~GraphicsPipelineState() = default;
@@ -200,7 +203,7 @@ namespace OpenGL
     private:
         GraphicsPipelineVertexInputState vertex_input_state;
         GraphicsPipelineInputAssemblyState input_assembly_state;
-        GraphicsPipelineBlendState blend_state;
+        GraphicsPipelineColorBlendState color_blend_state;
         GraphicsPipelineDepthStencilState depth_stencil_state;
         GraphicsPipelineMultisampleState multisample_state;
         GraphicsPipelineRasterizationState rasterization_state;

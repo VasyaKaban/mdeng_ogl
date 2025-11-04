@@ -26,7 +26,7 @@ namespace Render
 
         virtual ContextProperties GetProperties() const = 0;
 
-        virtual Queue* GetQueue(QueueSpecialization spec) = 0;
+        virtual Queue* GetQueue(QueueSpecializationFlags spec) = 0;
 
         virtual void WaitIdle() noexcept = 0;
 

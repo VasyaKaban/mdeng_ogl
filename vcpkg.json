@@ -7,10 +7,7 @@
       "name": "opengl"
     },
     {
-      "name": "glslang",
-      "features": [
-        "tools"
-      ]
+      "name": "nlohmann-json"
     }
   ]
 }
