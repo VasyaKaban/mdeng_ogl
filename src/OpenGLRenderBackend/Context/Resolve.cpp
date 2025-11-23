@@ -12,9 +12,9 @@ namespace OpenGL
     Resolve::~Resolve()
     {}
 
-    std::span<RenderBackendType> Resolve::GetAvailableBackends()
+    std::span<const RenderBackendType> Resolve::GetAvailableBackends()
     {
-        static RenderBackendType SUPPORTED_BACKEND = RenderBackendType::OpenGL;
+        constexpr static RenderBackendType SUPPORTED_BACKEND = RenderBackendType::OpenGL;
 
         return {&SUPPORTED_BACKEND, 1};
     }
