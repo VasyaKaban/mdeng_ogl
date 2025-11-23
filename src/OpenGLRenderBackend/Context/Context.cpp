@@ -338,10 +338,4 @@ namespace OpenGL
     {
         return loader;
     }
-
-    void Context::operator delete(void* ptr) noexcept
-    {
-        //noop -> we have only one static Context
-        //even though we hold loader and have MakeCurrent in context class we restrict amount of contexts to one(so we do not need more than one context anyway...)
-    }
 };

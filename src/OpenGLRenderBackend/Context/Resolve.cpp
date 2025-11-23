@@ -4,13 +4,9 @@
 
 namespace OpenGL
 {
-    static Context* context = nullptr;
-
     extern "C" Render::Resolve* RenderResolve()
     {
-        static Resolve resolve;
-
-        return &resolve;
+        return new Resolve; //we can create as much as possible similar contexts... idk why we made this :)
     }
 
     Resolve::~Resolve()
@@ -28,21 +24,12 @@ namespace OpenGL
         if(backend->GetType() != RenderBackendType::OpenGL)
             throw std::runtime_error("Bad render backend type. 'OpenGL' type was expected");
 
-        static bool created = false;
-        if(created == true)
-            throw std::runtime_error(
-                "Implementation cannot create another context due to the internal implementation "
-                "limitation");
-
-        static Context ctx(static_cast<OpenGLBackend*>(backend));
-        created = true;
-
-        context = &ctx;
+        ctx.reset(new Context(static_cast<OpenGLBackend*>(backend)));
     }
 
     std::span<const Render::ContextProperties> Resolve::GetAvailableContexts()
     {
-        static const Render::ContextProperties& props = context->GetProperties();
+        static const Render::ContextProperties& props = ctx->GetProperties();
 
         return {&props, 1};
     }
@@ -58,6 +45,6 @@ namespace OpenGL
             throw std::runtime_error(
                 "Bad selected context quyeue families. Implementation has only one queue");
 
-        return context;
+        return ctx.get();
     }
 };

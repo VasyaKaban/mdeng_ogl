@@ -69,8 +69,6 @@ namespace OpenGL
         void MakeCurrent() noexcept;
 
         const GladGLContext& GetLoader() const noexcept;
-
-        static void operator delete(void* ptr) noexcept;
     private:
         OpenGLBackend* parent;
         GladGLContext loader;
