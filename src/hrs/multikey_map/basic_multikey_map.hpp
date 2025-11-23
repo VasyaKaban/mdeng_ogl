@@ -230,6 +230,26 @@ namespace hrs
             size--;
         }
 
+        template<std::size_t Index, typename M>
+        requires std::same_as<std::remove_cv_t<M>, basic_multikey_map>
+        node_t* decouple(const detail::iterator<Index, M> it) noexcept
+        {
+            //hrs::assert_true_debug(hrs::is_iterator_part_of_range_debug(get_entry<Index>(), it),
+            //                       "Requested for erasure iterator is not a part of this "
+            //                       "map/entry!");
+
+            if(it == get_entry<Index>().end())
+                return nullptr;
+
+            assert(size != 0);
+
+            for(std::size_t i = 0; i < sizeof...(CKeys) + 1; i++)
+                virtual_erase(const_cast<node_t*>(it.n->to_node()), i);
+
+            size--;
+            return it.n->to_node();
+        }
+
         //if inserted:
         //	iterator to new node, false, any
         //else

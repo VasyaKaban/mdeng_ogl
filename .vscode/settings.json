@@ -1,0 +1,9 @@
+{
+	"editor.inlayHints.enabled": "offUnlessPressed",
+	"editor.formatOnSave": true,
+	"cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+	"clangd.arguments": [
+		"--header-insertion=never"
+	],
+	"C_Cpp.intelliSenseEngine": "disabled"
+}

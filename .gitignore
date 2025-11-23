@@ -1,10 +1,6 @@
 build/*
 .vs/*
 .cache/*
-.vscode/*
 garabage/*
 compile_commands.json
-vcpkg-configuration.json
-.clang-format
-game/*
 out/*

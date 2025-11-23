@@ -12,17 +12,9 @@ namespace OpenGL
         Image(Context* _parent, const Render::ImageInfo& info);
         virtual ~Image() override;
 
-        virtual const Render::ImageInfo& GetInfo() const noexcept override;
-
-        virtual void CopyToBuffer(const Render::CommandBuffer* cmd,
-                                  const Render::Buffer* dst,
-                                  std::span<const Render::BufferImageCopyRegion> regions) override;
-
-        virtual void Update(const Render::CommandBuffer* cmd,
-                            std::span<const Render::MemoryImageCopyRegion> regions) override;
-
         GLenum GetInnerType() const noexcept;
         GLenum GetInnerFormat() const noexcept;
+        Render::Format GetFormat() const noexcept;
 
         const TransferImageTypeFormat& GetTransferImageTypeFormatPair() const noexcept;
 
@@ -33,10 +25,9 @@ namespace OpenGL
         Context* parent;
         GLHandle handle;
 
-        Render::ImageInfo info;
-
         GLenum inner_type;
         GLenum inner_format;
+        Render::Format format;
 
         TransferImageTypeFormat transfer_type_format_pair;
     };

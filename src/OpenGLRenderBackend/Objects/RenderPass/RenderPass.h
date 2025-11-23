@@ -14,9 +14,7 @@ namespace OpenGL
         RenderPass(Context* _parent, const Render::RenderPassInfo& info);
         virtual ~RenderPass() override;
 
-        virtual void Begin(const Render::CommandBuffer* cmd,
-                           const Render::RenderPassBeginInfo& info) override;
-        virtual void End(const Render::CommandBuffer* cmd) override;
+        void Begin(CommandBuffer& cmd, const Render::RenderPassBeginInfo& info);
 
         virtual Render::Context* GetContext() const noexcept override;
     private:

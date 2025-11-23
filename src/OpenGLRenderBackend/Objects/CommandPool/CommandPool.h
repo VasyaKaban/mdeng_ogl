@@ -17,6 +17,5 @@ namespace OpenGL
         virtual Render::Context* GetContext() const noexcept override;
     private:
         Context* parent;
-        const Queue* queue;
     };
 };

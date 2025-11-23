@@ -14,7 +14,5 @@ game
 target_include_directories(game PUBLIC "../")
 
 target_link_libraries(game
-	                    PRIVATE hrs
 						PRIVATE core
-						PRIVATE opengl_render_backend
 					)

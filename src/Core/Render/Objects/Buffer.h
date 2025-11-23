@@ -15,17 +15,24 @@ namespace Render
         virtual std::byte* Map(const MappedRange& rng) = 0;
         virtual void Unmap() noexcept = 0;
         virtual void FlushMappedRange(std::span<const MappedRange> ranges) = 0;
+        virtual void InvalidateMappedRanges(std::span<const MappedRange> ranges) = 0;
 
-        virtual std::uint64_t GetSize() const noexcept = 0;
-
-        virtual void CopyToBuffer(const CommandBuffer* cmd,
-                                  const Buffer* dst,
-                                  std::span<const BufferCopyRegion> regions) noexcept = 0;
-        virtual void CopyToImage(const CommandBuffer* cmd,
-                                 const Image* dst,
-                                 std::span<const BufferImageCopyRegion> regions) = 0;
-
-        virtual void Update(const CommandBuffer* cmd,
-                            std::span<const MemoryBufferCopyRegion> regions) noexcept = 0;
+        virtual std::uint64_t
+        GetInnerMemoryOffset() const noexcept = 0; //OGL -> 0; VK -> offset within VkDeviceMemory
     };
 };
+
+/*
+Mapping:
+    Map with range
+    OGL -> Map with range
+    VK -> map the whole memory handle + also increment mapped memory counter when mapping new buffer on it and decrement on unmapping
+*/
+
+/*
+Sequential buffers hint:
+    Create buffer and allocate enough space for other buffers
+    Buffer* CreateBufferSequentialHint(const BufferInfo& main_info, std::span<const BufferInfo> hint_buffer_infos, std::span<const MemoryReuest> requests);
+
+    Buffer* CreateBufferWithSequentialHint(Buffer* main_buffer);
+*/

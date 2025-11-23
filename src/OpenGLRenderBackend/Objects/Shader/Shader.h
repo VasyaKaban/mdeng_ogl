@@ -14,9 +14,13 @@ namespace OpenGL
 
         GLHandle GetHandle() const noexcept;
 
+        Render::ShaderStageFlagBits GetStage() const noexcept;
+
         virtual Render::Context* GetContext() const noexcept override;
     private:
         Context* parent;
         GLHandle handle;
+
+        Render::ShaderStageFlagBits stage;
     };
 };

@@ -14,31 +14,50 @@ namespace OpenGL
     {
     public:
         Context(OpenGLBackend* _parent);
+
         virtual ~Context() override;
 
-        virtual Render::ContextProperties GetProperties() const override;
+        virtual const Render::ContextProperties& GetProperties() const override;
 
-        virtual Render::Queue* GetQueue(Render::QueueSpecialization spec) override;
+        virtual Render::Queue* GetQueue(std::uint32_t queue_family_index,
+                                        std::uint32_t index) override;
 
         virtual void WaitIdle() noexcept override;
 
-        virtual void
-        AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore) override; //OGL -> noop
+        virtual bool AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore)
+            override; //OGL -> noop; false -> should recreate window/swapchain
+        virtual Render::Image* GetCurrentSwapchainImageHandle()
+            override; //returns swapchain current image; OGL -> return impl-defined address that OpenGL impl will convert to inner calls; VK -> return already created image from swapchain
         virtual Render::Framebuffer* GetCurrentDefaultFramebuffer() noexcept override;
-        virtual void
+        virtual bool
         ReleaseSwapchainImage(const Render::PresentInfo& info) override; //SDL_SwapWindow();
 
         virtual void SetDebugMessenger(const Render::DebugMessengerInfo& info) override;
 
         virtual RenderBackend* GetBackend() const noexcept override;
 
-        virtual Render::Buffer* CreateBuffer(const Render::BufferInfo& info) override;
+        virtual Render::Buffer*
+        CreateBuffer(const Render::BufferInfo& info,
+                     std::span<const std::uint32_t> desired_memory_type_indices) override;
+
+        virtual void CreateBuffersBatch(std::span<const Render::BufferInfo> infos,
+                                        std::span<const std::uint32_t> desired_memory_type_indices,
+                                        std::span<Render::Buffer*> buffers) override;
+
         virtual Render::CommandPool*
         CreateCommandPool(const Render::CommandPoolInfo& info) override;
+        virtual Render::DescriptorPool*
+        CreateDescriptorPool(const Render::DescriptorPoolInfo& info) override;
+        virtual Render::DescriptorSetLayout*
+        CreateDescriptorSetLayout(const Render::DescriptorSetLayoutInfo& info) override;
         virtual Render::Fence* CreateFence() override;
         virtual Render::Framebuffer*
         CreateFramebuffer(const Render::FramebufferInfo& info) override;
         virtual Render::Image* CreateImage(const Render::ImageInfo& info) override;
+
+        virtual void CreateImagesBatch(std::span<const Render::ImageInfo> infos,
+                                       std::span<Render::Image*> images) override;
+
         virtual Render::ImageView* CreateImageView(const Render::ImageViewInfo& info) override;
         virtual Render::Pipeline* CreatePipeline(const Render::GraphicsPipelineInfo& info) override;
         virtual Render::Pipeline* CreatePipeline(const Render::ComputePipelineInfo& info) override;
@@ -50,15 +69,16 @@ namespace OpenGL
         void MakeCurrent() noexcept;
 
         const GladGLContext& GetLoader() const noexcept;
+
+        static void operator delete(void* ptr) noexcept;
     private:
         OpenGLBackend* parent;
-        GladGLContext loader; //Split into CommandBufferLoader and ImmediateLoader
+        GladGLContext loader;
 
         Framebuffer default_framebuffer;
         Queue default_queue;
 
         Render::ContextProperties properties;
-        std::vector<std::string_view> extensions;
 
         std::function<Render::DebugMessengerCallback> debug_callback;
     };

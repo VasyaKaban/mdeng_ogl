@@ -8,7 +8,6 @@ namespace OpenGL
 {
     class GraphicsPipelineVertexInputState : hrs::non_copyable
     {
-        friend class Pipeline;
     public:
         GraphicsPipelineVertexInputState(const Pipeline& parent,
                                          const Render::GraphicsPipelineVertexInputStateInfo& info);
@@ -17,8 +16,11 @@ namespace OpenGL
         GraphicsPipelineVertexInputState(GraphicsPipelineVertexInputState&&) = default;
         GraphicsPipelineVertexInputState& operator=(GraphicsPipelineVertexInputState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
+
+        GLHandle GetHandle() const noexcept;
+        GLsizei GetStride(GLuint binding) const;
     private:
         using BindingStridesMap = std::unordered_map<GLuint, GLsizei>; //binding -> stride
         GLHandle vao;
@@ -27,7 +29,6 @@ namespace OpenGL
 
     class GraphicsPipelineInputAssemblyState : hrs::non_copyable
     {
-        friend class Pipeline;
     public:
         GraphicsPipelineInputAssemblyState(
             const Render::GraphicsPipelineInputAssemblyStateInfo& info);
@@ -37,48 +38,59 @@ namespace OpenGL
         GraphicsPipelineInputAssemblyState&
         operator=(GraphicsPipelineInputAssemblyState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
+
+        GLenum GetTopology() const noexcept;
     private:
         GLenum topology; //used directly by Context!
         bool primitive_restart_enabled;
     };
 
-    struct BlendFunctionInfoNative
+    class GraphicsPipelineTessellationState : hrs::non_copyable
     {
-        std::uint32_t buffer_index;
+    public:
+        GraphicsPipelineTessellationState(const Render::GraphicsPipelineTessellationStateInfo& info,
+                                          bool _enabled);
+        GraphicsPipelineTessellationState() = default;
+        ~GraphicsPipelineTessellationState() = default;
+        GraphicsPipelineTessellationState(GraphicsPipelineTessellationState&&) = default;
+        GraphicsPipelineTessellationState& operator=(GraphicsPipelineTessellationState&&) = default;
+
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
+        void Destroy(Pipeline& parent) noexcept;
+    private:
+        bool enabled;
+        std::uint32_t patch_control_points;
+    };
+
+    struct ColorBlendAttachmentStateNative
+    {
+        bool blend_enabled;
         GLenum src_rgb;
-        GLenum src_alpha;
+        GLenum eq_rgb;
         GLenum dst_rgb;
+        GLenum src_alpha;
+        GLenum eq_alpha;
         GLenum dst_alpha;
     };
 
-    struct BlendEquationInfoNative
+    class GraphicsPipelineColorBlendState : hrs::non_copyable
     {
-        std::uint32_t buffer_index;
-        GLenum eq_rgb;
-        GLenum eq_alpha;
-    };
-
-    class GraphicsPipelineBlendState : hrs::non_copyable
-    {
-        friend class Pipeline;
     public:
-        GraphicsPipelineBlendState(const Render::GraphicsPipelineBlendStateInfo& info);
-        GraphicsPipelineBlendState() = default;
-        ~GraphicsPipelineBlendState() = default;
-        GraphicsPipelineBlendState(GraphicsPipelineBlendState&&) = default;
-        GraphicsPipelineBlendState& operator=(GraphicsPipelineBlendState&&) = default;
+        GraphicsPipelineColorBlendState(const Render::GraphicsPipelineColorBlendStateInfo& info);
+        GraphicsPipelineColorBlendState() = default;
+        ~GraphicsPipelineColorBlendState() = default;
+        GraphicsPipelineColorBlendState(GraphicsPipelineColorBlendState&&) = default;
+        GraphicsPipelineColorBlendState& operator=(GraphicsPipelineColorBlendState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
     private:
-        bool blend_enabled;
-        std::vector<BlendFunctionInfoNative> blend_function_info;
         bool logic_op_enabled;
         GLenum logic_op;
+        std::vector<ColorBlendAttachmentStateNative> attachments;
         std::array<GLfloat, 4> blend_color;
-        std::vector<BlendEquationInfoNative> blend_eq_info;
     };
 
     struct StencilStateOpNative
@@ -92,11 +104,8 @@ namespace OpenGL
         std::uint32_t write_mask;
     };
 
-    StencilStateOpNative stencil_state_op_to_native(const Render::StencilStateOp& op) noexcept;
-
     class GraphicsPipelineDepthStencilState : hrs::non_copyable
     {
-        friend class Pipeline;
     public:
         GraphicsPipelineDepthStencilState(
             const Render::GraphicsPipelineDepthStencilStateInfo& info);
@@ -105,12 +114,12 @@ namespace OpenGL
         GraphicsPipelineDepthStencilState(GraphicsPipelineDepthStencilState&&) = default;
         GraphicsPipelineDepthStencilState& operator=(GraphicsPipelineDepthStencilState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
     private:
         bool depth_test_enabled;
+        bool depth_write_enabled;
         GLenum depth_compare_op;
-        bool write_enabled;
         bool stencil_test_enabled;
         StencilStateOpNative stencil_front_op;
         StencilStateOpNative stencil_back_op;
@@ -118,7 +127,6 @@ namespace OpenGL
 
     class GraphicsPipelineMultisampleState : hrs::non_copyable
     {
-        friend class Pipeline;
     public:
         GraphicsPipelineMultisampleState(const Render::GraphicsPipelineMultisampleStateInfo& info);
         GraphicsPipelineMultisampleState() = default;
@@ -126,21 +134,22 @@ namespace OpenGL
         GraphicsPipelineMultisampleState(GraphicsPipelineMultisampleState&&) = default;
         GraphicsPipelineMultisampleState& operator=(GraphicsPipelineMultisampleState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
     private:
+        //is sample_count == 1 then we should set other parametrs because they use other Enable operations!
+        // GL_MULTISAMPLE must be set if any other boolean flags are also true!
         bool multisample_enabled;
         Render::SampleCount sample_count;
-        std::vector<GLbitfield> sample_mask; //NULL, 1[1 - 32], 2[64]
         bool sample_shading_enabled;
         GLfloat min_sample_shading;
+        std::vector<GLbitfield> sample_mask; //NULL, 1[1 - 32], 2[64]
         bool alpha_to_coverage_enabled;
         bool alpha_to_one_enabled;
     };
 
     class GraphicsPipelineRasterizationState : hrs::non_copyable
     {
-        friend class Pipeline;
     public:
         GraphicsPipelineRasterizationState(
             const Render::GraphicsPipelineRasterizationStateInfo& info);
@@ -150,7 +159,7 @@ namespace OpenGL
         GraphicsPipelineRasterizationState&
         operator=(GraphicsPipelineRasterizationState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
     private:
         bool depth_clamp_enabled;
@@ -163,44 +172,56 @@ namespace OpenGL
 
     class GraphicsPipelineViewportState : hrs::non_copyable
     {
-        friend class Pipeline;
     public:
-        GraphicsPipelineViewportState(const Render::GraphicsPipelineViewportStateInfo& info);
+        GraphicsPipelineViewportState(const Render::GraphicsPipelineViewportStateInfo& info,
+                                      bool _predefined_viewport_enabled,
+                                      bool _predefined_scissors_enabled);
         GraphicsPipelineViewportState() = default;
         ~GraphicsPipelineViewportState() = default;
         GraphicsPipelineViewportState(GraphicsPipelineViewportState&&) = default;
         GraphicsPipelineViewportState& operator=(GraphicsPipelineViewportState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
     private:
-        bool viewport_enabled;
-        std::vector<Render::Viewport> viewports;
-        std::vector<Render::Rect2D> scissors;
+        bool predefined_viewport_enabled;
+        bool predefined_scissors_enabled;
+        std::uint32_t count;
+        std::vector<Render::Viewport> predefined_viewports;
+        std::vector<Render::Rect2D> predefined_scissors;
     };
 
     struct GraphicsPipelineDrawState : hrs::non_copyable
     {
-        friend class Pipeline;
-
         int index_size;
         GLenum index_type;
         std::uintptr_t index_buffer_offset;
     };
 
-    class GraphicsPipelineState : hrs::non_copyable, hrs::non_movable
+    class GraphicsPipelineState : hrs::non_copyable
     {
-        friend class Pipeline;
     public:
-        GraphicsPipelineState(Pipeline& parent, const Render::GraphicsPipelineStateInfo& info);
+        GraphicsPipelineState() noexcept;
+        GraphicsPipelineState(Pipeline& parent, const Render::GraphicsPipelineInfo& info);
         ~GraphicsPipelineState() = default;
+        GraphicsPipelineState(GraphicsPipelineState&&) = default;
+        GraphicsPipelineState& operator=(GraphicsPipelineState&&) = default;
 
-        void Set(Pipeline& parent) noexcept;
+        void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
+
+        GLHandle GetVertexInputStateHandle() const noexcept;
+        GLsizei GetVertexInputStateStride(GLuint binding) const;
+        GLenum GetInputAssemblyStateTopology() const noexcept;
+        void SetIndexBufferState(Render::IndexType index_type,
+                                 std::uintptr_t index_buffer_offset) noexcept;
+        GLenum GetIndexBufferStateType() const noexcept;
+        std::uintptr_t GetIndexBufferStateOffset(std::uint32_t first_index) const noexcept;
     private:
         GraphicsPipelineVertexInputState vertex_input_state;
         GraphicsPipelineInputAssemblyState input_assembly_state;
-        GraphicsPipelineBlendState blend_state;
+        GraphicsPipelineTessellationState tessellation_state;
+        GraphicsPipelineColorBlendState color_blend_state;
         GraphicsPipelineDepthStencilState depth_stencil_state;
         GraphicsPipelineMultisampleState multisample_state;
         GraphicsPipelineRasterizationState rasterization_state;

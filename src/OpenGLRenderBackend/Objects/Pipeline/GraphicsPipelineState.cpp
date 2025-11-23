@@ -1,6 +1,8 @@
 #include "GraphicsPipelineState.h"
 #include "Pipeline.h"
 #include "../../Context/Context.h"
+#include "../Shader/Shader.h"
+#include "../Buffer/Buffer.h"
 #include <stdexcept>
 #include <format>
 #include "hrs/scoped_call.hpp"
@@ -52,7 +54,7 @@ namespace OpenGL
         binding_strides_map = std::move(_binding_strides_map);
     }
 
-    void GraphicsPipelineVertexInputState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineVertexInputState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         get_loader(parent).BindVertexArray(vao);
     }
@@ -65,13 +67,23 @@ namespace OpenGL
         binding_strides_map.clear();
     }
 
+    GLHandle GraphicsPipelineVertexInputState::GetHandle() const noexcept
+    {
+        return vao;
+    }
+
+    GLsizei GraphicsPipelineVertexInputState::GetStride(GLuint binding) const
+    {
+        return binding_strides_map.find(binding)->second;
+    }
+
     GraphicsPipelineInputAssemblyState::GraphicsPipelineInputAssemblyState(
         const Render::GraphicsPipelineInputAssemblyStateInfo& info)
         : topology(PrimitiveTopologyToNative(info.topology)),
           primitive_restart_enabled(info.primitive_restart_enabled)
     {}
 
-    void GraphicsPipelineInputAssemblyState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineInputAssemblyState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
         if(!primitive_restart_enabled)
@@ -91,76 +103,91 @@ namespace OpenGL
         //noop
     }
 
-    GraphicsPipelineBlendState::GraphicsPipelineBlendState(
-        const Render::GraphicsPipelineBlendStateInfo& info)
-        : blend_enabled(info.blend_enabled),
-          //blend_function_info(info.blend_function_info.begin(), info.blend_function_info.end()),
-          logic_op_enabled(info.logic_op_enabled),
-          logic_op(BlendLogicOpToNative(info.logic_op)),
-          blend_color(
-              {info.blend_color[0], info.blend_color[1], info.blend_color[2], info.blend_color[3]})
-    //blend_eq_info(info.blend_eq_info.begin(), info.blend_eq_info.end())
+    GLenum GraphicsPipelineInputAssemblyState::GetTopology() const noexcept
     {
-        if(blend_enabled)
-        {
-            blend_function_info.reserve(info.blend_function_info.size());
-            for(const auto& f_info: info.blend_function_info)
-            {
-                blend_function_info.push_back(
-                    BlendFunctionInfoNative{.buffer_index = f_info.buffer_index,
-                                            .src_rgb = BlendFactorToNative(f_info.src_rgb),
-                                            .src_alpha = BlendFactorToNative(f_info.src_alpha),
-                                            .dst_rgb = BlendFactorToNative(f_info.dst_rgb),
-                                            .dst_alpha = BlendFactorToNative(f_info.dst_alpha)});
-            }
-
-            blend_eq_info.reserve(info.blend_eq_info.size());
-            for(const auto& eq_info: info.blend_eq_info)
-            {
-                blend_eq_info.push_back(
-                    BlendEquationInfoNative{.buffer_index = eq_info.buffer_index,
-                                            .eq_rgb = BlendEquationToNative(eq_info.eq_rgb),
-                                            .eq_alpha = BlendEquationToNative(eq_info.eq_alpha)});
-            }
-        }
+        return topology;
     }
 
-    void GraphicsPipelineBlendState::Set(Pipeline& parent) noexcept
+    GraphicsPipelineTessellationState::GraphicsPipelineTessellationState(
+        const Render::GraphicsPipelineTessellationStateInfo& info,
+        bool _enabled)
+        : enabled(_enabled),
+          patch_control_points(info.patch_control_points)
+    {}
+
+    void GraphicsPipelineTessellationState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
 
-        if(!blend_enabled)
-            loader.Disable(GL_BLEND);
-        else
-        {
-            loader.Enable(GL_BLEND);
-            for(const auto& func: blend_function_info)
-                loader.BlendFuncSeparatei(func.buffer_index,
-                                          func.src_rgb,
-                                          func.dst_rgb,
-                                          func.src_alpha,
-                                          func.dst_alpha);
-
-            if(!logic_op_enabled)
-                loader.Disable(GL_COLOR_LOGIC_OP);
-            else
-            {
-                loader.Enable(GL_COLOR_LOGIC_OP);
-                loader.LogicOp(logic_op);
-            }
-
-            loader.BlendColor(blend_color[0], blend_color[1], blend_color[2], blend_color[3]);
-            for(const auto& eq: blend_eq_info)
-                loader.BlendEquationSeparatei(eq.buffer_index, eq.eq_rgb, eq.eq_alpha);
-        }
+        if(enabled)
+            loader.PatchParameteri(GL_PATCH_VERTICES, patch_control_points);
     }
 
-    void GraphicsPipelineBlendState::Destroy(Pipeline& parent) noexcept
+    void GraphicsPipelineTessellationState::Destroy(Pipeline& parent) noexcept
     {
         //noop
     }
 
-    StencilStateOpNative stencil_state_op_to_native(const Render::StencilStateOp& op) noexcept
+    GraphicsPipelineColorBlendState::GraphicsPipelineColorBlendState(
+        const Render::GraphicsPipelineColorBlendStateInfo& info)
+        : logic_op_enabled(info.logic_op_enabled),
+          logic_op(BlendLogicOpToNative(info.logic_op)),
+          blend_color(
+              {info.blend_color[0], info.blend_color[1], info.blend_color[2], info.blend_color[3]})
+    {
+        attachments.reserve(info.attachments.size());
+        for(const auto& att: info.attachments)
+        {
+            attachments.push_back(ColorBlendAttachmentStateNative{
+                .blend_enabled = att.blend_enabled,
+                .src_rgb = BlendFactorToNative(att.src_color_blend_factor),
+                .eq_rgb = BlendOpToNative(att.color_blend_op),
+                .dst_rgb = BlendFactorToNative(att.dst_color_blend_factor),
+                .src_alpha = BlendFactorToNative(att.src_alpha_blend_factor),
+                .eq_alpha = BlendOpToNative(att.alpha_blend_op),
+                .dst_alpha = BlendFactorToNative(att.dst_alpha_blend_factor)});
+        }
+    }
+
+    void GraphicsPipelineColorBlendState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
+    {
+        const auto& loader = get_loader(parent);
+
+        if(!logic_op_enabled)
+            loader.Disable(GL_COLOR_LOGIC_OP);
+        else
+        {
+            loader.Enable(GL_COLOR_LOGIC_OP);
+            loader.LogicOp(logic_op);
+        }
+
+        loader.BlendColor(blend_color[0], blend_color[1], blend_color[2], blend_color[3]);
+
+        for(std::size_t i = 0; i < attachments.size(); i++)
+        {
+            if(!attachments[i].blend_enabled)
+                loader.Disablei(GL_BLEND, i);
+            else
+            {
+                loader.Enablei(GL_BLEND, i);
+                loader.BlendFuncSeparatei(i,
+                                          attachments[i].src_rgb,
+                                          attachments[i].dst_rgb,
+                                          attachments[i].src_alpha,
+                                          attachments[i].dst_alpha);
+
+                loader.BlendEquationSeparatei(i, attachments[i].eq_rgb, attachments[i].eq_alpha);
+            }
+        }
+    }
+
+    void GraphicsPipelineColorBlendState::Destroy(Pipeline& parent) noexcept
+    {
+        //noop
+    }
+
+    static StencilStateOpNative
+    stencil_state_op_to_native(const Render::StencilStateOp& op) noexcept
     {
         return StencilStateOpNative{.fail_op = StencilOpToNative(op.fail_op),
                                     .pass_op = StencilOpToNative(op.pass_op),
@@ -174,8 +201,8 @@ namespace OpenGL
     GraphicsPipelineDepthStencilState::GraphicsPipelineDepthStencilState(
         const Render::GraphicsPipelineDepthStencilStateInfo& info)
         : depth_test_enabled(info.depth_test_enabled),
+          depth_write_enabled(info.depth_write_enabled),
           depth_compare_op(ComapreOpToNative(info.depth_compare_op)),
-          write_enabled(info.write_enabled),
           stencil_test_enabled(info.stencil_test_enabled),
           stencil_front_op(stencil_state_op_to_native(info.stencil_front_op)),
           stencil_back_op(stencil_state_op_to_native(info.stencil_back_op))
@@ -190,7 +217,7 @@ namespace OpenGL
         loader.StencilOpSeparate(face, state.fail_op, state.depth_fail_op, state.pass_op);
     }
 
-    void GraphicsPipelineDepthStencilState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineDepthStencilState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
         if(!depth_test_enabled)
@@ -198,7 +225,7 @@ namespace OpenGL
         else
         {
             loader.Enable(GL_DEPTH_TEST);
-            if(write_enabled)
+            if(depth_write_enabled)
                 loader.DepthMask(GL_TRUE);
             else
                 loader.DepthMask(GL_FALSE);
@@ -223,14 +250,17 @@ namespace OpenGL
 
     GraphicsPipelineMultisampleState::GraphicsPipelineMultisampleState(
         const Render::GraphicsPipelineMultisampleStateInfo& info)
-        : multisample_enabled(info.multisample_enabled),
-          sample_count(info.sample_count),
-          sample_mask(info.sample_mask.begin(), info.sample_mask.end()),
+        : sample_count(info.sample_count),
           sample_shading_enabled(info.sample_shading_enabled),
           min_sample_shading(info.min_sample_shading),
+          sample_mask(info.sample_mask.begin(), info.sample_mask.end()),
           alpha_to_coverage_enabled(info.alpha_to_coverage_enabled),
           alpha_to_one_enabled(info.alpha_to_one_enabled)
     {
+        multisample_enabled =
+            (sample_count != Render::SampleCount::SampleCount_1 || sample_shading_enabled ||
+             alpha_to_coverage_enabled || alpha_to_one_enabled);
+
         if(multisample_enabled)
         {
             if(!sample_mask.empty())
@@ -244,7 +274,7 @@ namespace OpenGL
         }
     }
 
-    void GraphicsPipelineMultisampleState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineMultisampleState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
         if(!multisample_enabled)
@@ -298,7 +328,7 @@ namespace OpenGL
           line_width(info.line_width)
     {}
 
-    void GraphicsPipelineRasterizationState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineRasterizationState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
 
@@ -331,37 +361,63 @@ namespace OpenGL
     }
 
     GraphicsPipelineViewportState::GraphicsPipelineViewportState(
-        const Render::GraphicsPipelineViewportStateInfo& info)
-        : viewport_enabled(info.viewport_enabled),
-          viewports(info.viewports.begin(), info.viewports.end()),
-          scissors(info.scissors.begin(), info.scissors.end())
+        const Render::GraphicsPipelineViewportStateInfo& info,
+        bool _predefined_viewport_enabled,
+        bool _predefined_scissors_enabled)
+        : predefined_viewport_enabled(_predefined_viewport_enabled),
+          predefined_scissors_enabled(_predefined_scissors_enabled),
+          count(info.count)
     {
-        if(viewport_enabled)
+        if(count == 0)
+            throw std::runtime_error("Count of viewports must be greater than zero");
+
+        if(predefined_viewport_enabled)
         {
-            if(viewports.size() != scissors.size())
-                throw std::runtime_error("Count of scissor boxes must be equal to viewport count");
+            if(info.predefined_viewports.size() < count)
+                throw std::runtime_error(
+                    "Count of viewports must be equal to info.count parameter");
+
+            predefined_viewports.assign(info.predefined_viewports.begin(),
+                                        info.predefined_viewports.begin() + count);
+        }
+
+        if(predefined_scissors_enabled)
+        {
+            if(info.predefined_scissors.size() < count)
+                throw std::runtime_error(
+                    "Count of scissor boxes must be equal to info.count parameter");
+
+            predefined_scissors.assign(info.predefined_scissors.begin(),
+                                       info.predefined_scissors.begin() + count);
         }
     }
 
-    void GraphicsPipelineViewportState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineViewportState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
 
-        if(!viewport_enabled || viewports.empty())
-            return;
-
-        for(std::size_t i = 0; i < viewports.size(); i++)
+        if(predefined_viewport_enabled)
         {
-            loader.ViewportIndexedf(i,
-                                    viewports[i].x,
-                                    viewports[i].y,
-                                    viewports[i].width,
-                                    viewports[i].height);
-            loader.DepthRangeIndexed(i, viewports[i].min_depth, viewports[i].max_depth);
+            for(std::size_t i = 0; i < predefined_viewports.size(); i++)
+            {
+                loader.ViewportIndexedf(i,
+                                        predefined_viewports[i].x,
+                                        predefined_viewports[i].y,
+                                        predefined_viewports[i].width,
+                                        predefined_viewports[i].height);
+                loader.DepthRangeIndexed(i,
+                                         predefined_viewports[i].min_depth,
+                                         predefined_viewports[i].max_depth);
+            }
         }
 
-        loader.Enable(GL_SCISSOR_TEST);
-        loader.ScissorArrayv(0, scissors.size(), &scissors[0].offset.x);
+        if(predefined_scissors_enabled)
+        {
+            loader.Enable(GL_SCISSOR_TEST);
+            loader.ScissorArrayv(0, predefined_scissors.size(), &predefined_scissors[0].offset.x);
+        }
+        else
+            loader.Disable(GL_SCISSOR_TEST);
     }
 
     void GraphicsPipelineViewportState::Destroy(Pipeline& parent) noexcept
@@ -370,11 +426,12 @@ namespace OpenGL
     }
 
     GraphicsPipelineState::GraphicsPipelineState(Pipeline& parent,
-                                                 const Render::GraphicsPipelineStateInfo& info)
+                                                 const Render::GraphicsPipelineInfo& info)
     {
         std::optional<GraphicsPipelineVertexInputState> _vertex_input_state;
         std::optional<GraphicsPipelineInputAssemblyState> _input_assembly_state;
-        std::optional<GraphicsPipelineBlendState> _blend_state;
+        std::optional<GraphicsPipelineTessellationState> _tessellation_state;
+        std::optional<GraphicsPipelineColorBlendState> _color_blend_state;
         std::optional<GraphicsPipelineDepthStencilState> _depth_stencil_state;
         std::optional<GraphicsPipelineMultisampleState> _multisample_state;
         std::optional<GraphicsPipelineRasterizationState> _rasterization_state;
@@ -395,8 +452,11 @@ namespace OpenGL
                 if(_depth_stencil_state)
                     _depth_stencil_state->Destroy(parent);
 
-                if(_blend_state)
-                    _blend_state->Destroy(parent);
+                if(_color_blend_state)
+                    _color_blend_state->Destroy(parent);
+
+                if(_tessellation_state)
+                    _tessellation_state->Destroy(parent);
 
                 if(_input_assembly_state)
                     _input_assembly_state->Destroy(parent);
@@ -405,45 +465,123 @@ namespace OpenGL
                     _vertex_input_state->Destroy(parent);
             });
 
+        bool have_tessellation_stage =
+            std::ranges::find_if(info.shaders,
+                                 [](const Render::Shader* const shader)
+                                 {
+                                     return static_cast<const Shader*>(shader)->GetStage() ==
+                                            (Render::ShaderStageFlagBits::TessellationControl ||
+                                             Render::ShaderStageFlagBits::TessellationEvaluation);
+                                 }) != info.shaders.end();
+
+        bool predefined_viewport_enabled = false;
+        bool predefined_scissors_enabled = false;
+        for(const auto& state: info.state_info.dynamic_states)
+        {
+            if(state == Render::DynamicState::Viewport)
+                predefined_viewport_enabled = true;
+            else if(state == Render::DynamicState::Scissors)
+                predefined_scissors_enabled = true;
+        }
+
         _vertex_input_state =
-            GraphicsPipelineVertexInputState(parent, info.vertex_input_state_info);
-        _input_assembly_state = GraphicsPipelineInputAssemblyState(info.input_assembly_state_info);
-        _blend_state = GraphicsPipelineBlendState(info.blend_state_info);
-        _depth_stencil_state = GraphicsPipelineDepthStencilState(info.depth_stencil_state_info);
-        _multisample_state = GraphicsPipelineMultisampleState(info.multisample_state_info);
-        _rasterization_state = GraphicsPipelineRasterizationState(info.rasterization_state_info);
-        _viewport_state = GraphicsPipelineViewportState(info.viewport_state_info);
+            GraphicsPipelineVertexInputState(parent, info.state_info.vertex_input_state_info);
+        _input_assembly_state =
+            GraphicsPipelineInputAssemblyState(info.state_info.input_assembly_state_info);
+        _tessellation_state =
+            GraphicsPipelineTessellationState(info.state_info.tessellation_state_info,
+                                              have_tessellation_stage);
+        _color_blend_state =
+            GraphicsPipelineColorBlendState(info.state_info.color_blend_state_info);
+        _depth_stencil_state =
+            GraphicsPipelineDepthStencilState(info.state_info.depth_stencil_state_info);
+        _multisample_state =
+            GraphicsPipelineMultisampleState(info.state_info.multisample_state_info);
+        _rasterization_state =
+            GraphicsPipelineRasterizationState(info.state_info.rasterization_state_info);
+        _viewport_state = GraphicsPipelineViewportState(info.state_info.viewport_state_info,
+                                                        predefined_viewport_enabled,
+                                                        predefined_scissors_enabled);
 
         cleanup.drop();
 
         vertex_input_state = std::move(*_vertex_input_state);
         input_assembly_state = std::move(*_input_assembly_state);
-        blend_state = std::move(*_blend_state);
+        tessellation_state = std::move(*_tessellation_state);
+        color_blend_state = std::move(*_color_blend_state);
         depth_stencil_state = std::move(*_depth_stencil_state);
         multisample_state = std::move(*_multisample_state);
         rasterization_state = std::move(*_rasterization_state);
         viewport_state = std::move(*_viewport_state);
     }
 
-    void GraphicsPipelineState::Set(Pipeline& parent) noexcept
+    void GraphicsPipelineState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
-        vertex_input_state.Set(parent);
-        input_assembly_state.Set(parent);
-        blend_state.Set(parent);
-        depth_stencil_state.Set(parent);
-        multisample_state.Set(parent);
-        rasterization_state.Set(parent);
-        viewport_state.Set(parent);
+        vertex_input_state.Set(cmd, parent);
+        input_assembly_state.Set(cmd, parent);
+        tessellation_state.Set(cmd, parent);
+        color_blend_state.Set(cmd, parent);
+        depth_stencil_state.Set(cmd, parent);
+        multisample_state.Set(cmd, parent);
+        rasterization_state.Set(cmd, parent);
+        viewport_state.Set(cmd, parent);
     }
 
     void GraphicsPipelineState::Destroy(Pipeline& parent) noexcept
     {
         vertex_input_state.Destroy(parent);
         input_assembly_state.Destroy(parent);
-        blend_state.Destroy(parent);
+        tessellation_state.Destroy(parent);
+        color_blend_state.Destroy(parent);
         depth_stencil_state.Destroy(parent);
         multisample_state.Destroy(parent);
         rasterization_state.Destroy(parent);
         viewport_state.Destroy(parent);
+    }
+
+    GLenum GraphicsPipelineState::GetInputAssemblyStateTopology() const noexcept
+    {
+        return input_assembly_state.GetTopology();
+    }
+
+    GLHandle GraphicsPipelineState::GetVertexInputStateHandle() const noexcept
+    {
+        return vertex_input_state.GetHandle();
+    }
+
+    GLsizei GraphicsPipelineState::GetVertexInputStateStride(GLuint binding) const
+    {
+        return vertex_input_state.GetStride(binding);
+    }
+
+    void GraphicsPipelineState::SetIndexBufferState(Render::IndexType index_type,
+                                                    std::uintptr_t index_buffer_offset) noexcept
+    {
+        draw_state.index_type = IndexTypeToNative(index_type);
+        switch(index_type)
+        {
+            case Render::IndexType::U8:
+                draw_state.index_size = 1;
+                break;
+            case Render::IndexType::U16:
+                draw_state.index_size = 2;
+                break;
+            case Render::IndexType::U32:
+                draw_state.index_size = 4;
+                break;
+        }
+
+        draw_state.index_buffer_offset = index_buffer_offset;
+    }
+
+    GLenum GraphicsPipelineState::GetIndexBufferStateType() const noexcept
+    {
+        return draw_state.index_type;
+    }
+
+    std::uintptr_t
+    GraphicsPipelineState::GetIndexBufferStateOffset(std::uint32_t first_index) const noexcept
+    {
+        return draw_state.index_buffer_offset + draw_state.index_size * first_index;
     }
 };

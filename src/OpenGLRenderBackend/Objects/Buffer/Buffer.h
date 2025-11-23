@@ -9,26 +9,17 @@ namespace OpenGL
     class Buffer : public Render::Buffer, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Buffer(Context* _parent, const Render::BufferInfo& info);
+        Buffer(Context* _parent,
+               const Render::BufferInfo& info,
+               std::span<const std::uint32_t> desired_memory_type_indices);
         virtual ~Buffer() override;
 
         virtual std::byte* Map(const Render::MappedRange& rng) override;
         virtual void Unmap() noexcept override;
         virtual void FlushMappedRange(std::span<const Render::MappedRange> ranges) override;
+        virtual void InvalidateMappedRanges(std::span<const Render::MappedRange> ranges) override;
 
-        virtual std::uint64_t GetSize() const noexcept override;
-
-        virtual void
-        CopyToBuffer(const Render::CommandBuffer* cmd,
-                     const Render::Buffer* dst,
-                     std::span<const Render::BufferCopyRegion> regions) noexcept override;
-        virtual void CopyToImage(const Render::CommandBuffer* cmd,
-                                 const Render::Image* dst,
-                                 std::span<const Render::BufferImageCopyRegion> regions) override;
-
-        virtual void
-        Update(const Render::CommandBuffer* cmd,
-               std::span<const Render::MemoryBufferCopyRegion> regions) noexcept override;
+        virtual std::uint64_t GetInnerMemoryOffset() const noexcept override;
 
         GLHandle GetHandle() const noexcept;
 

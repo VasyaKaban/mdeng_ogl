@@ -3,6 +3,8 @@
 #include "../Objects/Semaphore/Semaphore.h"
 #include "../Objects/Buffer/Buffer.h"
 #include "../Objects/CommandPool/CommandPool.h"
+#include "../Objects/DescriptorPool/DescriptorPool.h"
+#include "../Objects/DescriptorSetLayout/DescriptorSetLayout.h"
 #include "../Objects/Fence/Fence.h"
 #include "../Objects/Framebuffer/Framebuffer.h"
 #include "../Objects/Image/Image.h"
@@ -12,9 +14,28 @@
 #include "../Objects/Sampler/Sampler.h"
 #include "../Objects/Shader/Shader.h"
 #include <stdexcept>
+#include <format>
 
 namespace OpenGL
 {
+    static std::vector<Render::MemoryType> create_memory_types()
+    {
+        constexpr std::size_t MEMORY_TYPES_COUNT =
+            (Render::MemoryTypePropertyFlagBits::HostCached << 1) - 1;
+
+        std::vector<Render::MemoryType> types;
+        types.reserve(MEMORY_TYPES_COUNT);
+        for(std::size_t i = 0; i < MEMORY_TYPES_COUNT; i++)
+            types.push_back(Render::MemoryType{
+                .memory_heap_flags = Render::MemoryHeapFlagBits::DeviceLocalHeap,
+                .memory_type_flags = static_cast<Render::MemoryTypePropertyFlags>(i)});
+
+        return types;
+    }
+
+    constexpr static std::string_view REQUIRED_EXTENSIONS[] = {"GL_EXT_texture_compression_s3tc",
+                                                               "GL_EXT_texture_sRGB"};
+
     static void GLAPIENTRY debug_messenger_callback(GLenum source,
                                                     GLenum type,
                                                     GLuint id,
@@ -48,13 +69,49 @@ namespace OpenGL
         GLint extensions_number = 0;
         loader.GetIntegerv(GL_NUM_EXTENSIONS, &extensions_number);
 
+        std::vector<std::string> extensions;
+
         extensions.resize(extensions_number);
         for(std::size_t i = 0; i < extensions_number; i++)
             extensions[i] = reinterpret_cast<const char*>(loader.GetStringi(GL_EXTENSIONS, i));
 
+        std::string unsupported_extensions;
+        for(const auto& req_ext: REQUIRED_EXTENSIONS)
+        {
+            auto it = std::ranges::find(extensions, req_ext);
+            if(it == extensions.end())
+            {
+                if(unsupported_extensions.empty())
+                    unsupported_extensions = req_ext;
+                else
+                    unsupported_extensions += std::format("\n{}", req_ext);
+            }
+        }
+
+        if(!unsupported_extensions.empty())
+            throw std::runtime_error(
+                std::format("Required extensions are not supported:\n{}", unsupported_extensions));
+
+        GLint major = 0;
+        GLint minor = 0;
+        loader.GetIntegerv(GL_MAJOR_VERSION, &major);
+        loader.GetIntegerv(GL_MINOR_VERSION, &minor);
+
+        properties.context_name = "OpenGL";
+        properties.supported_backend_type = RenderBackendType::OpenGL;
+        properties.version = Render::MakeVersion(major, minor);
         properties.vendor_name = reinterpret_cast<const char*>(loader.GetString(GL_VENDOR));
         properties.device_name = reinterpret_cast<const char*>(loader.GetString(GL_RENDERER));
-        properties.extensions = extensions;
+        properties.extensions = std::move(extensions);
+        properties.supported_syntax = Render::ShaderSyntaxFlagBits::GLSL;
+        properties.queue_family_properties.push_back(Render::QueueFamilyProperties{
+            .specialization = Render::QueueSpecializationFlagBits::TransferSpec |
+                              Render::QueueSpecializationFlagBits::ComputeSpec |
+                              Render::QueueSpecializationFlagBits::GraphicsSpec |
+                              Render::QueueSpecializationFlagBits::PresentSpec,
+            .queue_count = 1});
+        properties.memory_types = create_memory_types();
+        properties.command_buffer_strategy = Render::CommandBufferStrategy::Immediate;
     }
 
     Context::~Context()
@@ -62,13 +119,16 @@ namespace OpenGL
         WaitIdle();
     }
 
-    Render::ContextProperties Context::GetProperties() const
+    const Render::ContextProperties& Context::GetProperties() const
     {
         return properties;
     }
 
-    Render::Queue* Context::GetQueue([[maybe_unused]] Render::QueueSpecialization spec)
+    Render::Queue* Context::GetQueue(std::uint32_t queue_family_index, std::uint32_t index)
     {
+        if(!(queue_family_index == 0 && index == 0))
+            throw std::runtime_error("Bad queue family index or queue index");
+
         //just return 'empty' queue -> we don't have a 'Queue' concept in opengl! Only implicit queue exists
         return &default_queue;
     }
@@ -78,10 +138,21 @@ namespace OpenGL
         loader.Finish();
     }
 
-    void Context::AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore) //OGL -> noop
+    bool Context::AcquireNextSwapchainImage(
+        Render::Semaphore*
+            signal_semaphore) //OGL -> noop; false -> should recreate window/swapchain
     {
         parent->AcquireNextSwapchainImage();
         static_cast<Semaphore*>(signal_semaphore)->Set();
+
+        return true;
+    }
+
+    Render::Image* Context::
+        GetCurrentSwapchainImageHandle() //returns swapchain current image; OGL -> return impl-defined address that OpenGL impl will convert to inner calls; VK -> return already created image from swapchain
+    {
+        return reinterpret_cast<Render::Image*>(
+            this); //we just cast context to make non existent pointer to swapchain image. Not for use. Just a hint for pipeline barrier
     }
 
     Render::Framebuffer* Context::GetCurrentDefaultFramebuffer() noexcept
@@ -89,12 +160,14 @@ namespace OpenGL
         return &default_framebuffer;
     }
 
-    void Context::ReleaseSwapchainImage(const Render::PresentInfo& info) //SDL_SwapWindow();
+    bool Context::ReleaseSwapchainImage(const Render::PresentInfo& info) //SDL_SwapWindow();
     {
         for(auto& sem: info.wait_semaphores)
             static_cast<Semaphore*>(sem)->Wait();
 
         parent->ReleaseSwapchainImage();
+
+        return true;
     }
 
     void Context::SetDebugMessenger(const Render::DebugMessengerInfo& info)
@@ -146,14 +219,46 @@ namespace OpenGL
         return parent;
     }
 
-    Render::Buffer* Context::CreateBuffer(const Render::BufferInfo& info)
+    Render::Buffer*
+    Context::CreateBuffer(const Render::BufferInfo& info,
+                          std::span<const std::uint32_t> desired_memory_type_indices)
     {
-        return new Buffer(this, info);
+        return new Buffer(this, info, desired_memory_type_indices);
+    }
+
+    void Context::CreateBuffersBatch(std::span<const Render::BufferInfo> infos,
+                                     std::span<const std::uint32_t> desired_memory_type_indices,
+                                     std::span<Render::Buffer*> buffers)
+    {
+        std::size_t i = 0;
+        try
+        {
+            for(; i < infos.size(); i++)
+                buffers[i] = CreateBuffer(infos[i], desired_memory_type_indices);
+        }
+        catch(...)
+        {
+            for(std::size_t j = 0; j < i; j++)
+                delete buffers[j];
+
+            throw;
+        }
     }
 
     Render::CommandPool* Context::CreateCommandPool(const Render::CommandPoolInfo& info)
     {
         return new CommandPool(this, info);
+    }
+
+    Render::DescriptorPool* Context::CreateDescriptorPool(const Render::DescriptorPoolInfo& info)
+    {
+        return new DescriptorPool(this, info);
+    }
+
+    Render::DescriptorSetLayout*
+    Context::CreateDescriptorSetLayout(const Render::DescriptorSetLayoutInfo& info)
+    {
+        return new DescriptorSetLayout(this, info);
     }
 
     Render::Fence* Context::CreateFence()
@@ -169,6 +274,24 @@ namespace OpenGL
     Render::Image* Context::CreateImage(const Render::ImageInfo& info)
     {
         return new Image(this, info);
+    }
+
+    void Context::CreateImagesBatch(std::span<const Render::ImageInfo> infos,
+                                    std::span<Render::Image*> images)
+    {
+        std::size_t i = 0;
+        try
+        {
+            for(; i < infos.size(); i++)
+                images[i] = CreateImage(infos[i]);
+        }
+        catch(...)
+        {
+            for(std::size_t j = 0; j < i; j++)
+                delete images[j];
+
+            throw;
+        }
     }
 
     Render::ImageView* Context::CreateImageView(const Render::ImageViewInfo& info)
@@ -216,4 +339,9 @@ namespace OpenGL
         return loader;
     }
 
+    void Context::operator delete(void* ptr) noexcept
+    {
+        //noop -> we have only one static Context
+        //even though we hold loader and have MakeCurrent in context class we restrict amount of contexts to one(so we do not need more than one context anyway...)
+    }
 };

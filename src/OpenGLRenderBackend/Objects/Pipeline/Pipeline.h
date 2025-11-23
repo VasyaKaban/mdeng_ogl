@@ -2,8 +2,8 @@
 
 #include "hrs/non_creatable.hpp"
 #include "../../Render.h"
-#include "Core/Render/Objects/Pipeline.h"
 #include "GraphicsPipelineState.h"
+#include "Core/Render/Objects/Pipeline.h"
 
 namespace OpenGL
 {
@@ -15,60 +15,48 @@ namespace OpenGL
 
         virtual ~Pipeline() override;
 
-        virtual void Bind(const Render::CommandBuffer* cmd) override;
-
-        virtual void BindVertexBuffer(const Render::CommandBuffer* cmd,
-                                      const Render::Buffer* buffer,
-                                      std::uint32_t binding,
-                                      std::int64_t offset) override;
-        virtual void BindIndexBuffer(const Render::CommandBuffer* cmd,
-                                     const Render::Buffer* buffer,
-                                     Render::IndexType type,
-                                     std::uintptr_t offset) override;
-
-        virtual void BindUniformBuffer(const Render::CommandBuffer* cmd,
-                                       const Render::Buffer* buffer,
-                                       const Render::BufferBindDesc& bind_desc) noexcept override;
-        virtual void
-        BindShaderStorageBuffer(const Render::CommandBuffer* cmd,
-                                const Render::Buffer* buffer,
-                                const Render::BufferBindDesc& bind_desc) noexcept override;
-
-        virtual void BindImageView(const Render::CommandBuffer* cmd,
-                                   const Render::ImageView* view,
-                                   std::uint32_t index) noexcept override;
-
-        virtual void BindSampler(const Render::CommandBuffer* cmd,
-                                 const Render::Sampler* sampler,
-                                 std::uint32_t index) noexcept override;
-
-        virtual void Draw(const Render::CommandBuffer* cmd,
-                          std::uint32_t vertex_count,
-                          std::uint32_t instance_count,
-                          std::uint32_t first_vertex) override;
-
-        virtual void DrawIndexed(const Render::CommandBuffer* cmd,
-                                 std::uint32_t index_count,
-                                 std::uint32_t instance_count,
-                                 std::uint32_t first_index,
-                                 std::int32_t vertex_offset) override;
-
-        virtual void SetViewport(const Render::CommandBuffer* cmd,
-                                 std::uint32_t first_viewport,
-                                 std::span<const Render::Viewport> viewports) override;
-        virtual void SetScissor(const Render::CommandBuffer* cmd,
-                                std::uint32_t first_scissor,
-                                std::span<const Render::Rect2D> scissors) override;
-
-        virtual void SetUniform(const Render::CommandBuffer* cmd,
-                                const Render::UniformDesc& desc,
-                                std::span<const std::byte> data) override;
+        GLHandle GetHandle() const noexcept;
 
         virtual Render::Context* GetContext() const noexcept override;
+
+        void Bind(CommandBuffer& cmd);
+
+        void BindVertexBuffer(CommandBuffer& cmd,
+                              Buffer& buffer,
+                              std::uint32_t binding,
+                              std::int64_t offset);
+
+        void BindIndexBuffer(CommandBuffer& cmd,
+                             Buffer& buffer,
+                             Render::IndexType type,
+                             std::uintptr_t offset);
+
+        void Draw(CommandBuffer& cmd,
+                  std::uint32_t vertex_count,
+                  std::uint32_t instance_count,
+                  std::uint32_t first_vertex,
+                  std::uint32_t first_instance);
+
+        void DrawIndexed(CommandBuffer& cmd,
+                         std::uint32_t index_count,
+                         std::uint32_t instance_count,
+                         std::uint32_t first_index,
+                         std::int32_t vertex_offset,
+                         std::uint32_t first_instance);
+
+        void DrawIndirect(CommandBuffer& cmd,
+                          std::uint64_t offset,
+                          std::uint32_t draw_count,
+                          std::uint32_t stride);
+
+        void DrawIndexedIndirect(CommandBuffer& cmd,
+                                 std::uint64_t offset,
+                                 std::uint32_t draw_count,
+                                 std::uint32_t stride);
     private:
         Context* parent;
         GLHandle handle;
 
-        GraphicsPipelineState* graphics_state;
+        GraphicsPipelineState* state;
     };
 };

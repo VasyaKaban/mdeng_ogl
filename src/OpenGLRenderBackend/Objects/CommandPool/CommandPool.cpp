@@ -1,13 +1,11 @@
 #include "CommandPool.h"
 #include "../CommandBuffer/CommandBuffer.h"
-#include "../Queue/Queue.h"
 #include "../../Context/Context.h"
 
 namespace OpenGL
 {
     CommandPool::CommandPool(Context* _parent, const Render::CommandPoolInfo& info) noexcept
-        : parent(_parent),
-          queue(static_cast<const Queue*>(info.queue))
+        : parent(_parent)
     {}
 
     CommandPool::~CommandPool()

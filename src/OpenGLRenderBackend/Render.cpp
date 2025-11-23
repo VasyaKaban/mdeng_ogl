@@ -54,20 +54,18 @@ namespace OpenGL
         return *native;
     }
 
-    GLbitfield BufferFlagsToNative(Render::BufferFlags flags)
+    GLbitfield DecodeMemoryTypePropertyFlagsToNative(Render::MemoryTypePropertyFlags flags)
     {
-        constexpr static std::pair<Render::BufferFlagBits, GLenum> mapping[] = {
-            {Render::BufferFlagBits::MapRead, GL_MAP_READ_BIT},
-            {Render::BufferFlagBits::MapWrite, GL_MAP_WRITE_BIT},
-            {Render::BufferFlagBits::PersistentMapping, GL_MAP_PERSISTENT_BIT},
-            {Render::BufferFlagBits::CoherentMapping, GL_MAP_COHERENT_BIT},
-            {Render::BufferFlagBits::DynamicStorage, GL_DYNAMIC_STORAGE_BIT},
-        };
-
-        CHECK_MAPPING_IS_SORTED(mapping)
+        constexpr static std::pair<Render::MemoryTypePropertyFlagBits, GLbitfield> map_mapping[] = {
+            {Render::MemoryTypePropertyFlagBits::DeviceLocal, 0},
+            {Render::MemoryTypePropertyFlagBits::HostMappingReadable, GL_MAP_READ_BIT},
+            {Render::MemoryTypePropertyFlagBits::HostMappingWritable, GL_MAP_WRITE_BIT},
+            {Render::MemoryTypePropertyFlagBits::HostMappingPersistent, GL_MAP_PERSISTENT_BIT},
+            {Render::MemoryTypePropertyFlagBits::HostCoherent, GL_MAP_COHERENT_BIT},
+            {Render::MemoryTypePropertyFlagBits::HostCached, GL_CLIENT_STORAGE_BIT}};
 
         GLbitfield mask = 0;
-        for(const auto& pr: mapping)
+        for(const auto& pr: map_mapping)
         {
             if(flags & pr.first)
                 mask |= pr.second;
@@ -316,15 +314,15 @@ namespace OpenGL
         return *native;
     }
 
-    GLenum ShaderStageToNative(Render::ShaderStage stage)
+    GLenum ShaderStageToNative(Render::ShaderStageFlagBits stage)
     {
-        constexpr static std::pair<Render::ShaderStage, GLenum> mapping[] = {
-            {Render::ShaderStage::Vertex, GL_VERTEX_SHADER},
-            {Render::ShaderStage::Geometry, GL_GEOMETRY_SHADER},
-            {Render::ShaderStage::TessellationControl, GL_TESS_CONTROL_SHADER},
-            {Render::ShaderStage::TessellationEvaluation, GL_TESS_EVALUATION_SHADER},
-            {Render::ShaderStage::Fragment, GL_FRAGMENT_SHADER},
-            {Render::ShaderStage::Compute, GL_COMPUTE_SHADER},
+        constexpr static std::pair<Render::ShaderStageFlagBits, GLenum> mapping[] = {
+            {Render::ShaderStageFlagBits::Vertex, GL_VERTEX_SHADER},
+            {Render::ShaderStageFlagBits::TessellationControl, GL_TESS_CONTROL_SHADER},
+            {Render::ShaderStageFlagBits::TessellationEvaluation, GL_TESS_EVALUATION_SHADER},
+            {Render::ShaderStageFlagBits::Geometry, GL_GEOMETRY_SHADER},
+            {Render::ShaderStageFlagBits::Fragment, GL_FRAGMENT_SHADER},
+            {Render::ShaderStageFlagBits::Compute, GL_COMPUTE_SHADER},
         };
 
         CHECK_MAPPING_IS_SORTED(mapping)
@@ -442,21 +440,21 @@ namespace OpenGL
         return *native;
     }
 
-    GLenum BlendEquationToNative(Render::BlendEquation eq)
+    GLenum BlendOpToNative(Render::BlendOp op)
     {
-        constexpr static std::pair<Render::BlendEquation, GLenum> mapping[] = {
-            {Render::BlendEquation::Add, GL_FUNC_ADD},
-            {Render::BlendEquation::Subtract, GL_FUNC_SUBTRACT},
-            {Render::BlendEquation::ReverseSubstract, GL_FUNC_REVERSE_SUBTRACT},
-            {Render::BlendEquation::Min, GL_MIN},
-            {Render::BlendEquation::Max, GL_MAX},
+        constexpr static std::pair<Render::BlendOp, GLenum> mapping[] = {
+            {Render::BlendOp::Add, GL_FUNC_ADD},
+            {Render::BlendOp::Subtract, GL_FUNC_SUBTRACT},
+            {Render::BlendOp::ReverseSubstract, GL_FUNC_REVERSE_SUBTRACT},
+            {Render::BlendOp::Min, GL_MIN},
+            {Render::BlendOp::Max, GL_MAX},
         };
 
         CHECK_MAPPING_IS_SORTED(mapping)
 
-        const GLenum* native = hrs::mapping_search(mapping, eq);
+        const GLenum* native = hrs::mapping_search(mapping, op);
         if(native == nullptr)
-            throw std::runtime_error("No native BlendEquation found");
+            throw std::runtime_error("No native BlendOp found");
 
         return *native;
     }
@@ -537,9 +535,9 @@ namespace OpenGL
     GLenum IndexTypeToNative(Render::IndexType type)
     {
         constexpr static std::pair<Render::IndexType, GLenum> mapping[] = {
-            {Render::IndexType::u8, GL_UNSIGNED_BYTE},
-            {Render::IndexType::u16, GL_UNSIGNED_SHORT},
-            {Render::IndexType::u32, GL_UNSIGNED_INT},
+            {Render::IndexType::U8, GL_UNSIGNED_BYTE},
+            {Render::IndexType::U16, GL_UNSIGNED_SHORT},
+            {Render::IndexType::U32, GL_UNSIGNED_INT},
         };
 
         CHECK_MAPPING_IS_SORTED(mapping)
@@ -987,4 +985,80 @@ namespace OpenGL
 
         return *native;
     }
-};
+
+    static GLbitfield
+    DecodeAccessFlags(std::span<const std::pair<Render::AccessFlagBits, GLbitfield>> mapping,
+                      Render::AccessFlags access)
+    {
+        if(access == 0)
+            return 0;
+
+        GLbitfield mask = 0;
+        for(const auto& pr: mapping)
+        {
+            if(access & pr.first)
+                mask |= pr.second;
+        }
+
+        return mask;
+    }
+
+    GLbitfield PipelineBarrierToNative(const Render::PipelineBarrier& barrier)
+    {
+        //only see on dst accesss
+        constexpr static std::pair<Render::AccessFlagBits, GLbitfield> buffer_mapping[] = {
+            {Render::AccessFlagBits::AccessVertexAttributeReadBit,
+             GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessIndexReadBit, GL_ELEMENT_ARRAY_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessUniformReadBit, GL_UNIFORM_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessShaderReadBit, GL_SHADER_STORAGE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessShaderWriteBit, GL_SHADER_STORAGE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessIndirectCommandReadBit, GL_COMMAND_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessHostReadBit,
+             GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT |
+                 GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessHostWriteBit,
+             GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT |
+                 GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessTransferReadBit,
+             GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessTransferWiteBit,
+             GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessMemoryReadBit, GL_ALL_BARRIER_BITS},
+            {Render::AccessFlagBits::AccessMemoryWriteBit, GL_ALL_BARRIER_BITS},
+        };
+
+        constexpr static std::pair<Render::AccessFlagBits, GLbitfield> image_mapping[] = {
+            {Render::AccessFlagBits::AccessShaderReadBit,
+             GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessShaderWriteBit, GL_SHADER_IMAGE_ACCESS_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessColorAttachmentReadBit, GL_FRAMEBUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessColorAttachmentWriteBit, GL_FRAMEBUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessDepthStencilAttachmentReadBit,
+             GL_FRAMEBUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessDepthStencilAttachmentWriteBit,
+             GL_FRAMEBUFFER_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessTransferReadBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessTransferWiteBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessHostReadBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessHostWriteBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessMemoryReadBit, GL_ALL_BARRIER_BITS},
+            {Render::AccessFlagBits::AccessMemoryWriteBit, GL_ALL_BARRIER_BITS},
+        };
+
+        GLbitfield native = 0;
+        for(const auto& buffer: barrier.buffer_barriers)
+        {
+            native |=
+                DecodeAccessFlags({buffer_mapping, std::size(buffer_mapping)}, buffer.dst_access);
+        }
+
+        for(const auto& image: barrier.image_barriers)
+        {
+            native |=
+                DecodeAccessFlags({image_mapping, std::size(image_mapping)}, image.dst_access);
+        }
+
+        return native;
+    }
+}

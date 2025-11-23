@@ -6,8 +6,12 @@
 namespace OpenGL
 {
     Shader::Shader(Context* _parent, const Render::ShaderInfo& info)
-        : parent(_parent)
+        : parent(_parent),
+          stage(info.stage)
     {
+        if(info.syntax != Render::ShaderSyntaxFlagBits::GLSL)
+            throw std::runtime_error("Bad shader syntax. Only GLSL is suppoerted");
+
         GLHandle _handle = parent->GetLoader().CreateShader(ShaderStageToNative(info.stage));
         if(_handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Failed to create shader");
@@ -20,6 +24,7 @@ namespace OpenGL
 
         auto code_data = info.code.data();
         GLint code_size = info.code.size();
+
         parent->GetLoader().ShaderSource(_handle, 1, &code_data, &code_size);
         parent->GetLoader().CompileShader(_handle);
 
@@ -48,6 +53,11 @@ namespace OpenGL
     GLHandle Shader::GetHandle() const noexcept
     {
         return handle;
+    }
+
+    Render::ShaderStageFlagBits Shader::GetStage() const noexcept
+    {
+        return stage;
     }
 
     Render::Context* Shader::GetContext() const noexcept
