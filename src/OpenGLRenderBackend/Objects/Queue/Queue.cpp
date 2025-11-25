@@ -22,7 +22,8 @@ namespace OpenGL
 
     void Queue::Flush(const Render::QueueFlushInfo& info)
     {
-        parent->GetLoader().MemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+        //We do not need a memory barrier here because in opengl barriers works as dependency signal between shader(!) and next commands or host reads/writes
+        //parent->GetLoader().MemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
         for(auto& sem: info.signal_seamphores)
             static_cast<Semaphore*>(sem)->Set();

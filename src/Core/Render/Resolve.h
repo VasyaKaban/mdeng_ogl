@@ -22,6 +22,6 @@ namespace Render
         //4. Create context from selected properties
         virtual Render::Context* CreateContext(const SelectedContextDesc& desc) = 0;
 
-        //5. (after the successfull Init) Close the resolver -> call operator delete(should be overloaded from the implementation side, maybe just free some objects)
+        //5. Close the resolver(Init call does not important) -> call operator delete(should be overloaded from the implementation side, maybe just free some objects)
     };
 };

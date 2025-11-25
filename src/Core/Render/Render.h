@@ -469,6 +469,78 @@ namespace Render
         PresentSource, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> for renderpass + default framebuffer
     };
 
+    enum PipelineStageFlagBits
+    {
+        TopOfPipePipelineStageBit = 1 << 0, //VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT = 0x00'00'00'01,
+        DrawIndirectPipelineStageBit = 1
+                                       << 1, //VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT = 0x00'00'00'02,
+        VeretxInputPipelineStageBit = 1 << 2, //VK_PIPELINE_STAGE_VERTEX_INPUT_BIT = 0x00'00'00'04,
+        VertexShaderPipelineStageBit = 1
+                                       << 3, //VK_PIPELINE_STAGE_VERTEX_SHADER_BIT = 0x00'00'00'08,
+        TessellationControlShaderPipelineStageBit =
+            1 << 4, //VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT = 0x00'00'00'10,
+        TessellationEvaluationShaderPipelineStageBit =
+            1 << 5, // VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT = 0x00'00'00'20,
+        GeometryShaderPipelineStageBit =
+            1 << 6, // VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT = 0x00'00'00'40,
+        FragmentShaderPipelineStageBit =
+            1 << 7, // VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT = 0x00'00'00'80,
+        EarlyFragmentTestsPipelineStageBit =
+            1 << 8, // VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT = 0x00'00'01'00,
+        LateFragmentTestsPipelineStageBit =
+            1 << 9, // VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT = 0x00'00'02'00,
+        ColorAttachmentOutputPipelineStageBit =
+            1 << 10, // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT = 0x00'00'04'00,
+        ComputeShaderPipelineStageBit =
+            1 << 11, // VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT = 0x00'00'08'00,
+        TransferPipelineStageBit = 1 << 12, // VK_PIPELINE_STAGE_TRANSFER_BIT = 0x00'00'10'00,
+        BottomOfPipePipelineStageBit =
+            1 << 13, // VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT = 0x00'00'20'00,
+        HostPipelineStageBit = 1 << 14, // VK_PIPELINE_STAGE_HOST_BIT = 0x00'00'40'00,
+        AllGraphicsPipelineStageBit = 1
+                                      << 15, // VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT = 0x00'00'80'00,
+        AllCommandsPipelineStageBit = 1
+                                      << 16, // VK_PIPELINE_STAGE_ALL_COMMANDS_BIT = 0x00'01'00'00,
+    };
+
+    using PipelineStageFlags = std::underlying_type_t<PipelineStageFlagBits>;
+
+    enum DependencyFlagBits
+    {
+        ByRegion = 1 << 0
+    };
+
+    using DependencyFlags = std::underlying_type_t<DependencyFlagBits>;
+
+    enum AccessFlagBits
+    {
+        AccessIndirectCommandReadBit = 1
+                                       << 0, //VK_ACCESS_INDIRECT_COMMAND_READ_BIT = 0x00'00'00'01,
+        AccessIndexReadBit = 1 << 1, //VK_ACCESS_INDEX_READ_BIT = 0x00'00'00'02,
+        AccessVertexAttributeReadBit = 1
+                                       << 2, //VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT = 0x00'00'00'04,
+        AccessUniformReadBit = 1 << 3, //VK_ACCESS_UNIFORM_READ_BIT = 0x00'00'00'08,
+        //AccessInputAttachmentReadBit = 1 << 4, //VK_ACCESS_INPUT_ATTACHMENT_READ_BIT = 0x00'00'00'10,
+        AccessShaderReadBit = 1 << 5, //VK_ACCESS_SHADER_READ_BIT = 0x00'00'00'20,
+        AccessShaderWriteBit = 1 << 6, //VK_ACCESS_SHADER_WRITE_BIT = 0x00'00'00'40,
+        AccessColorAttachmentReadBit = 1
+                                       << 7, //VK_ACCESS_COLOR_ATTACHMENT_READ_BIT = 0x00'00'00'80,
+        AccessColorAttachmentWriteBit =
+            1 << 8, //VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT = 0x00'00'01'00,
+        AccessDepthStencilAttachmentReadBit =
+            1 << 9, //VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT = 0x00'00'02'00,
+        AccessDepthStencilAttachmentWriteBit =
+            1 << 10, //VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT = 0x00'00'04'00,
+        AccessTransferReadBit = 1 << 11, //VK_ACCESS_TRANSFER_READ_BIT = 0x00'00'08'00,
+        AccessTransferWiteBit = 1 << 12, //VK_ACCESS_TRANSFER_WRITE_BIT = 0x00'00'10'00,
+        AccessHostReadBit = 1 << 13, //VK_ACCESS_HOST_READ_BIT = 0x00'00'20'00,
+        AccessHostWriteBit = 1 << 14, //VK_ACCESS_HOST_WRITE_BIT = 0x00'00'40'00,
+        AccessMemoryReadBit = 1 << 15, //VK_ACCESS_MEMORY_READ_BIT = 0x00'00'80'00,
+        AccessMemoryWriteBit = 1 << 16, //VK_ACCESS_MEMORY_WRITE_BIT = 0x00'01'00'00,
+    };
+
+    using AccessFlags = std::underlying_type_t<AccessFlagBits>;
+
     struct AttachmentDescription
     {
         bool clear_load;
@@ -478,11 +550,21 @@ namespace Render
         ImageLayout final_layout;
     };
 
+    struct RenderPassDependency
+    {
+        PipelineStageFlags src_stages;
+        PipelineStageFlags dst_stages;
+        AccessFlags src_access;
+        AccessFlags dst_access;
+        DependencyFlags dependency;
+    };
+
     struct RenderPassInfo
     {
         std::span<const AttachmentDescription> color_attachment_descriptions;
         const AttachmentDescription* depth_stencil_attachment_description;
-        //just skip subpass dependency between external subpass -> too hard...
+        RenderPassDependency early_external_dependency;
+        RenderPassDependency late_external_dependency;
     };
 
     enum class Filter
@@ -935,78 +1017,6 @@ namespace Render
     {
         std::span<Semaphore*> wait_semaphores;
     };
-
-    enum PipelineStageFlagBits
-    {
-        TopOfPipePipelineStageBit = 1 << 0, //VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT = 0x00'00'00'01,
-        DrawIndirectPipelineStageBit = 1
-                                       << 1, //VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT = 0x00'00'00'02,
-        VeretxInputPipelineStageBit = 1 << 2, //VK_PIPELINE_STAGE_VERTEX_INPUT_BIT = 0x00'00'00'04,
-        VertexShaderPipelineStageBit = 1
-                                       << 3, //VK_PIPELINE_STAGE_VERTEX_SHADER_BIT = 0x00'00'00'08,
-        TessellationControlShaderPipelineStageBit =
-            1 << 4, //VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT = 0x00'00'00'10,
-        TessellationEvaluationShaderPipelineStageBit =
-            1 << 5, // VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT = 0x00'00'00'20,
-        GeometryShaderPipelineStageBit =
-            1 << 6, // VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT = 0x00'00'00'40,
-        FragmentShaderPipelineStageBit =
-            1 << 7, // VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT = 0x00'00'00'80,
-        EarlyFragmentTestsPipelineStageBit =
-            1 << 8, // VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT = 0x00'00'01'00,
-        LateFragmentTestsPipelineStageBit =
-            1 << 9, // VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT = 0x00'00'02'00,
-        ColorAttachmentOutputPipelineStageBit =
-            1 << 10, // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT = 0x00'00'04'00,
-        ComputeShaderPipelineStageBit =
-            1 << 11, // VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT = 0x00'00'08'00,
-        TransferPipelineStageBit = 1 << 12, // VK_PIPELINE_STAGE_TRANSFER_BIT = 0x00'00'10'00,
-        BottomOfPipePipelineStageBit =
-            1 << 13, // VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT = 0x00'00'20'00,
-        HostPipelineStageBit = 1 << 14, // VK_PIPELINE_STAGE_HOST_BIT = 0x00'00'40'00,
-        AllGraphicsPipelineStageBit = 1
-                                      << 15, // VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT = 0x00'00'80'00,
-        AllCommandsPipelineStageBit = 1
-                                      << 16, // VK_PIPELINE_STAGE_ALL_COMMANDS_BIT = 0x00'01'00'00,
-    };
-
-    using PipelineStageFlags = std::underlying_type_t<PipelineStageFlagBits>;
-
-    enum DependencyFlagBits
-    {
-        ByRegion = 1 << 0
-    };
-
-    using DependencyFlags = std::underlying_type_t<DependencyFlagBits>;
-
-    enum AccessFlagBits
-    {
-        AccessIndirectCommandReadBit = 1
-                                       << 0, //VK_ACCESS_INDIRECT_COMMAND_READ_BIT = 0x00'00'00'01,
-        AccessIndexReadBit = 1 << 1, //VK_ACCESS_INDEX_READ_BIT = 0x00'00'00'02,
-        AccessVertexAttributeReadBit = 1
-                                       << 2, //VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT = 0x00'00'00'04,
-        AccessUniformReadBit = 1 << 3, //VK_ACCESS_UNIFORM_READ_BIT = 0x00'00'00'08,
-        //AccessInputAttachmentReadBit = 1 << 4, //VK_ACCESS_INPUT_ATTACHMENT_READ_BIT = 0x00'00'00'10,
-        AccessShaderReadBit = 1 << 5, //VK_ACCESS_SHADER_READ_BIT = 0x00'00'00'20,
-        AccessShaderWriteBit = 1 << 6, //VK_ACCESS_SHADER_WRITE_BIT = 0x00'00'00'40,
-        AccessColorAttachmentReadBit = 1
-                                       << 7, //VK_ACCESS_COLOR_ATTACHMENT_READ_BIT = 0x00'00'00'80,
-        AccessColorAttachmentWriteBit =
-            1 << 8, //VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT = 0x00'00'01'00,
-        AccessDepthStencilAttachmentReadBit =
-            1 << 9, //VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT = 0x00'00'02'00,
-        AccessDepthStencilAttachmentWriteBit =
-            1 << 10, //VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT = 0x00'00'04'00,
-        AccessTransferReadBit = 1 << 11, //VK_ACCESS_TRANSFER_READ_BIT = 0x00'00'08'00,
-        AccessTransferWiteBit = 1 << 12, //VK_ACCESS_TRANSFER_WRITE_BIT = 0x00'00'10'00,
-        AccessHostReadBit = 1 << 13, //VK_ACCESS_HOST_READ_BIT = 0x00'00'20'00,
-        AccessHostWriteBit = 1 << 14, //VK_ACCESS_HOST_WRITE_BIT = 0x00'00'40'00,
-        AccessMemoryReadBit = 1 << 15, //VK_ACCESS_MEMORY_READ_BIT = 0x00'00'80'00,
-        AccessMemoryWriteBit = 1 << 16, //VK_ACCESS_MEMORY_WRITE_BIT = 0x00'01'00'00,
-    };
-
-    using AccessFlags = std::underlying_type_t<AccessFlagBits>;
 
     struct BufferMemoryBarrier
     {

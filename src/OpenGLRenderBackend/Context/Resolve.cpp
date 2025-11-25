@@ -6,7 +6,9 @@ namespace OpenGL
 {
     extern "C" Render::Resolve* RenderResolve()
     {
-        return new Resolve; //we can create as much as possible similar contexts... idk why we made this :)
+        static Resolve resolve;
+
+        return &resolve;
     }
 
     Resolve::~Resolve()
@@ -21,6 +23,9 @@ namespace OpenGL
 
     void Resolve::Init(RenderBackend* backend)
     {
+        if(ctx.get() != nullptr)
+            throw std::runtime_error("Cannot init already inited resolve object");
+
         if(backend->GetType() != RenderBackendType::OpenGL)
             throw std::runtime_error("Bad render backend type. 'OpenGL' type was expected");
 
@@ -46,5 +51,10 @@ namespace OpenGL
                 "Bad selected context quyeue families. Implementation has only one queue");
 
         return ctx.get();
+    }
+
+    void Resolve::operator delete(void* ptr) noexcept
+    {
+        //noop -> static variable
     }
 };

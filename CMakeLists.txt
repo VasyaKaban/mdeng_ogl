@@ -15,6 +15,7 @@ add_subdirectory("src/Core")
 add_subdirectory("src/Engine")
 #add_subdirectory("src/Game")
 add_subdirectory("src/OpenGLRenderBackend")
+add_subdirectory("src/Dummy")
 
 find_package(Python COMPONENTS Interpreter REQUIIRED)
 
