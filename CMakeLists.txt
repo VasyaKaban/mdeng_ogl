@@ -17,9 +17,6 @@ set(JSON_Install OFF CACHE INTERNAL "")
 add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/glad/cmake EXCLUDE_FROM_ALL)
-set(GLAD_GL_CORE_45_EXTENSIONS "GL_EXT_texture_compression_s3tc GL_EXT_texture_sRGB")
-
-glad_add_library(glad_gl_core_45 STATIC EXCLUDE_FROM_ALL REPRODUCIBLE LANGUAGE "c" API gl:core=4.5 EXTENSIONS ${GLAD_GL_CORE_45_EXTENSIONS})
 
 add_compile_definitions(ROOT_SUBDIR=\"../../\")
 add_compile_definitions(BIN_SUBDIR=\"../\")
@@ -31,7 +28,7 @@ add_subdirectory("src/Core")
 add_subdirectory("src/Engine")
 add_subdirectory("src/Game")
 add_subdirectory("src/OpenGLRenderBackend")
-add_subdirectory("src/Dummy")
+add_subdirectory("src/Dummy" EXCLUDE_FROM_ALL)
 
 find_package(Python COMPONENTS Interpreter REQUIRED)
 

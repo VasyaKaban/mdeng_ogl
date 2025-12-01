@@ -5,7 +5,7 @@
 
 namespace DDS
 {
-#error USAGE AND IMAGE FLAGS!!!
+#pragma message("USAGE AND IMAGE FLAGS!!!")
     struct format_resolve_result
     {
         Render::Format ctx_format;

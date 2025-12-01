@@ -43,8 +43,7 @@ namespace OpenGL
         return types;
     }
 
-    constexpr static std::string_view REQUIRED_EXTENSIONS[] = {"GL_EXT_texture_compression_s3tc",
-                                                               "GL_EXT_texture_sRGB"};
+    constexpr static std::string_view REQUIRED_EXTENSIONS[] = {OPENGL_REQUIRED_EXTENSIONS};
 
     static void GLAPIENTRY debug_messenger_callback(GLenum source,
                                                     GLenum type,
