@@ -7,7 +7,8 @@
 
 namespace Core
 {
-#error Split begin and after iterators in free block! In for loop -> after always be the next of before!!!
+#pragma message( \
+    "Split begin and after iterators in free block! In for loop -> after always be the next of before!!!")
     template<std::unsigned_integral I>
     struct BlockRequirement
     {
