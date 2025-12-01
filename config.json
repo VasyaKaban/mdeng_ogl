@@ -1,5 +1,5 @@
 {
-    "engine_config": {
+    "engine": {
         "transfer_storage_size": 134217728,
         "reference_update_factor": 120,
         "max_fps": 300,
@@ -9,13 +9,9 @@
             "height": 1080
         }
     },
-    "render_config": {
+    "render": {
         "backend": "opengl",
         "enable_debug": true,
-        "implementation": "opengl_render_backend"
-    },
-    "game_config": {
-        "implementation": "game",
-        "implementation_config": null
+        "implementation": "OpenGLRenderBackend"
     }
 }

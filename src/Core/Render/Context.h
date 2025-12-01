@@ -14,7 +14,7 @@ namespace Render
 
         virtual const ContextProperties& GetProperties() const = 0;
 
-        virtual Queue* GetQueue(std::uint32_t queue_family_index, std::uint32_t index) = 0;
+        virtual Queue* GetQueue(const QueueInfo& info) = 0;
 
         virtual void WaitIdle() noexcept = 0;
 
@@ -30,7 +30,7 @@ namespace Render
 
         virtual void SetDebugMessenger(const DebugMessengerInfo& info) = 0;
 
-        virtual RenderBackend* GetBackend() const noexcept = 0;
+        virtual Core::RenderBackend* GetBackend() const noexcept = 0;
 
         virtual Buffer*
         CreateBuffer(const BufferInfo& info,

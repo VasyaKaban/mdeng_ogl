@@ -1,4 +1,4 @@
-add_library(core SHARED)
+add_library(Core SHARED)
 
 file(GLOB_RECURSE SOURCES
 		**.cpp
@@ -6,17 +6,17 @@ file(GLOB_RECURSE SOURCES
 		**.hpp)
 
 target_sources(
-core
+Core
     PRIVATE
 	    ${SOURCES}
 )
 
 find_package(SDL2 REQUIRED)
 
-target_include_directories(core 
+target_include_directories(Core 
 							PUBLIC "../")
 
-target_link_libraries(core
+target_link_libraries(Core
 	                    PUBLIC hrs
 						PUBLIC SDL2::SDL2main
 						PUBLIC SDL2::SDL2

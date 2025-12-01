@@ -6,39 +6,42 @@
 #include "hrs/non_creatable.hpp"
 #include <SDL2/SDL_messagebox.h>
 
-class GraphicWindow;
-struct GraphicWindowInfo;
-
-enum class MessageBoxType
+namespace Core
 {
-    Error = SDL_MESSAGEBOX_ERROR,
-    Warning = SDL_MESSAGEBOX_WARNING,
-    Info = SDL_MESSAGEBOX_INFORMATION
-};
+    class GraphicWindow;
+    struct GraphicWindowInfo;
 
-class WindowSubsystem : hrs::non_copyable, hrs::non_movable
-{
-    WindowSubsystem();
-public:
-    ~WindowSubsystem() = default;
+    enum class MessageBoxType
+    {
+        Error = SDL_MESSAGEBOX_ERROR,
+        Warning = SDL_MESSAGEBOX_WARNING,
+        Info = SDL_MESSAGEBOX_INFORMATION
+    };
 
-    static WindowSubsystem* Init();
-    static WindowSubsystem* GetSubsystem() noexcept;
-    static void Close();
+    class WindowSubsystem : hrs::non_copyable, hrs::non_movable
+    {
+        WindowSubsystem();
+    public:
+        ~WindowSubsystem() = default;
 
-    void PollEvents();
+        static WindowSubsystem* Init();
+        static WindowSubsystem* GetSubsystem() noexcept;
+        static void Close();
 
-    GraphicWindow* CreateGraphicWindow(const GraphicWindowInfo& info,
-                                       const RenderBackendInfo& render_info);
+        void PollEvents();
 
-    GraphicWindow* GetGraphicWindow(std::uint32_t id) const noexcept;
+        GraphicWindow* CreateGraphicWindow(const GraphicWindowInfo& info,
+                                           const RenderBackendInfo& render_info);
 
-    static bool ShowMessageBox(const GraphicWindow* parent,
-                               MessageBoxType type,
-                               const char* title,
-                               const char* message);
-private:
-    static inline WindowSubsystem* subsystem = nullptr;
+        GraphicWindow* GetGraphicWindow(std::uint32_t id) const noexcept;
 
-    std::map<std::uint32_t, std::unique_ptr<GraphicWindow>> graphic_windows;
+        static bool ShowMessageBox(const GraphicWindow* parent,
+                                   MessageBoxType type,
+                                   const char* title,
+                                   const char* message);
+    private:
+        static inline WindowSubsystem* subsystem = nullptr;
+
+        std::map<std::uint32_t, std::unique_ptr<GraphicWindow>> graphic_windows;
+    };
 };

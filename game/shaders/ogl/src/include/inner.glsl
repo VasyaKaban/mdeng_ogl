@@ -1,0 +1,1 @@
+layout(location = 10) uniform sampler2D image;

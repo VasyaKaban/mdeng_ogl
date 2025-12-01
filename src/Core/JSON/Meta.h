@@ -4,7 +4,7 @@
 #include <concepts>
 #include "Doc.h"
 
-namespace Core
+namespace JSON
 {
     template<typename T>
     T Parse(const Doc& doc);

@@ -11,10 +11,10 @@ namespace Render
         {}
 
         //1. Retrieve available backends
-        virtual std::span<const RenderBackendType> GetAvailableBackends() = 0;
+        virtual std::span<const Core::RenderBackendType> GetAvailableBackends() = 0;
 
         //2. Init resolver with selected backend
-        virtual void Init(RenderBackend* backend) = 0;
+        virtual void Init(Core::RenderBackend* backend) = 0;
 
         //3. Get available contexts and select one of them
         virtual std::span<const Render::ContextProperties> GetAvailableContexts() = 0;

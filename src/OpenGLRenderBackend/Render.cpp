@@ -58,9 +58,10 @@ namespace OpenGL
     {
         constexpr static std::pair<Render::MemoryTypePropertyFlagBits, GLbitfield> map_mapping[] = {
             {Render::MemoryTypePropertyFlagBits::DeviceLocal, 0},
-            {Render::MemoryTypePropertyFlagBits::HostMappingReadable, GL_MAP_READ_BIT},
-            {Render::MemoryTypePropertyFlagBits::HostMappingWritable, GL_MAP_WRITE_BIT},
-            {Render::MemoryTypePropertyFlagBits::HostMappingPersistent, GL_MAP_PERSISTENT_BIT},
+            {Render::MemoryTypePropertyFlagBits::HostMappingReadable,
+             GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT},
+            {Render::MemoryTypePropertyFlagBits::HostMappingWritable,
+             GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT},
             {Render::MemoryTypePropertyFlagBits::HostCoherent, GL_MAP_COHERENT_BIT},
             {Render::MemoryTypePropertyFlagBits::HostCached, GL_CLIENT_STORAGE_BIT}};
 

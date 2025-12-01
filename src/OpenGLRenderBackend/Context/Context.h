@@ -13,14 +13,13 @@ namespace OpenGL
     class Context : public Render::Context, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Context(OpenGLBackend* _parent);
+        Context(Core::OpenGLBackend* _parent);
 
         virtual ~Context() override;
 
         virtual const Render::ContextProperties& GetProperties() const override;
 
-        virtual Render::Queue* GetQueue(std::uint32_t queue_family_index,
-                                        std::uint32_t index) override;
+        virtual Render::Queue* GetQueue(const Render::QueueInfo& info) override;
 
         virtual void WaitIdle() noexcept override;
 
@@ -34,7 +33,7 @@ namespace OpenGL
 
         virtual void SetDebugMessenger(const Render::DebugMessengerInfo& info) override;
 
-        virtual RenderBackend* GetBackend() const noexcept override;
+        virtual Core::RenderBackend* GetBackend() const noexcept override;
 
         virtual Render::Buffer*
         CreateBuffer(const Render::BufferInfo& info,
@@ -70,7 +69,7 @@ namespace OpenGL
 
         const GladGLContext& GetLoader() const noexcept;
     private:
-        OpenGLBackend* parent;
+        Core::OpenGLBackend* parent;
         GladGLContext loader;
 
         Framebuffer default_framebuffer;

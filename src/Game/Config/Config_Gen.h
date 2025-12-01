@@ -23,8 +23,8 @@ JSON_BEGIN(EngineConfig)
                        throw std::runtime_error("reference_update_factor must be grater than zero");
                })
     JSON_VALUE(max_fps,
-               float,
-               [](float max_fps, [[maybe_unused]] const EngineConfig&)
+               std::uint32_t,
+               [](std::uint32_t max_fps, [[maybe_unused]] const EngineConfig&)
                {
                    if(max_fps <= 0)
                        throw std::runtime_error("max_fps must be grater than zero");
@@ -33,7 +33,7 @@ JSON_BEGIN(EngineConfig)
 JSON_END(EngineConfig)
 
 JSON_BEGIN(RenderConfig)
-    JSON_VALUE(backend, RenderBackendType)
+    JSON_VALUE(backend, Core::RenderBackendType)
     JSON_VALUE(enable_debug, bool)
     JSON_VALUE(
         implementation,
@@ -46,19 +46,7 @@ JSON_BEGIN(RenderConfig)
         })
 JSON_END(RenderConfig)
 
-JSON_BEGIN(GameConfig)
-    JSON_VALUE(implementation,
-               std::string,
-               [](const std::string& implementation, [[maybe_unused]] const GameConfig&)
-               {
-                   if(implementation.empty())
-                       throw std::runtime_error("implementation must not be an empty string");
-               })
-    JSON_RAW(implementation_config)
-JSON_END(GameConfig)
-
 JSON_BEGIN(Config)
-    JSON_VALUE(engine_config, EngineConfig)
-    JSON_VALUE(render_config, RenderConfig)
-    JSON_VALUE(game_config, GameConfig)
+    JSON_VALUE(engine, EngineConfig)
+    JSON_VALUE(render, RenderConfig)
 JSON_END(Config)

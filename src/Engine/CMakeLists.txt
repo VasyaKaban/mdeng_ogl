@@ -1,4 +1,4 @@
-add_executable(engine)
+add_executable(Engine)
 
 file(GLOB_RECURSE SOURCES
 		**.cpp
@@ -6,15 +6,14 @@ file(GLOB_RECURSE SOURCES
 		**.hpp)
 
 target_sources(
-engine
+Engine
     PRIVATE
 	    ${SOURCES}
 )
 
-target_compile_definitions(engine PRIVATE ROOT_SUBDIR=\"../../\")
+target_include_directories(Engine PUBLIC "../")
 
-target_include_directories(engine PUBLIC "../")
-
-target_link_libraries(engine 
-						PRIVATE core
+target_link_libraries(Engine 
+						PRIVATE Core
 					)
+

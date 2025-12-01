@@ -3,40 +3,58 @@
 #include "hrs/os.hpp"
 #include "TaskTree/Task.h"
 #include "Core/Window/GraphicWindow.h"
-#include "../RenderImplementation.h"
 
-struct RenderEngineInfo
+namespace Engine
 {
-    std::uint16_t resource_set_count;
-    std::filesystem::path implementation;
-    GraphicWindow* window;
-};
+    class RenderEngine;
 
-class RenderEngine : public TaskRoot, public Events::EventListener<WindowResizedEvent>
-{
-public:
-    RenderEngine(const RenderEngineInfo& info);
-    virtual ~RenderEngine() override;
+    class RenderEngineState : hrs::non_copyable
+    {
+    public:
+        RenderEngineState(const std::filesystem::path& implementation_path);
+        ~RenderEngineState() = default;
+        RenderEngineState(RenderEngineState&&) = default;
+        RenderEngineState& operator=(RenderEngineState&&) = default;
 
-    std::uint16_t GetResourceSetCount() const noexcept;
-    std::uint16_t GetCurrentResourceSetIndex() const noexcept;
-    std::uint16_t GetPreviousResourceSetIndex() const noexcept;
-    std::uint16_t GetNextResourceSetIndex() const noexcept;
+        void Init(Core::RenderBackend* backend);
 
-    void AcquireNextResourceSet() noexcept;
+        Render::Resolve* GetResolve() const noexcept;
+    private:
+        hrs::dynamic_library lib;
+        std::unique_ptr<Render::Resolve> resolve;
+    };
 
-    virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
-    virtual void End(const EvaluateDesc& eval_desc) override;
+    struct RenderEngineInfo
+    {
+        std::uint16_t resource_set_count;
+        Render::SelectedContextDesc selected_context;
+        Core::GraphicWindow* window;
+    };
 
-    Render::Context* GetContext() const noexcept;
-private:
-    Events::HandlerAction Handle(const WindowResizedEvent& event);
-private:
-    hrs::dynamic_library lib;
-    std::unique_ptr<RenderResolveContext> resolve_ctx;
+    class RenderEngine : public TaskRoot, public Events::EventListener<Core::WindowResizedEvent>
+    {
+    public:
+        RenderEngine(const RenderEngineInfo& info, RenderEngineState&& _state);
+        virtual ~RenderEngine() override;
 
-    std::unique_ptr<Render::Context> context;
+        std::uint16_t GetResourceSetCount() const noexcept;
+        std::uint16_t GetCurrentResourceSetIndex() const noexcept;
+        std::uint16_t GetPreviousResourceSetIndex() const noexcept;
+        std::uint16_t GetNextResourceSetIndex() const noexcept;
 
-    std::uint16_t resource_set_count;
-    std::uint16_t current_resource_set_index;
+        void AcquireNextResourceSet() noexcept;
+
+        virtual EvaluateDesc Begin(const EvaluateDesc& eval_desc) override;
+        virtual void End(const EvaluateDesc& eval_desc) override;
+
+        Render::Context* GetContext() const noexcept;
+    private:
+        Events::HandlerAction Handle(const Core::WindowResizedEvent& event);
+    private:
+        RenderEngineState state;
+        std::unique_ptr<Render::Context> context;
+
+        std::uint16_t resource_set_count;
+        std::uint16_t current_resource_set_index;
+    };
 };

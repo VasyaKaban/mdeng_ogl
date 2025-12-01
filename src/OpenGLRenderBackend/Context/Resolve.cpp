@@ -11,25 +11,30 @@ namespace OpenGL
         return &resolve;
     }
 
+    Resolve::Resolve()
+        : ctx(nullptr)
+    {}
+
     Resolve::~Resolve()
     {}
 
-    std::span<const RenderBackendType> Resolve::GetAvailableBackends()
+    std::span<const Core::RenderBackendType> Resolve::GetAvailableBackends()
     {
-        constexpr static RenderBackendType SUPPORTED_BACKEND = RenderBackendType::OpenGL;
+        constexpr static Core::RenderBackendType SUPPORTED_BACKEND =
+            Core::RenderBackendType::OpenGL;
 
         return {&SUPPORTED_BACKEND, 1};
     }
 
-    void Resolve::Init(RenderBackend* backend)
+    void Resolve::Init(Core::RenderBackend* backend)
     {
-        if(ctx.get() != nullptr)
+        if(ctx != nullptr)
             throw std::runtime_error("Cannot init already inited resolve object");
 
-        if(backend->GetType() != RenderBackendType::OpenGL)
+        if(backend->GetType() != Core::RenderBackendType::OpenGL)
             throw std::runtime_error("Bad render backend type. 'OpenGL' type was expected");
 
-        ctx.reset(new Context(static_cast<OpenGLBackend*>(backend)));
+        ctx = new Context(static_cast<Core::OpenGLBackend*>(backend));
     }
 
     std::span<const Render::ContextProperties> Resolve::GetAvailableContexts()
@@ -48,13 +53,13 @@ namespace OpenGL
         if(!(desc.queue_family_infos.size() == 1 && desc.queue_family_infos[0].index == 0 &&
              desc.queue_family_infos[0].queue_count == 1))
             throw std::runtime_error(
-                "Bad selected context quyeue families. Implementation has only one queue");
+                "Bad selected context queue families. Implementation has only one queue");
 
-        return ctx.get();
+        return ctx;
     }
 
     void Resolve::operator delete(void* ptr) noexcept
     {
-        //noop -> static variable
+        static_cast<Resolve*>(ptr)->ctx = nullptr;
     }
 };

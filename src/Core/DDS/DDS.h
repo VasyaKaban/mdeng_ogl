@@ -10,7 +10,6 @@
 
 namespace DDS
 {
-
     using DDS_DWORD = std::uint32_t;
 
     constexpr DDS_DWORD

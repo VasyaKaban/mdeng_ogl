@@ -6,41 +6,55 @@
 #include "Core/Render/Objects/CommandBuffer.h"
 #include "TransferOperation.h"
 
-class RenderEngine;
-
-struct TransferStorageInfo
+namespace Engine
 {
-    std::uint64_t buffer_size;
-};
+#pragma message("Check non-persistent mapping case!!!")
+    class RenderEngine;
 
-class TransferStorage : hrs::non_copyable, hrs::non_movable
-{
-public:
-    TransferStorage(RenderEngine* _parent, const TransferStorageInfo& info);
-    ~TransferStorage();
+    struct TransferStorageInfo
+    {
+        std::uint64_t buffer_size;
+        Render::QueueInfo queue_info;
+    };
 
-    void Transfer(const TransferBufferOperation& op);
-    void Transfer(const TransferImageOperation& op);
-    void Transfer(const TransferCallbackOperation& op);
+    class TransferStorage : hrs::non_copyable, hrs::non_movable
+    {
+    public:
+        TransferStorage(RenderEngine* _parent, const TransferStorageInfo& info);
+        ~TransferStorage();
 
-    std::uint64_t MaxTransferRegionSize() const noexcept;
-    bool CanTransfer(std::uint64_t size) const noexcept;
+        void Transfer(const TransferBufferOperation& op);
+        void Transfer(const TransferImageOperation& op);
+        Render::CommandBuffer* GetCommandBuffer() noexcept;
 
-    void Flush();
+        std::uint64_t MaxTransferRegionSize() const noexcept;
+        bool CanTransfer(std::uint64_t size) const noexcept;
 
-    Render::Queue* GetQueue() const noexcept;
-private:
-    void start_write();
-private:
-    RenderEngine* parent;
-    Render::Queue* queue;
-    std::unique_ptr<Render::CommandPool> command_pool;
-    std::unique_ptr<Render::CommandBuffer> command_buffer;
-    std::unique_ptr<Render::Buffer> buffer;
-    std::byte* mapped_ptr;
-    std::uint64_t buffer_offset;
-    bool write_started;
+        void Flush();
 
-    std::vector<Render::BufferCopyRegion> buffer_regions_cache;
-    std::vector<Render::BufferImageCopyRegion> image_regions_cache;
+        Render::Queue* GetQueue() const noexcept;
+
+        //for pipeline barriers
+        std::uint32_t GetQueueFamilyIndex() const noexcept;
+        Render::AccessFlags GetTransferAccessFlags() const noexcept;
+        Render::PipelineStageFlags GetTransferPipelineStages() const noexcept;
+        Render::ImageLayout GetTransferImageLayout() const noexcept;
+    private:
+        void start_write();
+    private:
+        RenderEngine* parent;
+        Render::Queue* queue;
+        std::uint32_t queue_family_index;
+        std::unique_ptr<Render::CommandPool> command_pool;
+        std::unique_ptr<Render::CommandBuffer> command_buffer;
+        std::unique_ptr<Render::Buffer> buffer;
+        std::uint64_t buffer_size;
+        std::byte* mapped_ptr;
+        std::uint64_t buffer_offset;
+        bool write_started;
+        bool should_remap;
+
+        std::vector<Render::BufferCopyRegion> buffer_regions_cache;
+        std::vector<Render::BufferImageCopyRegion> image_regions_cache;
+    };
 };

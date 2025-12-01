@@ -37,6 +37,8 @@ namespace Render
     class Semaphore;
     class Shader;
 
+    constexpr inline std::uint32_t QUEUE_FAMILY_IGNORED = ~0U;
+
     enum class CompareOp
     {
         Never,
@@ -198,11 +200,10 @@ namespace Render
         DeviceLocal = 1 << 0, //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT = 0x00'00'00'01, + 0
         HostMappingReadable = 1 << 1, //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT + GL_MAP_READ,
         HostMappingWritable = 1 << 2, //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT + GL_MAP_WRITE,
-        HostMappingPersistent = 1 << 3, //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT + GL_MAP_PERSISTENT,
         HostCoherent =
-            1 << 4, //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00'00'00'04, + GL_MAPPING_COHERENT
+            1 << 3, //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00'00'00'04, + GL_MAPPING_COHERENT
         HostCached =
-            1 << 5, //VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00'00'00'08, + GL_CLIENT_STORAGE
+            1 << 4, //VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00'00'00'08, + GL_CLIENT_STORAGE
         //VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT = 0x00000010,
     };
 
@@ -474,7 +475,7 @@ namespace Render
         TopOfPipePipelineStageBit = 1 << 0, //VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT = 0x00'00'00'01,
         DrawIndirectPipelineStageBit = 1
                                        << 1, //VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT = 0x00'00'00'02,
-        VeretxInputPipelineStageBit = 1 << 2, //VK_PIPELINE_STAGE_VERTEX_INPUT_BIT = 0x00'00'00'04,
+        VertexInputPipelineStageBit = 1 << 2, //VK_PIPELINE_STAGE_VERTEX_INPUT_BIT = 0x00'00'00'04,
         VertexShaderPipelineStageBit = 1
                                        << 3, //VK_PIPELINE_STAGE_VERTEX_SHADER_BIT = 0x00'00'00'08,
         TessellationControlShaderPipelineStageBit =
@@ -1046,8 +1047,8 @@ namespace Render
         PipelineStageFlags src_stages;
         PipelineStageFlags dst_stages;
         DependencyFlags dependency;
-        std::span<BufferMemoryBarrier> buffer_barriers;
-        std::span<ImageMemoryBarrier> image_barriers;
+        std::span<const BufferMemoryBarrier> buffer_barriers;
+        std::span<const ImageMemoryBarrier> image_barriers;
     };
 
     enum QueueSpecializationFlagBits
@@ -1105,10 +1106,16 @@ namespace Render
         return version & 0xFF'FF;
     }
 
+    struct QueueInfo
+    {
+        std::uint32_t family_index;
+        std::uint32_t index;
+    };
+
     struct ContextProperties
     {
         std::string context_name;
-        RenderBackendType supported_backend_type;
+        Core::RenderBackendType supported_backend_type;
         std::uint32_t version; //major << 16 | minor
         std::string_view vendor_name;
         std::string_view device_name;
@@ -1117,6 +1124,7 @@ namespace Render
         std::vector<QueueFamilyProperties> queue_family_properties;
         std::vector<MemoryType> memory_types;
         CommandBufferStrategy command_buffer_strategy;
+        bool persistent_mapping_used;
         //If usage included VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minUniformBufferOffsetAlignment.
         //If usage included VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minStorageBufferOffsetAlignment.
 #pragma message("Add limits and features!!!")
@@ -1165,6 +1173,8 @@ namespace Render
     };
 
     bool IsFormatCompressed(Format format) noexcept;
+
+    bool IsDepthStencilFormat(Format format) noexcept;
 
     std::uint8_t GetFormatBlockSize(Format format) noexcept;
 

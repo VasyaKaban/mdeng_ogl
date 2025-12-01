@@ -1,4 +1,4 @@
-add_executable(game)
+add_library(Game SHARED)
 
 file(GLOB_RECURSE SOURCES
 		**.cpp
@@ -6,13 +6,14 @@ file(GLOB_RECURSE SOURCES
 		**.hpp)
 
 target_sources(
-game
+Game
     PRIVATE
 	    ${SOURCES}
 )
 
-target_include_directories(game PUBLIC "../")
+target_include_directories(Game PUBLIC "../")
 
-target_link_libraries(game
-						PRIVATE core
+target_link_libraries(Game
+						PRIVATE Core
+						PRIVATE Engine
 					)

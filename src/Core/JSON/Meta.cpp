@@ -1,7 +1,7 @@
 #include "Meta.h"
 #include <stdexcept>
 
-namespace Core
+namespace JSON
 {
     template<>
     std::string Parse(const Doc& doc)

@@ -2,58 +2,60 @@
 
 #include "Task.h"
 
-template<typename P, typename C>
-class StateTransfer : public TaskLeaf, public Events::EventListener<TaskEraseEvent>
+namespace Engine
 {
-    static_assert(std::is_base_of_v<TaskBase, P> && std::is_base_of_v<TaskBase, C>);
-public:
-    StateTransfer(P* _producer, C* _consumer, TaskBase* _parent, TaskKey&& key)
-        : TaskLeaf(_parent, std::move(key)),
-          producer(_producer),
-          consumer(_consumer)
+    template<typename P, typename C>
+    class StateTransfer : public TaskLeaf, public Events::EventListener<TaskEraseEvent>
     {
-        Events::Connect(this, producer, &StateTransfer::ProducerEraseHandle);
-        Events::Connect(this, consumer, &StateTransfer::ConsumerEraseHandle);
-    }
+        static_assert(std::is_base_of_v<TaskBase, P> && std::is_base_of_v<TaskBase, C>);
+    public:
+        StateTransfer(P* _producer, C* _consumer, TaskBase* _parent, TaskKey&& key)
+            : TaskLeaf(_parent, std::move(key)),
+              producer(_producer),
+              consumer(_consumer)
+        {
+            Events::Connect(this, producer, &StateTransfer::ProducerEraseHandle);
+            Events::Connect(this, consumer, &StateTransfer::ConsumerEraseHandle);
+        }
 
-    ~StateTransfer() = default;
+        ~StateTransfer() = default;
 
-    virtual void End(const EvaluateDesc& eval_desc) override
-    {
-        //noop
-    }
+        virtual void End(const EvaluateDesc& eval_desc) override
+        {
+            //noop
+        }
 
-    virtual void DEBUG_DrawGraph(std::ostream& os) const override
-    {
-        os << std::format(
-            "{} [label=\"Priority: {}; Name: {}\", fillcolor=\"aquamarine\", style=filled];\n",
-            DEBUG_GetID(this),
-            this->GetPriority(),
-            this->GetName().GetStringView());
-        os << std::format("{} -> {};\n", DEBUG_GetID(this->GetParent()), DEBUG_GetID(this));
-        os << std::format("{} -> {} [style=dashed, label=\"Producer\"];\n",
-                          DEBUG_GetID(this),
-                          DEBUG_GetID(producer));
-        os << std::format("{} -> {} [style=dashed, label=\"Consumer\"];\n",
-                          DEBUG_GetID(this),
-                          DEBUG_GetID(consumer));
-    }
-private:
-    Events::HandlerAction ProducerEraseHandle(const TaskEraseEvent&)
-    {
-        EraseLater();
-        return Events::HandlerAction::None;
-    }
+        virtual void DEBUG_DrawGraph(std::ostream& os) const override
+        {
+            os << std::format(
+                "{} [label=\"Priority: {}; Name: {}\", fillcolor=\"aquamarine\", style=filled];\n",
+                DEBUG_GetID(this),
+                this->GetPriority(),
+                this->GetName().GetStringView());
+            os << std::format("{} -> {};\n", DEBUG_GetID(this->GetParent()), DEBUG_GetID(this));
+            os << std::format("{} -> {} [style=dashed, label=\"Producer\"];\n",
+                              DEBUG_GetID(this),
+                              DEBUG_GetID(producer));
+            os << std::format("{} -> {} [style=dashed, label=\"Consumer\"];\n",
+                              DEBUG_GetID(this),
+                              DEBUG_GetID(consumer));
+        }
+    private:
+        Events::HandlerAction ProducerEraseHandle(const TaskEraseEvent&)
+        {
+            EraseLater();
+            return Events::HandlerAction::None;
+        }
 
-    Events::HandlerAction ConsumerEraseHandle(const TaskEraseEvent&)
-    {
-        EraseLater();
-        return Events::HandlerAction::None;
-    }
-protected:
-    P* producer;
-    C* consumer;
-};
+        Events::HandlerAction ConsumerEraseHandle(const TaskEraseEvent&)
+        {
+            EraseLater();
+            return Events::HandlerAction::None;
+        }
+    protected:
+        P* producer;
+        C* consumer;
+    };
 
 #define FUNCTIONAL_STATE_TRANSFER(NAME, PRODUCER, CONSUMER, ...) \
     class NAME : public StateTransfer<PRODUCER, CONSUMER> \
@@ -72,7 +74,7 @@ protected:
         }; \
     };
 
-/*template<typename T>
+    /*template<typename T>
 concept TaskState = requires(T* ptr, const T* c_ptr) {
     ptr->Detach();
     { c_ptr->IsDetached() } noexcept -> std::same_as<bool>;
@@ -139,3 +141,5 @@ public:
 private:
     hrs::rc_ptr<T> state;
 };*/
+
+};

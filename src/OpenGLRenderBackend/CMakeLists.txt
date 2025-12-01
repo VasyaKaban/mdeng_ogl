@@ -1,4 +1,4 @@
-add_library(opengl_render_backend SHARED)
+add_library(OpenGLRenderBackend SHARED)
 
 file(GLOB_RECURSE SOURCES
 		**.cpp
@@ -6,17 +6,17 @@ file(GLOB_RECURSE SOURCES
 		**.hpp)
 
 target_sources(
-opengl_render_backend
+OpenGLRenderBackend
     PRIVATE
 	    ${SOURCES}
 )
 
-target_include_directories(opengl_render_backend PUBLIC "../")
+target_include_directories(OpenGLRenderBackend PUBLIC "../")
 
 find_package(OpenGL REQUIRED)
 
-target_link_libraries(opengl_render_backend
-						PUBLIC core
+target_link_libraries(OpenGLRenderBackend
+						PUBLIC Core
 						PUBLIC glad
 						PUBLIC OpenGL::GL
 					)

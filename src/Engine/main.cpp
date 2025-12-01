@@ -2,5 +2,5 @@
 
 int main(int argc, char** argv)
 {
-    return Engine::Enter(argc, argv);
+    return Engine::GameEngine::Enter(argc, argv);
 }

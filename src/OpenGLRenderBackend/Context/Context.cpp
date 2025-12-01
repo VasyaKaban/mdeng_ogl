@@ -20,15 +20,25 @@ namespace OpenGL
 {
     static std::vector<Render::MemoryType> create_memory_types()
     {
-        constexpr std::size_t MEMORY_TYPES_COUNT =
+        constexpr std::size_t MAX_MEMORY_TYPES_COUNT =
             (Render::MemoryTypePropertyFlagBits::HostCached << 1) - 1;
 
         std::vector<Render::MemoryType> types;
-        types.reserve(MEMORY_TYPES_COUNT);
-        for(std::size_t i = 0; i < MEMORY_TYPES_COUNT; i++)
+        types.reserve(MAX_MEMORY_TYPES_COUNT);
+        for(std::size_t i = 0; i < MAX_MEMORY_TYPES_COUNT; i++)
+        {
+            if((i & Render::MemoryTypePropertyFlagBits::HostCoherent ||
+                i & Render::MemoryTypePropertyFlagBits::HostCached) &&
+               !(i & Render::MemoryTypePropertyFlagBits::HostMappingReadable ||
+                 i & Render::MemoryTypePropertyFlagBits::HostMappingWritable))
+            {
+                continue;
+            }
+
             types.push_back(Render::MemoryType{
                 .memory_heap_flags = Render::MemoryHeapFlagBits::DeviceLocalHeap,
                 .memory_type_flags = static_cast<Render::MemoryTypePropertyFlags>(i)});
+        }
 
         return types;
     }
@@ -51,7 +61,7 @@ namespace OpenGL
             {reinterpret_cast<const char*>(message), static_cast<std::size_t>(length)});
     }
 
-    Context::Context(OpenGLBackend* _parent)
+    Context::Context(Core::OpenGLBackend* _parent)
         : parent(_parent),
           default_framebuffer(this),
           default_queue(this)
@@ -98,7 +108,7 @@ namespace OpenGL
         loader.GetIntegerv(GL_MINOR_VERSION, &minor);
 
         properties.context_name = "OpenGL";
-        properties.supported_backend_type = RenderBackendType::OpenGL;
+        properties.supported_backend_type = Core::RenderBackendType::OpenGL;
         properties.version = Render::MakeVersion(major, minor);
         properties.vendor_name = reinterpret_cast<const char*>(loader.GetString(GL_VENDOR));
         properties.device_name = reinterpret_cast<const char*>(loader.GetString(GL_RENDERER));
@@ -112,6 +122,7 @@ namespace OpenGL
             .queue_count = 1});
         properties.memory_types = create_memory_types();
         properties.command_buffer_strategy = Render::CommandBufferStrategy::Immediate;
+        properties.persistent_mapping_used = true;
     }
 
     Context::~Context()
@@ -124,9 +135,9 @@ namespace OpenGL
         return properties;
     }
 
-    Render::Queue* Context::GetQueue(std::uint32_t queue_family_index, std::uint32_t index)
+    Render::Queue* Context::GetQueue(const Render::QueueInfo& info)
     {
-        if(!(queue_family_index == 0 && index == 0))
+        if(!(info.family_index == 0 && info.index == 0))
             throw std::runtime_error("Bad queue family index or queue index");
 
         //just return 'empty' queue -> we don't have a 'Queue' concept in opengl! Only implicit queue exists
@@ -214,7 +225,7 @@ namespace OpenGL
         loader.DebugMessageCallback(debug_messenger_callback, &debug_callback);
     }
 
-    RenderBackend* Context::GetBackend() const noexcept
+    Core::RenderBackend* Context::GetBackend() const noexcept
     {
         return parent;
     }

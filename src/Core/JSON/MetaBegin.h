@@ -13,7 +13,7 @@
                            hrs::transparent_string_equal_comparator<std::string>> \
             NAME;
 
-#    define JSON_RAW(NAME, ...) Core::Doc NAME;
+#    define JSON_RAW(NAME, ...) JSON::Doc NAME;
 
 #    define JSON_OPTIONAL_VALUE(NAME, TYPE, ...) std::optional<TYPE> NAME;
 
@@ -31,7 +31,7 @@
         ;
 #elif defined JSON_DEF
 #    define JSON_BEGIN(NAME) \
-        namespace Core \
+        namespace JSON \
         { \
             template<> \
             NAME Parse(const Doc& doc) \

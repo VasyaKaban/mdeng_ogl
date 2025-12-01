@@ -8,12 +8,12 @@
             "name": "(Windows) Launch",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/out/bin/dummy.exe",
+            "cwd": "${workspaceFolder}/out",
+            "program": "bin/${command:cmake.launchTargetName}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
             "environment": [],
-            "console": "internalConsole"
+            "console": "integratedTerminal"
         }
     ]
 }

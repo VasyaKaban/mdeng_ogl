@@ -8,6 +8,6 @@ dummy
 
 target_include_directories(dummy PUBLIC "../")
 
-target_link_libraries(opengl_render_backend
-						PUBLIC core
+target_link_libraries(dummy
+						PUBLIC Core
 					)

@@ -344,65 +344,65 @@ namespace DDS
         {
             switch(fmt.four_cc)
             {
-                case DDS::PixelFormatFourCC::DXT1:
+                case PixelFormatFourCC::DXT1:
                     res.ctx_format = Render::Format::BC1_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::DXT2:
+                case PixelFormatFourCC::DXT2:
                     res.ctx_format = Render::Format::BC2_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::DXT3:
+                case PixelFormatFourCC::DXT3:
                     res.ctx_format = Render::Format::BC2_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::DXT4:
+                case PixelFormatFourCC::DXT4:
                     res.ctx_format = Render::Format::BC3_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::DXT5:
+                case PixelFormatFourCC::DXT5:
                     res.ctx_format = Render::Format::BC3_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::BC4U:
+                case PixelFormatFourCC::BC4U:
                     res.ctx_format = Render::Format::BC4_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::BC4S:
+                case PixelFormatFourCC::BC4S:
                     res.ctx_format = Render::Format::BC4_SNORM;
                     break;
-                case DDS::PixelFormatFourCC::BC4U_ATI1:
+                case PixelFormatFourCC::BC4U_ATI1:
                     res.ctx_format = Render::Format::BC4_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::BC5U:
+                case PixelFormatFourCC::BC5U:
                     res.ctx_format = Render::Format::BC5_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::BC5S:
+                case PixelFormatFourCC::BC5S:
                     res.ctx_format = Render::Format::BC5_SNORM;
                     break;
-                case DDS::PixelFormatFourCC::R16G16B16A16_U:
+                case PixelFormatFourCC::R16G16B16A16_U:
                     res.ctx_format = Render::Format::R16G16B16A16_UNORM;
                     break;
-                case DDS::PixelFormatFourCC::R16G16B16A16_S:
+                case PixelFormatFourCC::R16G16B16A16_S:
                     res.ctx_format = Render::Format::R16G16B16A16_SNORM;
                     break;
-                case DDS::PixelFormatFourCC::R16_F:
+                case PixelFormatFourCC::R16_F:
                     res.ctx_format = Render::Format::R16_FLOAT;
                     break;
-                case DDS::PixelFormatFourCC::R16G16_F:
+                case PixelFormatFourCC::R16G16_F:
                     res.ctx_format = Render::Format::R16G16_FLOAT;
                     break;
-                case DDS::PixelFormatFourCC::R16G16B16A16_F:
+                case PixelFormatFourCC::R16G16B16A16_F:
                     res.ctx_format = Render::Format::R16G16B16A16_FLOAT;
                     break;
-                case DDS::PixelFormatFourCC::R32_F:
+                case PixelFormatFourCC::R32_F:
                     res.ctx_format = Render::Format::R32_FLOAT;
                     break;
-                case DDS::PixelFormatFourCC::R32G32_F:
+                case PixelFormatFourCC::R32G32_F:
                     res.ctx_format = Render::Format::R32G32_FLOAT;
                     break;
-                case DDS::PixelFormatFourCC::R32G32B32A32_F:
+                case PixelFormatFourCC::R32G32B32A32_F:
                     res.ctx_format = Render::Format::R32G32B32A32_FLOAT;
                     break;
-                case DDS::PixelFormatFourCC::R8G8_B8G8_U:
-                case DDS::PixelFormatFourCC::G8R8_G8B8_U:
-                case DDS::PixelFormatFourCC::UYVY:
-                case DDS::PixelFormatFourCC::YUY2:
-                case DDS::PixelFormatFourCC::CxV8U8:
+                case PixelFormatFourCC::R8G8_B8G8_U:
+                case PixelFormatFourCC::G8R8_G8B8_U:
+                case PixelFormatFourCC::UYVY:
+                case PixelFormatFourCC::YUY2:
+                case PixelFormatFourCC::CxV8U8:
                 default:
                 {
                     auto four_cc = ToDwordFourCC(fmt.four_cc);

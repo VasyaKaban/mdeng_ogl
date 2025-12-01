@@ -32,6 +32,25 @@ namespace Render
         return is_compressed;
     }
 
+    bool IsDepthStencilFormat(Format format) noexcept
+    {
+        bool is_depth_stencil;
+        switch(format)
+        {
+            case Format::D16_UNORM:
+            case Format::D24_UNORM_S8_UINT:
+            case Format::D32_FLOAT_S8X24_UINT:
+            case Format::D32_FLOAT:
+                is_depth_stencil = true;
+                break;
+            default:
+                is_depth_stencil = false;
+                break;
+        }
+
+        return is_depth_stencil;
+    }
+
     std::uint8_t GetFormatBlockSize(Format format) noexcept
     {
         std::uint8_t block_size;

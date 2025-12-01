@@ -1,25 +1,28 @@
 #pragma once
 
-enum class RenderBackendType
+namespace Core
 {
-    OpenGL
-};
+    enum class RenderBackendType
+    {
+        OpenGL
+    };
 
-struct RenderBackendInfo
-{
-    RenderBackendType type;
-};
+    struct RenderBackendInfo
+    {
+        RenderBackendType type;
+    };
 
-class GraphicWindow;
+    class GraphicWindow;
 
-class RenderBackend
-{
-public:
-    RenderBackend(GraphicWindow* _parent) noexcept;
+    class RenderBackend
+    {
+    public:
+        RenderBackend(GraphicWindow* _parent) noexcept;
 
-    virtual RenderBackendType GetType() const noexcept = 0;
+        virtual RenderBackendType GetType() const noexcept = 0;
 
-    GraphicWindow* GetWindow() const noexcept;
-protected:
-    GraphicWindow* parent;
+        GraphicWindow* GetWindow() const noexcept;
+    protected:
+        GraphicWindow* parent;
+    };
 };

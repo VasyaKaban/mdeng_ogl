@@ -1,44 +1,62 @@
 #pragma once
 
 #include "hrs/os.hpp"
+#include "Engine/Game/Game.h"
 #include "Core/Window/GraphicWindow.h"
 #include "RenderEngine/RenderEngine.h"
 #include "ResourceManager/ResourceManager.h"
 #include "Timer/Timer.h"
-#include "Config/Config.h"
 
-class Engine : hrs::non_copyable, hrs::non_movable
+namespace Engine
 {
-    Engine(int argc, char** argv);
-    ~Engine();
-public:
-    static int Enter(int argc, char** argv);
-    static Engine* GetInstance() noexcept;
+    struct GameEngineInfo
+    {
+        Core::GraphicWindow* window;
+        RenderEngine* render_engine;
+        ResourceManager* resource_manager;
+        std::uint32_t max_fps;
+        float reference_update_factor;
+    };
 
-    GraphicWindow* GetWindow() const noexcept;
-    ResourceManager* GetResourceManager() const noexcept;
-    RenderEngine* GetRenderEngine() const noexcept;
+    class GameEngine : hrs::non_copyable, hrs::non_movable
+    {
+        GameEngine(const GameEngineInfo& info, GameState&& _game_state);
+        ~GameEngine();
+    public:
+        static int Enter(int argc, char** argv);
+        static GameEngine* GetInstance() noexcept;
 
-    std::uint64_t GetFrameIndex() const noexcept;
-    const Timer& GetTimer() const noexcept;
+        Core::GraphicWindow* GetWindow() const noexcept;
+        RenderEngine* GetRenderEngine() const noexcept;
+        ResourceManager* GetResourceManager() const noexcept;
 
-    float GetUpdateFactor() const noexcept;
-private:
-    void loop();
-private:
-    constexpr static float DEFAULT_REFERENCE_UPDATE_FACTOR = 120;
+        std::uint64_t GetFrameIndex() const noexcept;
+        const Timer& GetTimer() const noexcept;
 
-    static inline Engine* instance = nullptr;
+        std::uint32_t GetMaxFPS() const noexcept;
+        float GetUpdateFactor() const noexcept;
+    private:
+        void loop();
+    private:
+        constexpr static auto DEFAULT_GAME_IMPLEMENTATION_NAME = "Game";
+        constexpr static float DEFAULT_REFERENCE_UPDATE_FACTOR = 120;
 
-    Config config;
+        static inline GameEngine* instance = nullptr;
 
-    GraphicWindow* window;
+        GameState game_state;
 
-    std::unique_ptr<RenderEngine> render_engine;
-    std::unique_ptr<ResourceManager> resource_manager;
+        Core::GraphicWindow* window;
+        std::unique_ptr<RenderEngine> render_engine;
+        std::unique_ptr<ResourceManager> resource_manager;
 
-    std::uint64_t frame_index;
-    Timer frame_timer;
+        std::unique_ptr<Game> game;
 
-    float update_factor;
+        std::uint64_t frame_index;
+        Timer frame_timer;
+
+        std::uint32_t max_fps;
+
+        float reference_update_factor;
+        float update_factor;
+    };
 };

@@ -3,17 +3,17 @@
 #include <format>
 #include "Core/Window/RenderBackend.h"
 
-namespace Core
+namespace JSON
 {
     template<>
-    RenderBackendType Parse(const Doc& doc)
+    Core::RenderBackendType Parse(const Doc& doc)
     {
         if(!doc.is_string())
             throw std::runtime_error("Failed to parse string");
 
         const auto& str = doc.get<Doc::string_t>();
         if(str == "opengl")
-            return RenderBackendType::OpenGL;
+            return Core::RenderBackendType::OpenGL;
         else
             throw std::runtime_error("Unknown render backend type. Possible values: opengl");
     }
