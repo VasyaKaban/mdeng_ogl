@@ -12,7 +12,8 @@ namespace Render
         virtual ~Buffer()
         {}
 
-        virtual std::byte* Map(const MappedRange& rng) = 0;
+        virtual std::byte* Map(const MappedRange& rng,
+                               BufferMapContentPolicy previous_content_policy) = 0;
         virtual void Unmap() noexcept = 0;
         virtual void FlushMappedRange(std::span<const MappedRange> ranges) = 0;
         virtual void InvalidateMappedRanges(std::span<const MappedRange> ranges) = 0;

@@ -11,8 +11,6 @@ Core
 	    ${SOURCES}
 )
 
-find_package(SDL2 REQUIRED)
-
 target_include_directories(Core 
 							PUBLIC "../")
 
@@ -20,4 +18,5 @@ target_link_libraries(Core
 	                    PUBLIC hrs
 						PUBLIC SDL2::SDL2main
 						PUBLIC SDL2::SDL2
+						PUBLIC nlohmann_json::nlohmann_json
 					)

@@ -227,6 +227,12 @@ namespace Render
         std::uint64_t size;
     };
 
+    enum class BufferMapContentPolicy
+    {
+        None,
+        Discard //-> OGL: GL_MAP_INVALIDATE_RANGE_BIT ; VK: None
+    };
+
     enum CommandPoolFlagBits
     {
         TransientCommandPoolBit = 1 << 0,
@@ -374,7 +380,7 @@ namespace Render
         ImageUsageTransferDestination = 1 << 1, //VK_IMAGE_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
         ImageUsageSampled = 1 << 2, //VK_IMAGE_USAGE_SAMPLED_BIT = 0x00'00'00'04,
         ImageUsageStorage = 1 << 3, //VK_IMAGE_USAGE_STORAGE_BIT = 0x00'00'00'08,
-        ImageUsagecolorAttachment = 1 << 4, //VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT = 0x00'00'00'10,
+        ImageUsageColorAttachment = 1 << 4, //VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT = 0x00'00'00'10,
         ImageUsageDepthStencilAttachment =
             1 << 5, //VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00'00'00'20,
         //VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT = 0x00'00'00'40,

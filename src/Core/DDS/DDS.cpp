@@ -5,6 +5,7 @@
 
 namespace DDS
 {
+#error USAGE AND IMAGE FLAGS!!!
     struct format_resolve_result
     {
         Render::Format ctx_format;

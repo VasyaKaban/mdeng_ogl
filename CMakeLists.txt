@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(mdeng LANGUAGES CXX)
+project(mdeng LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -10,11 +10,22 @@ set(OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/out")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${OUTPUT_DIRECTORY}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${OUTPUT_DIRECTORY}/bin")
 
+add_subdirectory(deps/SDL EXCLUDE_FROM_ALL)
+
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+set(JSON_Install OFF CACHE INTERNAL "")
+add_subdirectory(deps/json EXCLUDE_FROM_ALL)
+
+add_subdirectory(deps/glad/cmake EXCLUDE_FROM_ALL)
+set(GLAD_GL_CORE_45_EXTENSIONS "GL_EXT_texture_compression_s3tc GL_EXT_texture_sRGB")
+
+glad_add_library(glad_gl_core_45 STATIC EXCLUDE_FROM_ALL REPRODUCIBLE LANGUAGE "c" API gl:core=4.5 EXTENSIONS ${GLAD_GL_CORE_45_EXTENSIONS})
+
 add_compile_definitions(ROOT_SUBDIR=\"../../\")
 add_compile_definitions(BIN_SUBDIR=\"../\")
 add_compile_definitions(GAME_SUBDIR=\"../../game\")
 
-add_subdirectory(deps/glad)
+#add_subdirectory(deps/glad)
 add_subdirectory("src/hrs")
 add_subdirectory("src/Core")
 add_subdirectory("src/Engine")

@@ -34,7 +34,8 @@ namespace OpenGL
         parent->GetLoader().DeleteBuffers(1, &handle);
     }
 
-    std::byte* Buffer::Map(const Render::MappedRange& rng)
+    std::byte* Buffer::Map(const Render::MappedRange& rng,
+                           Render::BufferMapContentPolicy previous_content_policy)
     {
         if(handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Usage of null buffer handle");
@@ -49,7 +50,13 @@ namespace OpenGL
 
         auto new_flags = flags & ~(GL_CLIENT_STORAGE_BIT);
         if(new_flags & GL_MAP_WRITE_BIT)
-            new_flags |= GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_UNSYNCHRONIZED_BIT;
+            new_flags |= GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
+                         (previous_content_policy == Render::BufferMapContentPolicy::Discard ?
+                              GL_MAP_INVALIDATE_RANGE_BIT :
+                              0);
+
+        if(new_flags & GL_MAP_READ_BIT)
+            new_flags &= ~(GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 
         std::byte* map_ptr = reinterpret_cast<std::byte*>(parent->GetLoader().MapNamedBufferRange(
             handle,

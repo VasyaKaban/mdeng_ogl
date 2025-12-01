@@ -14,7 +14,8 @@ namespace OpenGL
                std::span<const std::uint32_t> desired_memory_type_indices);
         virtual ~Buffer() override;
 
-        virtual std::byte* Map(const Render::MappedRange& rng) override;
+        virtual std::byte* Map(const Render::MappedRange& rng,
+                               Render::BufferMapContentPolicy previous_content_policy) override;
         virtual void Unmap() noexcept override;
         virtual void FlushMappedRange(std::span<const Render::MappedRange> ranges) override;
         virtual void InvalidateMappedRanges(std::span<const Render::MappedRange> ranges) override;

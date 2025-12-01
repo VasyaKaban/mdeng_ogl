@@ -7,6 +7,24 @@
 
 namespace Engine
 {
+    constexpr static int get_memory_type_score(const Render::MemoryType& type) noexcept
+    {
+        constexpr std::pair<Render::MemoryTypePropertyFlags, int> attributes[] = {
+            std::pair{Render::MemoryTypePropertyFlagBits::DeviceLocal, -1},
+            std::pair{Render::MemoryTypePropertyFlagBits::HostMappingReadable, -1},
+            std::pair{Render::MemoryTypePropertyFlagBits::HostCoherent, -1},
+            std::pair{Render::MemoryTypePropertyFlagBits::HostCached, 1}};
+
+        int score = 0;
+        for(const auto& [property, score_diff]: attributes)
+        {
+            if(type.memory_type_flags & property)
+                score += score_diff;
+        }
+
+        return score;
+    }
+
     TransferStorage::TransferStorage(RenderEngine* _parent, const TransferStorageInfo& info)
         : parent(_parent),
           queue(parent->GetContext()->GetQueue(info.queue_info)),
@@ -26,34 +44,31 @@ namespace Engine
             .usage = Render::BufferUsageFlagBits::BufferUsageTransferSource};
 
         const auto& available_memory_types = parent->GetContext()->GetProperties().memory_types;
-        std::vector<std::uint32_t> memory_type_indices;
+        std::vector<std::pair<std::uint32_t, int>> memory_type_indices_pairs;
         for(std::uint32_t i = 0; i < available_memory_types.size(); i++)
         {
             if(available_memory_types[i].memory_type_flags &
                (Render::MemoryTypePropertyFlagBits::HostMappingWritable))
             {
-                memory_type_indices.push_back(i);
+                memory_type_indices_pairs.push_back(
+                    {i, get_memory_type_score(available_memory_types[i])});
             }
         }
 
-        std::ranges::sort(
-            memory_type_indices,
-            [&available_memory_types](const std::uint32_t& i1, const std::uint32_t& i2)
-            {
-#pragma message("Sort like: HOST_VISIBLE + HOST_CACHED, + DEVICE_VISIBLE, OTHER!!!")
-                bool i1_coherent = available_memory_types[i1].memory_type_flags &
-                                   Render::MemoryTypePropertyFlagBits::HostCoherent;
+        std::ranges::sort(memory_type_indices_pairs,
+                          std::ranges::greater{},
+                          &std::pair<std::uint32_t, int>::second);
 
-                bool i2_coherent = available_memory_types[i2].memory_type_flags &
-                                   Render::MemoryTypePropertyFlagBits::HostCoherent;
-
-                return i1_coherent < i2_coherent;
-            });
+        std::vector<std::uint32_t> memory_type_indices;
+        memory_type_indices.reserve(memory_type_indices_pairs.size());
+        for(const auto& [index, _]: memory_type_indices_pairs)
+            memory_type_indices.push_back(index);
 
         buffer = parent->GetContext()->CreateBufferUnique(buffer_info, memory_type_indices);
 
         if(!should_remap)
-            mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = info.buffer_size});
+            mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = info.buffer_size},
+                                     Render::BufferMapContentPolicy::Discard);
 
         buffer_regions_cache.reserve(16);
         image_regions_cache.reserve(16);
@@ -224,7 +239,8 @@ namespace Engine
         if(!write_started)
         {
             if(should_remap)
-                mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = buffer_size});
+                mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = buffer_size},
+                                         Render::BufferMapContentPolicy::Discard);
 
             const Render::QueueBeginInfo info = {.wait_seamphores = {}};
             queue->Begin(info);
