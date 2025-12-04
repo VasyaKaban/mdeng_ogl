@@ -550,6 +550,54 @@ namespace OpenGL
         return *native;
     }
 
+    GLenum DecodeImageType(Render::ImageType type, bool layered, bool sampled)
+    {
+        GLenum _inner_type;
+        switch(type)
+        {
+            case Render::ImageType::Image1D:
+            {
+                if(!layered)
+                    _inner_type = GL_TEXTURE_1D;
+                else
+                    _inner_type = GL_TEXTURE_1D_ARRAY;
+            }
+            break;
+            case Render::ImageType::Image2D:
+            {
+                if(!layered)
+                {
+                    if(!sampled)
+                        _inner_type = GL_TEXTURE_2D;
+                    else
+                        _inner_type = GL_TEXTURE_2D_MULTISAMPLE;
+                }
+                else
+                {
+                    if(!sampled)
+                        _inner_type = GL_TEXTURE_2D_ARRAY;
+                    else
+                        _inner_type = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+                }
+            }
+            break;
+            case Render::ImageType::Image3D:
+            {
+                _inner_type = GL_TEXTURE_3D;
+            }
+            break;
+            case Render::ImageType::CubeMap:
+                if(!layered)
+                    _inner_type = GL_TEXTURE_CUBE_MAP;
+                else
+                    _inner_type = GL_TEXTURE_CUBE_MAP_ARRAY;
+                break;
+        }
+
+        return _inner_type;
+    }
+
+#pragma message("Test B4G4R4A4_UNORM to check RGBA10_A2 format size and type!!!")
     TransferImageTypeFormat DecodeTransferTypeFormatPair(Render::Format format)
     {
         constexpr static std::pair<Render::Format, TransferImageTypeFormat> mapping[] = {
@@ -590,10 +638,10 @@ namespace OpenGL
                                      .format = GL_DEPTH_STENCIL}},
 
             {Render::Format::R10G10B10A2_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV, .format = GL_RGBA}},
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV, .format = GL_BGRA}},
             {Render::Format::R10G10B10A2_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10_10_10_2,
-                                     .format = GL_RGBA_INTEGER}},
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
+                                     .format = GL_BGRA_INTEGER}},
             {Render::Format::R11G11B10_FLOAT,
              TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10F_11F_11F_REV, .format = GL_BGR}},
 
@@ -661,7 +709,7 @@ namespace OpenGL
 
             {Render::Format::R9G9B9E5_SHAREDEXP,
              TransferImageTypeFormat{.type = GL_UNSIGNED_INT_5_9_9_9_REV,
-                                     .format = GL_BGR_INTEGER}},
+                                     .format = GL_BGR_INTEGER}}, //BGR or BGRA???
 
             {Render::Format::B5G6R5_UNORM,
              TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_6_5, .format = GL_BGR}},
@@ -729,9 +777,8 @@ namespace OpenGL
         //SRGB8_A1_ET2 = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
     }
 
-    VertexInputTypeSize DecodeVertexInputTypeSizePair(Render::Format format)
-    {
-        constexpr static std::pair<Render::Format, VertexInputTypeSize> mapping[] = {
+    constexpr inline std::pair<Render::Format, VertexInputTypeSize>
+        format_to_vertex_input_type_size_mapping[] = {
             {Render::Format::R32G32B32A32_FLOAT,
              VertexInputTypeSize{.type = GL_FLOAT, .size = 4, .normalized = false}},
             {Render::Format::R32G32B32A32_UINT,
@@ -773,9 +820,10 @@ namespace OpenGL
                                  .size = GL_BGRA,
                                  .normalized = false}},
             {Render::Format::R11G11B10_FLOAT,
-             VertexInputTypeSize{.type = GL_UNSIGNED_INT_10F_11F_11F_REV,
-                                 .size = 3,
-                                 .normalized = false}},
+             VertexInputTypeSize{
+                 .type = GL_UNSIGNED_INT_10F_11F_11F_REV,
+                 .size = GL_BGR, //don't know if GL_BGR is available options, so check after...
+                 .normalized = false}},
 
             {Render::Format::R8G8B8A8_UNORM,
              VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 4, .normalized = true}},
@@ -834,11 +882,24 @@ namespace OpenGL
              VertexInputTypeSize{.type = GL_BYTE, .size = 1, .normalized = true}},
             {Render::Format::R8_SINT,
              VertexInputTypeSize{.type = GL_BYTE, .size = 1, .normalized = false}},
-        };
+    };
 
-        CHECK_MAPPING_IS_SORTED(mapping)
+    bool IsFormatSupportedAsVertexInput(Render::Format format) noexcept
+    {
+        CHECK_MAPPING_IS_SORTED(format_to_vertex_input_type_size_mapping)
 
-        const VertexInputTypeSize* native = hrs::mapping_search(mapping, format);
+        const VertexInputTypeSize* native =
+            hrs::mapping_search(format_to_vertex_input_type_size_mapping, format);
+
+        return native != nullptr;
+    }
+
+    VertexInputTypeSize DecodeVertexInputTypeSizePair(Render::Format format)
+    {
+        CHECK_MAPPING_IS_SORTED(format_to_vertex_input_type_size_mapping)
+
+        const VertexInputTypeSize* native =
+            hrs::mapping_search(format_to_vertex_input_type_size_mapping, format);
         if(native == nullptr)
             throw std::runtime_error("No native format found");
 

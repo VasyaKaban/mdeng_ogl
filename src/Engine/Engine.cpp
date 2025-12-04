@@ -47,10 +47,7 @@ namespace Engine
             else
                 game_impl = argv[1];
 
-            auto executable_path = hrs::exe_path();
-            auto bin_path = executable_path.parent_path();
-
-            GameState _game_state(bin_path / hrs::decorate_shared_library_name(game_impl));
+            GameState _game_state(GetBinFolder() / hrs::decorate_shared_library_name(game_impl));
             auto engine_info = _game_state.Init();
 
             GameEngine engine(engine_info, std::move(_game_state));
@@ -76,6 +73,26 @@ namespace Engine
     GameEngine* GameEngine::GetInstance() noexcept
     {
         return instance;
+    }
+
+    std::filesystem::path GameEngine::GetRootFolder()
+    {
+        return (hrs::exe_path() / ROOT_SUBDIR).lexically_normal();
+    }
+
+    std::filesystem::path GameEngine::GetBinFolder()
+    {
+        return hrs::exe_path().parent_path().lexically_normal();
+    }
+
+    std::filesystem::path GameEngine::GetGameFolder()
+    {
+        return (hrs::exe_path() / GAME_SUBDIR).lexically_normal();
+    }
+
+    std::filesystem::path GameEngine::GetUserDataFolder()
+    {
+        return (hrs::exe_path() / USERDATA_SUBDIR).lexically_normal();
     }
 
     Core::GraphicWindow* GameEngine::GetWindow() const noexcept

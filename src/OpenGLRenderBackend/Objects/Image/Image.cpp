@@ -8,41 +8,9 @@ namespace OpenGL
         : parent(_parent),
           format(info.format)
     {
-        GLenum _inner_type;
-        switch(info.image_type)
-        {
-            case Render::ImageType::Image1D:
-            {
-                if(info.array_layers == 1)
-                    _inner_type = GL_TEXTURE_1D;
-                else
-                    _inner_type = GL_TEXTURE_1D_ARRAY;
-            }
-            break;
-            case Render::ImageType::Image2D:
-            {
-                if(info.array_layers == 1)
-                {
-                    if(info.samples == Render::SampleCount::SampleCount_1)
-                        _inner_type = GL_TEXTURE_2D;
-                    else
-                        _inner_type = GL_TEXTURE_2D_MULTISAMPLE;
-                }
-                else
-                {
-                    if(info.samples == Render::SampleCount::SampleCount_1)
-                        _inner_type = GL_TEXTURE_2D_ARRAY;
-                    else
-                        _inner_type = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
-                }
-            }
-            break;
-            case Render::ImageType::Image3D:
-            {
-                _inner_type = GL_TEXTURE_3D;
-            }
-            break;
-        }
+        GLenum _inner_type = DecodeImageType(info.image_type,
+                                             info.array_layers != 1,
+                                             info.samples != Render::SampleCount::SampleCount_1);
 
         GLHandle _handle;
         parent->GetLoader().CreateTextures(_inner_type, 1, &_handle);
@@ -107,6 +75,22 @@ namespace OpenGL
                                                      info.extent.width,
                                                      info.extent.height,
                                                      info.extent.depth);
+                break;
+            case GL_TEXTURE_CUBE_MAP:
+                parent->GetLoader().TextureStorage2D(_handle,
+                                                     info.mip_levels,
+                                                     _inner_format,
+                                                     info.extent.width,
+                                                     info.extent.height);
+                break;
+            case GL_TEXTURE_CUBE_MAP_ARRAY:
+                parent->GetLoader().TextureStorage3D(_handle,
+                                                     info.mip_levels,
+                                                     _inner_format,
+                                                     info.extent.width,
+                                                     info.extent.height,
+                                                     info.array_layers * 6);
+#pragma message("Should we mul by 6 here???")
                 break;
         }
 

@@ -51,7 +51,7 @@ namespace Render
         Always
     };
 
-    enum class SampleCount
+    enum SampleCount
     {
         SampleCount_1 = 1,
         SampleCount_2 = 2,
@@ -61,6 +61,8 @@ namespace Render
         SampleCount_32 = 32,
         SampleCount_64 = 64
     };
+
+    using SampleCountFlags = std::underlying_type_t<SampleCount>;
 
     struct Extent2D
     {
@@ -122,6 +124,7 @@ namespace Render
         std::uint32_t layer_count;
     };
 
+    //no aspect mask -> only copy color images!
     struct BufferImageCopyRegion
     {
         std::uint64_t buffer_offset;
@@ -132,6 +135,7 @@ namespace Render
         Extent3D extent;
     };
 
+    //no aspect mask -> only copy color images!
     struct MemoryBufferCopyRegion
     {
         const std::uint8_t* data;
@@ -295,9 +299,11 @@ namespace Render
     {
         Image1D,
         Image2D,
-        Image3D
+        Image3D,
+        CubeMap
     };
 
+#pragma message("Add 64-bit formats for vertex input")
     enum class Format
     {
         R32G32B32A32_FLOAT,
@@ -364,15 +370,8 @@ namespace Render
         BC6H_SF16,
         BC7_UNORM,
         BC7_UNORM_SRGB,
-        B4G4R4A4_UNORM
+        B4G4R4A4_UNORM,
     };
-
-    enum ImageFlagBits
-    {
-        CubeCompatible = 1 << 0 //VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT = 0x00000010,
-    };
-
-    using ImageFlags = std::underlying_type_t<ImageFlagBits>;
 
     enum ImageUsageFlagBits
     {
@@ -392,14 +391,69 @@ namespace Render
     struct ImageInfo
     {
         //std::span<const MemoryRequest> memory_requests;//only allocate in device-local memory first...
-        ImageFlags flags;
         ImageType image_type;
         Format format;
         Extent3D extent;
         std::uint32_t mip_levels;
-        std::uint32_t array_layers;
+        std::uint32_t
+            array_layers; //for cube map: 1 layer -> plain cubemap with 6 inner layers, 2 or more layers -> cube map array with array_layers*6 inner layers
         SampleCount samples;
         ImageUsageFlags usage;
+    };
+
+    enum FormatFeatureFlagBits
+    {
+        FormatFeatureSampledImageBit = 1
+                                       << 0, //VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT = 0x00'00'00'01,
+        FormatFeatureStorageImageBit = 1
+                                       << 1, //VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT = 0x00'00'00'02,
+        FormatFeatureStorageImageAtomicBit =
+            1 << 2, //VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT = 0x00'00'00'04,
+        FormatFeatureVertexBufferBit = 1
+                                       << 3, //VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT = 0x00'00'00'40,
+        FormatFeatureColorAttachmentBit =
+            1 << 4, //VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT = 0x00'00'00'80,
+        FormatFeatureColorAttachmentBlendBit =
+            1 << 5, //VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT = 0x00'00'01'00,
+        FormatFeatureDepthStencilAttachmentBit =
+            1 << 6, //VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00'00'02'00,
+        FormatFeatureSampledImageFilterLinearBit =
+            1 << 7 //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT = 0x00'00'10'00,
+
+        // Provided by VK_VERSION_1_1
+        //VK_FORMAT_FEATURE_TRANSFER_SRC_BIT = 0x00'00'40'00,
+        // Provided by VK_VERSION_1_1
+        //VK_FORMAT_FEATURE_TRANSFER_DST_BIT = 0x00'00'80'00,
+    };
+
+    using FormatFeatureFlags = std::underlying_type_t<FormatFeatureFlagBits>;
+
+    struct BufferFormatInfo
+    {
+        Format format;
+    };
+
+    struct BufferFormatProperties
+    {
+        FormatFeatureFlags features;
+    };
+
+    struct ImageFormatInfo
+    {
+        Format format;
+        ImageType type;
+        bool layered;
+        bool sampled;
+        ImageUsageFlags usage;
+    };
+
+    struct ImageFormatProperties
+    {
+        Extent3D max_extent;
+        std::uint32_t max_mip_levels;
+        std::uint32_t max_array_layers;
+        SampleCountFlags sample_count;
+        FormatFeatureFlags features;
     };
 
     enum class ImageViewType
@@ -444,9 +498,9 @@ namespace Render
 
     struct ImageViewInfo
     {
+        //no format -> we do not use mutable format
         const Image* image;
         ImageViewType view_type;
-        Format format;
         ComponentMapping components;
         ImageSubresourceRange subresource_range;
     };
@@ -586,11 +640,13 @@ namespace Render
         MirroredRepeat,
         ClampToEdge,
         ClampToBorder,
+#error SET AS EXTENSION FEATURE(VK_KHR_sampler_mirror_clamp_to_edge or VK 1.2)
         MirrorClampToEdge
     };
 
     struct BorderColor
     {
+#error SET AS EXTENSION(VK_EXT_custom_border_color)
         std::variant<ClearColorFloatValue, ClearColorIntValue, ClearColorUIntValue> value;
     };
 
@@ -1116,6 +1172,127 @@ namespace Render
     {
         std::uint32_t family_index;
         std::uint32_t index;
+    };
+
+#error THIS!!!
+    struct ContextLimits
+    {
+        uint32_t maxImageDimension1D; //GL_MAX_TEXTURE_SIZE
+        uint32_t maxImageDimension2D; //GL_MAX_TEXTURE_SIZE
+        uint32_t maxImageDimension3D; //GL_MAX_3D_TEXTURE_SIZE
+        uint32_t maxImageDimensionCube; //GL_MAX_CUBE_MAP_TEXTURE_SIZE
+        uint32_t maxImageArrayLayers; //GL_MAX_ARRAY_TEXTURE_LAYERS
+        //uint32_t maxTexelBufferElements;
+        uint32_t maxUniformBufferRange; //GL_MAX_UNIFORM_BLOCK_SIZE
+        uint32_t maxStorageBufferRange; //GL_MAX_SHADER_STORAGE_BLOCK_SIZE
+        uint32_t
+            maxPushConstantsSize; //GL_MAX_UNIFORM_LOCATIONS GL_MAX_COMPUTE_UNIFORM_COMPONENTS, GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, GL_MAX_GEOMETRY_UNIFORM_COMPONENTS, GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS, GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS, GL_MAX_VERTEX_UNIFORM_COMPONENTS * 4
+        uint32_t maxMemoryAllocationCount; //OGL -> none
+        uint32_t maxSamplerAllocationCount; //OGL -> none
+        std::uint64_t bufferImageGranularity; //OGL -> none
+        //VkDeviceSize sparseAddressSpaceSize;
+        uint32_t maxBoundDescriptorSets; //OGL -> none
+        uint32_t
+            maxPerStageDescriptorSamplers; //GL_MAX_stage_TEXTURE_IMAGE_UNITS, GL_MAX_TEXTURE_IMAGE_UNITS (fragment), GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS GL_MAX_COMPUTE_TEXTURE_IMAGE_UNITS, GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS, GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS, GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS
+        uint32_t
+            maxPerStageDescriptorUniformBuffers; //GL_MAX_COMPUTE_UNIFORM_BLOCKS, GL_MAX_FRAGMENT_UNIFORM_BLOCKS, GL_MAX_GEOMETRY_UNIFORM_BLOCKS, GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS, GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS, GL_MAX_VERTEX_UNIFORM_BLOCKS
+        uint32_t
+            maxPerStageDescriptorStorageBuffers; //GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS
+        uint32_t
+            maxPerStageDescriptorSampledImages; //GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS
+        uint32_t
+            maxPerStageDescriptorStorageImages; //GL_MAX_COMPUTE_IMAGE_UNIFORMS, GL_MAX_FRAGMENT_IMAGE_UNIFORMS, GL_MAX_GEOMETRY_IMAGE_UNIFORMS, GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS, GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS, GL_MAX_VERTEX_IMAGE_UNIFORMS
+        //uint32_t maxPerStageDescriptorInputAttachments;
+        uint32_t maxPerStageResources; //sum from above
+        uint32_t maxDescriptorSetSamplers; //same as maxPerStageDescriptorSamplers
+        uint32_t maxDescriptorSetUniformBuffers; //same as maxPerStageDescriptorUniformBuffers
+        //uint32_t maxDescriptorSetUniformBuffersDynamic;
+        uint32_t maxDescriptorSetStorageBuffers; //same as maxPerStageDescriptorStorageBuffers
+        //uint32_t maxDescriptorSetStorageBuffersDynamic;
+        uint32_t maxDescriptorSetSampledImages; //same as maxPerStageDescriptorSampledImages
+        uint32_t maxDescriptorSetStorageImages; //same as maxPerStageDescriptorStorageImages
+        //uint32_t maxDescriptorSetInputAttachments;
+        uint32_t maxVertexInputAttributes; //GL_MAX_VERTEX_ATTRIBS
+        uint32_t maxVertexInputBindings; //GL_MAX_VERTEX_ATTRIB_BINDINGS
+        uint32_t maxVertexInputAttributeOffset; //GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET
+        uint32_t maxVertexInputBindingStride; //GL_MAX_VERTEX_ATTRIB_STRIDE
+        uint32_t maxVertexOutputComponents; //GL_MAX_VERTEX_OUTPUT_COMPONENTS
+        uint32_t maxTessellationGenerationLevel; //GL_MAX_TESS_GEN_LEVEL
+        uint32_t maxTessellationPatchSize; //GL_MAX_PATCH_VERTICES
+        uint32_t
+            maxTessellationControlPerVertexInputComponents; //GL_MAX_TESS_CONTROL_INPUT_COMPONENTS
+        uint32_t
+            maxTessellationControlPerVertexOutputComponents; //GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS
+        uint32_t maxTessellationControlPerPatchOutputComponents; //GL_MAX_TESS_PATCH_COMPONENTS
+        uint32_t
+            maxTessellationControlTotalOutputComponents; //GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS
+        uint32_t maxTessellationEvaluationInputComponents; //GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS
+        uint32_t
+            maxTessellationEvaluationOutputComponents; //GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS
+        uint32_t maxGeometryShaderInvocations; //GL_MAX_GEOMETRY_SHADER_INVOCATIONS
+        uint32_t maxGeometryInputComponents; //GL_MAX_GEOMETRY_INPUT_COMPONENTS
+        uint32_t maxGeometryOutputComponents; //GL_MAX_GEOMETRY_OUTPUT_COMPONENTS
+        uint32_t maxGeometryOutputVertices; //GL_MAX_GEOMETRY_OUTPUT_VERTICES
+        uint32_t maxGeometryTotalOutputComponents; //GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS
+        uint32_t maxFragmentInputComponents; //GL_MAX_FRAGMENT_INPUT_COMPONENTS
+        uint32_t maxFragmentOutputAttachments; //GL_MAX_DRAW_BUFFERS
+        uint32_t maxFragmentDualSrcAttachments; //GL_MAX_DUAL_SOURCE_DRAW_BUFFERS
+        uint32_t maxFragmentCombinedOutputResources; //GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES
+        uint32_t maxComputeSharedMemorySize; //GL_MAX_COMPUTE_SHARED_MEMORY_SIZE
+        uint32_t maxComputeWorkGroupCount[3]; //GL_MAX_COMPUTE_WORK_GROUP_COUNT
+        uint32_t maxComputeWorkGroupInvocations; //GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS
+        uint32_t maxComputeWorkGroupSize[3]; //GL_MAX_COMPUTE_WORK_GROUP_SIZE
+        uint32_t subPixelPrecisionBits; //GL_SUBPIXEL_BITS
+        //uint32_t subTexelPrecisionBits;
+        //uint32_t mipmapPrecisionBits;
+        uint32_t maxDrawIndexedIndexValue; //GL_MAX_ELEMENT_INDEX
+        uint32_t maxDrawIndirectCount; //OGL: set max
+        float maxSamplerLodBias; //GL_MAX_TEXTURE_LOD_BIAS
+        float maxSamplerAnisotropy; //GL_MAX_TEXTURE_MAX_ANISOTROPY
+        uint32_t maxViewports; //GL_MAX_VIEWPORTS
+        uint32_t maxViewportDimensions[2]; //GL_MAX_VIEWPORT_DIMS
+        float viewportBoundsRange[2]; //GL_MAX_VIEWPORT_DIMS
+        uint32_t viewportSubPixelBits; //GL_VIEWPORT_SUBPIXEL_BITS
+        size_t minMemoryMapAlignment; //GL_MIN_MAP_BUFFER_ALIGNMENT
+        //VkDeviceSize minTexelBufferOffsetAlignment;
+        std::uint64_t minUniformBufferOffsetAlignment; //GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT
+        std::uint64_t minStorageBufferOffsetAlignment; //GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT
+        int32_t minTexelOffset; //GL_MIN_PROGRAM_TEXEL_OFFSET
+        uint32_t maxTexelOffset; //GL_MAX_PROGRAM_TEXEL_OFFSET
+        int32_t minTexelGatherOffset; //GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET
+        uint32_t maxTexelGatherOffset; //GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET
+        float minInterpolationOffset; //GL_MIN_FRAGMENT_INTERPOLATION_OFFSET
+        float maxInterpolationOffset; //GL_MAX_FRAGMENT_INTERPOLATION_OFFSET
+        uint32_t subPixelInterpolationOffsetBits; //GL_FRAGMENT_INTERPOLATION_OFFSET_BITS
+        uint32_t maxFramebufferWidth; //GL_MAX_FRAMEBUFFER_WIDTH
+        uint32_t maxFramebufferHeight; //GL_MAX_FRAMEBUFFER_HEIGHT
+        uint32_t maxFramebufferLayers; //GL_MAX_FRAMEBUFFER_LAYERS
+        SampleCountFlags framebufferColorSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
+        SampleCountFlags framebufferDepthSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
+        SampleCountFlags framebufferStencilSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
+        SampleCountFlags framebufferNoAttachmentsSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
+        uint32_t maxColorAttachments; //GL_MAX_COLOR_ATTACHMENTS
+        SampleCountFlags sampledImageColorSampleCounts; //GL_MAX_COLOR_TEXTURE_SAMPLES
+        SampleCountFlags sampledImageIntegerSampleCounts; //GL_MAX_INTEGER_SAMPLES
+        SampleCountFlags sampledImageDepthSampleCounts; //GL_MAX_DEPTH_TEXTURE_SAMPLES
+        SampleCountFlags sampledImageStencilSampleCounts; //GL_MAX_DEPTH_TEXTURE_SAMPLES
+        SampleCountFlags storageImageSampleCounts; //GL_MAX_IMAGE_SAMPLES
+        uint32_t maxSampleMaskWords; //GL_MAX_SAMPLE_MASK_WORDS
+        //VkBool32 timestampComputeAndGraphics;
+        //float timestampPeriod;
+        uint32_t maxClipDistances; //GL_MAX_CLIP_DISTANCES
+        uint32_t maxCullDistances; //GL_MAX_CULL_DISTANCES
+        uint32_t maxCombinedClipAndCullDistances; //GL_MAX_COMBINED_CLIP_AND_CULL_DISTANCES
+        uint32_t discreteQueuePriorities; //OGL: max
+        float pointSizeRange[2]; //GL_POINT_SIZE_RANGE
+        float lineWidthRange[2]; //GL_SMOOTH_LINE_WIDTH_RANGE
+        float pointSizeGranularity; //GL_POINT_SIZE_GRANULARITY
+        float lineWidthGranularity; //GL_SMOOTH_LINE_WIDTH_GRANULARITY
+        //VkBool32 strictLines;
+        //VkBool32 standardSampleLocations;
+        std::uint64_t optimalBufferCopyOffsetAlignment; //OGL: 1
+        std::uint64_t optimalBufferCopyRowPitchAlignment; //OGL: 1
+        std::uint64_t nonCoherentAtomSize; //OGL: 1
     };
 
     struct ContextProperties

@@ -26,6 +26,11 @@ namespace Engine
         static int Enter(int argc, char** argv);
         static GameEngine* GetInstance() noexcept;
 
+        static std::filesystem::path GetRootFolder();
+        static std::filesystem::path GetBinFolder();
+        static std::filesystem::path GetGameFolder();
+        static std::filesystem::path GetUserDataFolder();
+
         Core::GraphicWindow* GetWindow() const noexcept;
         RenderEngine* GetRenderEngine() const noexcept;
         ResourceManager* GetResourceManager() const noexcept;

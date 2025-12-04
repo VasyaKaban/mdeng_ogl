@@ -234,6 +234,39 @@ namespace OpenGL
                             reinterpret_cast<const void*>(reg.buffer_offset));
                     }
                     break;
+                case GL_TEXTURE_CUBE_MAP:
+                case GL_TEXTURE_CUBE_MAP_ARRAY:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().CompressedTextureSubImage3D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
+                            format,
+                            region_size,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().TextureSubImage3D(
+                            image_handle,
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            reinterpret_cast<const void*>(reg.buffer_offset));
+                    }
+                    break;
             }
         }
     }
@@ -422,6 +455,39 @@ namespace OpenGL
                             reg.extent.width,
                             reg.extent.height,
                             reg.extent.depth,
+                            transfer_type_format_pair.format,
+                            transfer_type_format_pair.type,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    break;
+                case GL_TEXTURE_CUBE_MAP:
+                case GL_TEXTURE_CUBE_MAP_ARRAY:
+                    if(is_compressed)
+                    {
+                        parent->GetLoader().GetCompressedTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
+                            region_size,
+                            reinterpret_cast<void*>(reg.buffer_offset));
+                    }
+                    else
+                    {
+                        parent->GetLoader().GetTextureSubImage(
+                            src_image->GetHandle(),
+                            reg.subresource_layers.mip_level,
+                            reg.offset.x,
+                            reg.offset.y,
+                            reg.subresource_layers.base_layer,
+                            reg.extent.width,
+                            reg.extent.height,
+                            reg.subresource_layers.layer_count,
                             transfer_type_format_pair.format,
                             transfer_type_format_pair.type,
                             region_size,

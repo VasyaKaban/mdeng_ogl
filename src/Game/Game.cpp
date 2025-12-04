@@ -25,16 +25,21 @@ GameResolve::~GameResolve()
 
 Engine::GameEngineInfo GameResolve::Init()
 {
-    auto executable_path = hrs::exe_path();
-    auto bin_path = executable_path.parent_path();
-    auto root = (executable_path / ROOT_SUBDIR).lexically_normal();
+    auto root = Engine::GameEngine::GetRootFolder();
+    auto game_folder = Engine::GameEngine::GetGameFolder();
 
-    auto config_path = root / "config.json";
+    auto config_path =
+        Engine::GameEngine::GetUserDataFolder() / CONFIG_NAME; //1. check userdata folder
     std::ifstream config_ifs;
     config_ifs.open(config_path);
     if(!config_ifs.is_open())
-        throw std::runtime_error(
-            std::format("Failed to open config file: {}", config_path.string()));
+    {
+        config_path = root / CONFIG_NAME; //2. check root folder
+        config_ifs.open(config_path);
+        if(!config_ifs.is_open())
+            throw std::runtime_error(
+                std::format("Failed to open config file: {}", config_path.string()));
+    }
 
     auto win_sys = Core::WindowSubsystem::GetSubsystem();
 
@@ -68,8 +73,8 @@ Engine::GameEngineInfo GameResolve::Init()
 
     auto window = win_sys->CreateGraphicWindow(window_info, *backend_info);
 
-    auto render_impl_path =
-        bin_path / hrs::decorate_shared_library_name(config.render.implementation);
+    auto render_impl_path = Engine::GameEngine::GetBinFolder() /
+                            hrs::decorate_shared_library_name(config.render.implementation);
 
     Engine::RenderEngineState render_engine_state(render_impl_path);
     render_engine_state.Init(window->GetRenderBackend());
@@ -161,8 +166,8 @@ Engine::GameEngineInfo GameResolve::Init()
 
 #pragma message("Change queue family!")
     const Engine::ResourceManagerInfo resource_manager_info = {
-        .shaders_path_prefix = root / "game/shaders/ogl/compiled",
-        .images_path_prefix = root / "game/images",
+        .shaders_path_prefix = game_folder / "shaders/ogl/compiled",
+        .images_path_prefix = game_folder / "images",
         .shader_resource_descs = shader_resource_descs,
         .render_engine = render_engine.get(),
         .queue_family_index = 0,

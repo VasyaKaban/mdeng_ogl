@@ -19,6 +19,12 @@ namespace OpenGL
 
         virtual const Render::ContextProperties& GetProperties() const override;
 
+        virtual std::optional<Render::BufferFormatProperties>
+        GetBufferFormatProperties(const Render::BufferFormatInfo& info) const override;
+
+        virtual std::optional<Render::ImageFormatProperties>
+        GetImageFormatProperties(const Render::ImageFormatInfo& info) const override;
+
         virtual Render::Queue* GetQueue(const Render::QueueInfo& info) override;
 
         virtual void WaitIdle() noexcept override;

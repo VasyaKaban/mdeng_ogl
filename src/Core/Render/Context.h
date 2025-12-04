@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include "Render.h"
 
 class RenderBackend;
@@ -13,6 +14,12 @@ namespace Render
         virtual ~Context() {};
 
         virtual const ContextProperties& GetProperties() const = 0;
+
+        virtual std::optional<BufferFormatProperties>
+        GetBufferFormatProperties(const BufferFormatInfo& info) const = 0;
+
+        virtual std::optional<ImageFormatProperties>
+        GetImageFormatProperties(const ImageFormatInfo& info) const = 0;
 
         virtual Queue* GetQueue(const QueueInfo& info) = 0;
 

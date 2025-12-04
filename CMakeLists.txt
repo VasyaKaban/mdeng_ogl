@@ -18,9 +18,13 @@ add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/glad/cmake EXCLUDE_FROM_ALL)
 
+message(FATAL_ERROR "MOVE TO GAME!!! + CHECK ALL PRAGMA MESSAGE")
 add_compile_definitions(ROOT_SUBDIR=\"../../\")
-add_compile_definitions(BIN_SUBDIR=\"../\")
 add_compile_definitions(GAME_SUBDIR=\"../../game\")
+add_compile_definitions(USERDATA_SUBDIR=\"../../userdata\")
+
+set(CONFIG_NAME config.json)
+add_compile_definitions(CONFIG_NAME=\"${CONFIG_NAME}\")
 
 #add_subdirectory(deps/glad)
 add_subdirectory("src/hrs")
@@ -36,7 +40,7 @@ add_custom_target(
     out ALL
     COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/game/shaders/ogl/sc.py ${PROJECT_SOURCE_DIR}/game/shaders/ogl/src ${PROJECT_SOURCE_DIR}/game/shaders/ogl/compiled
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/game ${OUTPUT_DIRECTORY}/game
-	COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/config.json ${OUTPUT_DIRECTORY})
+	COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/${CONFIG_NAME} ${OUTPUT_DIRECTORY})
 
 #deps/glad as static
 #Core + hrs as static
@@ -61,5 +65,10 @@ FS:
 				src
 				compiled
 		objects
+	userdata:
+		logs
+		screenshots
+		config.json
+	config.json
 
 ]]

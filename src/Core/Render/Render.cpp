@@ -170,12 +170,12 @@ namespace Render
 
             return std::max<std::uint32_t>(1, ((reg.buffer_row_length + 3) / 4)) *
                    std::max<std::uint32_t>(1, ((reg.buffer_image_height + 3) / 4)) *
-                   GetFormatBlockSize(format);
+                   GetFormatBlockSize(format) * reg.subresource_layers.layer_count;
         }
         else
         {
             return reg.buffer_row_length * reg.buffer_image_height *
-                   (GetFormatBitsPerPixel(format) / 8);
+                   (GetFormatBitsPerPixel(format) / 8) * reg.subresource_layers.layer_count;
         }
     }
 
@@ -190,12 +190,12 @@ namespace Render
 
             return std::max<std::uint32_t>(1, ((reg.buffer_row_length + 3) / 4)) *
                    std::max<std::uint32_t>(1, ((reg.buffer_image_height + 3) / 4)) *
-                   GetFormatBlockSize(format);
+                   GetFormatBlockSize(format) * reg.subresource_layers.layer_count;
         }
         else
         {
             return reg.buffer_row_length * reg.buffer_image_height *
-                   (GetFormatBitsPerPixel(format) / 8);
+                   (GetFormatBitsPerPixel(format) / 8) * reg.subresource_layers.layer_count;
         }
     }
 

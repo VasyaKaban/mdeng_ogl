@@ -54,6 +54,8 @@ namespace OpenGL
     GLenum FrontFaceToNative(Render::FrontFace face);
     GLenum IndexTypeToNative(Render::IndexType type);
 
+    GLenum DecodeImageType(Render::ImageType type, bool layered, bool sampled);
+
     struct TransferImageTypeFormat
     {
         GLenum type;
@@ -69,6 +71,7 @@ namespace OpenGL
         bool normalized;
     };
 
+    bool IsFormatSupportedAsVertexInput(Render::Format format) noexcept;
     VertexInputTypeSize DecodeVertexInputTypeSizePair(Render::Format format);
 
     template<std::size_t N>

@@ -22,7 +22,7 @@ namespace OpenGL
             throw std::runtime_error("Failed to creat image view");
 
         GLenum _inner_type = ImageViewTypeToNative(info.view_type);
-        GLenum _inner_format = FormatToNative(info.format);
+        GLenum _inner_format = static_cast<const Image*>(info.image)->GetInnerFormat();
 
         parent->GetLoader().TextureView(_handle,
                                         _inner_type,

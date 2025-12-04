@@ -43,7 +43,7 @@ namespace OpenGL
         return types;
     }
 
-    constexpr static std::string_view REQUIRED_EXTENSIONS[] = {OPENGL_REQUIRED_EXTENSIONS};
+    //constexpr static std::array REQUIRED_EXTENSIONS = {OPENGL_REQUIRED_EXTENSIONS};
 
     static void GLAPIENTRY debug_messenger_callback(GLenum source,
                                                     GLenum type,
@@ -84,7 +84,7 @@ namespace OpenGL
         for(std::size_t i = 0; i < extensions_number; i++)
             extensions[i] = reinterpret_cast<const char*>(loader.GetStringi(GL_EXTENSIONS, i));
 
-        std::string unsupported_extensions;
+        /*std::string unsupported_extensions;
         for(const auto& req_ext: REQUIRED_EXTENSIONS)
         {
             auto it = std::ranges::find(extensions, req_ext);
@@ -99,7 +99,7 @@ namespace OpenGL
 
         if(!unsupported_extensions.empty())
             throw std::runtime_error(
-                std::format("Required extensions are not supported:\n{}", unsupported_extensions));
+                std::format("Required extensions are not supported:\n{}", unsupported_extensions));*/
 
         GLint major = 0;
         GLint minor = 0;
@@ -132,6 +132,250 @@ namespace OpenGL
     const Render::ContextProperties& Context::GetProperties() const
     {
         return properties;
+    }
+
+    std::optional<Render::BufferFormatProperties>
+    Context::GetBufferFormatProperties(const Render::BufferFormatInfo& info) const
+    {
+        if(IsFormatSupportedAsVertexInput(info.format))
+        {
+            return Render::BufferFormatProperties{
+                .features = Render::FormatFeatureFlagBits::FormatFeatureVertexBufferBit};
+        }
+
+        return std::nullopt;
+    }
+
+    std::optional<Render::ImageFormatProperties>
+    Context::GetImageFormatProperties(const Render::ImageFormatInfo& info) const
+    {
+        /*struct ImageFormatInfo
+    {
+        Format format;
+        ImageType type;
+        bool sampled;
+        ImageUsageFlags usage;
+        ImageFlags flags;
+    };
+
+    struct ImageFormatProperties
+    {
+        Extent3D max_extent;
+        std::uint32_t max_mip_levels;
+        std::uint32_t max_array_layers;
+        SampleCountFlags sample_count;
+        FormatFeatureFlags features;
+    };*/
+
+        GLenum inner_type = DecodeImageType(info.type, info.layered, info.sampled);
+        GLenum native_format = FormatToNative(info.format);
+
+        GLint supported = GL_FALSE;
+        //do not check extension formats -< we just init is with GL_FALSE so on error we still get false
+        loader.GetInternalformativ(inner_type,
+                                   native_format,
+                                   GL_INTERNALFORMAT_SUPPORTED,
+                                   1,
+                                   &supported);
+        if(supported == GL_FALSE)
+            return std::nullopt;
+
+        GLint width;
+        GLint height;
+        GLint depth;
+        loader.GetInternalformativ(inner_type, native_format, GL_MAX_WIDTH, 1, &width);
+
+        if(info.type == Render::ImageType::Image1D)
+        {
+            height = 1;
+            width = 1;
+        }
+        else
+        {
+            loader.GetInternalformativ(inner_type, native_format, GL_MAX_HEIGHT, 1, &height);
+            if(info.type == Render::ImageType::Image2D)
+                depth = 1;
+            else
+                loader.GetInternalformativ(inner_type, native_format, GL_MAX_DEPTH, 1, &depth);
+        }
+
+        GLint support_mipmaps;
+        loader.GetInternalformativ(inner_type, native_format, GL_MIPMAP, 1, &support_mipmaps);
+
+        GLint max_mip_levels;
+        if(!support_mipmaps)
+            max_mip_levels = 1;
+        else
+            max_mip_levels = 1000; //in OpenGL spec it is a default value -> so do not care...
+
+        GLint max_array_layers;
+        if(info.type == Render::ImageType::Image3D && !info.layered)
+            max_array_layers = 1;
+        else
+            loader.GetInternalformativ(inner_type,
+                                       native_format,
+                                       GL_MAX_LAYERS,
+                                       1,
+                                       &max_array_layers);
+
+        static std::vector<GLint> samples(std::popcount(
+            (static_cast<std::uint64_t>(Render::SampleCount::SampleCount_64) << 1) - 1));
+
+        Render::SampleCountFlags sample_count = {};
+        if(!info.sampled)
+            sample_count = Render::SampleCount::SampleCount_1;
+        else
+        {
+            GLint num_samples;
+            loader.GetInternalformativ(inner_type,
+                                       native_format,
+                                       GL_NUM_SAMPLE_COUNTS,
+                                       1,
+                                       &num_samples);
+            if(num_samples > samples.size())
+                samples.resize(num_samples);
+
+            loader.GetInternalformativ(inner_type,
+                                       native_format,
+                                       GL_SAMPLES,
+                                       num_samples,
+                                       samples.data());
+
+            for(std::size_t i = 0; i < num_samples; i++)
+            {
+                if(samples[i] <= Render::SampleCount::SampleCount_64 &&
+                   std::popcount(static_cast<std::uint32_t>(samples[i])) == 1) //is popwer of two
+                {
+                    sample_count |= samples[i];
+                }
+            }
+        }
+
+        Render::FormatFeatureFlags features = {};
+
+        //FormatFeatureSampledImageBit; -> all???
+        //FormatFeatureStorageImageBit; -> set
+        //FormatFeatureStorageImageAtomicBit; -> set
+        //FormatFeatureVertexBufferBit; -> none
+        //FormatFeatureColorAttachmentBit; -> query
+        //FormatFeatureColorAttachmentBlendBit; -> query
+        //FormatFeatureDepthStencilAttachmentBit; -> query
+        //FormatFeaturesampledImageFilterLinearBit; -> query
+
+        GLint texture_view_support;
+        loader.GetInternalformativ(inner_type,
+                                   native_format,
+                                   GL_TEXTURE_VIEW,
+                                   1,
+                                   &texture_view_support);
+        if(texture_view_support != GL_NONE)
+        {
+            features |= Render::FormatFeatureSampledImageBit;
+
+            switch(info.format)
+            {
+                case Render::Format::R32G32B32A32_FLOAT:
+                case Render::Format::R16G16B16A16_FLOAT:
+                case Render::Format::R32G32_FLOAT:
+                case Render::Format::R16G16_FLOAT:
+                case Render::Format::R11G11B10_FLOAT:
+                case Render::Format::R32_FLOAT:
+                case Render::Format::R16_FLOAT:
+
+                case Render::Format::R32G32B32A32_UINT:
+                case Render::Format::R16G16B16A16_UINT:
+                case Render::Format::R10G10B10A2_UINT:
+                case Render::Format::R8G8B8A8_UINT:
+                case Render::Format::R32G32_UINT:
+                case Render::Format::R16G16_UINT:
+                case Render::Format::R8G8_UINT:
+                case Render::Format::R32_UINT:
+                case Render::Format::R16_UINT:
+                case Render::Format::R8_UINT:
+
+                case Render::Format::R32G32B32A32_SINT:
+                case Render::Format::R16G16B16A16_SINT:
+                case Render::Format::R8G8B8A8_SINT:
+                case Render::Format::R32G32_SINT:
+                case Render::Format::R16G16_SINT:
+                case Render::Format::R8G8_SINT:
+                case Render::Format::R32_SINT:
+                case Render::Format::R16_SINT:
+                case Render::Format::R8_SINT:
+
+                case Render::Format::R16G16B16A16_UNORM:
+                case Render::Format::R10G10B10A2_UNORM:
+                case Render::Format::R8G8B8A8_UNORM:
+                case Render::Format::R16G16_UNORM:
+                case Render::Format::R8G8_UNORM:
+                case Render::Format::R16_UNORM:
+                case Render::Format::R8_UNORM:
+
+                case Render::Format::R16G16B16A16_SNORM:
+                case Render::Format::R8G8B8A8_SNORM:
+                case Render::Format::R16G16_SNORM:
+                case Render::Format::R8G8_SNORM:
+                case Render::Format::R16_SNORM:
+                case Render::Format::R8_SNORM:
+                    features |= Render::FormatFeatureStorageImageBit;
+                    break;
+                default:
+                    break;
+            }
+
+            if(info.format == Render::Format::R32_SINT || info.format == Render::Format::R32_UINT)
+                features |= Render::FormatFeatureStorageImageAtomicBit;
+
+            GLint color_renderable;
+            GLint depth_renderable;
+            GLint stencil_renderable;
+            loader.GetInternalformativ(inner_type,
+                                       native_format,
+                                       GL_COLOR_RENDERABLE,
+                                       1,
+                                       &color_renderable);
+
+            loader.GetInternalformativ(inner_type,
+                                       native_format,
+                                       GL_DEPTH_RENDERABLE,
+                                       1,
+                                       &depth_renderable);
+
+            loader.GetInternalformativ(inner_type,
+                                       native_format,
+                                       GL_STENCIL_RENDERABLE,
+                                       1,
+                                       &stencil_renderable);
+
+            if(color_renderable == GL_TRUE)
+                features |= Render::FormatFeatureColorAttachmentBit;
+
+            if(depth_renderable == GL_TRUE || stencil_renderable == GL_TRUE)
+                features |= Render::FormatFeatureDepthStencilAttachmentBit;
+
+            GLint color_blend;
+            loader.GetInternalformativ(inner_type,
+                                       native_format,
+                                       GL_FRAMEBUFFER_BLEND,
+                                       1,
+                                       &color_blend);
+            if(color_blend == GL_TRUE)
+                features |= Render::FormatFeatureColorAttachmentBlendBit;
+
+            GLint linear_filter;
+            loader.GetInternalformativ(inner_type, native_format, GL_FILTER, 1, &linear_filter);
+            if(linear_filter == GL_TRUE)
+                features |= Render::FormatFeatureSampledImageFilterLinearBit;
+        }
+
+        return Render::ImageFormatProperties{
+            .max_extent = {.width = static_cast<std::uint32_t>(width),
+                           .height = static_cast<std::uint32_t>(height),
+                           .depth = static_cast<std::uint32_t>(depth)},
+            .max_mip_levels = static_cast<std::uint32_t>(max_mip_levels),
+            .max_array_layers = static_cast<std::uint32_t>(max_array_layers),
+            .sample_count = sample_count,
+            .features = features};
     }
 
     Render::Queue* Context::GetQueue(const Render::QueueInfo& info)
