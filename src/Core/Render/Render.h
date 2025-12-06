@@ -106,6 +106,7 @@ namespace Render
         Extent2D extent;
     };
 
+#pragma message("Change to union and get inner format type from attachment")
     using ClearColorFloatValue = std::array<float, 4>;
     using ClearColorIntValue = std::array<std::int32_t, 4>;
     using ClearColorUIntValue = std::array<std::uint32_t, 4>;
@@ -854,6 +855,7 @@ namespace Render
         std::int32_t reference;
     };
 
+#pragma message("Implement depth bounds test")
     struct GraphicsPipelineDepthStencilStateInfo
     {
         bool depth_test_enabled;
@@ -862,6 +864,9 @@ namespace Render
         bool stencil_test_enabled;
         StencilStateOp stencil_front_op;
         StencilStateOp stencil_back_op;
+        bool depth_bounds_test_enabled;
+        float min_depth_bounds;
+        float max_depth_bounds;
     };
     //~DepthStencil
 
@@ -1113,12 +1118,15 @@ namespace Render
         std::span<const ImageMemoryBarrier> image_barriers;
     };
 
+#pragma message( \
+    "In case if we want to get a DMA-transfer queue we can get a transfer wuqu with video encode/decode in vulkan that is obviously not a DMA queue -> so we add a new spec 'UnknownImplementationSpec' that will signal that current queue family also support other spec(this spec do not include sparse binding)")
     enum QueueSpecializationFlagBits
     {
         TransferSpec = 1 << 0,
         GraphicsSpec = 1 << 1,
         ComputeSpec = 1 << 2,
-        PresentSpec = 1 << 3
+        PresentSpec = 1 << 3,
+        UnknownImplementationSpec = 1 << 4
     };
 
     using QueueSpecializationFlags = std::underlying_type_t<QueueSpecializationFlagBits>;
@@ -1293,6 +1301,68 @@ namespace Render
         std::uint64_t optimalBufferCopyOffsetAlignment; //OGL: 1
         std::uint64_t optimalBufferCopyRowPitchAlignment; //OGL: 1
         std::uint64_t nonCoherentAtomSize; //OGL: 1
+    };
+
+#pragma message("Add array of uniforms in descriptor sets!!!")
+    struct VkPhysicalDeviceFeatures
+    {
+        bool
+            robustBufferAccess; //OGL: WGL_ARB_create_context_robustness, GL_ARB_robustness, GL_KHR_robustness
+        bool fullDrawIndexUint32; //OGL: true
+        bool imageCubeArray; //OGL: true
+        bool independentBlend; //OGL: true
+        bool geometryShader; //OGL: true
+        bool tessellationShader; //OGL: true
+        bool sampleRateShading; //OGL: true
+        bool dualSrcBlend; //OGL: true
+        bool logicOp; //OGL: true
+        bool multiDrawIndirect; //GL_ARB_indirect_parameters
+        bool drawIndirectFirstInstance; //OGL: true
+        bool depthClamp; //GL_EXT_polygon_offset_clamp, GL_ARB_polygon_offset_clamp
+        bool depthBiasClamp; //GL_EXT_polygon_offset_clamp, GL_ARB_polygon_offset_clamp
+        bool fillModeNonSolid; //OGL: true
+        bool depthBounds; //GL_EXT_depth_bounds_test
+        bool wideLines; //GL_SMOOTH_LINE_WIDTH_RANGE check range that is not only 1.0
+        bool largePoints; //GL_POINT_SIZE_RANGE check range that is not 1.0 only
+        bool alphaToOne; //OGL: true
+        bool multiViewport; //GL_MAX_VIEWPORTS check that is not 1
+        bool
+            samplerAnisotropy; //GL_ARB_texture_filter_anisotropic, GL_EXT_texture_filter_anisotropic
+        //bool textureCompressionETC2;
+        //bool textureCompressionASTC_LDR;
+        bool textureCompressionBC; //GL_EXT_texture_compression_s3tc, GL_EXT_texture_sRGB
+        //bool occlusionQueryPrecise;
+        //bool pipelineStatisticsQuery;
+        bool vertexPipelineStoresAndAtomics; //OGL: true -> 4.3
+        bool fragmentStoresAndAtomics; //OGL: true -> 4.3
+        bool shaderTessellationAndGeometryPointSize; //OGL: 4.0
+        bool shaderImageGatherExtended; //OGL: 4.0
+        bool shaderStorageImageExtendedFormats; //OGL: true
+        bool shaderStorageImageMultisample; //OGL 4.2
+        bool shaderStorageImageReadWithoutFormat; //OGL: true since 4.2???
+        bool shaderStorageImageWriteWithoutFormat; //OGL: true since 4.2???
+        bool shaderUniformBufferArrayDynamicIndexing; //OGL: 4.0
+        bool shaderSampledImageArrayDynamicIndexing; //OGL: 4.0
+        bool shaderStorageBufferArrayDynamicIndexing; //OGL: 4.3
+        bool shaderStorageImageArrayDynamicIndexing; //OGL: 4.3
+        bool shaderClipDistance; //OGL: 4.0 but not all stages supported in 3.3
+        bool shaderCullDistance; //OGL: 4.5 or GL_ARB_cull_distance(do not check this)
+        bool shaderFloat64; //OGL: 4.1
+        bool shaderInt64; //GL_ARB_gpu_shader_int64
+        bool shaderInt16; //GL_EXT_shader_explicit_arithmetic_types_int16 -> GL_AMD_gpu_shader_int16
+        //bool shaderResourceResidency;
+        bool shaderResourceMinLod; //OGL: true
+        //bool sparseBinding;
+        //bool sparseResidencyBuffer;
+        //bool sparseResidencyImage2D;
+        //bool sparseResidencyImage3D;
+        //bool sparseResidency2Samples;
+        //bool sparseResidency4Samples;
+        //bool sparseResidency8Samples;
+        //bool sparseResidency16Samples;
+        //bool sparseResidencyAliased;
+        bool variableMultisampleRate; //OGL: true
+        //bool inheritedQueries;
     };
 
     struct ContextProperties

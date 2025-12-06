@@ -18,7 +18,6 @@ add_subdirectory(deps/json EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/glad/cmake EXCLUDE_FROM_ALL)
 
-message(FATAL_ERROR "MOVE TO GAME!!! + CHECK ALL PRAGMA MESSAGE")
 add_compile_definitions(ROOT_SUBDIR=\"../../\")
 add_compile_definitions(GAME_SUBDIR=\"../../game\")
 add_compile_definitions(USERDATA_SUBDIR=\"../../userdata\")

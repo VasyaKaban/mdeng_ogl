@@ -77,22 +77,30 @@ namespace Engine
 
     std::filesystem::path GameEngine::GetRootFolder()
     {
-        return (hrs::exe_path() / ROOT_SUBDIR).lexically_normal();
+        static auto folder = (hrs::exe_path() / ROOT_SUBDIR).lexically_normal();
+
+        return folder;
     }
 
     std::filesystem::path GameEngine::GetBinFolder()
     {
-        return hrs::exe_path().parent_path().lexically_normal();
+        static auto folder = hrs::exe_path().parent_path().lexically_normal();
+
+        return folder;
     }
 
     std::filesystem::path GameEngine::GetGameFolder()
     {
-        return (hrs::exe_path() / GAME_SUBDIR).lexically_normal();
+        static auto folder = (hrs::exe_path() / GAME_SUBDIR).lexically_normal();
+
+        return folder;
     }
 
     std::filesystem::path GameEngine::GetUserDataFolder()
     {
-        return (hrs::exe_path() / USERDATA_SUBDIR).lexically_normal();
+        static auto folder = (hrs::exe_path() / USERDATA_SUBDIR).lexically_normal();
+
+        return folder;
     }
 
     Core::GraphicWindow* GameEngine::GetWindow() const noexcept
