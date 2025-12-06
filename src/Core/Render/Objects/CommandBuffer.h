@@ -5,6 +5,7 @@
 
 namespace Render
 {
+#pragma message("Multi-bind for resources(arrays with inner byte array)")
     class CommandBuffer : public Object
     {
     public:
