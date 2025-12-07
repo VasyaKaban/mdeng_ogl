@@ -1169,7 +1169,6 @@ namespace Render
         std::uint32_t index;
     };
 
-#error THIS!!!
     struct ContextLimits
     {
         uint32_t maxImageDimension1D; //GL_MAX_TEXTURE_SIZE

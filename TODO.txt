@@ -22,3 +22,4 @@ glClipControl for XY coordinates or populate clip coordinate system via properti
 +-- so populate coordinate systems and depth range in properties so user can control viewport
 Border color as feature
 AddressMode.MirrorClampToEdge as feature
+explicit dllimport/dllexport + INTERFACE targets
