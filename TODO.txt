@@ -23,3 +23,5 @@ glClipControl for XY coordinates or populate clip coordinate system via properti
 Border color as feature
 AddressMode.MirrorClampToEdge as feature
 explicit dllimport/dllexport + INTERFACE targets
+check spec https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf for transfer type and size. page 297
+page 237 with texel bufefr formats
