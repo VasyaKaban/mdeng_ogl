@@ -1,6 +1,6 @@
 Change DDS image info that will return self-created image info not a Render::ImageInfo
 hrs::forward_pool -> for what???
-class Chain and class ChainMap for events instead of std list and map -> reudce memory usage
+map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for events -> reudce memory usage
 ClearColor as union instead of variant + apply based on inner attachment format
 Add 64-bit vertex input formats into enum Format
 OGL: implement depth bounds test in GraphicsPipelineDepthStencilStateInfo
