@@ -161,13 +161,10 @@ namespace Render
 
     std::uint32_t GetFormatRegionSize(Format format, const BufferImageCopyRegion& reg) noexcept
     {
-#pragma message( \
-    "Only cares about row and height. So it must be well defined. No '0' value like in VK")
+        //Only cares about row and height. So it must be well defined. No '0' value like in VK
         if(IsFormatCompressed(format))
         {
-#pragma message( \
-    "Omit GetFormatBlockSize(format) for compressed formats only for BC(S3TC) family!!!")
-
+            //only for BC(S3TC) family
             return std::max<std::uint32_t>(1, ((reg.buffer_row_length + 3) / 4)) *
                    std::max<std::uint32_t>(1, ((reg.buffer_image_height + 3) / 4)) *
                    GetFormatBlockSize(format) * reg.subresource_layers.layer_count;
@@ -181,13 +178,10 @@ namespace Render
 
     std::uint32_t GetFormatRegionSize(Format format, const MemoryImageCopyRegion& reg) noexcept
     {
-#pragma message( \
-    "Only cares about row and height. So it must be well defined. No '0' value like in VK")
+        //Only cares about row and height. So it must be well defined. No '0' value like in VK
         if(IsFormatCompressed(format))
         {
-#pragma message( \
-    "Omit GetFormatBlockSize(format) for compressed formats only for BC(S3TC) family!!!")
-
+            //only for BC(S3TC) family
             return std::max<std::uint32_t>(1, ((reg.buffer_row_length + 3) / 4)) *
                    std::max<std::uint32_t>(1, ((reg.buffer_image_height + 3) / 4)) *
                    GetFormatBlockSize(format) * reg.subresource_layers.layer_count;

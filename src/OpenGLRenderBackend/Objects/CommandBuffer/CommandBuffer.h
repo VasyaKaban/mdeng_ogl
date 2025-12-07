@@ -56,9 +56,6 @@ namespace OpenGL
                                  std::int32_t vertex_offset,
                                  std::uint32_t first_instance) override;
 
-#pragma message( \
-    "multiDrawIndirect -> similar to opengl 3.3 indirect support with draw_count = 0 or 1!!!")
-#pragma message("drawIndirectFirstInstance !!!")
         virtual void DrawIndirect(Render::Buffer* buffer,
                                   std::uint64_t offset,
                                   std::uint32_t draw_count,

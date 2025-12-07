@@ -597,7 +597,6 @@ namespace OpenGL
         return _inner_type;
     }
 
-#pragma message("Test B4G4R4A4_UNORM to check RGBA10_A2 format size and type!!!")
     TransferImageTypeFormat DecodeTransferTypeFormatPair(Render::Format format)
     {
         constexpr static std::pair<Render::Format, TransferImageTypeFormat> mapping[] = {

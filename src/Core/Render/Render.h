@@ -9,13 +9,6 @@
 #include <string>
 #include "Core/Window/RenderBackend.h"
 
-#pragma message("MOVE FORWARD POOL TO CORE!!! -> maybe get rid of hrs at all??? + allocators...")
-#pragma message("MAKE COMMON NAMESPACES FOR CORE -> CORE or inner like Render???")
-#pragma message( \
-    "SPLIT GAME INTO DLL + ADD ENGINE EXE + ADD INTO PLUGINS INTERFACE AND RENDER INTERFACE START, STOP AND CREATE GLOBAL FUNCTIONS + RESOLVE!!!")
-#pragma message("std::list and std::map TO CHAIN-LIKE STRUCTURES FOR EVENTS!!!")
-#pragma message("LINK HRS AS STATIC WITH CORE ONLY!!!")
-
 namespace Render
 {
     class Context;
@@ -106,7 +99,6 @@ namespace Render
         Extent2D extent;
     };
 
-#pragma message("Change to union and get inner format type from attachment")
     using ClearColorFloatValue = std::array<float, 4>;
     using ClearColorIntValue = std::array<std::int32_t, 4>;
     using ClearColorUIntValue = std::array<std::uint32_t, 4>;
@@ -304,7 +296,6 @@ namespace Render
         CubeMap
     };
 
-#pragma message("Add 64-bit formats for vertex input")
     enum class Format
     {
         R32G32B32A32_FLOAT,
@@ -641,13 +632,11 @@ namespace Render
         MirroredRepeat,
         ClampToEdge,
         ClampToBorder,
-#error SET AS EXTENSION FEATURE(VK_KHR_sampler_mirror_clamp_to_edge or VK 1.2)
         MirrorClampToEdge
     };
 
     struct BorderColor
     {
-#error SET AS EXTENSION(VK_EXT_custom_border_color)
         std::variant<ClearColorFloatValue, ClearColorIntValue, ClearColorUIntValue> value;
     };
 
@@ -855,7 +844,6 @@ namespace Render
         std::int32_t reference;
     };
 
-#pragma message("Implement depth bounds test")
     struct GraphicsPipelineDepthStencilStateInfo
     {
         bool depth_test_enabled;
@@ -1118,8 +1106,7 @@ namespace Render
         std::span<const ImageMemoryBarrier> image_barriers;
     };
 
-#pragma message( \
-    "In case if we want to get a DMA-transfer queue we can get a transfer wuqu with video encode/decode in vulkan that is obviously not a DMA queue -> so we add a new spec 'UnknownImplementationSpec' that will signal that current queue family also support other spec(this spec do not include sparse binding)")
+    //In case if we want to get a DMA-transfer queue we can get a transfer wuqu with video encode/decode in vulkan that is obviously not a DMA queue -> so we add a new spec 'UnknownImplementationSpec' that will signal that current queue family also support other spec(this spec do not include sparse binding)
     enum QueueSpecializationFlagBits
     {
         TransferSpec = 1 << 0,
@@ -1303,7 +1290,6 @@ namespace Render
         std::uint64_t nonCoherentAtomSize; //OGL: 1
     };
 
-#pragma message("Add array of uniforms in descriptor sets!!!")
     struct VkPhysicalDeviceFeatures
     {
         bool
@@ -1380,7 +1366,6 @@ namespace Render
         bool persistent_mapping_used;
         //If usage included VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minUniformBufferOffsetAlignment.
         //If usage included VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minStorageBufferOffsetAlignment.
-#pragma message("Add limits and features!!!")
     };
 
     struct QueueFamilyInfo

@@ -90,7 +90,6 @@ namespace OpenGL
                                                      info.extent.width,
                                                      info.extent.height,
                                                      info.array_layers * 6);
-#pragma message("Should we mul by 6 here???")
                 break;
         }
 

@@ -8,7 +8,6 @@
 
 namespace Engine
 {
-#pragma message("Check non-persistent mapping case!!!")
     class RenderEngine;
 
     struct TransferStorageInfo

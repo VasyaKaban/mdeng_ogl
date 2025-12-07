@@ -6,7 +6,6 @@
 #include "OpenGLRenderBackend/Context/Context.h"
 #include "RenderEngine/RenderQueue/RenderQueue.h"
 
-#pragma message("SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???")
 /*
 TestRenderPass:
     TestPipeline: Draw texture into image -> set resolve and screenshot renderpasses state
