@@ -60,26 +60,79 @@ namespace OpenGL
            info.address_mode_v == Render::AddressMode::ClampToBorder ||
            info.address_mode_w == Render::AddressMode::ClampToBorder)
         {
-            if(std::holds_alternative<Render::ClearColorFloatValue>(info.border_color.value))
+            Render::ClearColorValue border_color;
+            switch(info.border_color)
             {
-                const auto& color = std::get<Render::ClearColorFloatValue>(info.border_color.value);
-                parent->GetLoader().SamplerParameterfv(_handle,
-                                                       GL_TEXTURE_BORDER_COLOR,
-                                                       color.data());
-            }
-            else if(std::holds_alternative<Render::ClearColorIntValue>(info.border_color.value))
-            {
-                const auto& color = std::get<Render::ClearColorIntValue>(info.border_color.value);
-                parent->GetLoader().SamplerParameterIiv(_handle,
-                                                        GL_TEXTURE_BORDER_COLOR,
-                                                        color.data());
-            }
-            else // if(std::holds_alternative<ClearColorUIntValue>(info.border_color.value))
-            {
-                const auto& color = std::get<Render::ClearColorUIntValue>(info.border_color.value);
-                parent->GetLoader().SamplerParameterIuiv(_handle,
-                                                         GL_TEXTURE_BORDER_COLOR,
-                                                         color.data());
+                    //0 - transparent
+                    //1 - opaque
+                case Render::BorderColor::TransparentBlackFloat:
+                    border_color = Render::ClearColorValue{std::numeric_limits<float>::min(),
+                                                           std::numeric_limits<float>::min(),
+                                                           std::numeric_limits<float>::min(),
+                                                           std::numeric_limits<float>::min()};
+                    parent->GetLoader().SamplerParameterfv(_handle,
+                                                           GL_TEXTURE_BORDER_COLOR,
+                                                           border_color.float32);
+                    break;
+                case Render::BorderColor::TransparentBlackInt:
+                    border_color =
+                        Render::ClearColorValue{std::numeric_limits<std::int32_t>::min(),
+                                                std::numeric_limits<std::int32_t>::min(),
+                                                std::numeric_limits<std::int32_t>::min(),
+                                                std::numeric_limits<std::int32_t>::min()};
+                    parent->GetLoader().SamplerParameterIiv(_handle,
+                                                            GL_TEXTURE_BORDER_COLOR,
+                                                            border_color.int32);
+                    break;
+                case Render::BorderColor::OpaqueBlackFloat:
+                    border_color = Render::ClearColorValue{std::numeric_limits<float>::min(),
+                                                           std::numeric_limits<float>::min(),
+                                                           std::numeric_limits<float>::min(),
+                                                           std::numeric_limits<float>::max()};
+                    parent->GetLoader().SamplerParameterfv(_handle,
+                                                           GL_TEXTURE_BORDER_COLOR,
+                                                           border_color.float32);
+                    break;
+                case Render::BorderColor::OpaqueBlackInt:
+                    border_color =
+                        Render::ClearColorValue{std::numeric_limits<std::int32_t>::min(),
+                                                std::numeric_limits<std::int32_t>::min(),
+                                                std::numeric_limits<std::int32_t>::min(),
+                                                std::numeric_limits<std::int32_t>::max()};
+                    parent->GetLoader().SamplerParameterIiv(_handle,
+                                                            GL_TEXTURE_BORDER_COLOR,
+                                                            border_color.int32);
+                    break;
+                case Render::BorderColor::OpaqueWhiteFloat:
+                    border_color = Render::ClearColorValue{std::numeric_limits<float>::max(),
+                                                           std::numeric_limits<float>::max(),
+                                                           std::numeric_limits<float>::max(),
+                                                           std::numeric_limits<float>::max()};
+                    parent->GetLoader().SamplerParameterfv(_handle,
+                                                           GL_TEXTURE_BORDER_COLOR,
+                                                           border_color.float32);
+                    break;
+                case Render::BorderColor::OpaqueWhiteInt:
+                    border_color =
+                        Render::ClearColorValue{std::numeric_limits<std::int32_t>::max(),
+                                                std::numeric_limits<std::int32_t>::max(),
+                                                std::numeric_limits<std::int32_t>::max(),
+                                                std::numeric_limits<std::int32_t>::max()};
+                    parent->GetLoader().SamplerParameterIiv(_handle,
+                                                            GL_TEXTURE_BORDER_COLOR,
+                                                            border_color.int32);
+                    break;
+                case Render::BorderColor::CustomFloat:
+                    parent->GetLoader().SamplerParameterfv(
+                        _handle,
+                        GL_TEXTURE_BORDER_COLOR,
+                        info.custom_border_color_info.color.float32);
+                    break;
+                case Render::BorderColor::CustomInt:
+                    parent->GetLoader().SamplerParameterIuiv(
+                        _handle,
+                        GL_TEXTURE_BORDER_COLOR,
+                        info.custom_border_color_info.color.uint32);
             }
         }
 

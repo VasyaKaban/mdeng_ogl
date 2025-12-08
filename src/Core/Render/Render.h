@@ -100,9 +100,12 @@ namespace Render
         Extent2D extent;
     };
 
-    using ClearColorFloatValue = std::array<float, 4>;
-    using ClearColorIntValue = std::array<std::int32_t, 4>;
-    using ClearColorUIntValue = std::array<std::uint32_t, 4>;
+    struct ClearColorValue
+    {
+        float float32[4];
+        std::int32_t int32[4];
+        std::uint32_t uint32[4];
+    };
 
     struct BufferCopyRegion
     {
@@ -145,11 +148,6 @@ namespace Render
         ImageSubresourceLayers subresource_layers;
         Offset3D offset;
         Extent3D extent;
-    };
-
-    struct ClearColorValue
-    {
-        std::variant<ClearColorFloatValue, ClearColorIntValue, ClearColorUIntValue> value;
     };
 
     struct ClearDepthStencilValue
@@ -301,6 +299,7 @@ namespace Render
 
     enum class Format
     {
+        Undefined,
         R32G32B32A32_FLOAT,
         R32G32B32A32_UINT,
         R32G32B32A32_SINT,
@@ -652,9 +651,22 @@ namespace Render
         MirrorClampToEdge
     };
 
-    struct BorderColor
+    enum class BorderColor
     {
-        std::variant<ClearColorFloatValue, ClearColorIntValue, ClearColorUIntValue> value;
+        TransparentBlackFloat, //VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK = 0,
+        TransparentBlackInt, //VK_BORDER_COLOR_INT_TRANSPARENT_BLACK = 1,
+        OpaqueBlackFloat, //VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK = 2,
+        OpaqueBlackInt, //VK_BORDER_COLOR_INT_OPAQUE_BLACK = 3,
+        OpaqueWhiteFloat, //VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE = 4,
+        OpaqueWhiteInt, //VK_BORDER_COLOR_INT_OPAQUE_WHITE = 5,
+        CustomFloat, //VK_BORDER_COLOR_FLOAT_CUSTOM_EXT = 1'000'287'003,
+        CustomInt, //VK_BORDER_COLOR_INT_CUSTOM_EXT = 1'000'287'004,
+    };
+
+    struct SamplerCustomBorderColorInfo
+    {
+        ClearColorValue color;
+        Format format;
     };
 
     struct SamplerInfo
@@ -673,6 +685,7 @@ namespace Render
         float min_lod; //GL_TEXTURE_MIN_LOD
         float max_lod; //GL_TEXTURE_MAX_LOD
         BorderColor border_color; //GL_TEXTURE_BORDER_COLOR
+        SamplerCustomBorderColorInfo custom_border_color_info;
     };
 
     enum ShaderSyntaxFlagBits
@@ -1305,6 +1318,7 @@ namespace Render
         std::uint64_t optimalBufferCopyOffsetAlignment; //OGL: 1
         std::uint64_t optimalBufferCopyRowPitchAlignment; //OGL: 1
         std::uint64_t nonCoherentAtomSize; //OGL: 1
+        std::uint32_t maxCustomBorderColorSamplers; //OGL -> none
     };
 
     struct VkPhysicalDeviceFeatures
@@ -1366,6 +1380,9 @@ namespace Render
         //bool sparseResidencyAliased;
         bool variableMultisampleRate; //OGL: true
         //bool inheritedQueries;
+        bool samplerMirrorClampToEdge; //OGL: true; VK_KHR_sampler_mirror_clamp_to_edge
+        bool customBorderColors; //OGL: true; VK_EXT_custom_border_color
+        bool customBorderColorWithoutFormat; //OGL: true; VK_EXT_custom_border_color
     };
 
     struct ContextProperties

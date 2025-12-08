@@ -19,8 +19,7 @@ OpenGL/ES and D3D compatibily for Vulkan as features
 glClipControl for XY coordinates or populate clip coordinate system via properties + depth range? need test both OpenGL and Vulkan (or just resolve it via viewport transformation) -> the UV system cannot be changed 
 |
 +-- so populate coordinate systems and depth range in properties so user can control viewport
-Border color as feature
-AddressMode.MirrorClampToEdge as feature
 explicit dllimport/dllexport + INTERFACE targets
 check spec https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf for transfer type and size. page 297
 add descriptor count and dst_array_index in UpdateDescriptorDesc
+cache Sampler, DescriptorSetLayout and PipelineLayout(for VK)
