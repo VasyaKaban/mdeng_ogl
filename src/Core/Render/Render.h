@@ -14,6 +14,7 @@ namespace Render
     class Context;
     class Object;
     class Buffer;
+    class BufferView;
     class CommandBuffer;
     class CommandPool;
     class DescriptorPool;
@@ -168,13 +169,15 @@ namespace Render
     {
         BufferUsageTransferSource = 1 << 0, //VK_BUFFER_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
         BufferUsageTransferDestination = 1 << 1, //VK_BUFFER_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
-        //VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = 0x00'00'00'04,
-        //VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT = 0x00'00'00'08,
-        BufferUsageUniformBuffer = 1 << 2, //VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT = 0x00'00'00'10,
-        BufferUsageStorageBuffer = 1 << 3, //VK_BUFFER_USAGE_STORAGE_BUFFER_BIT = 0x00'00'00'20,
-        BufferUsageIndexBuffer = 1 << 4, //VK_BUFFER_USAGE_INDEX_BUFFER_BIT = 0x00'00'00'40,
-        BufferUsageVertexBuffer = 1 << 5, //VK_BUFFER_USAGE_VERTEX_BUFFER_BIT = 0x00'00'00'80,
-        //VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT = 0x00'00'01'00,
+        BufferUsageUniformTexelBuffer =
+            1 << 2, //VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = 0x00'00'00'04,
+        BufferUsageStorageTexelBuffer =
+            1 << 3, //VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT = 0x00'00'00'08,
+        BufferUsageUniformBuffer = 1 << 3, //VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT = 0x00'00'00'10,
+        BufferUsageStorageBuffer = 1 << 4, //VK_BUFFER_USAGE_STORAGE_BUFFER_BIT = 0x00'00'00'20,
+        BufferUsageIndexBuffer = 1 << 5, //VK_BUFFER_USAGE_INDEX_BUFFER_BIT = 0x00'00'00'40,
+        BufferUsageVertexBuffer = 1 << 6, //VK_BUFFER_USAGE_VERTEX_BUFFER_BIT = 0x00'00'00'80,
+        BufferUsageIndirectBuffer = 1 << 7 //VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT = 0x00'00'01'00,
     };
 
     using BufferUsageFlags = std::underlying_type_t<BufferUsageFlagBits>;
@@ -401,16 +404,22 @@ namespace Render
                                        << 1, //VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT = 0x00'00'00'02,
         FormatFeatureStorageImageAtomicBit =
             1 << 2, //VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT = 0x00'00'00'04,
+        FormatFeatureUniformTexelBufferBit =
+            1 << 3, //VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT = 0x00'00'00'08,
+        FormatFeatureStorageTexelBufferBit =
+            1 << 4, //VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT = 0x00'00'00'10,
+        FormatFeatureStorageTexelBufferAtomicAtomicBit =
+            1 << 5, //VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT = 0x00'00'00'20,
         FormatFeatureVertexBufferBit = 1
-                                       << 3, //VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT = 0x00'00'00'40,
+                                       << 6, //VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT = 0x00'00'00'40,
         FormatFeatureColorAttachmentBit =
-            1 << 4, //VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT = 0x00'00'00'80,
+            1 << 7, //VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT = 0x00'00'00'80,
         FormatFeatureColorAttachmentBlendBit =
-            1 << 5, //VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT = 0x00'00'01'00,
+            1 << 8, //VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT = 0x00'00'01'00,
         FormatFeatureDepthStencilAttachmentBit =
-            1 << 6, //VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00'00'02'00,
+            1 << 9, //VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00'00'02'00,
         FormatFeatureSampledImageFilterLinearBit =
-            1 << 7 //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT = 0x00'00'10'00,
+            1 << 10 //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT = 0x00'00'10'00,
 
         // Provided by VK_VERSION_1_1
         //VK_FORMAT_FEATURE_TRANSFER_SRC_BIT = 0x00'00'40'00,
@@ -495,6 +504,14 @@ namespace Render
         ImageViewType view_type;
         ComponentMapping components;
         ImageSubresourceRange subresource_range;
+    };
+
+    struct BufferViewInfo
+    {
+        Buffer* buffer;
+        Format format;
+        std::uint64_t offset;
+        std::uint64_t size;
     };
 
     struct QueueBeginInfo
@@ -934,8 +951,8 @@ namespace Render
         CombinedImageSampler, //VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER = 1,
         //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE = 2,
         StorageImage, //VK_DESCRIPTOR_TYPE_STORAGE_IMAGE = 3,
-        //VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER = 4,
-        //VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER = 5,
+        UniformTexelBuffer, //VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER = 4,
+        StorageTexelBuffer, //VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER = 5,
         UnifromBuffer, //VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER = 6,
         StorageBuffer, //VK_DESCRIPTOR_TYPE_STORAGE_BUFFER = 7,
         //VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC = 8,
@@ -1000,6 +1017,7 @@ namespace Render
         {
             DescriptorImageDesc image_desc;
             DescriptorBufferDesc buffer_desc;
+            BufferView* texel_buffer_view;
         } desc;
     };
 
@@ -1176,7 +1194,7 @@ namespace Render
         uint32_t maxImageDimension3D; //GL_MAX_3D_TEXTURE_SIZE
         uint32_t maxImageDimensionCube; //GL_MAX_CUBE_MAP_TEXTURE_SIZE
         uint32_t maxImageArrayLayers; //GL_MAX_ARRAY_TEXTURE_LAYERS
-        //uint32_t maxTexelBufferElements;
+        uint32_t maxTexelBufferElements; //GL_MAX_TEXTURE_BUFFER_SIZE
         uint32_t maxUniformBufferRange; //GL_MAX_UNIFORM_BLOCK_SIZE
         uint32_t maxStorageBufferRange; //GL_MAX_SHADER_STORAGE_BLOCK_SIZE
         uint32_t
@@ -1248,7 +1266,7 @@ namespace Render
         float viewportBoundsRange[2]; //GL_MAX_VIEWPORT_DIMS
         uint32_t viewportSubPixelBits; //GL_VIEWPORT_SUBPIXEL_BITS
         size_t minMemoryMapAlignment; //GL_MIN_MAP_BUFFER_ALIGNMENT
-        //VkDeviceSize minTexelBufferOffsetAlignment;
+        std::uint64_t minTexelBufferOffsetAlignment; //GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT
         std::uint64_t minUniformBufferOffsetAlignment; //GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT
         std::uint64_t minStorageBufferOffsetAlignment; //GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT
         int32_t minTexelOffset; //GL_MIN_PROGRAM_TEXEL_OFFSET

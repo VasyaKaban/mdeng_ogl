@@ -14,6 +14,7 @@ namespace OpenGL
         std::size_t uniform_buffer_bindings_size = 0;
         std::size_t storage_buffer_bindings_size = 0;
         std::size_t storage_image_bindings_size = 0;
+        std::size_t texel_buffer_bindings_size = 0;
 
         for(const auto& binding: info.bindings)
         {
@@ -31,6 +32,9 @@ namespace OpenGL
                 case Render::DescriptorType::StorageImage:
                     storage_image_bindings_size++;
                     break;
+                case Render::DescriptorType::UniformTexelBuffer:
+                case Render::DescriptorType::StorageTexelBuffer:
+                    texel_buffer_bindings_size++;
             }
         }
 
@@ -64,10 +68,17 @@ namespace OpenGL
         bindigns_offset += storage_image_bindings_size;
         allocation_offset += storage_image_bindings_size * STORAGE_IMAGE_DESCRIPTOR_SIZE;
 
+        texel_buffers.bindings =
+            std::span{bindings.data() + bindigns_offset, texel_buffer_bindings_size};
+        texel_buffers.allocation_offset = allocation_offset;
+        bindigns_offset += texel_buffer_bindings_size;
+        allocation_offset += texel_buffer_bindings_size * TEXEL_BUFFER_DESCRIPTOR_SIZE;
+
         std::size_t combined_bindings_index = 0;
         std::size_t uniform_bindings_index = 0;
         std::size_t shader_storage_bindings_index = 0;
         std::size_t image_bindings_index = 0;
+        std::size_t texel_bindings_index = 0;
         for(const auto& binding: info.bindings)
         {
             switch(binding.type)
@@ -88,6 +99,10 @@ namespace OpenGL
                     storage_images.bindings[image_bindings_index++] =
                         binding.binding.linear_binding;
                     break;
+                case Render::DescriptorType::UniformTexelBuffer:
+                case Render::DescriptorType::StorageTexelBuffer:
+                    texel_buffers.bindings[texel_bindings_index++] = binding.binding.linear_binding;
+                    break;
             }
         }
 
@@ -95,6 +110,7 @@ namespace OpenGL
         std::ranges::sort(uniform_buffers.bindings);
         std::ranges::sort(storage_buffers.bindings);
         std::ranges::sort(storage_images.bindings);
+        std::ranges::sort(texel_buffers.bindings);
     }
 
     DescriptorSetLayout::~DescriptorSetLayout()
@@ -111,7 +127,8 @@ namespace OpenGL
                    sizeof(DescriptorCombinedImageSamplerDesc) +
                (uniform_buffers.bindings.size() + storage_buffers.bindings.size()) *
                    sizeof(DescriptorBufferDesc) +
-               storage_images.bindings.size() * sizeof(DescriptorStorageImageDesc);
+               storage_images.bindings.size() * sizeof(DescriptorStorageImageDesc) +
+               texel_buffers.bindings.size() * sizeof(DescriptorTexelBufferDesc);
     }
 
     static std::byte* translate(std::uint32_t binding,
@@ -182,6 +199,18 @@ namespace OpenGL
         return reinterpret_cast<DescriptorStorageImageDesc*>(address);
     }
 
+    DescriptorTexelBufferDesc* DescriptorSetLayout::TranslateTexelBufferBinding(
+        std::uint32_t binding,
+        std::span<std::byte> descriptors_data) const noexcept
+    {
+        std::byte* address =
+            translate(binding, texel_buffers, descriptors_data, TEXEL_BUFFER_DESCRIPTOR_SIZE);
+        if(address == nullptr)
+            return nullptr;
+
+        return reinterpret_cast<DescriptorTexelBufferDesc*>(address);
+    }
+
     void DescriptorSetLayout::Bind(CommandBuffer& cmd, std::span<std::byte> descriptors_data) const
     {
         for(std::size_t i = 0; i < combined_image_samplers.bindings.size(); i++)
@@ -233,6 +262,15 @@ namespace OpenGL
             parent->GetLoader().BindImageTextures(combined_image_samplers.bindings[i],
                                                   1,
                                                   &image_handle);
+        }
+
+        for(std::size_t i = 0; i < texel_buffers.bindings.size(); i++)
+        {
+            DescriptorTexelBufferDesc* desc = reinterpret_cast<DescriptorTexelBufferDesc*>(
+                descriptors_data.data() + texel_buffers.allocation_offset +
+                i * TEXEL_BUFFER_DESCRIPTOR_SIZE);
+
+            parent->GetLoader().BindTextureUnit(texel_buffers.bindings[i], desc->buffer_view);
         }
     }
 };

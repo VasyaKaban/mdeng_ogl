@@ -8,7 +8,6 @@ Add array of descriptors in descriptor sets and layout
 Add limits and features
 Add queries
 Add transform feedback
-Add texel buffers(uniform and storage) -> BufferView as opengl texture
 Add multi-bind commands for buffers, images, etc...(implement as inner array of bytes in which we will copy native handles)
 Move to OpenGL 4.5 + use extensions to populate features
 FreeBlockList: Split begin and after iterators in free block! In for loop -> after always be the next of before
@@ -24,4 +23,4 @@ Border color as feature
 AddressMode.MirrorClampToEdge as feature
 explicit dllimport/dllexport + INTERFACE targets
 check spec https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf for transfer type and size. page 297
-page 237 with texel bufefr formats
+add descriptor count and dst_array_index in UpdateDescriptorDesc

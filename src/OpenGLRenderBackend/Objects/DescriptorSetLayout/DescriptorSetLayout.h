@@ -38,6 +38,10 @@ namespace OpenGL
         TranslateStorageImageBinding(std::uint32_t binding,
                                      std::span<std::byte> descriptors_data) const noexcept;
 
+        DescriptorTexelBufferDesc*
+        TranslateTexelBufferBinding(std::uint32_t binding,
+                                    std::span<std::byte> descriptors_data) const noexcept;
+
         void Bind(CommandBuffer& cmd, std::span<std::byte> descriptors_data) const;
     private:
         Context* parent;
@@ -48,5 +52,6 @@ namespace OpenGL
         BindingsClass uniform_buffers;
         BindingsClass storage_buffers;
         BindingsClass storage_images;
+        BindingsClass texel_buffers;
     };
 };

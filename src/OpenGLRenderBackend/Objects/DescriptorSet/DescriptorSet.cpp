@@ -4,6 +4,7 @@
 #include "../ImageView/ImageView.h"
 #include "../Sampler/Sampler.h"
 #include "../Buffer/Buffer.h"
+#include "../BufferView/BufferView.h"
 
 namespace OpenGL
 {
@@ -81,6 +82,18 @@ namespace OpenGL
                     if(image_desc != nullptr)
                         image_desc->image_view =
                             static_cast<ImageView*>(desc.desc.image_desc.image_view)->GetHandle();
+                }
+                break;
+                case Render::DescriptorType::UniformTexelBuffer:
+                case Render::DescriptorType::StorageTexelBuffer:
+                {
+                    DescriptorTexelBufferDesc* buffer_desc =
+                        layout->TranslateTexelBufferBinding(desc.binding.linear_binding,
+                                                            descriptors_data);
+
+                    if(buffer_desc != nullptr)
+                        buffer_desc->buffer_view =
+                            static_cast<BufferView*>(desc.desc.texel_buffer_view)->GetHandle();
                 }
                 break;
             }

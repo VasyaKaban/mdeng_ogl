@@ -8,6 +8,7 @@ namespace OpenGL
 {
     class Context;
     class Buffer;
+    class BufferView;
     class CommandBuffer;
     class CommandPool;
     class DescriptorPool;
@@ -110,15 +111,22 @@ namespace OpenGL
         GLHandle image_view;
     };
 
+    struct DescriptorTexelBufferDesc
+    {
+        GLHandle buffer_view;
+    };
+
     constexpr inline std::size_t COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE =
         sizeof(DescriptorCombinedImageSamplerDesc);
     constexpr inline std::size_t STORAGE_IMAGE_DESCRIPTOR_SIZE = sizeof(DescriptorStorageImageDesc);
     constexpr inline std::size_t UNIFORM_BUFFER_DESCRIPTOR_SIZE = sizeof(DescriptorBufferDesc);
     constexpr inline std::size_t STOARGE_BUFFER_DESCRIPTOR_SIZE = sizeof(DescriptorBufferDesc);
+    constexpr inline std::size_t TEXEL_BUFFER_DESCRIPTOR_SIZE = sizeof(DescriptorTexelBufferDesc);
 
     constexpr inline std::size_t DESCRIPTOR_ALIGNMENT =
         std::max({alignof(DescriptorCombinedImageSamplerDesc),
                   alignof(DescriptorStorageImageDesc),
                   alignof(DescriptorBufferDesc),
-                  alignof(DescriptorBufferDesc)});
+                  alignof(DescriptorBufferDesc),
+                  alignof(DescriptorTexelBufferDesc)});
 };

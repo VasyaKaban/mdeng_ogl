@@ -137,11 +137,77 @@ namespace OpenGL
     std::optional<Render::BufferFormatProperties>
     Context::GetBufferFormatProperties(const Render::BufferFormatInfo& info) const
     {
+        Render::BufferFormatProperties props = {.features = {}};
+
         if(IsFormatSupportedAsVertexInput(info.format))
+            props.features = Render::FormatFeatureFlagBits::FormatFeatureVertexBufferBit;
+
+        Render::FormatFeatureFlags image_format_features = {};
+        switch(info.format)
         {
-            return Render::BufferFormatProperties{
-                .features = Render::FormatFeatureFlagBits::FormatFeatureVertexBufferBit};
+            case Render::Format::R8_UNORM:
+            case Render::Format::R16_UNORM:
+            case Render::Format::R16_FLOAT:
+            case Render::Format::R32_FLOAT:
+            case Render::Format::R8_SINT:
+            case Render::Format::R16_SINT:
+            case Render::Format::R32_SINT:
+            case Render::Format::R8_UINT:
+            case Render::Format::R16_UINT:
+            case Render::Format::R32_UINT:
+            case Render::Format::R8G8_UNORM:
+            case Render::Format::R16G16_UNORM:
+            case Render::Format::R16G16_FLOAT:
+            case Render::Format::R32G32_FLOAT:
+            case Render::Format::R8G8_SINT:
+            case Render::Format::R16G16_SINT:
+            case Render::Format::R32G32_SINT:
+            case Render::Format::R8G8_UINT:
+            case Render::Format::R16G16_UINT:
+            case Render::Format::R32G32_UINT:
+            case Render::Format::R32G32B32_FLOAT:
+            case Render::Format::R32G32B32_SINT:
+            case Render::Format::R32G32B32_UINT:
+            case Render::Format::R8G8B8A8_UNORM:
+            case Render::Format::R16G16B16A16_UNORM:
+            case Render::Format::R16G16B16A16_FLOAT:
+            case Render::Format::R32G32B32A32_FLOAT:
+            case Render::Format::R8G8B8A8_SINT:
+            case Render::Format::R16G16B16A16_SINT:
+            case Render::Format::R32G32B32A32_SINT:
+            case Render::Format::R8G8B8A8_UINT:
+            case Render::Format::R16G16B16A16_UINT:
+            case Render::Format::R32G32B32A32_UINT:
+                image_format_features =
+                    Render::FormatFeatureFlagBits::FormatFeatureUniformTexelBufferBit |
+                    Render::FormatFeatureFlagBits::FormatFeatureStorageTexelBufferBit;
+
+                if(info.format == Render::Format::R32_SINT ||
+                   info.format == Render::Format::R32_UINT)
+                    image_format_features |= Render::FormatFeatureFlagBits::
+                        FormatFeatureStorageTexelBufferAtomicAtomicBit;
+                break;
+            default:
+                image_format_features = {};
+                break;
         }
+
+        if(image_format_features != 0)
+        {
+            GLenum native_format = FormatToNative(info.format);
+
+            GLint format_supported = GL_FALSE;
+            loader.GetInternalformativ(GL_TEXTURE_BUFFER,
+                                       native_format,
+                                       GL_INTERNALFORMAT_SUPPORTED,
+                                       1,
+                                       &format_supported);
+            if(format_supported != GL_FALSE)
+                props.features |= image_format_features;
+        }
+
+        if(props.features != 0)
+            return props;
 
         return std::nullopt;
     }
@@ -243,7 +309,7 @@ namespace OpenGL
 
             for(std::size_t i = 0; i < num_samples; i++)
             {
-                if(samples[i] <= Render::SampleCount::SampleCount_64 &&
+                if(/*samples[i] <= Render::SampleCount::SampleCount_64 &&*/
                    std::popcount(static_cast<std::uint32_t>(samples[i])) == 1) //is popwer of two
                 {
                     sample_count |= samples[i];

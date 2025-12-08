@@ -19,7 +19,7 @@ namespace OpenGL
         GLHandle _handle;
         parent->GetLoader().GenTextures(1, &_handle);
         if(_handle == OGL_NULL_HANDLE)
-            throw std::runtime_error("Failed to creat image view");
+            throw std::runtime_error("Failed to create image view");
 
         GLenum _inner_type = ImageViewTypeToNative(info.view_type);
         GLenum _inner_format = static_cast<const Image*>(info.image)->GetInnerFormat();
