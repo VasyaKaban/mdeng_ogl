@@ -1349,7 +1349,7 @@ namespace Render
         bool sampleRateShading; //OGL: true
         bool dualSrcBlend; //OGL: true
         bool logicOp; //OGL: true
-        bool multiDrawIndirect; //GL_ARB_indirect_parameters
+        bool multiDrawIndirect; //GL_ARB_indirect_parameters???
         bool drawIndirectFirstInstance; //OGL: true
         bool depthClamp; //GL_EXT_polygon_offset_clamp, GL_ARB_polygon_offset_clamp
         bool depthBiasClamp; //GL_EXT_polygon_offset_clamp, GL_ARB_polygon_offset_clamp
