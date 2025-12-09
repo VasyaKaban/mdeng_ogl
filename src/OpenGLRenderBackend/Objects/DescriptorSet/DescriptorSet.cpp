@@ -5,6 +5,7 @@
 #include "../Sampler/Sampler.h"
 #include "../Buffer/Buffer.h"
 #include "../BufferView/BufferView.h"
+#include <cassert>
 
 namespace OpenGL
 {
@@ -33,13 +34,18 @@ namespace OpenGL
                         layout->TranslateCombinedImageSamplerBinding(desc.binding.linear_binding,
                                                                      descriptors_data);
 
-                    if(image_desc != nullptr)
-                    {
-                        image_desc->sampler =
-                            static_cast<Sampler*>(desc.desc.image_desc.sampler)->GetHandle();
+                    assert(image_desc != nullptr);
 
-                        image_desc->image_view =
-                            static_cast<ImageView*>(desc.desc.image_desc.image_view)->GetHandle();
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorCombinedImageSamplerDesc* array_desc = image_desc + i;
+                        Render::DescriptorImageDesc* array_descriptor = desc.desc.image_desc + i;
+
+                        array_desc->sampler =
+                            static_cast<Sampler*>(array_descriptor->sampler)->GetHandle();
+
+                        array_desc->image_view =
+                            static_cast<ImageView*>(array_descriptor->image_view)->GetHandle();
                     }
                 }
                 break;
@@ -49,12 +55,17 @@ namespace OpenGL
                         layout->TranslateUniformBufferBinding(desc.binding.linear_binding,
                                                               descriptors_data);
 
-                    if(buffer_desc != nullptr)
+                    assert(buffer_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
                     {
-                        buffer_desc->buffer =
-                            static_cast<Buffer*>(desc.desc.buffer_desc.buffer)->GetHandle();
-                        buffer_desc->offset = desc.desc.buffer_desc.offset;
-                        buffer_desc->size = desc.desc.buffer_desc.size;
+                        DescriptorBufferDesc* array_desc = buffer_desc + i;
+                        Render::DescriptorBufferDesc* array_descriptor = desc.desc.buffer_desc + i;
+
+                        array_desc->buffer =
+                            static_cast<Buffer*>(array_descriptor->buffer)->GetHandle();
+                        array_desc->offset = array_descriptor->offset;
+                        array_desc->size = array_descriptor->size;
                     }
                 }
                 break;
@@ -64,12 +75,17 @@ namespace OpenGL
                         layout->TranslateStorageBufferBinding(desc.binding.linear_binding,
                                                               descriptors_data);
 
-                    if(buffer_desc != nullptr)
+                    assert(buffer_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
                     {
-                        buffer_desc->buffer =
-                            static_cast<Buffer*>(desc.desc.buffer_desc.buffer)->GetHandle();
-                        buffer_desc->offset = desc.desc.buffer_desc.offset;
-                        buffer_desc->size = desc.desc.buffer_desc.size;
+                        DescriptorBufferDesc* array_desc = buffer_desc + i;
+                        Render::DescriptorBufferDesc* array_descriptor = desc.desc.buffer_desc + i;
+
+                        array_desc->buffer =
+                            static_cast<Buffer*>(array_descriptor->buffer)->GetHandle();
+                        array_desc->offset = array_descriptor->offset;
+                        array_desc->size = array_descriptor->size;
                     }
                 }
                 break;
@@ -79,9 +95,16 @@ namespace OpenGL
                         layout->TranslateStorageImageBinding(desc.binding.linear_binding,
                                                              descriptors_data);
 
-                    if(image_desc != nullptr)
-                        image_desc->image_view =
-                            static_cast<ImageView*>(desc.desc.image_desc.image_view)->GetHandle();
+                    assert(image_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorStorageImageDesc* array_desc = image_desc + i;
+                        Render::DescriptorImageDesc* array_descriptor = desc.desc.image_desc + i;
+
+                        array_desc->image_view =
+                            static_cast<ImageView*>(array_descriptor->image_view)->GetHandle();
+                    }
                 }
                 break;
                 case Render::DescriptorType::UniformTexelBuffer:
@@ -91,9 +114,16 @@ namespace OpenGL
                         layout->TranslateTexelBufferBinding(desc.binding.linear_binding,
                                                             descriptors_data);
 
-                    if(buffer_desc != nullptr)
-                        buffer_desc->buffer_view =
-                            static_cast<BufferView*>(desc.desc.texel_buffer_view)->GetHandle();
+                    assert(buffer_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorTexelBufferDesc* array_desc = buffer_desc + i;
+                        Render::BufferView** array_descriptor = desc.desc.texel_buffer_view + i;
+
+                        array_desc->buffer_view =
+                            static_cast<BufferView*>(*array_descriptor)->GetHandle();
+                    }
                 }
                 break;
             }

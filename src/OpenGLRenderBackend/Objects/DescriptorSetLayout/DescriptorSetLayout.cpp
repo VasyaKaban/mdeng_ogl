@@ -21,20 +21,20 @@ namespace OpenGL
             switch(binding.type)
             {
                 case Render::DescriptorType::CombinedImageSampler:
-                    combined_image_sampler_bindings_size++;
+                    combined_image_sampler_bindings_size += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::UnifromBuffer:
-                    uniform_buffer_bindings_size++;
+                    uniform_buffer_bindings_size += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::StorageBuffer:
-                    storage_buffer_bindings_size++;
+                    storage_buffer_bindings_size += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::StorageImage:
-                    storage_image_bindings_size++;
+                    storage_image_bindings_size += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::UniformTexelBuffer:
                 case Render::DescriptorType::StorageTexelBuffer:
-                    texel_buffer_bindings_size++;
+                    texel_buffer_bindings_size += binding.descriptor_count;
             }
         }
 
@@ -84,24 +84,45 @@ namespace OpenGL
             switch(binding.type)
             {
                 case Render::DescriptorType::CombinedImageSampler:
-                    combined_image_samplers.bindings[combined_bindings_index++] =
-                        binding.binding.linear_binding;
+                    for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
+                    {
+                        combined_image_samplers.bindings[combined_bindings_index + i] =
+                            binding.binding.linear_binding + i;
+                    }
+                    combined_bindings_index += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::UnifromBuffer:
-                    uniform_buffers.bindings[uniform_bindings_index++] =
-                        binding.binding.linear_binding;
+                    for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
+                    {
+                        uniform_buffers.bindings[uniform_bindings_index + i] =
+                            binding.binding.linear_binding + i;
+                    }
+                    uniform_bindings_index += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::StorageBuffer:
-                    storage_buffers.bindings[shader_storage_bindings_index++] =
-                        binding.binding.linear_binding;
+                    for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
+                    {
+                        storage_buffers.bindings[shader_storage_bindings_index + i] =
+                            binding.binding.linear_binding + i;
+                    }
+                    shader_storage_bindings_index += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::StorageImage:
-                    storage_images.bindings[image_bindings_index++] =
-                        binding.binding.linear_binding;
+                    for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
+                    {
+                        storage_images.bindings[image_bindings_index + i] =
+                            binding.binding.linear_binding + i;
+                    }
+                    image_bindings_index += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::UniformTexelBuffer:
                 case Render::DescriptorType::StorageTexelBuffer:
-                    texel_buffers.bindings[texel_bindings_index++] = binding.binding.linear_binding;
+                    for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
+                    {
+                        texel_buffers.bindings[texel_bindings_index + i] =
+                            binding.binding.linear_binding + i;
+                    }
+                    texel_bindings_index += binding.descriptor_count;
                     break;
             }
         }

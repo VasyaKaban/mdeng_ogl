@@ -991,6 +991,7 @@ namespace Render
     {
         DescriptorBinding binding;
         DescriptorType type;
+        std::uint32_t descriptor_count;
         ShaderStageFlags stages;
     };
 
@@ -1033,12 +1034,14 @@ namespace Render
     struct UpdateDescriptorDesc
     {
         DescriptorBinding binding;
+        std::uint32_t array_index;
+        std::uint32_t descriptor_count;
         DescriptorType type;
         union
         {
-            DescriptorImageDesc image_desc;
-            DescriptorBufferDesc buffer_desc;
-            BufferView* texel_buffer_view;
+            DescriptorImageDesc* image_desc;
+            DescriptorBufferDesc* buffer_desc;
+            BufferView** texel_buffer_view;
         } desc;
     };
 

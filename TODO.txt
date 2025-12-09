@@ -5,7 +5,6 @@ hrs::forward_pool -> for what???
 map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for events -> reudce memory usage
 ClearColor as union instead of variant + apply based on inner attachment format
 OGL: implement depth bounds test in GraphicsPipelineDepthStencilStateInfo
-Add array of descriptors in descriptor sets and layout
 Add limits and features
 Add queries
 Add transform feedback
@@ -20,7 +19,6 @@ glClipControl for XY coordinates or populate clip coordinate system via properti
 |
 +-- so populate coordinate systems and depth range in properties so user can control viewport
 explicit dllimport/dllexport + INTERFACE targets
-add descriptor count and dst_array_index in UpdateDescriptorDesc
 cache Sampler, DescriptorSetLayout and PipelineLayout(for VK)
 Provoking vertex set first policy for opengl like in D3D and VK
 glPrimitiveRestartIndex for different index types or use GL_PRIMITIVE_RESTART_FIXED_INDEX + VK_EXT_primitive_topology_list_restart for lists in VK as feature
@@ -29,6 +27,5 @@ NDC origin properties
 viewport origin properties
 UV origin properties
 FormatToNative conversions for retrieving format properties shouldn't throw exceptions(OpenGL!)
-DescriptorPool(OpenGL): either align all decsriptors to 8-byte alignment or correct offset in descriptor pool after allocation
 add immutable samplers
 OS-dependent context creation for OpenGL

@@ -53,5 +53,7 @@ namespace OpenGL
         BindingsClass storage_buffers;
         BindingsClass storage_images;
         BindingsClass texel_buffers;
+
+        //Warning! texel_buffers share bindings with combined_image_samplers!
     };
 };

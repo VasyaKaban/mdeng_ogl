@@ -93,25 +93,25 @@ namespace OpenGL
 
     GLbitfield PipelineBarrierToNative(const Render::PipelineBarrier& barrier);
 
-    struct DescriptorCombinedImageSamplerDesc
+    struct alignas(8) DescriptorCombinedImageSamplerDesc
     {
         GLHandle sampler;
         GLHandle image_view;
     };
 
-    struct DescriptorBufferDesc
+    struct alignas(8) DescriptorBufferDesc
     {
         GLHandle buffer;
         GLintptr offset;
         GLsizeiptr size;
     };
 
-    struct DescriptorStorageImageDesc
+    struct alignas(8) DescriptorStorageImageDesc
     {
         GLHandle image_view;
     };
 
-    struct DescriptorTexelBufferDesc
+    struct alignas(8) DescriptorTexelBufferDesc
     {
         GLHandle buffer_view;
     };
