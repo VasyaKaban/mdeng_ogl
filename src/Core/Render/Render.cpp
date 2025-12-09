@@ -88,6 +88,11 @@ namespace Render
         std::uint16_t bits;
         switch(format)
         {
+            case Format::R64G64B64A64_FLOAT:
+                bits = 256;
+            case Format::R64G64B64_FLOAT:
+                bits = 192;
+            case Format::R64G64_FLOAT:
             case Format::R32G32B32A32_FLOAT:
             case Format::R32G32B32A32_UINT:
             case Format::R32G32B32A32_SINT:
@@ -98,6 +103,7 @@ namespace Render
             case Format::R32G32B32_SINT:
                 bits = 96;
                 break;
+            case Format::R64_FLOAT:
             case Format::R16G16B16A16_FLOAT:
             case Format::R16G16B16A16_UNORM:
             case Format::R16G16B16A16_UINT:
@@ -193,105 +199,17 @@ namespace Render
         }
     }
 
-    /*#error WRONG!!!
-constexpr std::uint32_t GetFormatRegionSize(Format format, const Extent3D& extent) noexcept
-{
-    std::uint32_t region_size = 0;
-    switch(format)
-    {
-        case Format::R32G32B32A32_FLOAT:
-        case Format::R32G32B32A32_UINT:
-        case Format::R32G32B32A32_SINT:
-            region_size = extent.width * extent.height * extent.depth * 16;
-            break;
-        case Format::R32G32B32_FLOAT:
-        case Format::R32G32B32_UINT:
-        case Format::R32G32B32_SINT:
-            region_size = extent.width * extent.height * extent.depth * 12;
-            break;
-        case Format::R16G16B16A16_FLOAT:
-        case Format::R16G16B16A16_UNORM:
-        case Format::R16G16B16A16_UINT:
-        case Format::R16G16B16A16_SNORM:
-        case Format::R16G16B16A16_SINT:
-        case Format::R32G32_FLOAT:
-        case Format::R32G32_UINT:
-        case Format::R32G32_SINT:
-        case Format::D32_FLOAT_S8X24_UINT:
-            region_size = extent.width * extent.height * extent.depth * 8;
-            break;
-        case Format::R10G10B10A2_UNORM:
-        case Format::R10G10B10A2_UINT:
-        case Format::R11G11B10_FLOAT:
-        case Format::R8G8B8A8_UNORM:
-        case Format::R8G8B8A8_UNORM_SRGB:
-        case Format::R8G8B8A8_UINT:
-        case Format::R8G8B8A8_SNORM:
-        case Format::R8G8B8A8_SINT:
-        case Format::R16G16_FLOAT:
-        case Format::R16G16_UNORM:
-        case Format::R16G16_UINT:
-        case Format::R16G16_SNORM:
-        case Format::R16G16_SINT:
-        case Format::D32_FLOAT:
-        case Format::R32_FLOAT:
-        case Format::R32_UINT:
-        case Format::R32_SINT:
-        case Format::D24_UNORM_S8_UINT:
-        case Format::R9G9B9E5_SHAREDEXP:
-            region_size = extent.width * extent.height * extent.depth * 4;
-            break;
-        case Format::R8G8_UNORM:
-        case Format::R8G8_UINT:
-        case Format::R8G8_SNORM:
-        case Format::R8G8_SINT:
-        case Format::R16_FLOAT:
-        case Format::D16_UNORM:
-        case Format::R16_UNORM:
-        case Format::R16_UINT:
-        case Format::R16_SNORM:
-        case Format::R16_SINT:
-        case Format::B5G6R5_UNORM:
-        case Format::B5G5R5A1_UNORM:
-        case Format::B4G4R4A4_UNORM:
-            region_size = extent.width * extent.height * extent.depth * 2;
-            break;
-        case Format::R8_UNORM:
-        case Format::R8_UINT:
-        case Format::R8_SNORM:
-        case Format::R8_SINT:
-            region_size = extent.width * extent.height * extent.depth;
-            break;
-        case Format::BC1_UNORM:
-        case Format::BC1_UNORM_SRGB:
-        case Format::BC2_UNORM:
-        case Format::BC2_UNORM_SRGB:
-        case Format::BC3_UNORM:
-        case Format::BC3_UNORM_SRGB:
-        case Format::BC4_UNORM:
-        case Format::BC4_SNORM:
-        case Format::BC5_UNORM:
-        case Format::BC5_SNORM:
-        case Format::BC6H_UF16:
-        case Format::BC6H_SF16:
-        case Format::BC7_UNORM:
-        case Format::BC7_UNORM_SRGB:
-            region_size = ((extent.width + 3) / 4) * ((extent.height + 3) / 4) *
-                          ((extent.depth + 3) / 4) * GetFormatBlockSize(format);
-            break;
-            //default:
-            //    region_size = 0;
-            //    break;
-    }
-
-    return region_size;
-}*/
-
     std::uint16_t GetFormatTexelAlignment(Format format) noexcept
     {
         std::uint16_t alignment = 0;
         switch(format)
         {
+            case Format::R64_FLOAT:
+            case Format::R64G64_FLOAT:
+            case Format::R64G64B64_FLOAT:
+            case Format::R64G64B64A64_FLOAT:
+                alignment = 8;
+                break;
             case Format::R32G32B32A32_FLOAT:
             case Format::R32G32B32A32_UINT:
             case Format::R32G32B32A32_SINT:
@@ -373,6 +291,20 @@ constexpr std::uint32_t GetFormatRegionSize(Format format, const Extent3D& exten
         FormatComponentsBitSize components;
         switch(format)
         {
+            case Format::R64_FLOAT:
+                components = FormatComponentsBitSize{.red = 64, .green = 0, .blue = 0, .alpha = 0};
+                break;
+            case Format::R64G64_FLOAT:
+                components = FormatComponentsBitSize{.red = 64, .green = 64, .blue = 0, .alpha = 0};
+                break;
+            case Format::R64G64B64_FLOAT:
+                components =
+                    FormatComponentsBitSize{.red = 64, .green = 64, .blue = 64, .alpha = 0};
+                break;
+            case Format::R64G64B64A64_FLOAT:
+                components =
+                    FormatComponentsBitSize{.red = 64, .green = 64, .blue = 64, .alpha = 64};
+                break;
             case Format::R32G32B32A32_FLOAT:
             case Format::R32G32B32A32_UINT:
             case Format::R32G32B32A32_SINT:

@@ -600,6 +600,15 @@ namespace OpenGL
     TransferImageTypeFormat DecodeTransferTypeFormatPair(Render::Format format)
     {
         constexpr static std::pair<Render::Format, TransferImageTypeFormat> mapping[] = {
+            {Render::Format::R64_FLOAT,
+             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RED}},
+            {Render::Format::R64G64_FLOAT,
+             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RG}},
+            {Render::Format::R64G64B64_FLOAT,
+             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RGB}},
+            {Render::Format::R64G64B64A64_FLOAT,
+             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RGBA}},
+
             {Render::Format::R32G32B32A32_FLOAT,
              TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RGBA}},
             {Render::Format::R32G32B32A32_UINT,
@@ -637,12 +646,12 @@ namespace OpenGL
                                      .format = GL_DEPTH_STENCIL}},
 
             {Render::Format::R10G10B10A2_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV, .format = GL_BGRA}},
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV, .format = GL_RGBA}},
             {Render::Format::R10G10B10A2_UINT,
              TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
-                                     .format = GL_BGRA_INTEGER}},
+                                     .format = GL_RGBA_INTEGER}},
             {Render::Format::R11G11B10_FLOAT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10F_11F_11F_REV, .format = GL_BGR}},
+             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10F_11F_11F_REV, .format = GL_RGB}},
 
             {Render::Format::R8G8B8A8_UNORM,
              TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA}},
@@ -678,7 +687,8 @@ namespace OpenGL
             {Render::Format::D24_UNORM_S8_UINT,
              TransferImageTypeFormat{.type = GL_UNSIGNED_INT_24_8, .format = GL_DEPTH_STENCIL}},
 
-            {Render::Format::R8G8_UNORM, TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG}},
+            {Render::Format::R8G8_UNORM,
+             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG}},
             {Render::Format::R8G8_UINT,
              TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG_INTEGER}},
             {Render::Format::R8G8_SNORM, TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG}},
@@ -708,15 +718,15 @@ namespace OpenGL
 
             {Render::Format::R9G9B9E5_SHAREDEXP,
              TransferImageTypeFormat{.type = GL_UNSIGNED_INT_5_9_9_9_REV,
-                                     .format = GL_BGR_INTEGER}}, //BGR or BGRA???
+                                     .format = GL_RGB_INTEGER}},
 
             {Render::Format::B5G6R5_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_6_5, .format = GL_BGR}},
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_6_5_REV, .format = GL_RGB}},
             {Render::Format::B5G5R5A1_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_5_5_1, .format = GL_BGRA}},
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_1_5_5_5_REV, .format = GL_RGBA}},
 
             {Render::Format::B4G4R4A4_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4, .format = GL_BGRA}},
+             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4_REV, .format = GL_RGBA}},
         };
 
         CHECK_MAPPING_IS_SORTED(mapping)
@@ -778,6 +788,15 @@ namespace OpenGL
 
     constexpr inline std::pair<Render::Format, VertexInputTypeSize>
         format_to_vertex_input_type_size_mapping[] = {
+            {Render::Format::R64_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 1, .normalized = false}},
+            {Render::Format::R64G64_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 2, .normalized = false}},
+            {Render::Format::R64G64B64_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 3, .normalized = false}},
+            {Render::Format::R64G64B64A64_FLOAT,
+             VertexInputTypeSize{.type = GL_FLOAT, .size = 4, .normalized = false}},
+
             {Render::Format::R32G32B32A32_FLOAT,
              VertexInputTypeSize{.type = GL_FLOAT, .size = 4, .normalized = false}},
             {Render::Format::R32G32B32A32_UINT,
@@ -812,17 +831,16 @@ namespace OpenGL
 
             {Render::Format::R10G10B10A2_UNORM,
              VertexInputTypeSize{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
-                                 .size = GL_BGRA,
+                                 .size = 4,
                                  .normalized = true}},
             {Render::Format::R10G10B10A2_UINT,
              VertexInputTypeSize{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
-                                 .size = GL_BGRA,
+                                 .size = 4,
                                  .normalized = false}},
             {Render::Format::R11G11B10_FLOAT,
-             VertexInputTypeSize{
-                 .type = GL_UNSIGNED_INT_10F_11F_11F_REV,
-                 .size = GL_BGR, //don't know if GL_BGR is available options, so check after...
-                 .normalized = false}},
+             VertexInputTypeSize{.type = GL_UNSIGNED_INT_10F_11F_11F_REV,
+                                 .size = 3,
+                                 .normalized = false}},
 
             {Render::Format::R8G8B8A8_UNORM,
              VertexInputTypeSize{.type = GL_UNSIGNED_BYTE, .size = 4, .normalized = true}},

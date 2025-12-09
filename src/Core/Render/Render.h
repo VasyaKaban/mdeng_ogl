@@ -297,9 +297,17 @@ namespace Render
         CubeMap
     };
 
+    //formnat: LSB -> MSB
     enum class Format
     {
         Undefined,
+
+        //typically only for vertex input
+        R64_FLOAT,
+        R64G64_FLOAT,
+        R64G64B64_FLOAT,
+        R64G64B64A64_FLOAT,
+
         R32G32B32A32_FLOAT,
         R32G32B32A32_UINT,
         R32G32B32A32_SINT,
@@ -979,7 +987,7 @@ namespace Render
         std::uint32_t linear_binding;
     };
 
-    struct DescriptorSetLayoutLayoutBinding
+    struct DescriptorSetLayoutBinding
     {
         DescriptorBinding binding;
         DescriptorType type;
@@ -988,7 +996,7 @@ namespace Render
 
     struct DescriptorSetLayoutInfo
     {
-        std::span<const DescriptorSetLayoutLayoutBinding> bindings;
+        std::span<const DescriptorSetLayoutBinding> bindings;
     };
 
     struct DescriptorPoolSize
@@ -1385,6 +1393,15 @@ namespace Render
         bool customBorderColorWithoutFormat; //OGL: true; VK_EXT_custom_border_color
     };
 
+    enum class ContextDeviceType
+    {
+        Other,
+        IntegratedGPU,
+        DiscreteGPU,
+        VirtualGPU,
+        CPU
+    };
+
     struct ContextProperties
     {
         std::string context_name;
@@ -1397,6 +1414,7 @@ namespace Render
         std::vector<QueueFamilyProperties> queue_family_properties;
         std::vector<MemoryType> memory_types;
         CommandBufferStrategy command_buffer_strategy;
+        ContextDeviceType device_type;
         bool persistent_mapping_used;
         //If usage included VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minUniformBufferOffsetAlignment.
         //If usage included VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minStorageBufferOffsetAlignment.

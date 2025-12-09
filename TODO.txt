@@ -1,8 +1,9 @@
+SPEC: https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf
+
 Change DDS image info that will return self-created image info not a Render::ImageInfo
 hrs::forward_pool -> for what???
 map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for events -> reudce memory usage
 ClearColor as union instead of variant + apply based on inner attachment format
-Add 64-bit vertex input formats into enum Format
 OGL: implement depth bounds test in GraphicsPipelineDepthStencilStateInfo
 Add array of descriptors in descriptor sets and layout
 Add limits and features
@@ -13,14 +14,12 @@ Move to OpenGL 4.5 + use extensions to populate features
 FreeBlockList: Split begin and after iterators in free block! In for loop -> after always be the next of before
 "SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???" -> in Engine???
 Remove non-persistent flag in properties -> do not care about OpenGL3.3 now!
-Test B4G4R4A4_UNORM to check RGBA10_A2 format size and type!!! Or simply remove them until we ready for them
 glTextureStorage3D -> should we mul by 6 array layers???
 OpenGL/ES and D3D compatibily for Vulkan as features
 glClipControl for XY coordinates or populate clip coordinate system via properties + depth range? need test both OpenGL and Vulkan (or just resolve it via viewport transformation) -> the UV system cannot be changed 
 |
 +-- so populate coordinate systems and depth range in properties so user can control viewport
 explicit dllimport/dllexport + INTERFACE targets
-check spec https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf for transfer type and size. page 297
 add descriptor count and dst_array_index in UpdateDescriptorDesc
 cache Sampler, DescriptorSetLayout and PipelineLayout(for VK)
 Provoking vertex set first policy for opengl like in D3D and VK
@@ -31,5 +30,5 @@ viewport origin properties
 UV origin properties
 FormatToNative conversions for retrieving format properties shouldn't throw exceptions(OpenGL!)
 DescriptorPool(OpenGL): either align all decsriptors to 8-byte alignment or correct offset in descriptor pool after allocation
-add physical device type
 add immutable samplers
+OS-dependent context creation for OpenGL

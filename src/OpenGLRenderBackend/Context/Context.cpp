@@ -121,6 +121,7 @@ namespace OpenGL
             .queue_count = 1});
         properties.memory_types = create_memory_types();
         properties.command_buffer_strategy = Render::CommandBufferStrategy::Immediate;
+        properties.device_type = Render::ContextDeviceType::Other;
         properties.persistent_mapping_used = true;
     }
 
