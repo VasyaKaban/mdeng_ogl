@@ -29,3 +29,4 @@ VK_EXT_border_color_swizzle???
 NDC origin properties
 viewport origin properties
 UV origin properties
+FormatToNative conversions for retrieving format properties shouldn't throw exceptions(OpenGL!)
