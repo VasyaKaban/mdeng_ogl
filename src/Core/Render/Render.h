@@ -1410,6 +1410,18 @@ namespace Render
         CPU
     };
 
+    enum class ViewOrigin //X - right, Z - to screen
+    {
+        TopLeft, //VK
+        BottomLeft //OGL
+    };
+
+    struct ClipSpaceDepthBounds
+    {
+        float min;
+        float max;
+    };
+
     struct ContextProperties
     {
         std::string context_name;
@@ -1423,6 +1435,8 @@ namespace Render
         std::vector<MemoryType> memory_types;
         CommandBufferStrategy command_buffer_strategy;
         ContextDeviceType device_type;
+        ViewOrigin view_origin;
+        ClipSpaceDepthBounds clip_space_depth_bounds;
         bool persistent_mapping_used;
         //If usage included VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minUniformBufferOffsetAlignment.
         //If usage included VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minStorageBufferOffsetAlignment.

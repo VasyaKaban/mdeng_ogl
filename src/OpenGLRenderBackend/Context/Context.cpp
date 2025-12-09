@@ -123,6 +123,10 @@ namespace OpenGL
         properties.memory_types = create_memory_types();
         properties.command_buffer_strategy = Render::CommandBufferStrategy::Immediate;
         properties.device_type = Render::ContextDeviceType::Other;
+        properties.view_origin = Render::ViewOrigin::BottomLeft;
+        properties.clip_space_depth_bounds =
+            Render::ClipSpaceDepthBounds{.min = 0.0f,
+                                         .max = 1.0f}; //due to glClipControl(GL_ZERO_TO_ONE)
         properties.persistent_mapping_used = true;
     }
 
