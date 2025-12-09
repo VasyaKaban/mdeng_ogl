@@ -36,11 +36,12 @@ namespace OpenGL
                           std::span<const Render::BufferImageCopyRegion> regions) override;
 
         //Pipeline
-        virtual void Bind(Render::Pipeline* pipeline) override;
+        virtual void BindPipeline(Render::Pipeline* pipeline) override;
 
-        virtual void BindVertexBuffer(Render::Buffer* buffer,
-                                      std::uint32_t binding,
-                                      std::int64_t offset) override;
+        virtual void BindVertexBuffer(std::uint32_t first_binding,
+                                      std::uint32_t binding_count,
+                                      Render::Buffer** buffers,
+                                      std::int64_t* offsets) override;
         virtual void BindIndexBuffer(Render::Buffer* buffer,
                                      Render::IndexType type,
                                      std::uintptr_t offset) override;
@@ -71,7 +72,8 @@ namespace OpenGL
 
         virtual void DispatchIndirect(Render::Buffer* buffer, std::uint64_t offset) override;
 
-        virtual void BindDescriptorSet(std::uint32_t index, Render::DescriptorSet* set) override;
+        virtual void BindDescriptorSets(std::uint32_t first_set,
+                                        std::span<const Render::DescriptorSet*> sets) override;
 
         //Dynamic state
         virtual void SetViewport(std::uint32_t first_viewport,

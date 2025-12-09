@@ -119,10 +119,10 @@ namespace OpenGL
                     for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
                     {
                         DescriptorTexelBufferDesc* array_desc = buffer_desc + i;
-                        Render::BufferView** array_descriptor = desc.desc.texel_buffer_view + i;
+                        Render::BufferView* array_descriptor = desc.desc.texel_buffer_view[i];
 
                         array_desc->buffer_view =
-                            static_cast<BufferView*>(*array_descriptor)->GetHandle();
+                            static_cast<BufferView*>(array_descriptor)->GetHandle();
                     }
                 }
                 break;
@@ -135,7 +135,7 @@ namespace OpenGL
         return parent;
     }
 
-    void DescriptorSet::Bind(CommandBuffer& cmd)
+    void DescriptorSet::Bind(CommandBuffer& cmd) const
     {
         layout->Bind(cmd, descriptors_data);
     }

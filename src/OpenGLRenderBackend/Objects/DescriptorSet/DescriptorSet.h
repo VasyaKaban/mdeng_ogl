@@ -18,7 +18,7 @@ namespace OpenGL
 
         virtual Render::Context* GetContext() const noexcept override;
 
-        void Bind(CommandBuffer& cmd);
+        void Bind(CommandBuffer& cmd) const;
     private:
         Context* parent;
         const DescriptorSetLayout* layout;

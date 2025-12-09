@@ -1105,6 +1105,7 @@ namespace Render
 
     struct UniformDesc
     {
+        ShaderStageFlags stages;
         UniformType type;
         UniformExtent extent;
         std::uint32_t count;

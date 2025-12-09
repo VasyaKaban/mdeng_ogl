@@ -28,10 +28,12 @@ namespace Render
                                        std::span<const BufferImageCopyRegion> regions) = 0;
 
         //Pipeline
-        virtual void Bind(Pipeline* pipeline) = 0;
+        virtual void BindPipeline(Pipeline* pipeline) = 0;
 
-        virtual void
-        BindVertexBuffer(Buffer* buffer, std::uint32_t binding, std::int64_t offset) = 0;
+        virtual void BindVertexBuffer(std::uint32_t first_binding,
+                                      std::uint32_t binding_count,
+                                      Buffer** buffers,
+                                      std::int64_t* offsets) = 0;
         virtual void BindIndexBuffer(Buffer* buffer, IndexType type, std::uintptr_t offset) = 0;
 
         virtual void Draw(std::uint32_t vertex_count,
@@ -60,7 +62,8 @@ namespace Render
 
         virtual void DispatchIndirect(Buffer* buffer, std::uint64_t offset) = 0;
 
-        virtual void BindDescriptorSet(std::uint32_t index, DescriptorSet* set) = 0;
+        virtual void BindDescriptorSets(std::uint32_t first_set,
+                                        std::span<const DescriptorSet*> sets) = 0;
 
         //Dynamic state
         virtual void SetViewport(std::uint32_t first_viewport,

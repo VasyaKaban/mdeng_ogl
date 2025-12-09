@@ -8,7 +8,6 @@ OGL: implement depth bounds test in GraphicsPipelineDepthStencilStateInfo
 Add limits and features
 Add queries
 Add transform feedback
-Add multi-bind commands for buffers, images, etc...(implement as inner array of bytes in which we will copy native handles)
 Move to OpenGL 4.5 + use extensions to populate features
 FreeBlockList: Split begin and after iterators in free block! In for loop -> after always be the next of before
 "SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???" -> in Engine???

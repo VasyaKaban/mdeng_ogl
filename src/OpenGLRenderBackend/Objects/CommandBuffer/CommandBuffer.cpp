@@ -499,17 +499,22 @@ namespace OpenGL
     }
 
     //Pipeline
-    void CommandBuffer::Bind(Render::Pipeline* pipeline)
+    void CommandBuffer::BindPipeline(Render::Pipeline* pipeline)
     {
         bound_pipeline = static_cast<Pipeline*>(pipeline);
         bound_pipeline->Bind(*this);
     }
 
-    void CommandBuffer::BindVertexBuffer(Render::Buffer* buffer,
-                                         std::uint32_t binding,
-                                         std::int64_t offset)
+    void CommandBuffer::BindVertexBuffer(std::uint32_t first_binding,
+                                         std::uint32_t binding_count,
+                                         Render::Buffer** buffers,
+                                         std::int64_t* offsets)
     {
-        bound_pipeline->BindVertexBuffer(*this, *static_cast<Buffer*>(buffer), binding, offset);
+        for(std::uint32_t i = 0; i < binding_count; i++)
+            bound_pipeline->BindVertexBuffer(*this,
+                                             *static_cast<Buffer*>(buffers[i]),
+                                             first_binding + i,
+                                             offsets[i]);
     }
 
     void CommandBuffer::BindIndexBuffer(Render::Buffer* buffer,
@@ -576,9 +581,11 @@ namespace OpenGL
         parent->GetLoader().DispatchComputeIndirect(offset);
     }
 
-    void CommandBuffer::BindDescriptorSet(std::uint32_t index, Render::DescriptorSet* set)
+    void CommandBuffer::BindDescriptorSets(std::uint32_t first_set,
+                                           std::span<const Render::DescriptorSet*> sets)
     {
-        static_cast<DescriptorSet*>(set)->Bind(*this);
+        for(std::uint32_t i = 0; i < sets.size(); i++)
+            static_cast<const DescriptorSet*>(sets[i])->Bind(*this);
     }
 
     //Dynamic state
