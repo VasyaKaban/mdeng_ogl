@@ -23,3 +23,6 @@ explicit dllimport/dllexport + INTERFACE targets
 check spec https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf for transfer type and size. page 297
 add descriptor count and dst_array_index in UpdateDescriptorDesc
 cache Sampler, DescriptorSetLayout and PipelineLayout(for VK)
+Provoking vertex set first policy for opengl like in D3D and VK
+glPrimitiveRestartIndex for different index types or use GL_PRIMITIVE_RESTART_FIXED_INDEX + VK_EXT_primitive_topology_list_restart for lists in VK as feature
+VK_EXT_border_color_swizzle???
