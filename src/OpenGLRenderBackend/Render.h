@@ -49,6 +49,7 @@ namespace OpenGL
     GLenum BlendOpToNative(Render::BlendOp op);
     GLenum StencilOpToNative(Render::StencilOp op);
     GLenum PolygonModeToNative(Render::PolygonMode mode);
+    GLenum DecodePolygonOffsetMode(Render::PolygonMode mode);
 
     constexpr inline GLenum OGL_CULL_MODE_NONE = 0;
     GLenum CullModeToNative(Render::CullMode mode);

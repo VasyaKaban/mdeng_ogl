@@ -937,6 +937,10 @@ namespace Render
         PolygonMode polygon_mode;
         CullMode cull_mode;
         FrontFace front_face;
+        bool depth_bias_enabled;
+        float depth_bias_constant_factor;
+        float depth_bias_clamp;
+        float depth_bias_slope_factor;
         float line_width;
     };
     //Rasterization

@@ -499,6 +499,23 @@ namespace OpenGL
         return *native;
     }
 
+    GLenum DecodePolygonOffsetMode(Render::PolygonMode mode)
+    {
+        constexpr static std::pair<Render::PolygonMode, GLenum> mapping[] = {
+            {Render::PolygonMode::Point, GL_POLYGON_OFFSET_POINT},
+            {Render::PolygonMode::Line, GL_POLYGON_OFFSET_LINE},
+            {Render::PolygonMode::Fill, GL_POLYGON_OFFSET_FILL},
+        };
+
+        CHECK_MAPPING_IS_SORTED(mapping)
+
+        const GLenum* native = hrs::mapping_search(mapping, mode);
+        if(native == nullptr)
+            throw std::runtime_error("No native PolygonOffsetMode found");
+
+        return *native;
+    }
+
     GLenum CullModeToNative(Render::CullMode mode)
     {
         constexpr static std::pair<Render::CullMode, GLenum> mapping[] = {

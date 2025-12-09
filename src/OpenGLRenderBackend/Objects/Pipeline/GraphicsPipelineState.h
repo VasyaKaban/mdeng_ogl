@@ -123,6 +123,10 @@ namespace OpenGL
         bool stencil_test_enabled;
         StencilStateOpNative stencil_front_op;
         StencilStateOpNative stencil_back_op;
+
+        bool depth_bounds_test_enabled;
+        float min_depth_bounds;
+        float max_depth_bounds;
     };
 
     class GraphicsPipelineMultisampleState : hrs::non_copyable
@@ -167,6 +171,11 @@ namespace OpenGL
         GLenum polygon_mode;
         GLenum cull_mode;
         GLenum front_face;
+        GLenum polygon_offset_mode;
+        bool depth_bias_enabled;
+        float depth_bias_constant_factor;
+        float depth_bias_clamp;
+        float depth_bias_slope_factor;
         GLfloat line_width;
     };
 

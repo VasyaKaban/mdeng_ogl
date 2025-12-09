@@ -205,7 +205,10 @@ namespace OpenGL
           depth_compare_op(ComapreOpToNative(info.depth_compare_op)),
           stencil_test_enabled(info.stencil_test_enabled),
           stencil_front_op(stencil_state_op_to_native(info.stencil_front_op)),
-          stencil_back_op(stencil_state_op_to_native(info.stencil_back_op))
+          stencil_back_op(stencil_state_op_to_native(info.stencil_back_op)),
+          depth_bounds_test_enabled(info.depth_bounds_test_enabled),
+          min_depth_bounds(info.min_depth_bounds),
+          max_depth_bounds(info.min_depth_bounds)
     {}
 
     static void
@@ -240,6 +243,17 @@ namespace OpenGL
             loader.Enable(GL_STENCIL_TEST);
             stencil_state_op_set(parent, GL_FRONT, stencil_front_op);
             stencil_state_op_set(parent, GL_BACK, stencil_back_op);
+        }
+
+        if(parent.GetContext()->GetProperties().features.depth_bounds)
+        {
+            if(!depth_bounds_test_enabled)
+                loader.Disable(GL_DEPTH_BOUNDS_TEST);
+            else
+            {
+                loader.Enable(GL_DEPTH_BOUNDS_TEST);
+                loader.DepthBounds(min_depth_bounds, max_depth_bounds);
+            }
         }
     }
 
@@ -325,6 +339,11 @@ namespace OpenGL
           polygon_mode(PolygonModeToNative(info.polygon_mode)),
           cull_mode(CullModeToNative(info.cull_mode)),
           front_face(FrontFaceToNative(info.front_face)),
+          polygon_offset_mode(DecodePolygonOffsetMode(info.polygon_mode)),
+          depth_bias_enabled(info.depth_bias_enabled),
+          depth_bias_constant_factor(info.depth_bias_constant_factor),
+          depth_bias_clamp(info.depth_bias_clamp),
+          depth_bias_slope_factor(info.depth_bias_slope_factor),
           line_width(info.line_width)
     {}
 
@@ -332,10 +351,13 @@ namespace OpenGL
     {
         const auto& loader = get_loader(parent);
 
-        if(depth_clamp_enabled)
-            loader.Enable(GL_DEPTH_CLAMP);
-        else
-            loader.Disable(GL_DEPTH_CLAMP);
+        if(parent.GetContext()->GetProperties().features.depth_clamp)
+        {
+            if(depth_clamp_enabled)
+                loader.Enable(GL_DEPTH_CLAMP);
+            else
+                loader.Disable(GL_DEPTH_CLAMP);
+        }
 
         if(rasterizer_discard_enabled)
             loader.Enable(GL_RASTERIZER_DISCARD);
@@ -353,6 +375,21 @@ namespace OpenGL
         }
         loader.FrontFace(front_face);
         loader.LineWidth(line_width);
+
+        if(depth_bias_enabled)
+        {
+            loader.Enable(polygon_offset_mode);
+            if(parent.GetContext()->GetProperties().features.depth_bias_clamp)
+                loader.PolygonOffsetClamp(depth_bias_slope_factor,
+                                          depth_bias_constant_factor,
+                                          depth_bias_clamp);
+            else
+                loader.PolygonOffset(depth_bias_slope_factor, depth_bias_constant_factor);
+        }
+        else
+        {
+            loader.Disable(polygon_offset_mode);
+        }
     }
 
     void GraphicsPipelineRasterizationState::Destroy(Pipeline& parent) noexcept
