@@ -26,3 +26,6 @@ cache Sampler, DescriptorSetLayout and PipelineLayout(for VK)
 Provoking vertex set first policy for opengl like in D3D and VK
 glPrimitiveRestartIndex for different index types or use GL_PRIMITIVE_RESTART_FIXED_INDEX + VK_EXT_primitive_topology_list_restart for lists in VK as feature
 VK_EXT_border_color_swizzle???
+NDC origin properties
+viewport origin properties
+UV origin properties
