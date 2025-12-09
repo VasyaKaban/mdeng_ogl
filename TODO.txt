@@ -31,3 +31,5 @@ viewport origin properties
 UV origin properties
 FormatToNative conversions for retrieving format properties shouldn't throw exceptions(OpenGL!)
 DescriptorPool(OpenGL): either align all decsriptors to 8-byte alignment or correct offset in descriptor pool after allocation
+add physical device type
+add immutable samplers
