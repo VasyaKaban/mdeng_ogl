@@ -24,3 +24,4 @@ Pipeline state based on enabled features for OpenGL
 Aspect flags for image view(in case when we want to create image view over depth-stencil image with only stencil buffer access) -> do not care about depth and stencil aspect in copy commands because we need to use maintenance10 extension and IMHO no one want to copy to/from image with depth-stencil format(because it is implementation dependent...)
 Check all PipelineInfo* structs and compare them with Vulkan spec
 Check RenderPassInfo.AttachmentDescription and compare with Vulkan spec
+GL_KHR_no_error -> should we add?
