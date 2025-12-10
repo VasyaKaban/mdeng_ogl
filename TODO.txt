@@ -25,3 +25,4 @@ Aspect flags for image view(in case when we want to create image view over depth
 Check all PipelineInfo* structs and compare them with Vulkan spec
 Check RenderPassInfo.AttachmentDescription and compare with Vulkan spec
 GL_KHR_no_error -> should we add?
+GL_DEPTH_STENCIL_TEXTURE_MODE -> as aspect
