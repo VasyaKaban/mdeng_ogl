@@ -26,3 +26,7 @@ Check all PipelineInfo* structs and compare them with Vulkan spec
 Check RenderPassInfo.AttachmentDescription and compare with Vulkan spec
 GL_KHR_no_error -> should we add?
 GL_DEPTH_STENCIL_TEXTURE_MODE -> as aspect -> but we should keep aspecty for barrier???
+debug feature:
+    OGL debug context -> validation layers from VK
+    OGL GL_DEBUG_OUTPUT(SYNC or not) -> VK debug_utils + debug messenger
+    we must set default logger for OGL that will send all messages into stdout like in VK
