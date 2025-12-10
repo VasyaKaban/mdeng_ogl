@@ -30,3 +30,4 @@ debug feature:
     OGL debug context -> validation layers from VK
     OGL GL_DEBUG_OUTPUT(SYNC or not) -> VK debug_utils + debug messenger
     we must set default logger for OGL that will send all messages into stdout like in VK
+constants like VK_LOD_CLAMP_NONE and other?
