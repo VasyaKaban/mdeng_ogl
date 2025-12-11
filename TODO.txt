@@ -27,3 +27,4 @@ Check RenderPassInfo.AttachmentDescription and compare with Vulkan spec
 GL_KHR_no_error -> should we add?
 constants like VK_LOD_CLAMP_NONE and other?
 Check throw in commands and creation functions -> OGL only
+OGL MemoryType: HostCoherent must come with HostReadable or HostWritable! 
