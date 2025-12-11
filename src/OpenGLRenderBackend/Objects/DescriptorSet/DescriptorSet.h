@@ -23,13 +23,5 @@ namespace OpenGL
         Context* parent;
         const DescriptorSetLayout* layout;
         std::span<std::byte> descriptors_data;
-
-        /*
-        OGL:
-            combined(image + sampler)
-            uniform buffers
-            shader buffers
-            images
-        */
     };
 };

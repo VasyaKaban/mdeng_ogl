@@ -4,24 +4,50 @@
 
 namespace OpenGL
 {
+    static void append_layout_bindings(BindingsClass& binding_class,
+                                       std::size_t size,
+                                       std::size_t descriptor_size,
+                                       std::size_t& bindigns_offset,
+                                       std::size_t& allocation_offset,
+                                       std::vector<std::uint32_t>& bindings)
+    {
+        binding_class.bindings = std::span{bindings.data() + bindigns_offset, size};
+        binding_class.allocation_offset = allocation_offset;
+        bindigns_offset += size;
+        allocation_offset += size * descriptor_size;
+    }
+
+    template<typename T>
+    static T* get_descriptor_desc(std::span<std::byte>& descriptors_data,
+                                  std::size_t allocation_offset,
+                                  std::size_t decsriptor_size,
+                                  std::size_t index) noexcept
+    {
+        return reinterpret_cast<T*>(descriptors_data.data() + allocation_offset +
+                                    index * decsriptor_size);
+    }
+
     DescriptorSetLayout::DescriptorSetLayout(Context* _parent,
                                              const Render::DescriptorSetLayoutInfo& info)
         : parent(_parent)
     {
         //we do not take into account duplicated linear indices from the same descriptor types -> this can lead to more memory usage(check this from user code before creating layout)
 
-        std::size_t combined_image_sampler_bindings_size = 0;
+        std::size_t texture_bindings_size = 0;
         std::size_t uniform_buffer_bindings_size = 0;
         std::size_t storage_buffer_bindings_size = 0;
         std::size_t storage_image_bindings_size = 0;
-        std::size_t texel_buffer_bindings_size = 0;
 
         for(const auto& binding: info.bindings)
         {
             switch(binding.type)
             {
                 case Render::DescriptorType::CombinedImageSampler:
-                    combined_image_sampler_bindings_size += binding.descriptor_count;
+                case Render::DescriptorType::SampledImage:
+                case Render::DescriptorType::UniformTexelBuffer:
+                case Render::DescriptorType::StorageTexelBuffer:
+                case Render::DescriptorType::InputAttachment:
+                    texture_bindings_size += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::UnifromBuffer:
                     uniform_buffer_bindings_size += binding.descriptor_count;
@@ -32,64 +58,58 @@ namespace OpenGL
                 case Render::DescriptorType::StorageImage:
                     storage_image_bindings_size += binding.descriptor_count;
                     break;
-                case Render::DescriptorType::UniformTexelBuffer:
-                case Render::DescriptorType::StorageTexelBuffer:
-                    texel_buffer_bindings_size += binding.descriptor_count;
             }
         }
 
         std::size_t bindigns_offset = 0;
         std::size_t allocation_offset = 0;
-        bindings.resize(combined_image_sampler_bindings_size + uniform_buffer_bindings_size +
+        bindings.resize(texture_bindings_size + uniform_buffer_bindings_size +
                         storage_buffer_bindings_size + storage_image_bindings_size);
 
-        combined_image_samplers.bindings =
-            std::span{bindings.data() + bindigns_offset, combined_image_sampler_bindings_size};
-        combined_image_samplers.allocation_offset = allocation_offset;
-        bindigns_offset += combined_image_sampler_bindings_size;
-        allocation_offset +=
-            combined_image_sampler_bindings_size * COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE;
+        append_layout_bindings(textures,
+                               texture_bindings_size,
+                               TEXTURE_DESCRIPTOR_SIZE,
+                               bindigns_offset,
+                               allocation_offset,
+                               bindings);
+        append_layout_bindings(uniform_buffers,
+                               uniform_buffer_bindings_size,
+                               UNIFORM_BUFFER_DESCRIPTOR_SIZE,
+                               bindigns_offset,
+                               allocation_offset,
+                               bindings);
+        append_layout_bindings(storage_buffers,
+                               storage_buffer_bindings_size,
+                               STORAGE_BUFFER_DESCRIPTOR_SIZE,
+                               bindigns_offset,
+                               allocation_offset,
+                               bindings);
+        append_layout_bindings(storage_images,
+                               storage_image_bindings_size,
+                               STORAGE_IMAGE_DESCRIPTOR_SIZE,
+                               bindigns_offset,
+                               allocation_offset,
+                               bindings);
 
-        uniform_buffers.bindings =
-            std::span{bindings.data() + bindigns_offset, uniform_buffer_bindings_size};
-        uniform_buffers.allocation_offset = allocation_offset;
-        bindigns_offset += uniform_buffer_bindings_size;
-        allocation_offset += uniform_buffer_bindings_size * UNIFORM_BUFFER_DESCRIPTOR_SIZE;
-
-        storage_buffers.bindings =
-            std::span{bindings.data() + bindigns_offset, storage_buffer_bindings_size};
-        storage_buffers.allocation_offset = allocation_offset;
-        bindigns_offset += storage_buffer_bindings_size;
-        allocation_offset += storage_buffer_bindings_size * UNIFORM_BUFFER_DESCRIPTOR_SIZE;
-
-        storage_images.bindings =
-            std::span{bindings.data() + bindigns_offset, storage_image_bindings_size};
-        storage_images.allocation_offset = allocation_offset;
-        bindigns_offset += storage_image_bindings_size;
-        allocation_offset += storage_image_bindings_size * STORAGE_IMAGE_DESCRIPTOR_SIZE;
-
-        texel_buffers.bindings =
-            std::span{bindings.data() + bindigns_offset, texel_buffer_bindings_size};
-        texel_buffers.allocation_offset = allocation_offset;
-        bindigns_offset += texel_buffer_bindings_size;
-        allocation_offset += texel_buffer_bindings_size * TEXEL_BUFFER_DESCRIPTOR_SIZE;
-
-        std::size_t combined_bindings_index = 0;
+        std::size_t texture_bindings_index = 0;
         std::size_t uniform_bindings_index = 0;
         std::size_t shader_storage_bindings_index = 0;
         std::size_t image_bindings_index = 0;
-        std::size_t texel_bindings_index = 0;
         for(const auto& binding: info.bindings)
         {
             switch(binding.type)
             {
                 case Render::DescriptorType::CombinedImageSampler:
+                case Render::DescriptorType::SampledImage:
+                case Render::DescriptorType::UniformTexelBuffer:
+                case Render::DescriptorType::StorageTexelBuffer:
+                case Render::DescriptorType::InputAttachment:
                     for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
                     {
-                        combined_image_samplers.bindings[combined_bindings_index + i] =
+                        textures.bindings[texture_bindings_index + i] =
                             binding.binding.linear_binding + i;
                     }
-                    combined_bindings_index += binding.descriptor_count;
+                    texture_bindings_index += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::UnifromBuffer:
                     for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
@@ -115,23 +135,13 @@ namespace OpenGL
                     }
                     image_bindings_index += binding.descriptor_count;
                     break;
-                case Render::DescriptorType::UniformTexelBuffer:
-                case Render::DescriptorType::StorageTexelBuffer:
-                    for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
-                    {
-                        texel_buffers.bindings[texel_bindings_index + i] =
-                            binding.binding.linear_binding + i;
-                    }
-                    texel_bindings_index += binding.descriptor_count;
-                    break;
             }
         }
 
-        std::ranges::sort(combined_image_samplers.bindings);
+        std::ranges::sort(textures.bindings);
         std::ranges::sort(uniform_buffers.bindings);
         std::ranges::sort(storage_buffers.bindings);
         std::ranges::sort(storage_images.bindings);
-        std::ranges::sort(texel_buffers.bindings);
     }
 
     DescriptorSetLayout::~DescriptorSetLayout()
@@ -144,12 +154,10 @@ namespace OpenGL
 
     std::size_t DescriptorSetLayout::GetBindingsAllocationSize() const noexcept
     {
-        return combined_image_samplers.bindings.size() *
-                   sizeof(DescriptorCombinedImageSamplerDesc) +
-               (uniform_buffers.bindings.size() + storage_buffers.bindings.size()) *
-                   sizeof(DescriptorBufferDesc) +
-               storage_images.bindings.size() * sizeof(DescriptorStorageImageDesc) +
-               texel_buffers.bindings.size() * sizeof(DescriptorTexelBufferDesc);
+        return textures.bindings.size() * TEXTURE_DESCRIPTOR_SIZE +
+               uniform_buffers.bindings.size() * UNIFORM_BUFFER_DESCRIPTOR_SIZE +
+               storage_buffers.bindings.size() * STORAGE_BUFFER_DESCRIPTOR_SIZE +
+               storage_images.bindings.size() * STORAGE_IMAGE_DESCRIPTOR_SIZE;
     }
 
     static std::byte* translate(std::uint32_t binding,
@@ -170,21 +178,19 @@ namespace OpenGL
                (it - binding_class.bindings.begin()) * descriptor_size;
     }
 
-    DescriptorCombinedImageSamplerDesc* DescriptorSetLayout::TranslateCombinedImageSamplerBinding(
+    DescriptorTextureDesc* DescriptorSetLayout::TranslateTextureDescriptor(
         std::uint32_t binding,
         std::span<std::byte> descriptors_data) const noexcept
     {
-        std::byte* address = translate(binding,
-                                       combined_image_samplers,
-                                       descriptors_data,
-                                       COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE);
+        std::byte* address =
+            translate(binding, textures, descriptors_data, TEXTURE_DESCRIPTOR_SIZE);
         if(address == nullptr)
             return nullptr;
 
-        return reinterpret_cast<DescriptorCombinedImageSamplerDesc*>(address);
+        return reinterpret_cast<DescriptorTextureDesc*>(address);
     }
 
-    DescriptorBufferDesc* DescriptorSetLayout::TranslateUniformBufferBinding(
+    DescriptorUniformBufferDesc* DescriptorSetLayout::TranslateUniformBufferBinding(
         std::uint32_t binding,
         std::span<std::byte> descriptors_data) const noexcept
     {
@@ -193,19 +199,19 @@ namespace OpenGL
         if(address == nullptr)
             return nullptr;
 
-        return reinterpret_cast<DescriptorBufferDesc*>(address);
+        return reinterpret_cast<DescriptorUniformBufferDesc*>(address);
     }
 
-    DescriptorBufferDesc* DescriptorSetLayout::TranslateStorageBufferBinding(
+    DescriptorStorageBufferDesc* DescriptorSetLayout::TranslateStorageBufferBinding(
         std::uint32_t binding,
         std::span<std::byte> descriptors_data) const noexcept
     {
         std::byte* address =
-            translate(binding, storage_buffers, descriptors_data, STOARGE_BUFFER_DESCRIPTOR_SIZE);
+            translate(binding, storage_buffers, descriptors_data, STORAGE_BUFFER_DESCRIPTOR_SIZE);
         if(address == nullptr)
             return nullptr;
 
-        return reinterpret_cast<DescriptorBufferDesc*>(address);
+        return reinterpret_cast<DescriptorStorageBufferDesc*>(address);
     }
 
     DescriptorStorageImageDesc* DescriptorSetLayout::TranslateStorageImageBinding(
@@ -220,41 +226,29 @@ namespace OpenGL
         return reinterpret_cast<DescriptorStorageImageDesc*>(address);
     }
 
-    DescriptorTexelBufferDesc* DescriptorSetLayout::TranslateTexelBufferBinding(
-        std::uint32_t binding,
-        std::span<std::byte> descriptors_data) const noexcept
-    {
-        std::byte* address =
-            translate(binding, texel_buffers, descriptors_data, TEXEL_BUFFER_DESCRIPTOR_SIZE);
-        if(address == nullptr)
-            return nullptr;
-
-        return reinterpret_cast<DescriptorTexelBufferDesc*>(address);
-    }
-
     void DescriptorSetLayout::Bind(CommandBuffer& cmd, std::span<std::byte> descriptors_data) const
     {
-        for(std::size_t i = 0; i < combined_image_samplers.bindings.size(); i++)
+        for(std::size_t i = 0; i < textures.bindings.size(); i++)
         {
-            DescriptorCombinedImageSamplerDesc* desc =
-                reinterpret_cast<DescriptorCombinedImageSamplerDesc*>(
-                    descriptors_data.data() + combined_image_samplers.allocation_offset +
-                    i * COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE);
+            auto desc = get_descriptor_desc<DescriptorTextureDesc>(descriptors_data,
+                                                                   textures.allocation_offset,
+                                                                   TEXTURE_DESCRIPTOR_SIZE,
+                                                                   i);
 
-            parent->GetLoader().BindTextureUnit(combined_image_samplers.bindings[i],
-                                                desc->image_view);
-
-            parent->GetLoader().BindSampler(combined_image_samplers.bindings[i], desc->sampler);
+            parent->GetLoader().BindTextureUnit(textures.bindings[i], desc->image_view);
+            parent->GetLoader().BindSampler(textures.bindings[i], desc->sampler);
         }
 
         for(std::size_t i = 0; i < uniform_buffers.bindings.size(); i++)
         {
-            DescriptorBufferDesc* desc = reinterpret_cast<DescriptorBufferDesc*>(
-                descriptors_data.data() + uniform_buffers.allocation_offset +
-                i * UNIFORM_BUFFER_DESCRIPTOR_SIZE);
+            auto desc =
+                get_descriptor_desc<DescriptorUniformBufferDesc>(descriptors_data,
+                                                                 uniform_buffers.allocation_offset,
+                                                                 UNIFORM_BUFFER_DESCRIPTOR_SIZE,
+                                                                 i);
 
             parent->GetLoader().BindBufferRange(GL_UNIFORM_BUFFER,
-                                                combined_image_samplers.bindings[i],
+                                                uniform_buffers.bindings[i],
                                                 desc->buffer,
                                                 desc->offset,
                                                 desc->size);
@@ -262,12 +256,14 @@ namespace OpenGL
 
         for(std::size_t i = 0; i < storage_buffers.bindings.size(); i++)
         {
-            DescriptorBufferDesc* desc = reinterpret_cast<DescriptorBufferDesc*>(
-                descriptors_data.data() + storage_buffers.allocation_offset +
-                i * STOARGE_BUFFER_DESCRIPTOR_SIZE);
+            auto desc =
+                get_descriptor_desc<DescriptorStorageBufferDesc>(descriptors_data,
+                                                                 storage_buffers.allocation_offset,
+                                                                 STORAGE_BUFFER_DESCRIPTOR_SIZE,
+                                                                 i);
 
             parent->GetLoader().BindBufferRange(GL_SHADER_STORAGE_BUFFER,
-                                                combined_image_samplers.bindings[i],
+                                                storage_buffers.bindings[i],
                                                 desc->buffer,
                                                 desc->offset,
                                                 desc->size);
@@ -275,23 +271,14 @@ namespace OpenGL
 
         for(std::size_t i = 0; i < storage_images.bindings.size(); i++)
         {
-            DescriptorStorageImageDesc* desc = reinterpret_cast<DescriptorStorageImageDesc*>(
-                descriptors_data.data() + storage_images.allocation_offset +
-                i * STORAGE_IMAGE_DESCRIPTOR_SIZE);
+            auto desc =
+                get_descriptor_desc<DescriptorStorageImageDesc>(descriptors_data,
+                                                                storage_images.allocation_offset,
+                                                                STORAGE_IMAGE_DESCRIPTOR_SIZE,
+                                                                i);
 
             GLuint image_handle = desc->image_view;
-            parent->GetLoader().BindImageTextures(combined_image_samplers.bindings[i],
-                                                  1,
-                                                  &image_handle);
-        }
-
-        for(std::size_t i = 0; i < texel_buffers.bindings.size(); i++)
-        {
-            DescriptorTexelBufferDesc* desc = reinterpret_cast<DescriptorTexelBufferDesc*>(
-                descriptors_data.data() + texel_buffers.allocation_offset +
-                i * TEXEL_BUFFER_DESCRIPTOR_SIZE);
-
-            parent->GetLoader().BindTextureUnit(texel_buffers.bindings[i], desc->buffer_view);
+            parent->GetLoader().BindImageTextures(storage_images.bindings[i], 1, &image_handle);
         }
     }
 };

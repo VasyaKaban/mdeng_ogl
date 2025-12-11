@@ -23,12 +23,11 @@ add immutable samplers
 OS-dependent context creation for OpenGL
 Pipeline state based on enabled features for OpenGL
 Check all PipelineInfo* structs and compare them with Vulkan spec
-Check RenderPassInfo.AttachmentDescription and compare with Vulkan spec
+Check RenderPassInfo.AttachmentDescription and compare with Vulkan spec 
 GL_KHR_no_error -> should we add?
 constants like VK_LOD_CLAMP_NONE and other?
 Check throw in commands and creation functions -> OGL only
-OGL MemoryType: HostCoherent must come with HostReadable or HostWritable! 
-InputAttachments???
-Sample images as descriptors -> mapped as combined
-Reset viewport and scissors on renderpass begin and pipeline
+Reset viewport and scissors on renderpass begin and pipeline(call glViewport and glScissors with framebuffer extent )
 Change descriptor set binding -> instead of set and linear model use union of models + API type
+renderpass store_op based on glColorMask???
+renderpass.beginInfo: renderArea based on GL_SCISSORS because clears are affected

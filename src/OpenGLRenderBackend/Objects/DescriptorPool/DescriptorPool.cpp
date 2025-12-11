@@ -2,6 +2,7 @@
 #include "../DescriptorSetLayout/DescriptorSetLayout.h"
 #include "../DescriptorSet/DescriptorSet.h"
 #include "../../Context/Context.h"
+#include <algorithm>
 
 namespace OpenGL
 {
@@ -15,25 +16,20 @@ namespace OpenGL
             switch(size.type)
             {
                 case Render::DescriptorType::CombinedImageSampler:
-                    allocation_size += COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE;
-                    static_assert(COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE % 8 == 0);
+                case Render::DescriptorType::SampledImage:
+                case Render::DescriptorType::UniformTexelBuffer:
+                case Render::DescriptorType::StorageTexelBuffer:
+                case Render::DescriptorType::InputAttachment:
+                    allocation_size += TEXTURE_DESCRIPTOR_SIZE;
                     break;
                 case Render::DescriptorType::UnifromBuffer:
                     allocation_size += UNIFORM_BUFFER_DESCRIPTOR_SIZE;
-                    static_assert(UNIFORM_BUFFER_DESCRIPTOR_SIZE % 8 == 0);
                     break;
                 case Render::DescriptorType::StorageBuffer:
-                    allocation_size += STOARGE_BUFFER_DESCRIPTOR_SIZE;
-                    static_assert(STOARGE_BUFFER_DESCRIPTOR_SIZE % 8 == 0);
+                    allocation_size += STORAGE_BUFFER_DESCRIPTOR_SIZE;
                     break;
                 case Render::DescriptorType::StorageImage:
                     allocation_size += STORAGE_IMAGE_DESCRIPTOR_SIZE;
-                    static_assert(STORAGE_IMAGE_DESCRIPTOR_SIZE % 8 != 0);
-                    break;
-                case Render::DescriptorType::UniformTexelBuffer:
-                case Render::DescriptorType::StorageTexelBuffer:
-                    allocation_size += TEXEL_BUFFER_DESCRIPTOR_SIZE;
-                    static_assert(TEXEL_BUFFER_DESCRIPTOR_SIZE % 8 != 0);
                     break;
             }
         }
@@ -41,6 +37,12 @@ namespace OpenGL
         data = static_cast<std::byte*>(
             ::operator new[](allocation_size, std::align_val_t(DESCRIPTOR_ALIGNMENT)));
         size = allocation_size;
+
+        std::ranges::fill_n(
+            data,
+            size,
+            std::byte{
+                0}); //fill with zeros because sampled images, input attachments, texel buffers(Uniform and storage) should not use sampler
     }
 
     DescriptorPool::~DescriptorPool()
@@ -56,8 +58,8 @@ namespace OpenGL
         if(layout->GetBindingsAllocationSize() > size - offset)
             return nullptr;
 
-        Render::DescriptorSet* set =
-            new DescriptorSet(parent, layout, std::span{data + offset, allocation_size});
+        auto descriptors_data = std::span{data + offset, allocation_size};
+        Render::DescriptorSet* set = new DescriptorSet(parent, layout, descriptors_data);
 
         offset += allocation_size;
 

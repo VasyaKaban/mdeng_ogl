@@ -985,7 +985,7 @@ namespace Render
     {
         //VK_DESCRIPTOR_TYPE_SAMPLER = 0,
         CombinedImageSampler, //VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER = 1,
-        //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE = 2,
+        SampledImage, //VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE = 2,
         StorageImage, //VK_DESCRIPTOR_TYPE_STORAGE_IMAGE = 3,
         UniformTexelBuffer, //VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER = 4,
         StorageTexelBuffer, //VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER = 5,
@@ -993,7 +993,7 @@ namespace Render
         StorageBuffer, //VK_DESCRIPTOR_TYPE_STORAGE_BUFFER = 7,
         //VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC = 8,
         //VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC = 9,
-        //VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT = 10,
+        InputAttachment //VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT = 10,
     };
 
     struct DescriptorBinding

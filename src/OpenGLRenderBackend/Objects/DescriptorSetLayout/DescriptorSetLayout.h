@@ -25,22 +25,19 @@ namespace OpenGL
 
         std::size_t GetBindingsAllocationSize() const noexcept;
 
-        DescriptorCombinedImageSamplerDesc*
-        TranslateCombinedImageSamplerBinding(std::uint32_t binding,
-                                             std::span<std::byte> descriptors_data) const noexcept;
-        DescriptorBufferDesc*
+        DescriptorTextureDesc*
+        TranslateTextureDescriptor(std::uint32_t binding,
+                                   std::span<std::byte> descriptors_data) const noexcept;
+
+        DescriptorUniformBufferDesc*
         TranslateUniformBufferBinding(std::uint32_t binding,
                                       std::span<std::byte> descriptors_data) const noexcept;
-        DescriptorBufferDesc*
+        DescriptorStorageBufferDesc*
         TranslateStorageBufferBinding(std::uint32_t binding,
                                       std::span<std::byte> descriptors_data) const noexcept;
         DescriptorStorageImageDesc*
         TranslateStorageImageBinding(std::uint32_t binding,
                                      std::span<std::byte> descriptors_data) const noexcept;
-
-        DescriptorTexelBufferDesc*
-        TranslateTexelBufferBinding(std::uint32_t binding,
-                                    std::span<std::byte> descriptors_data) const noexcept;
 
         void Bind(CommandBuffer& cmd, std::span<std::byte> descriptors_data) const;
     private:
@@ -48,12 +45,9 @@ namespace OpenGL
 
         std::vector<std::uint32_t> bindings;
 
-        BindingsClass combined_image_samplers; //image + sampler
+        BindingsClass textures;
         BindingsClass uniform_buffers;
         BindingsClass storage_buffers;
         BindingsClass storage_images;
-        BindingsClass texel_buffers;
-
-        //Warning! texel_buffers share bindings with combined_image_samplers!
     };
 };

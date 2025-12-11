@@ -94,40 +94,44 @@ namespace OpenGL
 
     GLbitfield PipelineBarrierToNative(const Render::PipelineBarrier& barrier);
 
-    struct alignas(8) DescriptorCombinedImageSamplerDesc
+    /*
+    registers:
+        textures: CombinedImageSampler + SampledImage + UniformTexelBuffer + StorageTexelBuffer + InputAttachment
+        uniform buffers: UnifromBuffer
+        storage buffer: StorageBuffer
+        storage image: StorageImage
+    */
+
+    struct alignas(8) DescriptorTextureDesc
     {
-        GLHandle sampler;
+        GLHandle sampler; //CombinedImageSampler only
         GLHandle image_view;
     };
 
-    struct alignas(8) DescriptorBufferDesc
+    struct alignas(8) DescriptorUniformBufferDesc
     {
         GLHandle buffer;
         GLintptr offset;
         GLsizeiptr size;
     };
 
+    using DescriptorStorageBufferDesc = DescriptorUniformBufferDesc;
+
     struct alignas(8) DescriptorStorageImageDesc
     {
         GLHandle image_view;
     };
 
-    struct alignas(8) DescriptorTexelBufferDesc
-    {
-        GLHandle buffer_view;
-    };
-
-    constexpr inline std::size_t COMBINED_IMAGE_SAMPLER_DESCRIPTOR_SIZE =
-        sizeof(DescriptorCombinedImageSamplerDesc);
+    constexpr inline std::size_t TEXTURE_DESCRIPTOR_SIZE = sizeof(DescriptorTextureDesc);
+    constexpr inline std::size_t UNIFORM_BUFFER_DESCRIPTOR_SIZE =
+        sizeof(DescriptorUniformBufferDesc);
+    constexpr inline std::size_t STORAGE_BUFFER_DESCRIPTOR_SIZE =
+        sizeof(DescriptorStorageBufferDesc);
     constexpr inline std::size_t STORAGE_IMAGE_DESCRIPTOR_SIZE = sizeof(DescriptorStorageImageDesc);
-    constexpr inline std::size_t UNIFORM_BUFFER_DESCRIPTOR_SIZE = sizeof(DescriptorBufferDesc);
-    constexpr inline std::size_t STOARGE_BUFFER_DESCRIPTOR_SIZE = sizeof(DescriptorBufferDesc);
-    constexpr inline std::size_t TEXEL_BUFFER_DESCRIPTOR_SIZE = sizeof(DescriptorTexelBufferDesc);
 
     constexpr inline std::size_t DESCRIPTOR_ALIGNMENT =
-        std::max({alignof(DescriptorCombinedImageSamplerDesc),
-                  alignof(DescriptorStorageImageDesc),
-                  alignof(DescriptorBufferDesc),
-                  alignof(DescriptorBufferDesc),
-                  alignof(DescriptorTexelBufferDesc)});
+        std::max({alignof(DescriptorTextureDesc),
+                  alignof(DescriptorUniformBufferDesc),
+                  alignof(DescriptorStorageBufferDesc),
+                  alignof(DescriptorStorageImageDesc)});
 };
