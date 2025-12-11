@@ -29,4 +29,5 @@ constants like VK_LOD_CLAMP_NONE and other?
 Check throw in commands and creation functions -> OGL only
 OGL MemoryType: HostCoherent must come with HostReadable or HostWritable! 
 InputAttachments???
+Sample images as descriptors -> mapped as combined
 Reset viewport and scissors on renderpass begin and pipeline
