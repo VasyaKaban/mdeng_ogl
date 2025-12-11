@@ -1502,6 +1502,8 @@ namespace Render
 
     bool IsDepthStencilFormat(Format format) noexcept;
 
+    bool IsColorFormat(Format format) noexcept;
+
     std::uint8_t GetFormatBlockSize(Format format) noexcept;
 
     std::uint16_t GetFormatBitsPerPixel(Format format) noexcept;

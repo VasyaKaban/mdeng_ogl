@@ -51,6 +51,11 @@ namespace Render
         return is_depth_stencil;
     }
 
+    bool IsColorFormat(Format format) noexcept
+    {
+        return !IsDepthStencilFormat(format) && format != Format::Undefined;
+    }
+
     std::uint8_t GetFormatBlockSize(Format format) noexcept
     {
         std::uint8_t block_size;

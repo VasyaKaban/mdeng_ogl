@@ -4,6 +4,7 @@ Change DDS image info that will return self-created image info not a Render::Ima
 hrs::forward_pool -> for what???
 map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for events -> reudce memory usage
 ClearColor as union instead of variant + apply based on inner attachment format
+format-trait function to get inner type of format(UNOR, SINT, FLOAT, etc...)
 Add limits and features
 Add queries
 Add transform feedback
