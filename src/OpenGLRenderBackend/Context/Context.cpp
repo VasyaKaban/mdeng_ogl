@@ -15,6 +15,7 @@
 #include "../Objects/Shader/Shader.h"
 #include <stdexcept>
 #include <format>
+#include <iostream>
 
 namespace OpenGL
 {
@@ -58,6 +59,53 @@ namespace OpenGL
             NativeDebugMessengerTypeFlagBitToSpec(type),
             id,
             {reinterpret_cast<const char*>(message), static_cast<std::size_t>(length)});
+    }
+
+    static void default_debug_messenger(Render::DebugMessengerSeverityFlagBits severity,
+                                        Render::DebugMessengerTypeFlags types,
+                                        std::int64_t id,
+                                        std::string_view message)
+    {
+        std::string_view severity_string = "Unknown";
+        switch(severity)
+        {
+            case Render::DebugMessengerSeverityFlagBits::Error:
+                severity_string = "Error";
+                break;
+            case Render::DebugMessengerSeverityFlagBits::Warning:
+                severity_string = "Warning";
+                break;
+            case Render::DebugMessengerSeverityFlagBits::Info:
+                severity_string = "Info";
+                break;
+            case Render::DebugMessengerSeverityFlagBits::Verbose:
+                severity_string = "Verbose";
+                break;
+        }
+
+        static std::string types_string;
+        constexpr std::pair<Render::DebugMessengerTypeFlagBits, std::string_view>
+            TYPE_NAMES_MAPPING[] = {
+                {Render::DebugMessengerTypeFlagBits::General, "General"},
+                {Render::DebugMessengerTypeFlagBits::Validation, "Validation"},
+                {Render::DebugMessengerTypeFlagBits::Performance, "Performance"}};
+
+        for(const auto& [type, name]: TYPE_NAMES_MAPPING)
+        {
+            if(types_string.empty())
+                types_string += name;
+            else
+                types_string += std::format(" | {}", name);
+        }
+
+        std::format_to(std::ostream_iterator<char>(std::cout, "\n"),
+                       "[Severity: {}][Types: {}] ID: {}; {}",
+                       severity_string,
+                       types_string.empty() ? "Unknown" : types_string,
+                       id,
+                       message);
+
+        types_string.clear();
     }
 
     Context::Context(Core::OpenGLBackend* _parent)
@@ -128,6 +176,24 @@ namespace OpenGL
             Render::ClipSpaceDepthBounds{.min = 0.0f,
                                          .max = 1.0f}; //due to glClipControl(GL_ZERO_TO_ONE)
         properties.persistent_mapping_used = true;
+
+        if(properties.features.validation_layer && properties.features.debug_messenger)
+        {
+            loader.Enable(GL_DEBUG_OUTPUT);
+#ifndef NDEBUG
+            loader.Enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
+
+            loader.DebugMessageControl(GL_DONT_CARE,
+                                       GL_DONT_CARE,
+                                       GL_DONT_CARE,
+                                       0,
+                                       nullptr,
+                                       GL_TRUE); //drop all filters
+
+            debug_callback = default_debug_messenger;
+            loader.DebugMessageCallback(debug_messenger_callback, &debug_callback);
+        }
     }
 
     Context::~Context()
@@ -498,9 +564,7 @@ namespace OpenGL
 
     void Context::SetDebugMessenger(const Render::DebugMessengerInfo& info)
     {
-        GLint context_flags = 0;
-        loader.GetIntegerv(GL_CONTEXT_FLAGS, &context_flags);
-        if(!(context_flags & GL_CONTEXT_FLAG_DEBUG_BIT))
+        if(!properties.features.debug_messenger)
             throw std::runtime_error("Context is not in debug mode");
 
         auto filter_types = DebugMessengerTypeFlagsToNativeInverted(info.types);
@@ -528,12 +592,6 @@ namespace OpenGL
                                        0,
                                        nullptr,
                                        GL_FALSE);
-
-        loader.Enable(GL_DEBUG_OUTPUT);
-
-#ifndef NDEBUG
-        loader.Enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-#endif
 
         debug_callback = info.callback;
 

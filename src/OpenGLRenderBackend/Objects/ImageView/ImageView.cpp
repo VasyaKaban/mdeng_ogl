@@ -42,6 +42,16 @@ namespace OpenGL
 
         parent->GetLoader().TextureParameterIiv(_handle, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
 
+        if(!(info.subresource_range.aspect & Render::ImageAspectFlagBits::AspectColorBit))
+        {
+            GLint aspect =
+                (info.subresource_range.aspect & Render::ImageAspectFlagBits::AspectDepthBit ?
+                     GL_DEPTH_COMPONENT :
+                     GL_STENCIL_INDEX);
+
+            parent->GetLoader().TextureParameteri(_handle, GL_DEPTH_STENCIL_TEXTURE_MODE, aspect);
+        }
+
         handle = _handle;
     };
 

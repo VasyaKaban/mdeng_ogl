@@ -114,8 +114,18 @@ namespace Render
         std::uint64_t size;
     };
 
+    enum ImageAspectFlagBits
+    {
+        AspectColorBit = 1 << 0,
+        AspectDepthBit = 1 << 1,
+        AspectStencilBit = 1 << 2
+    };
+
+    using ImageAspectFlags = std::underlying_type_t<ImageAspectFlagBits>;
+
     struct ImageSubresourceLayers
     {
+        ImageAspectFlags aspect;
         std::uint32_t mip_level;
         std::uint32_t base_layer;
         std::uint32_t layer_count;
@@ -498,6 +508,7 @@ namespace Render
 
     struct ImageSubresourceRange
     {
+        ImageAspectFlags aspect;
         std::uint32_t min_mip_level;
         std::uint32_t mip_level_count;
         std::uint32_t min_layer;
@@ -1399,6 +1410,9 @@ namespace Render
         bool samplerMirrorClampToEdge; //OGL: true; VK_KHR_sampler_mirror_clamp_to_edge
         bool customBorderColors; //OGL: true; VK_EXT_custom_border_color
         bool customBorderColorWithoutFormat; //OGL: true; VK_EXT_custom_border_color
+        bool validation_layer; //OGL: debug context; VK: validation alyer
+        bool debug_messenger; //OGL: GL_DEBUG_OUTPUT(SYNC or not); VK: debug_utils + debug messenger
+        // we must set default logger for OGL that will send all messages into stdout like in VK
     };
 
     enum class ContextDeviceType
