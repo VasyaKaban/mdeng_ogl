@@ -169,6 +169,7 @@ namespace Render
     struct RenderPassBeginInfo
     {
         Framebuffer* framebuffer;
+        Rect2D render_area;
         std::span<const ClearColorValue> clear_color_values;
         ClearDepthStencilValue clear_depth_stencil_value;
     };
@@ -629,11 +630,45 @@ namespace Render
 
     using AccessFlags = std::underlying_type_t<AccessFlagBits>;
 
-    struct AttachmentDescription
+    enum class AttachmentLoadOp
     {
-        bool clear_load;
-        Format format; //wtf
-        SampleCount samples; ///wtf???
+        Load, //VK_ATTACHMENT_LOAD_OP_LOAD = 0,
+        Clear, //VK_ATTACHMENT_LOAD_OP_CLEAR = 1,
+        DontCare //VK_ATTACHMENT_LOAD_OP_DONT_CARE = 2, -> same as Load for OGL
+    };
+
+    enum class AttachmentStoreOp
+    {
+        Store, //VK_ATTACHMENT_STORE_OP_STORE = 0,
+        DontCare //VK_ATTACHMENT_STORE_OP_DONT_CARE = 1,
+    };
+
+    struct ColorAttachment
+    {
+        Format format;
+        SampleCount samples;
+        AttachmentLoadOp load_op;
+        AttachmentStoreOp store_op;
+        ImageLayout initial_layout;
+        ImageLayout final_layout;
+    };
+
+    struct DepthStencilAttachment
+    {
+        Format format;
+        SampleCount samples;
+        AttachmentLoadOp load_op;
+        AttachmentStoreOp store_op;
+        AttachmentLoadOp stencil_load_op;
+        AttachmentStoreOp stencil_store_op;
+        ImageLayout initial_layout;
+        ImageLayout final_layout;
+    };
+
+    struct InputAttachment
+    {
+        Format format;
+        SampleCount samples;
         ImageLayout initial_layout;
         ImageLayout final_layout;
     };
@@ -649,8 +684,10 @@ namespace Render
 
     struct RenderPassInfo
     {
-        std::span<const AttachmentDescription> color_attachment_descriptions;
-        const AttachmentDescription* depth_stencil_attachment_description;
+        std::span<const InputAttachment> incpu_attachments;
+        std::span<const ColorAttachment> color_attachments;
+        ;
+        const DepthStencilAttachment* depth_stencil_attachment;
         RenderPassDependency early_external_dependency;
         RenderPassDependency late_external_dependency;
     };

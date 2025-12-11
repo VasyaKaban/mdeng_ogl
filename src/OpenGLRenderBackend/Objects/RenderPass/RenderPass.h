@@ -22,12 +22,11 @@ namespace OpenGL
 
         struct ClearAttachmentDescription
         {
-            Render::AttachmentDescription desc;
+            Render::ColorAttachment desc;
             GLuint index;
         };
 
         std::vector<ClearAttachmentDescription> clear_color_attachment_descriptions;
-        std::optional<Render::AttachmentDescription> clear_depth_stencil_attachment_description;
-        //GLHandle handle; no handle at all!!!
+        std::optional<Render::DepthStencilAttachment> clear_depth_stencil_attachment_description;
     };
 };

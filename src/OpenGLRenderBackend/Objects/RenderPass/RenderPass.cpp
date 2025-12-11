@@ -4,6 +4,13 @@
 
 namespace OpenGL
 {
+#error ADD FORMAT TYPE RETRIEVE
+#error ATTACHMENT DESC AS INDEPENDENT STRUCT
+#error FRAMEBUFFER ATTACHMENTS AND INFO STRUCT + width, height, layers
+#error RENDERPASS INFO WITH VK-LIKE ATTACHMENT REFS
+    //std::vector<ClearAttachmentDescription> clear_color_attachment_descriptions;
+    //std::optional<Render::DepthStencilAttachment> clear_depth_stencil_attachment_description;
+
     RenderPass::RenderPass(Context* _parent, const Render::RenderPassInfo& info)
         : parent(_parent)
     {
@@ -28,18 +35,21 @@ namespace OpenGL
 
     void RenderPass::Begin(CommandBuffer& cmd, const Render::RenderPassBeginInfo& info)
     {
-        parent->GetLoader().Disable(GL_SCISSOR_TEST); //explicitly disable scissors test
+        parent->GetLoader().Enable(GL_SCISSOR_TEST);
+        parent->GetLoader().Scissor(info.render_area.offset.x,
+                                    info.render_area.offset.y,
+                                    info.render_area.extent.width,
+                                    info.render_area.extent.height);
 
         //bind framebuffer
         GLHandle fb_handle = static_cast<const Framebuffer*>(info.framebuffer)->GetHandle();
-        if(fb_handle != OGL_NULL_HANDLE)
-            parent->GetLoader().BindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_handle);
-        else
-            parent->GetLoader().BindFramebuffer(
-                GL_FRAMEBUFFER,
-                fb_handle); //Bind default framebuffer for read and draw
+        //if(fb_handle != OGL_NULL_HANDLE)
+        parent->GetLoader().BindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_handle);
+        //else
+        //    parent->GetLoader().BindFramebuffer(
+        //        GL_FRAMEBUFFER,
+        //        fb_handle); //Bind default framebuffer for read and draw
 
-        //clear attachments
         for(const auto& clear_color_att: clear_color_attachment_descriptions)
         {
             auto& clear_value = info.clear_color_values[clear_color_att.index].value;
