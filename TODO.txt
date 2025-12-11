@@ -31,3 +31,4 @@ Reset viewport and scissors on renderpass begin and pipeline(call glViewport and
 Change descriptor set binding -> instead of set and linear model use union of models + API type
 renderpass store_op based on glColorMask???
 renderpass.beginInfo: renderArea based on GL_SCISSORS because clears are affected
+psuh constants as merge of OGL and VK: offset + size + pointer to data for VK and span of UniformDesc structs that points to values from pointer about how to interpret data for OGL
