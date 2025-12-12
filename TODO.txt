@@ -31,3 +31,4 @@ check all static vectors and merge them into one common vector for temp info
 propagate vulkan and D3D formats with reversed endiannes or components and apply NON-REV/REV transfer types or GL_BGRA for them(OGL)
 add SSCALED and USCALED formats for vertex data
 after adding new formats also update DDS so it can handle formats with shifts
+https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf page: 222
