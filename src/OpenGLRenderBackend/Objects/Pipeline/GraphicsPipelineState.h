@@ -73,6 +73,7 @@ namespace OpenGL
         GLenum src_alpha;
         GLenum eq_alpha;
         GLenum dst_alpha;
+        Render::ColorComponentFlags color_write_mask;
     };
 
     class GraphicsPipelineColorBlendState : hrs::non_copyable

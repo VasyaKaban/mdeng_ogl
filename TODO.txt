@@ -3,15 +3,12 @@ SPEC: https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf
 Change DDS image info that will return self-created image info not a Render::ImageInfo
 hrs::forward_pool -> for what???
 map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for events -> reudce memory usage
-ClearColor as union instead of variant + apply based on inner attachment format
-format-trait function to get inner type of format(UNOR, SINT, FLOAT, etc...)
 Add limits and features
 Add queries
 Add transform feedback
 Move to OpenGL 4.5 + use extensions to populate features
 FreeBlockList: Split begin and after iterators in free block! In for loop -> after always be the next of before
 "SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???" -> in Engine???
-Remove non-persistent flag in properties -> do not care about OpenGL3.3 now!
 glTextureStorage3D -> should we mul by 6 array layers???
 OpenGL/ES and D3D compatibily for Vulkan as features
 explicit dllimport/dllexport + INTERFACE targets
@@ -23,12 +20,11 @@ add immutable samplers
 OS-dependent context creation for OpenGL
 Pipeline state based on enabled features for OpenGL
 Check all PipelineInfo* structs and compare them with Vulkan spec
-Check RenderPassInfo.AttachmentDescription and compare with Vulkan spec 
 GL_KHR_no_error -> should we add?
 constants like VK_LOD_CLAMP_NONE and other?
 Check throw in commands and creation functions -> OGL only
-Reset viewport and scissors on renderpass begin and pipeline(call glViewport and glScissors with framebuffer extent )
 Change descriptor set binding -> instead of set and linear model use union of models + API type
-renderpass store_op based on glColorMask???
-renderpass.beginInfo: renderArea based on GL_SCISSORS because clears are affected
 psuh constants as merge of OGL and VK: offset + size + pointer to data for VK and span of UniformDesc structs that points to values from pointer about how to interpret data for OGL
+rename formats like in VK(UFLOAT, PACK32)
+delete default statements in switch for formats -> populate cases via clangd quick fix
+check all static vectors and merge them into one common vector for temp info

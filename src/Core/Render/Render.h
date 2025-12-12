@@ -296,8 +296,12 @@ namespace Render
     struct FramebufferInfo
     {
         RenderPass* render_pass;
+        std::span<const ImageView*> input_attachments;
         std::span<const ImageView*> color_attachments;
         const ImageView* depth_stencil_attachment;
+        std::uint32_t width;
+        std::uint32_t height;
+        std::uint32_t layers;
     };
 
     enum class ImageType
@@ -684,9 +688,8 @@ namespace Render
 
     struct RenderPassInfo
     {
-        std::span<const InputAttachment> incpu_attachments;
+        std::span<const InputAttachment> input_attachments;
         std::span<const ColorAttachment> color_attachments;
-        ;
         const DepthStencilAttachment* depth_stencil_attachment;
         RenderPassDependency early_external_dependency;
         RenderPassDependency late_external_dependency;
@@ -886,6 +889,16 @@ namespace Render
         Max
     };
 
+    enum ColorComponentFlagBits
+    {
+        ColorComponentRed = 1 << 0,
+        ColorComponentGreen = 1 << 1,
+        ColorComponentBlue = 1 << 2,
+        ColorComponentAlpha = 1 << 3
+    };
+
+    using ColorComponentFlags = std::underlying_type_t<ColorComponentFlagBits>;
+
     struct ColorBlendAttachmentState
     {
         bool blend_enabled;
@@ -895,6 +908,7 @@ namespace Render
         BlendFactor src_alpha_blend_factor;
         BlendFactor dst_alpha_blend_factor;
         BlendOp alpha_blend_op;
+        ColorComponentFlags color_write_mask;
     };
 
     struct GraphicsPipelineColorBlendStateInfo
@@ -1487,9 +1501,6 @@ namespace Render
         ContextDeviceType device_type;
         ViewOrigin view_origin;
         ClipSpaceDepthBounds clip_space_depth_bounds;
-        bool persistent_mapping_used;
-        //If usage included VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minUniformBufferOffsetAlignment.
-        //If usage included VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, alignment must be an integer multiple of VkPhysicalDeviceLimits::minStorageBufferOffsetAlignment.
     };
 
     struct QueueFamilyInfo
@@ -1559,6 +1570,20 @@ namespace Render
     };
 
     FormatComponentsBitSize GetFormatComponentsBitSize(Format format) noexcept;
+
+    enum class FormatType
+    {
+        UNORM,
+        SNORM,
+        UINT,
+        SINT,
+        SFLOAT,
+        UFLOAT
+    };
+
+    FormatType GetFormatType(Format format, ImageAspectFlagBits aspect) noexcept;
+
+    bool IsFormatSRGB(Format format) noexcept;
 
     class Resolve;
 

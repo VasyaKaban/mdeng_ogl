@@ -20,13 +20,19 @@ namespace OpenGL
     private:
         Context* parent;
 
-        struct ClearAttachmentDescription
+        struct ColorAttachmentDescription
         {
-            Render::ColorAttachment desc;
-            GLuint index;
+            Render::FormatType type;
+            bool clear;
         };
 
-        std::vector<ClearAttachmentDescription> clear_color_attachment_descriptions;
-        std::optional<Render::DepthStencilAttachment> clear_depth_stencil_attachment_description;
+        struct DepthStencilAttachmentDescription
+        {
+            bool clear_depth;
+            bool clear_stencil;
+        };
+
+        std::vector<ColorAttachmentDescription> color_attachment_descriptions;
+        std::optional<DepthStencilAttachmentDescription> depth_stencil_attachment_description;
     };
 };

@@ -145,7 +145,8 @@ namespace OpenGL
                 .dst_rgb = BlendFactorToNative(att.dst_color_blend_factor),
                 .src_alpha = BlendFactorToNative(att.src_alpha_blend_factor),
                 .eq_alpha = BlendOpToNative(att.alpha_blend_op),
-                .dst_alpha = BlendFactorToNative(att.dst_alpha_blend_factor)});
+                .dst_alpha = BlendFactorToNative(att.dst_alpha_blend_factor),
+                .color_write_mask = att.color_write_mask});
         }
     }
 
@@ -177,6 +178,15 @@ namespace OpenGL
                                           attachments[i].dst_alpha);
 
                 loader.BlendEquationSeparatei(i, attachments[i].eq_rgb, attachments[i].eq_alpha);
+                loader.ColorMaski(i,
+                                  attachments[i].color_write_mask &
+                                      Render::ColorComponentFlagBits::ColorComponentRed,
+                                  attachments[i].color_write_mask &
+                                      Render::ColorComponentFlagBits::ColorComponentGreen,
+                                  attachments[i].color_write_mask &
+                                      Render::ColorComponentFlagBits::ColorComponentBlue,
+                                  attachments[i].color_write_mask &
+                                      Render::ColorComponentFlagBits::ColorComponentAlpha);
             }
         }
     }

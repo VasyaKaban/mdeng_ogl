@@ -4,28 +4,27 @@
 
 namespace OpenGL
 {
-#error ADD FORMAT TYPE RETRIEVE
-#error ATTACHMENT DESC AS INDEPENDENT STRUCT
-#error FRAMEBUFFER ATTACHMENTS AND INFO STRUCT + width, height, layers
-#error RENDERPASS INFO WITH VK-LIKE ATTACHMENT REFS
-    //std::vector<ClearAttachmentDescription> clear_color_attachment_descriptions;
-    //std::optional<Render::DepthStencilAttachment> clear_depth_stencil_attachment_description;
-
     RenderPass::RenderPass(Context* _parent, const Render::RenderPassInfo& info)
         : parent(_parent)
     {
-        clear_color_attachment_descriptions.reserve(info.color_attachment_descriptions.size());
-        for(std::size_t i = 0; i < info.color_attachment_descriptions.size(); i++)
+        color_attachment_descriptions.reserve(info.color_attachments.size());
+        for(std::size_t i = 0; i < info.color_attachments.size(); i++)
         {
-            const auto& att = info.color_attachment_descriptions[i];
-            if(att.clear_load)
-                clear_color_attachment_descriptions.push_back(
-                    ClearAttachmentDescription{.desc = att, .index = static_cast<GLuint>(i)});
+            const auto& att = info.color_attachments[i];
+            color_attachment_descriptions.push_back(ColorAttachmentDescription{
+                .type =
+                    Render::GetFormatType(att.format, Render::ImageAspectFlagBits::AspectColorBit),
+                .clear = (att.load_op == Render::AttachmentLoadOp::Clear)});
         }
 
-        if(info.depth_stencil_attachment_description &&
-           info.depth_stencil_attachment_description->clear_load)
-            clear_depth_stencil_attachment_description = *info.depth_stencil_attachment_description;
+        if(info.depth_stencil_attachment)
+        {
+            depth_stencil_attachment_description = DepthStencilAttachmentDescription{
+                .clear_depth =
+                    (info.depth_stencil_attachment->load_op == Render::AttachmentLoadOp::Clear),
+                .clear_stencil = (info.depth_stencil_attachment->stencil_load_op ==
+                                  Render::AttachmentLoadOp::Clear)};
+        }
     }
 
     RenderPass::~RenderPass()
@@ -50,42 +49,63 @@ namespace OpenGL
         //        GL_FRAMEBUFFER,
         //        fb_handle); //Bind default framebuffer for read and draw
 
-        for(const auto& clear_color_att: clear_color_attachment_descriptions)
+        for(std::size_t i = 0; i < info.clear_color_values.size(); i++)
         {
-            auto& clear_value = info.clear_color_values[clear_color_att.index].value;
-            if(std::holds_alternative<Render::ClearColorFloatValue>(clear_value))
+            if(!color_attachment_descriptions[i].clear)
+                continue;
+
+            switch(color_attachment_descriptions[i].type)
             {
-                parent->GetLoader().ClearNamedFramebufferfv(
-                    fb_handle,
-                    GL_COLOR,
-                    clear_color_att.index,
-                    std::get<Render::ClearColorFloatValue>(clear_value).data());
-            }
-            else if(std::holds_alternative<Render::ClearColorIntValue>(clear_value))
-            {
-                parent->GetLoader().ClearNamedFramebufferiv(
-                    fb_handle,
-                    GL_COLOR,
-                    clear_color_att.index,
-                    std::get<Render::ClearColorIntValue>(clear_value).data());
-            }
-            else
-            {
-                parent->GetLoader().ClearNamedFramebufferuiv(
-                    fb_handle,
-                    GL_COLOR,
-                    clear_color_att.index,
-                    std::get<Render::ClearColorUIntValue>(clear_value).data());
+                case Render::FormatType::UFLOAT:
+                case Render::FormatType::SFLOAT:
+                case Render::FormatType::UNORM:
+                case Render::FormatType::SNORM:
+                    parent->GetLoader().ClearNamedFramebufferfv(fb_handle,
+                                                                GL_COLOR,
+                                                                GL_DRAW_BUFFER0 + i,
+                                                                info.clear_color_values[i].float32);
+                    break;
+                case Render::FormatType::UINT:
+                    parent->GetLoader().ClearNamedFramebufferuiv(fb_handle,
+                                                                 GL_COLOR,
+                                                                 GL_DRAW_BUFFER0 + i,
+                                                                 info.clear_color_values[i].uint32);
+                    break;
+                case Render::FormatType::SINT:
+                    parent->GetLoader().ClearNamedFramebufferiv(fb_handle,
+                                                                GL_COLOR,
+                                                                GL_DRAW_BUFFER0 + i,
+                                                                info.clear_color_values[i].int32);
+                    break;
             }
         }
 
-        if(clear_depth_stencil_attachment_description.has_value())
+        if(depth_stencil_attachment_description)
         {
-            parent->GetLoader().ClearNamedFramebufferfi(fb_handle,
-                                                        GL_DEPTH_STENCIL,
-                                                        0,
-                                                        info.clear_depth_stencil_value.depth,
-                                                        info.clear_depth_stencil_value.stencil);
+            if(depth_stencil_attachment_description->clear_depth &&
+               depth_stencil_attachment_description->clear_stencil)
+            {
+                parent->GetLoader().ClearNamedFramebufferfi(fb_handle,
+                                                            GL_DEPTH_STENCIL,
+                                                            0,
+                                                            info.clear_depth_stencil_value.depth,
+                                                            info.clear_depth_stencil_value.stencil);
+            }
+            else if(depth_stencil_attachment_description->clear_depth)
+            {
+                parent->GetLoader().ClearNamedFramebufferfv(fb_handle,
+                                                            GL_DEPTH,
+                                                            0,
+                                                            &info.clear_depth_stencil_value.depth);
+            }
+            else if(depth_stencil_attachment_description->clear_stencil)
+            {
+                parent->GetLoader().ClearNamedFramebufferuiv(
+                    fb_handle,
+                    GL_STENCIL,
+                    0,
+                    &info.clear_depth_stencil_value.stencil);
+            }
         }
     }
 

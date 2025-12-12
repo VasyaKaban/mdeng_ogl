@@ -175,7 +175,6 @@ namespace OpenGL
         properties.clip_space_depth_bounds =
             Render::ClipSpaceDepthBounds{.min = 0.0f,
                                          .max = 1.0f}; //due to glClipControl(GL_ZERO_TO_ONE)
-        properties.persistent_mapping_used = true;
 
         if(properties.features.validation_layer && properties.features.debug_messenger)
         {
