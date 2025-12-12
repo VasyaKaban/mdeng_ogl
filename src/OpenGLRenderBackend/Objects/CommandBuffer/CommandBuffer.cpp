@@ -604,7 +604,10 @@ namespace OpenGL
                                           &scissors.data()->offset.x);
     }
 
-    void CommandBuffer::SetUniform(const Render::UniformDesc& desc, std::span<const std::byte> data)
+    void CommandBuffer::SetUniform(Render::ShaderStageFlags stages,
+                                   std::uint32_t offset,
+                                   std::span<const std::byte> data,
+                                   std::span<const Render::UniformDesc> uniform_descs)
     {
         GLHandle handle = bound_pipeline->GetHandle();
 
@@ -617,8 +620,8 @@ namespace OpenGL
                 parent->GetLoader().ProgramUniform##SIZE##fv( \
                     handle, \
                     desc.location, \
-                    data.size() / (sizeof(GLfloat) * SIZE), \
-                    reinterpret_cast<const GLfloat*>(data.data())); \
+                    desc.count, \
+                    reinterpret_cast<const GLfloat*>(data.data() + desc.offset)); \
             } \
             break; \
             case Render::UniformType::Int: \
@@ -626,8 +629,8 @@ namespace OpenGL
                 parent->GetLoader().ProgramUniform##SIZE##iv( \
                     handle, \
                     desc.location, \
-                    data.size() / (sizeof(GLint) * SIZE), \
-                    reinterpret_cast<const GLint*>(data.data())); \
+                    desc.count, \
+                    reinterpret_cast<const GLint*>(data.data() + desc.offset)); \
             } \
             break; \
             case Render::UniformType::UInt: \
@@ -635,8 +638,8 @@ namespace OpenGL
                 parent->GetLoader().ProgramUniform##SIZE##uiv( \
                     handle, \
                     desc.location, \
-                    data.size() / (sizeof(GLuint) * SIZE), \
-                    reinterpret_cast<const GLuint*>(data.data())); \
+                    desc.count, \
+                    reinterpret_cast<const GLuint*>(data.data() + desc.offset)); \
             } \
             break; \
             case Render::UniformType::Double: \
@@ -644,8 +647,8 @@ namespace OpenGL
                 parent->GetLoader().ProgramUniform##SIZE##dv( \
                     handle, \
                     desc.location, \
-                    data.size() / (sizeof(GLdouble) * SIZE), \
-                    reinterpret_cast<const GLdouble*>(data.data())); \
+                    desc.count, \
+                    reinterpret_cast<const GLdouble*>(data.data() + desc.offset)); \
             } \
             break; \
         } \
@@ -661,9 +664,9 @@ namespace OpenGL
                 parent->GetLoader().ProgramUniformMatrix##ROWS##__VA_OPT__(x##__VA_ARGS__)##fv( \
                     handle, \
                     desc.location, \
-                    data.size() / (sizeof(GLfloat) * ROWS __VA_OPT__(*__VA_ARGS__)), \
+                    desc.count, \
                     GL_FALSE, \
-                    reinterpret_cast<const GLfloat*>(data.data())); \
+                    reinterpret_cast<const GLfloat*>(data.data() + desc.offset)); \
             } \
             break; \
             case Render::UniformType::Double: \
@@ -671,9 +674,9 @@ namespace OpenGL
                 parent->GetLoader().ProgramUniformMatrix##ROWS##__VA_OPT__(x##__VA_ARGS__)##dv( \
                     handle, \
                     desc.location, \
-                    data.size() / (sizeof(GLdouble) * ROWS __VA_OPT__(*__VA_ARGS__)), \
+                    desc.count, \
                     GL_FALSE, \
-                    reinterpret_cast<const GLdouble*>(data.data())); \
+                    reinterpret_cast<const GLdouble*>(data.data() + desc.offset)); \
             } \
             break; \
             default: \
@@ -682,37 +685,41 @@ namespace OpenGL
         } \
         break;
 
-        if(desc.extent == Render::UniformExtent::Scalar ||
-           desc.extent == Render::UniformExtent::Vec2 ||
-           desc.extent == Render::UniformExtent::Vec3 || desc.extent == Render::UniformExtent::Vec4)
+        for(const auto& desc: uniform_descs)
         {
-            switch(desc.extent)
+            if(desc.extent == Render::UniformExtent::Scalar ||
+               desc.extent == Render::UniformExtent::Vec2 ||
+               desc.extent == Render::UniformExtent::Vec3 ||
+               desc.extent == Render::UniformExtent::Vec4)
             {
-                VECTOR_CASE(Render::UniformExtent::Scalar, 1)
-                VECTOR_CASE(Render::UniformExtent::Vec2, 2)
-                VECTOR_CASE(Render::UniformExtent::Vec3, 3)
-                VECTOR_CASE(Render::UniformExtent::Vec4, 4)
-                default:
-                    assert(false);
-                    break;
+                switch(desc.extent)
+                {
+                    VECTOR_CASE(Render::UniformExtent::Scalar, 1)
+                    VECTOR_CASE(Render::UniformExtent::Vec2, 2)
+                    VECTOR_CASE(Render::UniformExtent::Vec3, 3)
+                    VECTOR_CASE(Render::UniformExtent::Vec4, 4)
+                    default:
+                        assert(false);
+                        break;
+                }
             }
-        }
-        else
-        {
-            switch(desc.extent)
+            else
             {
-                MATRIX_CASE(Render::UniformExtent::Mat2x2, 2)
-                MATRIX_CASE(Render::UniformExtent::Mat2x3, 2, 3)
-                MATRIX_CASE(Render::UniformExtent::Mat2x4, 2, 4)
-                MATRIX_CASE(Render::UniformExtent::Mat3x2, 3, 2)
-                MATRIX_CASE(Render::UniformExtent::Mat3x3, 3)
-                MATRIX_CASE(Render::UniformExtent::Mat3x4, 3, 4)
-                MATRIX_CASE(Render::UniformExtent::Mat4x2, 4, 2)
-                MATRIX_CASE(Render::UniformExtent::Mat4x3, 4, 3)
-                MATRIX_CASE(Render::UniformExtent::Mat4x4, 4)
-                default:
-                    assert(false);
-                    break;
+                switch(desc.extent)
+                {
+                    MATRIX_CASE(Render::UniformExtent::Mat2x2, 2)
+                    MATRIX_CASE(Render::UniformExtent::Mat2x3, 2, 3)
+                    MATRIX_CASE(Render::UniformExtent::Mat2x4, 2, 4)
+                    MATRIX_CASE(Render::UniformExtent::Mat3x2, 3, 2)
+                    MATRIX_CASE(Render::UniformExtent::Mat3x3, 3)
+                    MATRIX_CASE(Render::UniformExtent::Mat3x4, 3, 4)
+                    MATRIX_CASE(Render::UniformExtent::Mat4x2, 4, 2)
+                    MATRIX_CASE(Render::UniformExtent::Mat4x3, 4, 3)
+                    MATRIX_CASE(Render::UniformExtent::Mat4x4, 4)
+                    default:
+                        assert(false);
+                        break;
+                }
             }
         }
     }

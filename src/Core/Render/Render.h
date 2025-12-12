@@ -1171,11 +1171,11 @@ namespace Render
 
     struct UniformDesc
     {
-        ShaderStageFlags stages;
         UniformType type;
         UniformExtent extent;
         std::uint32_t count;
         std::uint32_t location;
+        std::uint32_t offset;
     };
 
     struct PresentInfo

@@ -24,7 +24,6 @@ GL_KHR_no_error -> should we add?
 constants like VK_LOD_CLAMP_NONE and other?
 Check throw in commands and creation functions -> OGL only
 Change descriptor set binding -> instead of set and linear model use union of models + API type
-psuh constants as merge of OGL and VK: offset + size + pointer to data for VK and span of UniformDesc structs that points to values from pointer about how to interpret data for OGL
 rename formats like in VK(UFLOAT, PACK32)
 delete default statements in switch for formats -> populate cases via clangd quick fix
 check all static vectors and merge them into one common vector for temp info
