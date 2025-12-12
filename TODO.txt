@@ -28,3 +28,6 @@ psuh constants as merge of OGL and VK: offset + size + pointer to data for VK an
 rename formats like in VK(UFLOAT, PACK32)
 delete default statements in switch for formats -> populate cases via clangd quick fix
 check all static vectors and merge them into one common vector for temp info
+propagate vulkan and D3D formats with reversed endiannes or components and apply NON-REV/REV transfer types or GL_BGRA for them(OGL)
+add SSCALED and USCALED formats for vertex data
+after adding new formats also update DDS so it can handle formats with shifts

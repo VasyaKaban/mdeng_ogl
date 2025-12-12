@@ -123,6 +123,7 @@ namespace OpenGL
                            GL_ZERO_TO_ONE); //make viewport like in D3D or VK(only depth)
         loader.Enable(GL_PROGRAM_POINT_SIZE); //activate GLSL gl_PointSize
         loader.ProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+        loader.Enable(GL_FRAMEBUFFER_SRGB);
 
         GLint extensions_number = 0;
         loader.GetIntegerv(GL_NUM_EXTENSIONS, &extensions_number);
