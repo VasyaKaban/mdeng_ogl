@@ -31,3 +31,13 @@ propagate vulkan and D3D formats with reversed endiannes or components and apply
 add SSCALED and USCALED formats for vertex data
 after adding new formats also update DDS so it can handle formats with shifts
 https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf page: 222
+Descriptor descriptions:
+     struct DescriptorDescription
+    {
+        std::uint32_t set;
+        std::uint32_t opengl_binding;
+        std::uint32_t vulkan_binding;
+        std::uint32_t directx_binding;
+    };
+
+    //select binding(DescriptorDescription) -> if context.backend == OpenGL return opengl_binding...
