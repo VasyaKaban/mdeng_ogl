@@ -33,8 +33,7 @@ namespace OpenGL
                 case Render::DescriptorType::InputAttachment:
                 {
                     DescriptorTextureDesc* image_desc =
-                        layout->TranslateTextureDescriptor(desc.binding.linear_binding,
-                                                           descriptors_data);
+                        layout->TranslateTextureDescriptor(desc.binding, descriptors_data);
 
                     assert(image_desc != nullptr);
 
@@ -58,8 +57,7 @@ namespace OpenGL
                 case Render::DescriptorType::StorageTexelBuffer:
                 {
                     DescriptorTextureDesc* image_desc =
-                        layout->TranslateTextureDescriptor(desc.binding.linear_binding,
-                                                           descriptors_data);
+                        layout->TranslateTextureDescriptor(desc.binding, descriptors_data);
 
                     assert(image_desc != nullptr);
 
@@ -76,8 +74,7 @@ namespace OpenGL
                 case Render::DescriptorType::UnifromBuffer:
                 {
                     DescriptorUniformBufferDesc* buffer_desc =
-                        layout->TranslateUniformBufferBinding(desc.binding.linear_binding,
-                                                              descriptors_data);
+                        layout->TranslateUniformBufferBinding(desc.binding, descriptors_data);
 
                     assert(buffer_desc != nullptr);
 
@@ -96,8 +93,7 @@ namespace OpenGL
                 case Render::DescriptorType::StorageBuffer:
                 {
                     DescriptorStorageBufferDesc* buffer_desc =
-                        layout->TranslateStorageBufferBinding(desc.binding.linear_binding,
-                                                              descriptors_data);
+                        layout->TranslateStorageBufferBinding(desc.binding, descriptors_data);
 
                     assert(buffer_desc != nullptr);
 
@@ -116,8 +112,7 @@ namespace OpenGL
                 case Render::DescriptorType::StorageImage:
                 {
                     DescriptorStorageImageDesc* image_desc =
-                        layout->TranslateStorageImageBinding(desc.binding.linear_binding,
-                                                             descriptors_data);
+                        layout->TranslateStorageImageBinding(desc.binding, descriptors_data);
 
                     assert(image_desc != nullptr);
 

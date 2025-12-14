@@ -106,16 +106,14 @@ namespace OpenGL
                 case Render::DescriptorType::InputAttachment:
                     for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
                     {
-                        textures.bindings[texture_bindings_index + i] =
-                            binding.binding.linear_binding + i;
+                        textures.bindings[texture_bindings_index + i] = binding.binding + i;
                     }
                     texture_bindings_index += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::UnifromBuffer:
                     for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
                     {
-                        uniform_buffers.bindings[uniform_bindings_index + i] =
-                            binding.binding.linear_binding + i;
+                        uniform_buffers.bindings[uniform_bindings_index + i] = binding.binding + i;
                     }
                     uniform_bindings_index += binding.descriptor_count;
                     break;
@@ -123,15 +121,14 @@ namespace OpenGL
                     for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
                     {
                         storage_buffers.bindings[shader_storage_bindings_index + i] =
-                            binding.binding.linear_binding + i;
+                            binding.binding + i;
                     }
                     shader_storage_bindings_index += binding.descriptor_count;
                     break;
                 case Render::DescriptorType::StorageImage:
                     for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
                     {
-                        storage_images.bindings[image_bindings_index + i] =
-                            binding.binding.linear_binding + i;
+                        storage_images.bindings[image_bindings_index + i] = binding.binding + i;
                     }
                     image_bindings_index += binding.descriptor_count;
                     break;

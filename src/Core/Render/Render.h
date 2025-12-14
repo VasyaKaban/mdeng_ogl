@@ -1047,15 +1047,9 @@ namespace Render
         InputAttachment //VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT = 10,
     };
 
-    struct DescriptorBinding
-    {
-        std::uint32_t set_binding;
-        std::uint32_t linear_binding;
-    };
-
     struct DescriptorSetLayoutBinding
     {
-        DescriptorBinding binding;
+        std::uint32_t binding;
         DescriptorType type;
         std::uint32_t descriptor_count;
         ShaderStageFlags stages;
@@ -1099,7 +1093,7 @@ namespace Render
 
     struct UpdateDescriptorDesc
     {
-        DescriptorBinding binding;
+        std::uint32_t binding;
         std::uint32_t array_index;
         std::uint32_t descriptor_count;
         DescriptorType type;
