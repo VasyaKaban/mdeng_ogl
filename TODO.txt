@@ -44,3 +44,4 @@ Create default framebuffers based on renderpass
 new formats implement in OGL
 format texel alignment should not be set for GL_UNPACK/PACK ALIGNMENT -> only for buffer offset in copy regions
 NV extension for 64bit int vertex input
+glVertexAttribFormat -> check GL_BGRA and other restrictions on format
