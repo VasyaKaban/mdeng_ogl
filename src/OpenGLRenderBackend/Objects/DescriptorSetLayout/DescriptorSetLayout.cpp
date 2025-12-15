@@ -233,7 +233,9 @@ namespace OpenGL
                                                                    i);
 
             parent->GetLoader().BindTextureUnit(textures.bindings[i], desc->image_view);
-            parent->GetLoader().BindSampler(textures.bindings[i], desc->sampler);
+
+            if(desc->sampler != OGL_NULL_HANDLE)
+                parent->GetLoader().BindSampler(textures.bindings[i], desc->sampler);
         }
 
         for(std::size_t i = 0; i < uniform_buffers.bindings.size(); i++)
