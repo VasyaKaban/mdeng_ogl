@@ -5,14 +5,6 @@
 
 namespace OpenGL
 {
-    static GLint swizzle_mapping(GLint def, Render::ComponentSwizzle component) noexcept
-    {
-        if(component == Render::ComponentSwizzle::SwizzleIdentity)
-            return def;
-
-        return ComponentSwizzleToNative(component);
-    }
-
     ImageView::ImageView(Context* _parent, const Render::ImageViewInfo& info)
         : parent(_parent)
     {
@@ -33,12 +25,10 @@ namespace OpenGL
                                         info.subresource_range.min_layer,
                                         info.subresource_range.layer_count);
 
-        GLint swizzle_mask[4] = {
-            swizzle_mapping(GL_RED, info.components.r),
-            swizzle_mapping(GL_GREEN, info.components.g),
-            swizzle_mapping(GL_BLUE, info.components.b),
-            swizzle_mapping(GL_ALPHA, info.components.a),
-        };
+        GLint swizzle_mask[4] = {ComponentSwizzleToNative(info.components.r, GL_RED),
+                                 ComponentSwizzleToNative(info.components.g, GL_GREEN),
+                                 ComponentSwizzleToNative(info.components.b, GL_BLUE),
+                                 ComponentSwizzleToNative(info.components.a, GL_ALPHA)};
 
         parent->GetLoader().TextureParameterIiv(_handle, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
 

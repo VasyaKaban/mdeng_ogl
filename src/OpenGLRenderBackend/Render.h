@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <optional>
 #include "glad/gl.h"
 #include "Core/Render/Render.h"
 
@@ -34,11 +35,9 @@ namespace OpenGL
     GLenum SampleCountToNative(Render::SampleCount samples);
     GLbitfield DecodeMemoryTypePropertyFlagsToNative(Render::MemoryTypePropertyFlags flags);
     GLenum FenceStatusToNative(Render::FenceStatus status);
-    GLenum FormatToNative(Render::Format format);
+    std::optional<GLenum> FormatToNative(Render::Format format) noexcept;
     GLenum ImageViewTypeToNative(Render::ImageViewType type);
-
-    constexpr inline GLenum OGL_IDENTITY_SWIZZLE = std::numeric_limits<GLenum>::max();
-    GLenum ComponentSwizzleToNative(Render::ComponentSwizzle swizzle);
+    GLint ComponentSwizzleToNative(Render::ComponentSwizzle swizzle, GLenum base);
     GLenum FilterToNative(Render::Filter filter);
     GLenum AddressModeToNative(Render::AddressMode mode);
     GLenum ShaderStageToNative(Render::ShaderStageFlagBits stage);
@@ -64,7 +63,8 @@ namespace OpenGL
         GLenum format;
     };
 
-    TransferImageTypeFormat DecodeTransferTypeFormatPair(Render::Format format);
+    std::optional<TransferImageTypeFormat>
+    DecodeTransferTypeFormatPair(Render::Format format) noexcept;
 
     struct VertexInputTypeSize
     {
@@ -73,8 +73,8 @@ namespace OpenGL
         bool normalized;
     };
 
-    bool IsFormatSupportedAsVertexInput(Render::Format format) noexcept;
-    VertexInputTypeSize DecodeVertexInputTypeSizePair(Render::Format format);
+    std::optional<VertexInputTypeSize>
+    DecodeVertexInputTypeSizePair(Render::Format format) noexcept;
 
     template<std::size_t N>
     struct ArrayDecodeResult

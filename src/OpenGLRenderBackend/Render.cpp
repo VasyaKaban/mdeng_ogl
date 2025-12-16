@@ -1,62 +1,82 @@
 #include "Render.h"
 #include <stdexcept>
-#include "hrs/mapping.hpp"
 
 namespace OpenGL
 {
-#define CHECK_MAPPING_IS_SORTED(NAME) \
-    static_assert(std::ranges::is_sorted(NAME, \
-                                         [](const auto& pr1, const auto& pr2) \
-                                         { \
-                                             return pr1.first < pr2.first; \
-                                         }));
-
     GLenum ComapreOpToNative(Render::CompareOp op)
     {
-        constexpr static std::pair<Render::CompareOp, GLenum> mapping[] = {
-            {Render::CompareOp::Never, GL_NEVER},
-            {Render::CompareOp::Less, GL_LESS},
-            {Render::CompareOp::Equal, GL_EQUAL},
-            {Render::CompareOp::LessOrEqual, GL_LEQUAL},
-            {Render::CompareOp::Greater, GL_GREATER},
-            {Render::CompareOp::NotEqual, GL_NOTEQUAL},
-            {Render::CompareOp::GreaterOrEqual, GL_GEQUAL},
-            {Render::CompareOp::Always, GL_ALWAYS},
-        };
+        GLenum value;
+        switch(op)
+        {
+            case Render::CompareOp::Never:
+                value = GL_NEVER;
+                break;
+            case Render::CompareOp::Less:
+                value = GL_LESS;
+                break;
+            case Render::CompareOp::Equal:
+                value = GL_EQUAL;
+                break;
+            case Render::CompareOp::LessOrEqual:
+                value = GL_LEQUAL;
+                break;
+            case Render::CompareOp::Greater:
+                value = GL_GREATER;
+                break;
+            case Render::CompareOp::NotEqual:
+                value = GL_NOTEQUAL;
+                break;
+            case Render::CompareOp::GreaterOrEqual:
+                value = GL_GEQUAL;
+                break;
+            case Render::CompareOp::Always:
+                value = GL_ALWAYS;
+                break;
+            default:
+                throw std::runtime_error("No native CompareOp found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, op);
-        if(native == nullptr)
-            throw std::runtime_error("No native CompareOp found");
-
-        return *native;
+        return value;
     }
 
     GLenum SampleCountToNative(Render::SampleCount samples)
     {
-        constexpr static std::pair<Render::SampleCount, GLenum> mapping[] = {
-            {Render::SampleCount::SampleCount_1, 1},
-            {Render::SampleCount::SampleCount_2, 2},
-            {Render::SampleCount::SampleCount_4, 4},
-            {Render::SampleCount::SampleCount_8, 8},
-            {Render::SampleCount::SampleCount_16, 16},
-            {Render::SampleCount::SampleCount_32, 32},
-            {Render::SampleCount::SampleCount_64, 64},
-        };
+        GLenum value;
+        switch(samples)
+        {
+            case Render::SampleCount::SampleCount_1:
+                value = 1;
+                break;
+            case Render::SampleCount::SampleCount_2:
+                value = 2;
+                break;
+            case Render::SampleCount::SampleCount_4:
+                value = 4;
+                break;
+            case Render::SampleCount::SampleCount_8:
+                value = 8;
+                break;
+            case Render::SampleCount::SampleCount_16:
+                value = 16;
+                break;
+            case Render::SampleCount::SampleCount_32:
+                value = 32;
+                break;
+            case Render::SampleCount::SampleCount_64:
+                value = 64;
+                break;
+            default:
+                throw std::runtime_error("No native SampleCount found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, samples);
-        if(native == nullptr)
-            throw std::runtime_error("No native SampleCount found");
-
-        return *native;
+        return value;
     }
 
     GLbitfield DecodeMemoryTypePropertyFlagsToNative(Render::MemoryTypePropertyFlags flags)
     {
-        constexpr static std::pair<Render::MemoryTypePropertyFlagBits, GLbitfield> map_mapping[] = {
+        constexpr static std::pair<Render::MemoryTypePropertyFlagBits, GLbitfield> mapping[] = {
             {Render::MemoryTypePropertyFlagBits::DeviceLocal, 0},
             {Render::MemoryTypePropertyFlagBits::HostMappingReadable,
              GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT},
@@ -66,7 +86,7 @@ namespace OpenGL
             {Render::MemoryTypePropertyFlagBits::HostCached, GL_CLIENT_STORAGE_BIT}};
 
         GLbitfield mask = 0;
-        for(const auto& pr: map_mapping)
+        for(const auto& pr: mapping)
         {
             if(flags & pr.first)
                 mask |= pr.second;
@@ -77,494 +97,949 @@ namespace OpenGL
 
     GLenum FenceStatusToNative(Render::FenceStatus status)
     {
-        constexpr static std::pair<Render::FenceStatus, GLenum> mapping[] = {
-            {Render::FenceStatus::Signaled, GL_SIGNALED},
-            {Render::FenceStatus::Unsignaled, GL_UNSIGNALED},
-        };
+        GLenum value;
+        switch(status)
+        {
+            case Render::FenceStatus::Signaled:
+                value = GL_SIGNALED;
+                break;
+            case Render::FenceStatus::Unsignaled:
+                value = GL_UNSIGNALED;
+                break;
+            default:
+                throw std::runtime_error("No native FenceStatus found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, status);
-        if(native == nullptr)
-            throw std::runtime_error("No native FenceStatus found");
-
-        return *native;
+        return value;
     }
 
-    GLenum FormatToNative(Render::Format format)
+    std::optional<GLenum> FormatToNative(Render::Format format) noexcept
     {
-        constexpr static std::pair<Render::Format, GLenum> mapping[] = {
-            {Render::Format::R32G32B32A32_FLOAT, GL_RGBA32F},
-            {Render::Format::R32G32B32A32_UINT, GL_RGBA32UI},
-            {Render::Format::R32G32B32A32_SINT, GL_RGBA32I},
+        std::optional<GLenum> value;
+        switch(format)
+        {
+            //{Render::Format::UNDEFINED, },
+            //{Render::Format::R4G4_UNORM_PACK8,},
+            case Render::Format::R4G4B4A4_UNORM_PACK16:
+                value = GL_RGBA4;
+                break;
+            case Render::Format::B4G4R4A4_UNORM_PACK16:
+                value = GL_RGBA4;
+                break;
+            case Render::Format::R5G6B5_UNORM_PACK16:
+                value = GL_RGB565;
+                break;
+            case Render::Format::B5G6R5_UNORM_PACK16:
+                value = GL_RGB565;
+                break;
+            case Render::Format::R5G5B5A1_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+            case Render::Format::B5G5R5A1_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+            case Render::Format::A1R5G5B5_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+            case Render::Format::R8_UNORM:
+                value = GL_R8;
+                break;
+            case Render::Format::R8_SNORM:
+                value = GL_R8_SNORM;
+                break;
+            //case Render::Format::R8_USCALED:
+            //case Render::Format::R8_SSCALED:
+            case Render::Format::R8_UINT:
+                value = GL_R8UI;
+                break;
+            case Render::Format::R8_SINT:
+                value = GL_R8I;
+                break;
+            case Render::Format::R8_UNORM_SRGB:
+                value = GL_SR8_EXT;
+                break;
+            case Render::Format::R8G8_UNORM:
+                value = GL_RG8;
+                break;
+            case Render::Format::R8G8_SNORM:
+                value = GL_RG8_SNORM;
+                break;
+            //case Render::Format::R8G8_USCALED:
+            //case Render::Format::R8G8_SSCALED:
+            case Render::Format::R8G8_UINT:
+                value = GL_RG8UI;
+                break;
+            case Render::Format::R8G8_SINT:
+                value = GL_RG8I;
+                break;
+            case Render::Format::R8G8_UNORM_SRGB:
+                value = GL_SRG8_EXT;
+                break;
+            case Render::Format::R8G8B8_UNORM:
+                value = GL_RGB8;
+                break;
+            case Render::Format::R8G8B8_SNORM:
+                value = GL_RGB8_SNORM;
+                break;
+            //case Render::Format::R8G8B8_USCALED:
+            //case Render::Format::R8G8B8_SSCALED:
+            case Render::Format::R8G8B8_UINT:
+                value = GL_RGB8UI;
+                break;
+            case Render::Format::R8G8B8_SINT:
+                value = GL_RGB8I;
+                break;
+            case Render::Format::R8G8B8_UNORM_SRGB:
+                value = GL_SRGB8;
+                break;
+            case Render::Format::B8G8R8_UNORM:
+                value = GL_RGB8;
+                break;
+            case Render::Format::B8G8R8_SNORM:
+                value = GL_RGB8_SNORM;
+                break;
+            //case Render::Format::B8G8R8_USCALED:
+            //case Render::Format::B8G8R8_SSCALED:
+            case Render::Format::B8G8R8_UINT:
+                value = GL_RGB8UI;
+                break;
+            case Render::Format::B8G8R8_SINT:
+                value = GL_RGB8I;
+                break;
+            case Render::Format::B8G8R8_UNORM_SRGB:
+                value = GL_SRGB8;
+                break;
+            case Render::Format::R8G8B8A8_UNORM:
+                value = GL_RGBA8;
+                break;
+            case Render::Format::R8G8B8A8_SNORM:
+                value = GL_RGBA8_SNORM;
+                break;
+            //case Render::Format::R8G8B8A8_USCALED:
+            //case Render::Format::R8G8B8A8_SSCALED:
+            case Render::Format::R8G8B8A8_UINT:
+                value = GL_RGBA8UI;
+                break;
+            case Render::Format::R8G8B8A8_SINT:
+                value = GL_RGBA8I;
+                break;
+            case Render::Format::R8G8B8A8_UNORM_SRGB:
+                value = GL_SRGB8_ALPHA8;
+                break;
+            case Render::Format::B8G8R8A8_UNORM:
+                value = GL_RGBA8;
+                break;
+            case Render::Format::B8G8R8A8_SNORM:
+                value = GL_RGBA8_SNORM;
+                break;
+            //case Render::Format::B8G8R8A8_USCALED:
+            //case Render::Format::B8G8R8A8_SSCALED:
+            case Render::Format::B8G8R8A8_UINT:
+                value = GL_RGBA8UI;
+                break;
+            case Render::Format::B8G8R8A8_SINT:
+                value = GL_RGBA8I;
+                break;
+            case Render::Format::B8G8R8A8_UNORM_SRGB:
+                value = GL_SRGB8_ALPHA8;
+                break;
+            case Render::Format::A8B8G8R8_UNORM_PACK32:
+                value = GL_RGBA8;
+                break;
+            case Render::Format::A8B8G8R8_SNORM_PACK32:
+                value = GL_RGBA8_SNORM;
+                break;
+            //case Render::Format::A8B8G8R8_USCALED_PACK32:
+            //case Render::Format::A8B8G8R8_SSCALED_PACK32:
+            case Render::Format::A8B8G8R8_UINT_PACK32:
+                value = GL_RGBA8UI;
+                break;
+            case Render::Format::A8B8G8R8_SINT_PACK32:
+                value = GL_RGBA8I;
+                break;
+            case Render::Format::A8B8G8R8_UNORM_SRGB_PACK32:
+                value = GL_SRGB8_ALPHA8;
+                break;
+            case Render::Format::A2R10G10B10_UNORM_PACK32:
+                value = GL_RGB10_A2;
+                break;
+            //{Render::Format::A2R10G10B10_SNORM_PACK32, },
+            //case Render::Format::A2R10G10B10_USCALED_PACK32:
+            //{Render::Format::A2R10G10B10_SSCALED_PACK32, },
+            case Render::Format::A2R10G10B10_UINT_PACK32:
+                value = GL_RGB10_A2UI;
+                break;
+            //{Render::Format::A2R10G10B10_SINT_PACK32, },
+            case Render::Format::A2B10G10R10_UNORM_PACK32:
+                value = GL_RGB10_A2;
+                break;
+            //{Render::Format::A2B10G10R10_SNORM_PACK32, },
+            //case Render::Format::A2B10G10R10_USCALED_PACK32:
+            //{Render::Format::A2B10G10R10_SSCALED_PACK32, },
+            case Render::Format::A2B10G10R10_UINT_PACK32:
+                value = GL_RGB10_A2UI;
+                break;
+            //{Render::Format::A2B10G10R10_SINT_PACK32, },
+            case Render::Format::R16_UNORM:
+                value = GL_R16;
+                break;
+            case Render::Format::R16_SNORM:
+                value = GL_R16_SNORM;
+                break;
+            //case Render::Format::R16_USCALED:
+            //case Render::Format::R16_SSCALED:
+            case Render::Format::R16_UINT:
+                value = GL_R16UI;
+                break;
+            case Render::Format::R16_SINT:
+                value = GL_R16I;
+                break;
+            case Render::Format::R16_SFLOAT:
+                value = GL_R16F;
+                break;
+            case Render::Format::R16G16_UNORM:
+                value = GL_RG16;
+                break;
+            case Render::Format::R16G16_SNORM:
+                value = GL_RG16_SNORM;
+                break;
+            //case Render::Format::R16G16_USCALED:
+            //case Render::Format::R16G16_SSCALED:
+            case Render::Format::R16G16_UINT:
+                value = GL_RG16UI;
+                break;
+            case Render::Format::R16G16_SINT:
+                value = GL_RG16I;
+                break;
+            case Render::Format::R16G16_SFLOAT:
+                value = GL_RG16F;
+                break;
+            case Render::Format::R16G16B16_UNORM:
+                value = GL_RGB16;
+                break;
+            case Render::Format::R16G16B16_SNORM:
+                value = GL_RGB16_SNORM;
+                break;
+            //case Render::Format::R16G16B16_USCALED:
+            //case Render::Format::R16G16B16_SSCALED:
+            case Render::Format::R16G16B16_UINT:
+                value = GL_RGB16UI;
+                break;
+            case Render::Format::R16G16B16_SINT:
+                value = GL_RGB16I;
+                break;
+            case Render::Format::R16G16B16_SFLOAT:
+                value = GL_RGB16F;
+                break;
+            case Render::Format::R16G16B16A16_UNORM:
+                value = GL_RGBA16;
+                break;
+            case Render::Format::R16G16B16A16_SNORM:
+                value = GL_RGBA16_SNORM;
+                break;
+            //case Render::Format::R16G16B16A16_USCALED:
+            //case Render::Format::R16G16B16A16_SSCALED:
+            case Render::Format::R16G16B16A16_UINT:
+                value = GL_RGBA16UI;
+                break;
+            case Render::Format::R16G16B16A16_SINT:
+                value = GL_RGBA16I;
+                break;
+            case Render::Format::R16G16B16A16_SFLOAT:
+                value = GL_RGBA16F;
+                break;
+            case Render::Format::R32_UINT:
+                value = GL_R32UI;
+                break;
+            case Render::Format::R32_SINT:
+                value = GL_R32I;
+                break;
+            case Render::Format::R32_SFLOAT:
+                value = GL_R32F;
+                break;
+            case Render::Format::R32G32_UINT:
+                value = GL_RG32UI;
+                break;
+            case Render::Format::R32G32_SINT:
+                value = GL_RG32I;
+                break;
+            case Render::Format::R32G32_SFLOAT:
+                value = GL_RG32F;
+                break;
+            case Render::Format::R32G32B32_UINT:
+                value = GL_RGB32UI;
+                break;
+            case Render::Format::R32G32B32_SINT:
+                value = GL_RGB32I;
+                break;
+            case Render::Format::R32G32B32_SFLOAT:
+                value = GL_RGB32F;
+                break;
+            case Render::Format::R32G32B32A32_UINT:
+                value = GL_RGBA32UI;
+                break;
+            case Render::Format::R32G32B32A32_SINT:
+                value = GL_RGBA32I;
+                break;
+            case Render::Format::R32G32B32A32_SFLOAT:
+                value = GL_RGBA32F;
+                break;
+            //{Render::Format::R64_UINT, },
+            //{Render::Format::R64_SINT, },
+            //{Render::Format::R64_SFLOAT, },
+            //{Render::Format::R64G64_UINT, },
+            //{Render::Format::R64G64_SINT, },
+            //{Render::Format::R64G64_SFLOAT, },
+            //{Render::Format::R64G64B64_UINT, },
+            //{Render::Format::R64G64B64_SINT, },
+            //{Render::Format::R64G64B64_SFLOAT, },
+            //{Render::Format::R64G64B64A64_UINT, },
+            //{Render::Format::R64G64B64A64_SINT, },
+            //{Render::Format::R64G64B64A64_SFLOAT, },
+            case Render::Format::B10G11R11_UFLOAT_PACK32:
+                value = GL_R11F_G11F_B10F;
+                break;
+            case Render::Format::E5B9G9R9_UFLOAT_PACK32:
+                value = GL_RGB9_E5;
+                break;
+            case Render::Format::D16_UNORM:
+                value = GL_DEPTH_COMPONENT16;
+                break;
+            case Render::Format::X8_D24_UNORM_PACK32:
+                value = GL_DEPTH24_STENCIL8;
+                break;
+            case Render::Format::D32_SFLOAT:
+                value = GL_DEPTH_COMPONENT32F;
+                break;
+            case Render::Format::S8_UINT:
+                value = GL_STENCIL_INDEX8;
+                break;
+            //{Render::Format::D16_UNORM_S8_UINT,},
+            case Render::Format::D24_UNORM_S8_UINT:
+                value = GL_DEPTH24_STENCIL8;
+                break;
+            case Render::Format::D32_SFLOAT_S8_UINT:
+                value = GL_DEPTH32F_STENCIL8;
+                break;
+            case Render::Format::BC1_RGB_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC1_RGB_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC1_RGBA_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC1_RGBA_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC2_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+                break;
+            case Render::Format::BC2_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+                break;
+            case Render::Format::BC3_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                break;
+            case Render::Format::BC3_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+                break;
+            case Render::Format::BC4_UNORM_BLOCK:
+                value = GL_COMPRESSED_RED_RGTC1;
+                break;
+            case Render::Format::BC4_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_RED_RGTC1;
+                break;
+            case Render::Format::BC5_UNORM_BLOCK:
+                value = GL_COMPRESSED_RG_RGTC2;
+                break;
+            case Render::Format::BC5_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_RG_RGTC2;
+                break;
+            case Render::Format::BC6H_UFLOAT_BLOCK:
+                value = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
+                break;
+            case Render::Format::BC6H_SFLOAT_BLOCK:
+                value = GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT;
+                break;
+            case Render::Format::BC7_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_BPTC_UNORM;
+                break;
+            case Render::Format::BC7_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+                break;
+            case Render::Format::ETC2_R8G8B8_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGB8_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB8_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8A1_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8A1_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8A8_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA8_ETC2_EAC;
+                break;
+            case Render::Format::ETC2_R8G8B8A8_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC;
+                break;
+            case Render::Format::EAC_R11_UNORM_BLOCK:
+                value = GL_COMPRESSED_R11_EAC;
+                break;
+            case Render::Format::EAC_R11_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_R11_EAC;
+                break;
+            case Render::Format::EAC_R11G11_UNORM_BLOCK:
+                value = GL_COMPRESSED_RG11_EAC;
+                break;
+            case Render::Format::EAC_R11G11_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_RG11_EAC;
+                break;
+            case Render::Format::A4R4G4B4_UNORM_PACK16:
+                value = GL_RGBA4;
+                break;
+            case Render::Format::A4B4G4R4_UNORM_PACK16:
+                value = GL_RGBA4;
+                break;
+            case Render::Format::A1B5G5R5_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+                //{Render::Format::A8_UNORM, },
+            default:
+                break;
+        }
 
-            {Render::Format::R32G32B32_FLOAT, GL_RGB32F},
-            {Render::Format::R32G32B32_UINT, GL_RGB32UI},
-            {Render::Format::R32G32B32_SINT, GL_RGB32I},
-
-            {Render::Format::R16G16B16A16_FLOAT, GL_RGBA16F},
-            {Render::Format::R16G16B16A16_UNORM, GL_RGBA16},
-            {Render::Format::R16G16B16A16_UINT, GL_RGBA16UI},
-            {Render::Format::R16G16B16A16_SNORM, GL_RGBA16_SNORM},
-            {Render::Format::R16G16B16A16_SINT, GL_RGBA16I},
-
-            {Render::Format::R32G32_FLOAT, GL_RG32F},
-            {Render::Format::R32G32_UINT, GL_RG32UI},
-            {Render::Format::R32G32_SINT, GL_RG32I},
-
-            {Render::Format::D32_FLOAT_S8X24_UINT, GL_DEPTH32F_STENCIL8},
-
-            {Render::Format::R10G10B10A2_UNORM, GL_RGB10_A2},
-            {Render::Format::R10G10B10A2_UINT, GL_RGB10_A2UI},
-            {Render::Format::R11G11B10_FLOAT, GL_R11F_G11F_B10F},
-
-            {Render::Format::R8G8B8A8_UNORM, GL_RGBA8},
-            {Render::Format::R8G8B8A8_UNORM_SRGB, GL_SRGB8_ALPHA8},
-            {Render::Format::R8G8B8A8_UINT, GL_RGBA8UI},
-            {Render::Format::R8G8B8A8_SNORM, GL_RGBA8_SNORM},
-            {Render::Format::R8G8B8A8_SINT, GL_RGBA8I},
-
-            {Render::Format::R16G16_FLOAT, GL_RG16F},
-            {Render::Format::R16G16_UNORM, GL_RG16},
-            {Render::Format::R16G16_UINT, GL_RG16UI},
-            {Render::Format::R16G16_SNORM, GL_RG16_SNORM},
-            {Render::Format::R16G16_SINT, GL_RG16I},
-
-            {Render::Format::D32_FLOAT, GL_DEPTH_COMPONENT32F},
-            {Render::Format::R32_FLOAT, GL_R32F},
-            {Render::Format::R32_UINT, GL_R32UI},
-            {Render::Format::R32_SINT, GL_R32I},
-
-            {Render::Format::D24_UNORM_S8_UINT, GL_DEPTH24_STENCIL8},
-
-            {Render::Format::R8G8_UNORM, GL_RG8},
-            {Render::Format::R8G8_UINT, GL_RG8UI},
-            {Render::Format::R8G8_SNORM, GL_RG8_SNORM},
-            {Render::Format::R8G8_SINT, GL_RG8I},
-
-            {Render::Format::R16_FLOAT, GL_R16F},
-            {Render::Format::D16_UNORM, GL_DEPTH_COMPONENT16},
-            {Render::Format::R16_UNORM, GL_R16},
-            {Render::Format::R16_UINT, GL_R16UI},
-            {Render::Format::R16_SNORM, GL_R16_SNORM},
-            {Render::Format::R16_SINT, GL_R16I},
-
-            {Render::Format::R8_UNORM, GL_R8},
-            {Render::Format::R8_UINT, GL_R8UI},
-            {Render::Format::R8_SNORM, GL_R8_SNORM},
-            {Render::Format::R8_SINT, GL_R8I},
-
-            {Render::Format::R9G9B9E5_SHAREDEXP, GL_RGB9_E5},
-
-            {Render::Format::BC1_UNORM, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT},
-            {Render::Format::BC1_UNORM_SRGB, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT},
-            {Render::Format::BC2_UNORM, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT},
-            {Render::Format::BC2_UNORM_SRGB, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT},
-
-            {Render::Format::BC3_UNORM, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT},
-            {Render::Format::BC3_UNORM_SRGB, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT},
-            {Render::Format::BC4_UNORM, GL_COMPRESSED_RED_RGTC1},
-            {Render::Format::BC4_SNORM, GL_COMPRESSED_SIGNED_RED_RGTC1},
-
-            {Render::Format::BC5_UNORM, GL_COMPRESSED_RG_RGTC2},
-            {Render::Format::BC5_SNORM, GL_COMPRESSED_SIGNED_RG_RGTC2},
-            {Render::Format::B5G6R5_UNORM, GL_RGB565},
-            {Render::Format::B5G5R5A1_UNORM, GL_RGB5_A1},
-
-            {Render::Format::BC6H_UF16, GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT},
-            {Render::Format::BC6H_SF16, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT},
-            {Render::Format::BC7_UNORM, GL_COMPRESSED_RGBA_BPTC_UNORM},
-            {Render::Format::BC7_UNORM_SRGB, GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM},
-
-            {Render::Format::B4G4R4A4_UNORM, GL_RGBA4},
-        };
-
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, format);
-        if(native == nullptr)
-            throw std::runtime_error("No native format found");
-
-        return *native;
-
-        //RGB
-        //R3G3B2_Unorm = GL_R3_G3_B2,
-        //RGB4_UNorm = GL_RGB4,
-        //RGB5_Unorm = GL_RGB5,
-
-        //RGB10_UNorm = GL_RGB10,
-        //RGB12_UNorm = GL_RGB12,
-
-        //RGB8_UNorm = GL_RGB8,
-        //RGB8_SNorm = GL_RGB8_SNORM,
-        //RGB8_Int = GL_RGB8I,
-        //RGB8_UInt = GL_RGB8UI,
-
-        //RGB16_UNorm = GL_RGB16,
-        //RGB16_SNorm = GL_RGB16_SNORM,
-        //RGB16_Int = GL_RGB16I,
-        //RGB16_UInt = GL_RGB16UI,
-        //RGB16_Float = GL_RGB16F,
-
-        //SRGB8_UNorm = GL_SRGB8,
-
-        //RGBA
-        //RGBA2_UNorm = GL_RGBA2,
-
-        //RGBA12_UNorm = GL_RGBA12,
-
-        //Depth
-        //D24 = GL_DEPTH_COMPONENT24,
-        //D32 = GL_DEPTH_COMPONENT32,
-
-        //StencilIndex
-        //S1 = GL_STENCIL_INDEX1,
-        //S4 = GL_STENCIL_INDEX4,
-        //S8 = GL_STENCIL_INDEX8,
-        //S16 = GL_STENCIL_INDEX16,
-
-        //Compressed EAC/ETC2
-        //R11_EAC_UNorm = GL_COMPRESSED_R11_EAC,
-        //RG11_EAC_UNorm = GL_COMPRESSED_RG11_EAC,
-        //RGBA8_ETC2_EAC_UNorm = GL_COMPRESSED_RGBA8_ETC2_EAC,
-        //R11_EAC_SNorm = GL_COMPRESSED_SIGNED_R11_EAC,
-        //RG11_EAC_SNorm = GL_COMPRESSED_SIGNED_RG11_EAC,
-        //RGB8_ETC2 = GL_COMPRESSED_RGB8_ETC2,
-        //RGB8_A1_ETC2 = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
-        //SRGBA8_ETC2_EAC = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC,
-        //SRGB8_ETC2 = GL_COMPRESSED_SRGB8_ETC2,
-        //SRGB8_A1_ET2 = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+        return value;
     }
 
     GLenum ImageViewTypeToNative(Render::ImageViewType type)
     {
-        constexpr static std::pair<Render::ImageViewType, GLenum> mapping[] = {
-            {Render::ImageViewType::ImageView1D, GL_TEXTURE_1D},
-            {Render::ImageViewType::ImageView2D, GL_TEXTURE_2D},
-            {Render::ImageViewType::ImageView3D, GL_TEXTURE_3D},
-            {Render::ImageViewType::ImageViewCubeMap, GL_TEXTURE_CUBE_MAP},
-            {Render::ImageViewType::ImageView1DArray, GL_TEXTURE_1D_ARRAY},
-            {Render::ImageViewType::ImageView2DArray, GL_TEXTURE_2D_ARRAY},
-            {Render::ImageViewType::ImageViewCubeMapArray, GL_TEXTURE_CUBE_MAP_ARRAY},
-            {Render::ImageViewType::ImageView2DMultisample, GL_TEXTURE_2D_MULTISAMPLE},
-            {Render::ImageViewType::ImageView2DMultisampleArray, GL_TEXTURE_2D_MULTISAMPLE_ARRAY},
-        };
+        GLenum value;
+        switch(type)
+        {
+            case Render::ImageViewType::ImageView1D:
+                value = GL_TEXTURE_1D;
+                break;
+            case Render::ImageViewType::ImageView2D:
+                value = GL_TEXTURE_2D;
+                break;
+            case Render::ImageViewType::ImageView3D:
+                value = GL_TEXTURE_3D;
+                break;
+            case Render::ImageViewType::ImageViewCubeMap:
+                value = GL_TEXTURE_CUBE_MAP;
+                break;
+            case Render::ImageViewType::ImageView1DArray:
+                value = GL_TEXTURE_1D_ARRAY;
+                break;
+            case Render::ImageViewType::ImageView2DArray:
+                value = GL_TEXTURE_2D_ARRAY;
+                break;
+            case Render::ImageViewType::ImageViewCubeMapArray:
+                value = GL_TEXTURE_CUBE_MAP_ARRAY;
+                break;
+            case Render::ImageViewType::ImageView2DMultisample:
+                value = GL_TEXTURE_2D_MULTISAMPLE;
+                break;
+            case Render::ImageViewType::ImageView2DMultisampleArray:
+                value = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+                break;
+            default:
+                throw std::runtime_error("No native ImageViewType found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, type);
-        if(native == nullptr)
-            throw std::runtime_error("No native ImageViewType found");
-
-        return *native;
+        return value;
     }
 
-    GLenum ComponentSwizzleToNative(Render::ComponentSwizzle swizzle)
+    GLint ComponentSwizzleToNative(Render::ComponentSwizzle swizzle, GLenum base)
     {
-        constexpr static std::pair<Render::ComponentSwizzle, GLenum> mapping[] = {
-            {Render::ComponentSwizzle::SwizzleRed, GL_RED},
-            {Render::ComponentSwizzle::SwizzleGreen, GL_GREEN},
-            {Render::ComponentSwizzle::SwizzleBlue, GL_BLUE},
-            {Render::ComponentSwizzle::SwizzleAlpha, GL_ALPHA},
-            {Render::ComponentSwizzle::SwizzleZero, GL_ZERO},
-            {Render::ComponentSwizzle::SwizzleOne, GL_ONE},
-            {Render::ComponentSwizzle::SwizzleIdentity, OGL_IDENTITY_SWIZZLE},
-        };
+        GLint value;
+        switch(swizzle)
+        {
+            case Render::ComponentSwizzle::SwizzleRed:
+                value = GL_RED;
+                break;
+            case Render::ComponentSwizzle::SwizzleGreen:
+                value = GL_GREEN;
+                break;
+            case Render::ComponentSwizzle::SwizzleBlue:
+                value = GL_BLUE;
+                break;
+            case Render::ComponentSwizzle::SwizzleAlpha:
+                value = GL_ALPHA;
+                break;
+            case Render::ComponentSwizzle::SwizzleZero:
+                value = GL_ZERO;
+                break;
+            case Render::ComponentSwizzle::SwizzleOne:
+                value = GL_ONE;
+                break;
+            case Render::ComponentSwizzle::SwizzleIdentity:
+                value = base;
+                break;
+            default:
+                throw std::runtime_error("No native ComponentSwizzle found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, swizzle);
-        if(native == nullptr)
-            throw std::runtime_error("No native ComponentSwizzle found");
-
-        return *native;
+        return value;
     }
 
     GLenum FilterToNative(Render::Filter filter)
     {
-        constexpr static std::pair<Render::Filter, GLenum> mapping[] = {
-            {Render::Filter::Nearest, GL_NEAREST},
-            {Render::Filter::Linear, GL_LINEAR},
-        };
+        GLenum value;
+        switch(filter)
+        {
+            case Render::Filter::Nearest:
+                value = GL_NEAREST;
+                break;
+            case Render::Filter::Linear:
+                value = GL_LINEAR;
+                break;
+            default:
+                throw std::runtime_error("No native Filter found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, filter);
-        if(native == nullptr)
-            throw std::runtime_error("No native Filter found");
-
-        return *native;
+        return value;
     }
 
     GLenum AddressModeToNative(Render::AddressMode mode)
     {
-        constexpr static std::pair<Render::AddressMode, GLenum> mapping[] = {
-            {Render::AddressMode::Repeat, GL_REPEAT},
-            {Render::AddressMode::MirroredRepeat, GL_MIRRORED_REPEAT},
-            {Render::AddressMode::ClampToEdge, GL_CLAMP_TO_EDGE},
-            {Render::AddressMode::ClampToBorder, GL_CLAMP_TO_BORDER},
-            {Render::AddressMode::MirrorClampToEdge, GL_MIRROR_CLAMP_TO_EDGE},
-        };
+        GLenum value;
+        switch(mode)
+        {
+            case Render::AddressMode::Repeat:
+                value = GL_REPEAT;
+                break;
+            case Render::AddressMode::MirroredRepeat:
+                value = GL_MIRRORED_REPEAT;
+                break;
+            case Render::AddressMode::ClampToEdge:
+                value = GL_CLAMP_TO_EDGE;
+                break;
+            case Render::AddressMode::ClampToBorder:
+                value = GL_CLAMP_TO_BORDER;
+                break;
+            case Render::AddressMode::MirrorClampToEdge:
+                value = GL_MIRROR_CLAMP_TO_EDGE;
+                break;
+            default:
+                throw std::runtime_error("No native AddressMode found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, mode);
-        if(native == nullptr)
-            throw std::runtime_error("No native AddressMode found");
-
-        return *native;
+        return value;
     }
 
     GLenum ShaderStageToNative(Render::ShaderStageFlagBits stage)
     {
-        constexpr static std::pair<Render::ShaderStageFlagBits, GLenum> mapping[] = {
-            {Render::ShaderStageFlagBits::Vertex, GL_VERTEX_SHADER},
-            {Render::ShaderStageFlagBits::TessellationControl, GL_TESS_CONTROL_SHADER},
-            {Render::ShaderStageFlagBits::TessellationEvaluation, GL_TESS_EVALUATION_SHADER},
-            {Render::ShaderStageFlagBits::Geometry, GL_GEOMETRY_SHADER},
-            {Render::ShaderStageFlagBits::Fragment, GL_FRAGMENT_SHADER},
-            {Render::ShaderStageFlagBits::Compute, GL_COMPUTE_SHADER},
-        };
+        GLenum value;
+        switch(stage)
+        {
+            case Render::ShaderStageFlagBits::Vertex:
+                value = GL_VERTEX_SHADER;
+                break;
+            case Render::ShaderStageFlagBits::TessellationControl:
+                value = GL_TESS_CONTROL_SHADER;
+                break;
+            case Render::ShaderStageFlagBits::TessellationEvaluation:
+                value = GL_TESS_EVALUATION_SHADER;
+                break;
+            case Render::ShaderStageFlagBits::Geometry:
+                value = GL_GEOMETRY_SHADER;
+                break;
+            case Render::ShaderStageFlagBits::Fragment:
+                value = GL_FRAGMENT_SHADER;
+                break;
+            case Render::ShaderStageFlagBits::Compute:
+                value = GL_COMPUTE_SHADER;
+                break;
+            default:
+                throw std::runtime_error("No native ShaderStage found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, stage);
-        if(native == nullptr)
-            throw std::runtime_error("No native ShaderStage found");
-
-        return *native;
+        return value;
     }
 
     GLenum InputRateToNative(Render::InputRate rate)
     {
-        constexpr static std::pair<Render::InputRate, GLenum> mapping[] = {
-            {Render::InputRate::VertexRate, 0},
-            {Render::InputRate::InstanceRate, 1},
-        };
+        GLenum value;
+        switch(rate)
+        {
+            case Render::InputRate::VertexRate:
+                value = 0;
+                break;
+            case Render::InputRate::InstanceRate:
+                value = 1;
+                break;
+            default:
+                throw std::runtime_error("No native InputRate found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, rate);
-        if(native == nullptr)
-            throw std::runtime_error("No native InputRate found");
-
-        return *native;
+        return value;
     }
 
     GLenum PrimitiveTopologyToNative(Render::PrimitiveTopology topology)
     {
-        constexpr static std::pair<Render::PrimitiveTopology, GLenum> mapping[] = {
-            {Render::PrimitiveTopology::Points, GL_POINTS},
-            {Render::PrimitiveTopology::Lines, GL_LINES},
-            {Render::PrimitiveTopology::LineStrip, GL_LINE_STRIP},
-            {Render::PrimitiveTopology::Triangles, GL_TRIANGLES},
-            {Render::PrimitiveTopology::TriangleStrip, GL_TRIANGLE_STRIP},
-            {Render::PrimitiveTopology::TriangleFan, GL_TRIANGLE_FAN},
-            {Render::PrimitiveTopology::LinesAdjacency, GL_LINES_ADJACENCY},
-            {Render::PrimitiveTopology::LineStripAdjacency, GL_LINE_STRIP_ADJACENCY},
-            {Render::PrimitiveTopology::TrianglesAdjacency, GL_TRIANGLES_ADJACENCY},
-            {Render::PrimitiveTopology::TriangleStrIpAdjacency, GL_TRIANGLE_STRIP_ADJACENCY},
-            {Render::PrimitiveTopology::Patches, GL_PATCHES},
-        };
+        GLenum value;
+        switch(topology)
+        {
+            case Render::PrimitiveTopology::Points:
+                value = GL_POINTS;
+                break;
+            case Render::PrimitiveTopology::Lines:
+                value = GL_LINES;
+                break;
+            case Render::PrimitiveTopology::LineStrip:
+                value = GL_LINE_STRIP;
+                break;
+            case Render::PrimitiveTopology::Triangles:
+                value = GL_TRIANGLES;
+                break;
+            case Render::PrimitiveTopology::TriangleStrip:
+                value = GL_TRIANGLE_STRIP;
+                break;
+            case Render::PrimitiveTopology::TriangleFan:
+                value = GL_TRIANGLE_FAN;
+                break;
+            case Render::PrimitiveTopology::LinesAdjacency:
+                value = GL_LINES_ADJACENCY;
+                break;
+            case Render::PrimitiveTopology::LineStripAdjacency:
+                value = GL_LINE_STRIP_ADJACENCY;
+                break;
+            case Render::PrimitiveTopology::TrianglesAdjacency:
+                value = GL_TRIANGLES_ADJACENCY;
+                break;
+            case Render::PrimitiveTopology::TriangleStrIpAdjacency:
+                value = GL_TRIANGLE_STRIP_ADJACENCY;
+                break;
+            case Render::PrimitiveTopology::Patches:
+                value = GL_PATCHES;
+                break;
+            default:
+                throw std::runtime_error("No native PrimitiveTopology found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, topology);
-        if(native == nullptr)
-            throw std::runtime_error("No native PrimitiveTopology found");
-
-        return *native;
+        return value;
     }
 
     GLenum BlendFactorToNative(Render::BlendFactor factor)
     {
-        constexpr static std::pair<Render::BlendFactor, GLenum> mapping[] = {
-            {Render::BlendFactor::Zero, GL_ZERO},
-            {Render::BlendFactor::One, GL_ONE},
-            {Render::BlendFactor::SrcColor, GL_SRC_COLOR},
-            {Render::BlendFactor::OneMinusSrcColor, GL_ONE_MINUS_SRC_COLOR},
-            {Render::BlendFactor::DstColor, GL_DST_COLOR},
-            {Render::BlendFactor::OneMinusDstColor, GL_ONE_MINUS_DST_COLOR},
-            {Render::BlendFactor::SrcAlpha, GL_SRC_ALPHA},
-            {Render::BlendFactor::OneMinusSrcAlpha, GL_ONE_MINUS_SRC_ALPHA},
-            {Render::BlendFactor::DstAlpha, GL_DST_ALPHA},
-            {Render::BlendFactor::OneMinusDstAlpha, GL_ONE_MINUS_DST_ALPHA},
-            {Render::BlendFactor::ConstantColor, GL_CONSTANT_COLOR},
+        GLenum value;
+        switch(factor)
+        {
+            case Render::BlendFactor::Zero:
+                value = GL_ZERO;
+                break;
+            case Render::BlendFactor::One:
+                value = GL_ONE;
+                break;
+            case Render::BlendFactor::SrcColor:
+                value = GL_SRC_COLOR;
+                break;
+            case Render::BlendFactor::OneMinusSrcColor:
+                value = GL_ONE_MINUS_SRC_COLOR;
+                break;
+            case Render::BlendFactor::DstColor:
+                value = GL_DST_COLOR;
+                break;
+            case Render::BlendFactor::OneMinusDstColor:
+                value = GL_ONE_MINUS_DST_COLOR;
+                break;
+            case Render::BlendFactor::SrcAlpha:
+                value = GL_SRC_ALPHA;
+                break;
+            case Render::BlendFactor::OneMinusSrcAlpha:
+                value = GL_ONE_MINUS_SRC_ALPHA;
+                break;
+            case Render::BlendFactor::DstAlpha:
+                value = GL_DST_ALPHA;
+                break;
+            case Render::BlendFactor::OneMinusDstAlpha:
+                value = GL_ONE_MINUS_DST_ALPHA;
+                break;
+            case Render::BlendFactor::ConstantColor:
+                value = GL_CONSTANT_COLOR;
+                break;
 
-            {Render::BlendFactor::OneMinusConstantColor, GL_ONE_MINUS_CONSTANT_COLOR},
-            {Render::BlendFactor::ConstantAlpha, GL_CONSTANT_ALPHA},
-            {Render::BlendFactor::OneMinusConstantAlpha, GL_ONE_MINUS_CONSTANT_ALPHA},
-            {Render::BlendFactor::SrcAlphaSaturate, GL_SRC_ALPHA_SATURATE},
-            {Render::BlendFactor::Src1Color, GL_SRC1_COLOR},
-            {Render::BlendFactor::OneMinusSrc1Color, GL_ONE_MINUS_SRC1_COLOR},
-            {Render::BlendFactor::Src1Alpha, GL_SRC1_ALPHA},
-            {Render::BlendFactor::OneMinusSrc1Alpha, GL_ONE_MINUS_SRC1_ALPHA},
-        };
+            case Render::BlendFactor::OneMinusConstantColor:
+                value = GL_ONE_MINUS_CONSTANT_COLOR;
+                break;
+            case Render::BlendFactor::ConstantAlpha:
+                value = GL_CONSTANT_ALPHA;
+                break;
+            case Render::BlendFactor::OneMinusConstantAlpha:
+                value = GL_ONE_MINUS_CONSTANT_ALPHA;
+                break;
+            case Render::BlendFactor::SrcAlphaSaturate:
+                value = GL_SRC_ALPHA_SATURATE;
+                break;
+            case Render::BlendFactor::Src1Color:
+                value = GL_SRC1_COLOR;
+                break;
+            case Render::BlendFactor::OneMinusSrc1Color:
+                value = GL_ONE_MINUS_SRC1_COLOR;
+                break;
+            case Render::BlendFactor::Src1Alpha:
+                value = GL_SRC1_ALPHA;
+                break;
+            case Render::BlendFactor::OneMinusSrc1Alpha:
+                value = GL_ONE_MINUS_SRC1_ALPHA;
+                break;
+            default:
+                throw std::runtime_error("No native BlendFactor found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, factor);
-        if(native == nullptr)
-            throw std::runtime_error("No native BlendFactor found");
-
-        return *native;
+        return value;
     }
 
     GLenum BlendLogicOpToNative(Render::BlendLogicOp op)
     {
-        constexpr static std::pair<Render::BlendLogicOp, GLenum> mapping[] = {
-            {Render::BlendLogicOp::Clear, GL_CLEAR},
-            {Render::BlendLogicOp::Set, GL_SET},
-            {Render::BlendLogicOp::Copy, GL_COPY},
-            {Render::BlendLogicOp::CopyInverted, GL_COPY_INVERTED},
-            {Render::BlendLogicOp::Noop, GL_NOOP},
-            {Render::BlendLogicOp::Invert, GL_INVERT},
-            {Render::BlendLogicOp::And, GL_AND},
-            {Render::BlendLogicOp::NotAnd, GL_NAND},
-            {Render::BlendLogicOp::Or, GL_OR},
-            {Render::BlendLogicOp::NotOr, GL_NOR},
-            {Render::BlendLogicOp::Xor, GL_XOR},
+        GLenum value;
+        switch(op)
+        {
+            case Render::BlendLogicOp::Clear:
+                value = GL_CLEAR;
+                break;
+            case Render::BlendLogicOp::Set:
+                value = GL_SET;
+                break;
+            case Render::BlendLogicOp::Copy:
+                value = GL_COPY;
+                break;
+            case Render::BlendLogicOp::CopyInverted:
+                value = GL_COPY_INVERTED;
+                break;
+            case Render::BlendLogicOp::Noop:
+                value = GL_NOOP;
+                break;
+            case Render::BlendLogicOp::Invert:
+                value = GL_INVERT;
+                break;
+            case Render::BlendLogicOp::And:
+                value = GL_AND;
+                break;
+            case Render::BlendLogicOp::NotAnd:
+                value = GL_NAND;
+                break;
+            case Render::BlendLogicOp::Or:
+                value = GL_OR;
+                break;
+            case Render::BlendLogicOp::NotOr:
+                value = GL_NOR;
+                break;
+            case Render::BlendLogicOp::Xor:
+                value = GL_XOR;
+                break;
 
-            {Render::BlendLogicOp::Equivalent, GL_EQUIV},
-            {Render::BlendLogicOp::AndReverse, GL_AND_REVERSE},
-            {Render::BlendLogicOp::AndInverted, GL_AND_INVERTED},
-            {Render::BlendLogicOp::OrReverse, GL_OR_REVERSE},
-            {Render::BlendLogicOp::OrInverted, GL_OR_INVERTED},
-        };
+            case Render::BlendLogicOp::Equivalent:
+                value = GL_EQUIV;
+                break;
+            case Render::BlendLogicOp::AndReverse:
+                value = GL_AND_REVERSE;
+                break;
+            case Render::BlendLogicOp::AndInverted:
+                value = GL_AND_INVERTED;
+                break;
+            case Render::BlendLogicOp::OrReverse:
+                value = GL_OR_REVERSE;
+                break;
+            case Render::BlendLogicOp::OrInverted:
+                value = GL_OR_INVERTED;
+                break;
+            default:
+                throw std::runtime_error("No native BlendLogicOp found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, op);
-        if(native == nullptr)
-            throw std::runtime_error("No native BlendLogicOp found");
-
-        return *native;
+        return value;
     }
 
     GLenum BlendOpToNative(Render::BlendOp op)
     {
-        constexpr static std::pair<Render::BlendOp, GLenum> mapping[] = {
-            {Render::BlendOp::Add, GL_FUNC_ADD},
-            {Render::BlendOp::Subtract, GL_FUNC_SUBTRACT},
-            {Render::BlendOp::ReverseSubstract, GL_FUNC_REVERSE_SUBTRACT},
-            {Render::BlendOp::Min, GL_MIN},
-            {Render::BlendOp::Max, GL_MAX},
-        };
+        GLenum value;
+        switch(op)
+        {
+            case Render::BlendOp::Add:
+                value = GL_FUNC_ADD;
+                break;
+            case Render::BlendOp::Subtract:
+                value = GL_FUNC_SUBTRACT;
+                break;
+            case Render::BlendOp::ReverseSubstract:
+                value = GL_FUNC_REVERSE_SUBTRACT;
+                break;
+            case Render::BlendOp::Min:
+                value = GL_MIN;
+                break;
+            case Render::BlendOp::Max:
+                value = GL_MAX;
+                break;
+            default:
+                throw std::runtime_error("No native BlendOp found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, op);
-        if(native == nullptr)
-            throw std::runtime_error("No native BlendOp found");
-
-        return *native;
+        return value;
     }
 
     GLenum StencilOpToNative(Render::StencilOp op)
     {
-        constexpr static std::pair<Render::StencilOp, GLenum> mapping[] = {
-            {Render::StencilOp::Keep, GL_KEEP},
-            {Render::StencilOp::Zero, GL_ZERO},
-            {Render::StencilOp::Replace, GL_REPLACE},
-            {Render::StencilOp::Increment, GL_INCR},
-            {Render::StencilOp::IncrementWrap, GL_INCR_WRAP},
-            {Render::StencilOp::Decrement, GL_DECR},
-            {Render::StencilOp::DecrementWrap, GL_DECR_WRAP},
-            {Render::StencilOp::Invert, GL_INVERT},
-        };
+        GLenum value;
+        switch(op)
+        {
+            case Render::StencilOp::Keep:
+                value = GL_KEEP;
+                break;
+            case Render::StencilOp::Zero:
+                value = GL_ZERO;
+                break;
+            case Render::StencilOp::Replace:
+                value = GL_REPLACE;
+                break;
+            case Render::StencilOp::Increment:
+                value = GL_INCR;
+                break;
+            case Render::StencilOp::IncrementWrap:
+                value = GL_INCR_WRAP;
+                break;
+            case Render::StencilOp::Decrement:
+                value = GL_DECR;
+                break;
+            case Render::StencilOp::DecrementWrap:
+                value = GL_DECR_WRAP;
+                break;
+            case Render::StencilOp::Invert:
+                value = GL_INVERT;
+                break;
+            default:
+                throw std::runtime_error("No native StencilOp found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, op);
-        if(native == nullptr)
-            throw std::runtime_error("No native StencilOp found");
-
-        return *native;
+        return value;
     }
 
     GLenum PolygonModeToNative(Render::PolygonMode mode)
     {
-        constexpr static std::pair<Render::PolygonMode, GLenum> mapping[] = {
-            {Render::PolygonMode::Point, GL_POINT},
-            {Render::PolygonMode::Line, GL_LINE},
-            {Render::PolygonMode::Fill, GL_FILL},
-        };
+        GLenum value;
+        switch(mode)
+        {
+            case Render::PolygonMode::Point:
+                value = GL_POINT;
+                break;
+            case Render::PolygonMode::Line:
+                value = GL_LINE;
+                break;
+            case Render::PolygonMode::Fill:
+                value = GL_FILL;
+                break;
+            default:
+                throw std::runtime_error("No native PolygonMode found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, mode);
-        if(native == nullptr)
-            throw std::runtime_error("No native PolygonMode found");
-
-        return *native;
+        return value;
     }
 
     GLenum DecodePolygonOffsetMode(Render::PolygonMode mode)
     {
-        constexpr static std::pair<Render::PolygonMode, GLenum> mapping[] = {
-            {Render::PolygonMode::Point, GL_POLYGON_OFFSET_POINT},
-            {Render::PolygonMode::Line, GL_POLYGON_OFFSET_LINE},
-            {Render::PolygonMode::Fill, GL_POLYGON_OFFSET_FILL},
-        };
+        GLenum value;
+        switch(mode)
+        {
+            case Render::PolygonMode::Point:
+                value = GL_POLYGON_OFFSET_POINT;
+                break;
+            case Render::PolygonMode::Line:
+                value = GL_POLYGON_OFFSET_LINE;
+                break;
+            case Render::PolygonMode::Fill:
+                value = GL_POLYGON_OFFSET_FILL;
+                break;
+            default:
+                throw std::runtime_error("No native PolygonOffsetMode found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, mode);
-        if(native == nullptr)
-            throw std::runtime_error("No native PolygonOffsetMode found");
-
-        return *native;
+        return value;
     }
 
     GLenum CullModeToNative(Render::CullMode mode)
     {
-        constexpr static std::pair<Render::CullMode, GLenum> mapping[] = {
-            {Render::CullMode::None, OGL_CULL_MODE_NONE},
-            {Render::CullMode::Front, GL_FRONT},
-            {Render::CullMode::Back, GL_BACK},
-            {Render::CullMode::FrontAndBack, GL_FRONT_AND_BACK},
-        };
+        GLenum value;
+        switch(mode)
+        {
+            case Render::CullMode::None:
+                value = OGL_CULL_MODE_NONE;
+                break;
+            case Render::CullMode::Front:
+                value = GL_FRONT;
+                break;
+            case Render::CullMode::Back:
+                value = GL_BACK;
+                break;
+            case Render::CullMode::FrontAndBack:
+                value = GL_FRONT_AND_BACK;
+                break;
+            default:
+                throw std::runtime_error("No native CullMode found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, mode);
-        if(native == nullptr)
-            throw std::runtime_error("No native CullMode found");
-
-        return *native;
+        return value;
     }
 
     GLenum FrontFaceToNative(Render::FrontFace face)
     {
-        constexpr static std::pair<Render::FrontFace, GLenum> mapping[] = {
-            {Render::FrontFace::CounterClockwise, GL_CCW},
-            {Render::FrontFace::Clockwise, GL_CW},
-        };
+        GLenum value;
+        switch(face)
+        {
+            case Render::FrontFace::CounterClockwise:
+                value = GL_CCW;
+                break;
+            case Render::FrontFace::Clockwise:
+                value = GL_CW;
+                break;
+            default:
+                throw std::runtime_error("No native FrontFace found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, face);
-        if(native == nullptr)
-            throw std::runtime_error("No native FrontFace found");
-
-        return *native;
+        return value;
     }
 
     GLenum IndexTypeToNative(Render::IndexType type)
     {
-        constexpr static std::pair<Render::IndexType, GLenum> mapping[] = {
-            {Render::IndexType::U8, GL_UNSIGNED_BYTE},
-            {Render::IndexType::U16, GL_UNSIGNED_SHORT},
-            {Render::IndexType::U32, GL_UNSIGNED_INT},
-        };
+        GLenum value;
+        switch(type)
+        {
+            case Render::IndexType::U8:
+                value = GL_UNSIGNED_BYTE;
+                break;
+            case Render::IndexType::U16:
+                value = GL_UNSIGNED_SHORT;
+                break;
+            case Render::IndexType::U32:
+                value = GL_UNSIGNED_INT;
+                break;
+            default:
+                throw std::runtime_error("No native IndexType found");
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const GLenum* native = hrs::mapping_search(mapping, type);
-        if(native == nullptr)
-            throw std::runtime_error("No native IndexType found");
-
-        return *native;
+        return value;
     }
 
     GLenum DecodeImageType(Render::ImageType type, bool layered, bool sampled)
@@ -614,195 +1089,355 @@ namespace OpenGL
         return _inner_type;
     }
 
-    TransferImageTypeFormat DecodeTransferTypeFormatPair(Render::Format format)
+    std::optional<TransferImageTypeFormat>
+    DecodeTransferTypeFormatPair(Render::Format format) noexcept
     {
-        constexpr static std::pair<Render::Format, TransferImageTypeFormat> mapping[] = {
-            {Render::Format::R64_FLOAT,
-             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RED}},
-            {Render::Format::R64G64_FLOAT,
-             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RG}},
-            {Render::Format::R64G64B64_FLOAT,
-             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RGB}},
-            {Render::Format::R64G64B64A64_FLOAT,
-             TransferImageTypeFormat{.type = GL_DOUBLE, .format = GL_RGBA}},
+        std::optional<TransferImageTypeFormat> value;
+        switch(format)
+        {
+            //{Render::Format::UNDEFINED, },
+            //{Render::Format::R4G4_UNORM_PACK8,},
+            case Render::Format::R4G4B4A4_UNORM_PACK16:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4, .format = GL_RGBA};
+                break;
+            case Render::Format::B4G4R4A4_UNORM_PACK16:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4, .format = GL_BGRA};
+                break;
+            case Render::Format::R5G6B5_UNORM_PACK16:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_6_5, .format = GL_RGB};
+                break;
+            case Render::Format::B5G6R5_UNORM_PACK16:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_6_5, .format = GL_BGR};
+                break;
+            case Render::Format::R5G5B5A1_UNORM_PACK16:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_5_5_1, .format = GL_RGBA};
+                break;
+            case Render::Format::B5G5R5A1_UNORM_PACK16:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_5_5_1, .format = GL_BGRA};
+                break;
+            case Render::Format::A1R5G5B5_UNORM_PACK16:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                                                .format = GL_BGRA};
+                break;
+            case Render::Format::R8_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RED};
+                break;
+            case Render::Format::R8_SNORM:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RED};
+                break;
+            //case Render::Format::R8_USCALED:
+            //case Render::Format::R8_SSCALED:
+            case Render::Format::R8_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RED_INTEGER};
+                break;
+            case Render::Format::R8_SINT:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RED_INTEGER};
+                break;
+            case Render::Format::R8_UNORM_SRGB:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RED};
+                break;
+            case Render::Format::R8G8_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG};
+                break;
+            case Render::Format::R8G8_SNORM:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG};
+                break;
+            //case Render::Format::R8G8_USCALED:
+            //case Render::Format::R8G8_SSCALED:
+            case Render::Format::R8G8_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG_INTEGER};
+                break;
+            case Render::Format::R8G8_SINT:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG_INTEGER};
+                break;
+            case Render::Format::R8G8_UNORM_SRGB:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG};
+                break;
+            case Render::Format::R8G8B8_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGB};
+                break;
+            case Render::Format::R8G8B8_SNORM:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGB};
+                break;
+            //case Render::Format::R8G8B8_USCALED:
+            //case Render::Format::R8G8B8_SSCALED:
+            case Render::Format::R8G8B8_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGB_INTEGER};
+                break;
+            case Render::Format::R8G8B8_SINT:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGB_INTEGER};
+                break;
+            case Render::Format::R8G8B8_UNORM_SRGB:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGB};
+                break;
+            case Render::Format::B8G8R8_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_BGR};
+                break;
+            case Render::Format::B8G8R8_SNORM:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_BGR};
+                break;
+            //case Render::Format::B8G8R8_USCALED:
+            //case Render::Format::B8G8R8_SSCALED:
+            case Render::Format::B8G8R8_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_BGR_INTEGER};
+                break;
+            case Render::Format::B8G8R8_SINT:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_BGR_INTEGER};
+                break;
+            case Render::Format::B8G8R8_UNORM_SRGB:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_BGR};
+                break;
+            case Render::Format::R8G8B8A8_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA};
+                break;
+            case Render::Format::R8G8B8A8_SNORM:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGBA};
+                break;
+            //case Render::Format::R8G8B8A8_USCALED:
+            //case Render::Format::R8G8B8A8_SSCALED:
+            case Render::Format::R8G8B8A8_UINT:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA_INTEGER};
+                break;
+            case Render::Format::R8G8B8A8_SINT:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGBA_INTEGER};
+                break;
+            case Render::Format::R8G8B8A8_UNORM_SRGB:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA};
+                break;
+            case Render::Format::B8G8R8A8_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_BGRA};
+                break;
+            case Render::Format::B8G8R8A8_SNORM:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_BGRA};
+                break;
+            //case Render::Format::B8G8R8A8_USCALED:
+            //case Render::Format::B8G8R8A8_SSCALED:
+            case Render::Format::B8G8R8A8_UINT:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_BGRA_INTEGER};
+                break;
+            case Render::Format::B8G8R8A8_SINT:
+                value = TransferImageTypeFormat{.type = GL_BYTE, .format = GL_BGRA_INTEGER};
+                break;
+            case Render::Format::B8G8R8A8_UNORM_SRGB:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_BGRA};
+                break;
+            case Render::Format::A8B8G8R8_UNORM_PACK32:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_INT_8_8_8_8_REV, .format = GL_RGBA};
+                break;
+            case Render::Format::A8B8G8R8_SNORM_PACK32:
+                //NON-TRANSFERABLE
+                break;
+            //case Render::Format::A8B8G8R8_USCALED_PACK32:
+            //case Render::Format::A8B8G8R8_SSCALED_PACK32:
+            case Render::Format::A8B8G8R8_UINT_PACK32:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT_8_8_8_8_REV,
+                                                .format = GL_RGBA_INTEGER};
+                break;
+            case Render::Format::A8B8G8R8_SINT_PACK32:
+                //NON-TRANSFERABLE
+                break;
+            case Render::Format::A8B8G8R8_UNORM_SRGB_PACK32:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_INT_8_8_8_8_REV, .format = GL_RGBA};
+                break;
+            case Render::Format::A2R10G10B10_UNORM_PACK32:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
+                                                .format = GL_BGRA};
+                break;
+            //{Render::Format::A2R10G10B10_SNORM_PACK32, },
+            //case Render::Format::A2R10G10B10_USCALED_PACK32:
+            //{Render::Format::A2R10G10B10_SSCALED_PACK32, },
+            case Render::Format::A2R10G10B10_UINT_PACK32:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
+                                                .format = GL_BGRA_INTEGER};
+                break;
+            //{Render::Format::A2R10G10B10_SINT_PACK32, },
+            case Render::Format::A2B10G10R10_UNORM_PACK32:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
+                                                .format = GL_RGBA};
+                break;
+            //{Render::Format::A2B10G10R10_SNORM_PACK32, },
+            //case Render::Format::A2B10G10R10_USCALED_PACK32:
+            //{Render::Format::A2B10G10R10_SSCALED_PACK32, },
+            case Render::Format::A2B10G10R10_UINT_PACK32:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
+                                                .format = GL_RGBA_INTEGER};
+                break;
+            //{Render::Format::A2B10G10R10_SINT_PACK32, },
+            case Render::Format::R16_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RED};
+                break;
+            case Render::Format::R16_SNORM:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RED};
+                break;
+            //case Render::Format::R16_USCALED:
+            //case Render::Format::R16_SSCALED:
+            case Render::Format::R16_UINT:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RED_INTEGER};
+                break;
+            case Render::Format::R16_SINT:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RED_INTEGER};
+                break;
+            case Render::Format::R16_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RED};
+                break;
+            case Render::Format::R16G16_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG};
+                break;
+            case Render::Format::R16G16_SNORM:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RG};
+                break;
+            //case Render::Format::R16G16_USCALED:
+            //case Render::Format::R16G16_SSCALED:
+            case Render::Format::R16G16_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG_INTEGER};
+                break;
+            case Render::Format::R16G16_SINT:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RG_INTEGER};
+                break;
+            case Render::Format::R16G16_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RG};
+                break;
+            case Render::Format::R16G16B16_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGB};
+                break;
+            case Render::Format::R16G16B16_SNORM:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGB};
+                break;
+            //case Render::Format::R16G16B16_USCALED:
+            //case Render::Format::R16G16B16_SSCALED:
+            case Render::Format::R16G16B16_UINT:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGB_INTEGER};
+                break;
+            case Render::Format::R16G16B16_SINT:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGB_INTEGER};
+                break;
+            case Render::Format::R16G16B16_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RGB};
+                break;
+            case Render::Format::R16G16B16A16_UNORM:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGBA};
+                break;
+            case Render::Format::R16G16B16A16_SNORM:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGBA};
+                break;
+            //case Render::Format::R16G16B16A16_USCALED:
+            //case Render::Format::R16G16B16A16_SSCALED:
+            case Render::Format::R16G16B16A16_UINT:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGBA_INTEGER};
+                break;
+            case Render::Format::R16G16B16A16_SINT:
+                value = TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGBA_INTEGER};
+                break;
+            case Render::Format::R16G16B16A16_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RGBA};
+                break;
+            case Render::Format::R32_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RED_INTEGER};
+                break;
+            case Render::Format::R32_SINT:
+                value = TransferImageTypeFormat{.type = GL_INT, .format = GL_RED_INTEGER};
+                break;
+            case Render::Format::R32_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RED};
+                break;
+            case Render::Format::R32G32_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RG_INTEGER};
+                break;
+            case Render::Format::R32G32_SINT:
+                value = TransferImageTypeFormat{.type = GL_INT, .format = GL_RG_INTEGER};
+                break;
+            case Render::Format::R32G32_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RG};
+                break;
+            case Render::Format::R32G32B32_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RGB_INTEGER};
+                break;
+            case Render::Format::R32G32B32_SINT:
+                value = TransferImageTypeFormat{.type = GL_INT, .format = GL_RGB_INTEGER};
+                break;
+            case Render::Format::R32G32B32_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RGB};
+                break;
+            case Render::Format::R32G32B32A32_UINT:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RGBA_INTEGER};
+                break;
+            case Render::Format::R32G32B32A32_SINT:
+                value = TransferImageTypeFormat{.type = GL_INT, .format = GL_RGBA_INTEGER};
+                break;
+            case Render::Format::R32G32B32A32_SFLOAT:
+                value = TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RGBA};
+                break;
+            //{Render::Format::R64_UINT, },
+            //{Render::Format::R64_SINT, },
+            //{Render::Format::R64_SFLOAT, },
+            //{Render::Format::R64G64_UINT, },
+            //{Render::Format::R64G64_SINT, },
+            //{Render::Format::R64G64_SFLOAT, },
+            //{Render::Format::R64G64B64_UINT, },
+            //{Render::Format::R64G64B64_SINT, },
+            //{Render::Format::R64G64B64_SFLOAT, },
+            //{Render::Format::R64G64B64A64_UINT, },
+            //{Render::Format::R64G64B64A64_SINT, },
+            //{Render::Format::R64G64B64A64_SFLOAT, },
+            case Render::Format::B10G11R11_UFLOAT_PACK32:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10F_11F_11F_REV,
+                                                .format = GL_RGB};
+                break;
+            case Render::Format::E5B9G9R9_UFLOAT_PACK32:
+                value =
+                    TransferImageTypeFormat{.type = GL_UNSIGNED_INT_5_9_9_9_REV, .format = GL_RGBA};
+                break;
+            case Render::Format::D16_UNORM:
+                //NON-TRANSFERABLE
+                break;
+            case Render::Format::X8_D24_UNORM_PACK32:
+                //NON-TRANSFERABLE
+                break;
+            case Render::Format::D32_SFLOAT:
+                //NON-TRANSFERABLE
+                break;
+            case Render::Format::S8_UINT:
+                //NON-TRANSFERABLE
+                break;
+            //{Render::Format::D16_UNORM_S8_UINT,},
+            case Render::Format::D24_UNORM_S8_UINT:
+                //NON-TRANSFERABLE
+                break;
+            case Render::Format::D32_SFLOAT_S8_UINT:
+                //NON-TRANSFERABLE
+                break;
+            case Render::Format::A4R4G4B4_UNORM_PACK16:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4_REV,
+                                                .format = GL_BGRA};
+                break;
+            case Render::Format::A4B4G4R4_UNORM_PACK16:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4_REV,
+                                                .format = GL_RGBA};
+                break;
+            case Render::Format::A1B5G5R5_UNORM_PACK16:
+                value = TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                                                .format = GL_RGBA};
+                break;
+                //{Render::Format::A8_UNORM, },
+            default:
+                break;
+        }
 
-            {Render::Format::R32G32B32A32_FLOAT,
-             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RGBA}},
-            {Render::Format::R32G32B32A32_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RGBA_INTEGER}},
-            {Render::Format::R32G32B32A32_SINT,
-             TransferImageTypeFormat{.type = GL_INT, .format = GL_RGBA_INTEGER}},
-
-            {Render::Format::R32G32B32_FLOAT,
-             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RGB}},
-            {Render::Format::R32G32B32_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RGB_INTEGER}},
-            {Render::Format::R32G32B32_SINT,
-             TransferImageTypeFormat{.type = GL_INT, .format = GL_RGB_INTEGER}},
-
-            {Render::Format::R16G16B16A16_FLOAT,
-             TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RGBA}},
-            {Render::Format::R16G16B16A16_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGBA}},
-            {Render::Format::R16G16B16A16_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RGBA_INTEGER}},
-            {Render::Format::R16G16B16A16_SNORM,
-             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGBA}},
-            {Render::Format::R16G16B16A16_SINT,
-             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RGBA_INTEGER}},
-
-            {Render::Format::R32G32_FLOAT,
-             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RG}},
-            {Render::Format::R32G32_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RG_INTEGER}},
-            {Render::Format::R32G32_SINT,
-             TransferImageTypeFormat{.type = GL_INT, .format = GL_RG_INTEGER}},
-
-            {Render::Format::D32_FLOAT_S8X24_UINT,
-             TransferImageTypeFormat{.type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV,
-                                     .format = GL_DEPTH_STENCIL}},
-
-            {Render::Format::R10G10B10A2_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV, .format = GL_RGBA}},
-            {Render::Format::R10G10B10A2_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_2_10_10_10_REV,
-                                     .format = GL_RGBA_INTEGER}},
-            {Render::Format::R11G11B10_FLOAT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_10F_11F_11F_REV, .format = GL_RGB}},
-
-            {Render::Format::R8G8B8A8_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA}},
-            {Render::Format::R8G8B8A8_UNORM_SRGB,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA}},
-            {Render::Format::R8G8B8A8_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RGBA_INTEGER}},
-            {Render::Format::R8G8B8A8_SNORM,
-             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGBA}},
-            {Render::Format::R8G8B8A8_SINT,
-             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RGBA_INTEGER}},
-
-            {Render::Format::R16G16_FLOAT,
-             TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RG}},
-            {Render::Format::R16G16_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG}},
-            {Render::Format::R16G16_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG_INTEGER}},
-            {Render::Format::R16G16_SNORM,
-             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RG}},
-            {Render::Format::R16G16_SINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RG_INTEGER}},
-
-            {Render::Format::D32_FLOAT,
-             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_DEPTH_COMPONENT}},
-            {Render::Format::R32_FLOAT,
-             TransferImageTypeFormat{.type = GL_FLOAT, .format = GL_RED}},
-            {Render::Format::R32_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT, .format = GL_RED_INTEGER}},
-            {Render::Format::R32_SINT,
-             TransferImageTypeFormat{.type = GL_INT, .format = GL_RED_INTEGER}},
-
-            {Render::Format::D24_UNORM_S8_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_24_8, .format = GL_DEPTH_STENCIL}},
-
-            {Render::Format::R8G8_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG}},
-            {Render::Format::R8G8_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RG_INTEGER}},
-            {Render::Format::R8G8_SNORM, TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG}},
-            {Render::Format::R8G8_SINT,
-             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RG_INTEGER}},
-
-            {Render::Format::R16_FLOAT,
-             TransferImageTypeFormat{.type = GL_HALF_FLOAT, .format = GL_RED}},
-            {Render::Format::D16_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_DEPTH_COMPONENT}},
-            {Render::Format::R16_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RED}},
-            {Render::Format::R16_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT, .format = GL_RED_INTEGER}},
-            {Render::Format::R16_SNORM,
-             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RED}},
-            {Render::Format::R16_SINT,
-             TransferImageTypeFormat{.type = GL_SHORT, .format = GL_RED_INTEGER}},
-
-            {Render::Format::R8_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RED}},
-            {Render::Format::R8_UINT,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_BYTE, .format = GL_RED_INTEGER}},
-            {Render::Format::R8_SNORM, TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RED}},
-            {Render::Format::R8_SINT,
-             TransferImageTypeFormat{.type = GL_BYTE, .format = GL_RED_INTEGER}},
-
-            {Render::Format::R9G9B9E5_SHAREDEXP,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_INT_5_9_9_9_REV,
-                                     .format = GL_RGB_INTEGER}},
-
-            {Render::Format::B5G6R5_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_5_6_5_REV, .format = GL_RGB}},
-            {Render::Format::B5G5R5A1_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_1_5_5_5_REV, .format = GL_RGBA}},
-
-            {Render::Format::B4G4R4A4_UNORM,
-             TransferImageTypeFormat{.type = GL_UNSIGNED_SHORT_4_4_4_4_REV, .format = GL_RGBA}},
-        };
-
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const TransferImageTypeFormat* native = hrs::mapping_search(mapping, format);
-        if(native == nullptr)
-            throw std::runtime_error("No native format found");
-
-        return *native;
-
-        //RGB
-        //R3G3B2_Unorm = GL_R3_G3_B2,
-        //RGB4_UNorm = GL_RGB4,
-        //RGB5_Unorm = GL_RGB5,
-
-        //RGB10_UNorm = GL_RGB10,
-        //RGB12_UNorm = GL_RGB12,
-
-        //RGB8_UNorm = GL_RGB8,
-        //RGB8_SNorm = GL_RGB8_SNORM,
-        //RGB8_Int = GL_RGB8I,
-        //RGB8_UInt = GL_RGB8UI,
-
-        //RGB16_UNorm = GL_RGB16,
-        //RGB16_SNorm = GL_RGB16_SNORM,
-        //RGB16_Int = GL_RGB16I,
-        //RGB16_UInt = GL_RGB16UI,
-        //RGB16_Float = GL_RGB16F,
-
-        //SRGB8_UNorm = GL_SRGB8,
-
-        //RGBA
-        //RGBA2_UNorm = GL_RGBA2,
-
-        //RGBA12_UNorm = GL_RGBA12,
-
-        //Depth
-        //D24 = GL_DEPTH_COMPONENT24,
-        //D32 = GL_DEPTH_COMPONENT32,
-
-        //StencilIndex
-        //S1 = GL_STENCIL_INDEX1,
-        //S4 = GL_STENCIL_INDEX4,
-        //S8 = GL_STENCIL_INDEX8,
-        //S16 = GL_STENCIL_INDEX16,
-
-        //Compressed EAC/ETC2
-        //R11_EAC_UNorm = GL_COMPRESSED_R11_EAC,
-        //RG11_EAC_UNorm = GL_COMPRESSED_RG11_EAC,
-        //RGBA8_ETC2_EAC_UNorm = GL_COMPRESSED_RGBA8_ETC2_EAC,
-        //R11_EAC_SNorm = GL_COMPRESSED_SIGNED_R11_EAC,
-        //RG11_EAC_SNorm = GL_COMPRESSED_SIGNED_RG11_EAC,
-        //RGB8_ETC2 = GL_COMPRESSED_RGB8_ETC2,
-        //RGB8_A1_ETC2 = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
-        //SRGBA8_ETC2_EAC = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC,
-        //SRGB8_ETC2 = GL_COMPRESSED_SRGB8_ETC2,
-        //SRGB8_A1_ET2 = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+        return value;
     }
 
+#error HERE
     constexpr inline std::pair<Render::Format, VertexInputTypeSize>
         format_to_vertex_input_type_size_mapping[] = {
             {Render::Format::R64_FLOAT,
@@ -918,79 +1553,431 @@ namespace OpenGL
              VertexInputTypeSize{.type = GL_BYTE, .size = 1, .normalized = false}},
     };
 
-    bool IsFormatSupportedAsVertexInput(Render::Format format) noexcept
+    std::optional<VertexInputTypeSize> DecodeVertexInputTypeSizePair(Render::Format format) noexcept
     {
-        CHECK_MAPPING_IS_SORTED(format_to_vertex_input_type_size_mapping)
+        /*
+        An INVALID_ENUM error is generated by VertexAttribIFormat and VertexAttribLFormat if type is UNSIGNED_INT_10F_11F_11F_REV.
+        An INVALID_OPERATION error is generated under any of the following
+        conditions:
+        • size is BGRA and type is not UNSIGNED_BYTE, INT_2_10_10_10_REV
+        or UNSIGNED_INT_2_10_10_10_REV;
+        • type is INT_2_10_10_10_REV or UNSIGNED_INT_2_10_10_10_-
+        REV, and size is neither 4 nor BGRA;
+        • type is UNSIGNED_INT_10F_11F_11F_REV and size is not 3;
+        • size is BGRA and normalized is FALSE.
+        An INVALID_VALUE error is generated if relativeoffset is larger than the
+        value of MAX_VERTEX_ATTRIB_RELATIVE_OFFSET.
+        */
 
-        const VertexInputTypeSize* native =
-            hrs::mapping_search(format_to_vertex_input_type_size_mapping, format);
+#error HERE!
+        std::optional<VertexInputTypeSize> value;
+        switch(format)
+        {
+            //{Render::Format::UNDEFINED, },
+            //{Render::Format::R4G4_UNORM_PACK8,},
+            case Render::Format::R4G4B4A4_UNORM_PACK16:
+                value = VertexInputTypeSize
+                {
+                    .type
+                }
+                break;
+            case Render::Format::B4G4R4A4_UNORM_PACK16:
+                value = GL_RGBA4;
+                break;
+            case Render::Format::R5G6B5_UNORM_PACK16:
+                value = GL_RGB565;
+                break;
+            case Render::Format::B5G6R5_UNORM_PACK16:
+                value = GL_RGB565;
+                break;
+            case Render::Format::R5G5B5A1_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+            case Render::Format::B5G5R5A1_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+            case Render::Format::A1R5G5B5_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+            case Render::Format::R8_UNORM:
+                value = GL_R8;
+                break;
+            case Render::Format::R8_SNORM:
+                value = GL_R8_SNORM;
+                break;
+            //case Render::Format::R8_USCALED:
+            //case Render::Format::R8_SSCALED:
+            case Render::Format::R8_UINT:
+                value = GL_R8UI;
+                break;
+            case Render::Format::R8_SINT:
+                value = GL_R8I;
+                break;
+            case Render::Format::R8_UNORM_SRGB:
+                value = GL_SR8_EXT;
+                break;
+            case Render::Format::R8G8_UNORM:
+                value = GL_RG8;
+                break;
+            case Render::Format::R8G8_SNORM:
+                value = GL_RG8_SNORM;
+                break;
+            //case Render::Format::R8G8_USCALED:
+            //case Render::Format::R8G8_SSCALED:
+            case Render::Format::R8G8_UINT:
+                value = GL_RG8UI;
+                break;
+            case Render::Format::R8G8_SINT:
+                value = GL_RG8I;
+                break;
+            case Render::Format::R8G8_UNORM_SRGB:
+                value = GL_SRG8_EXT;
+                break;
+            case Render::Format::R8G8B8_UNORM:
+                value = GL_RGB8;
+                break;
+            case Render::Format::R8G8B8_SNORM:
+                value = GL_RGB8_SNORM;
+                break;
+            //case Render::Format::R8G8B8_USCALED:
+            //case Render::Format::R8G8B8_SSCALED:
+            case Render::Format::R8G8B8_UINT:
+                value = GL_RGB8UI;
+                break;
+            case Render::Format::R8G8B8_SINT:
+                value = GL_RGB8I;
+                break;
+            case Render::Format::R8G8B8_UNORM_SRGB:
+                value = GL_SRGB8;
+                break;
+            case Render::Format::B8G8R8_UNORM:
+                value = GL_RGB8;
+                break;
+            case Render::Format::B8G8R8_SNORM:
+                value = GL_RGB8_SNORM;
+                break;
+            //case Render::Format::B8G8R8_USCALED:
+            //case Render::Format::B8G8R8_SSCALED:
+            case Render::Format::B8G8R8_UINT:
+                value = GL_RGB8UI;
+                break;
+            case Render::Format::B8G8R8_SINT:
+                value = GL_RGB8I;
+                break;
+            case Render::Format::B8G8R8_UNORM_SRGB:
+                value = GL_SRGB8;
+                break;
+            case Render::Format::R8G8B8A8_UNORM:
+                value = GL_RGBA8;
+                break;
+            case Render::Format::R8G8B8A8_SNORM:
+                value = GL_RGBA8_SNORM;
+                break;
+            //case Render::Format::R8G8B8A8_USCALED:
+            //case Render::Format::R8G8B8A8_SSCALED:
+            case Render::Format::R8G8B8A8_UINT:
+                value = GL_RGBA8UI;
+                break;
+            case Render::Format::R8G8B8A8_SINT:
+                value = GL_RGBA8I;
+                break;
+            case Render::Format::R8G8B8A8_UNORM_SRGB:
+                value = GL_SRGB8_ALPHA8;
+                break;
+            case Render::Format::B8G8R8A8_UNORM:
+                value = GL_RGBA8;
+                break;
+            case Render::Format::B8G8R8A8_SNORM:
+                value = GL_RGBA8_SNORM;
+                break;
+            //case Render::Format::B8G8R8A8_USCALED:
+            //case Render::Format::B8G8R8A8_SSCALED:
+            case Render::Format::B8G8R8A8_UINT:
+                value = GL_RGBA8UI;
+                break;
+            case Render::Format::B8G8R8A8_SINT:
+                value = GL_RGBA8I;
+                break;
+            case Render::Format::B8G8R8A8_UNORM_SRGB:
+                value = GL_SRGB8_ALPHA8;
+                break;
+            case Render::Format::A8B8G8R8_UNORM_PACK32:
+                value = GL_RGBA8;
+                break;
+            case Render::Format::A8B8G8R8_SNORM_PACK32:
+                value = GL_RGBA8_SNORM;
+                break;
+            //case Render::Format::A8B8G8R8_USCALED_PACK32:
+            //case Render::Format::A8B8G8R8_SSCALED_PACK32:
+            case Render::Format::A8B8G8R8_UINT_PACK32:
+                value = GL_RGBA8UI;
+                break;
+            case Render::Format::A8B8G8R8_SINT_PACK32:
+                value = GL_RGBA8I;
+                break;
+            case Render::Format::A8B8G8R8_UNORM_SRGB_PACK32:
+                value = GL_SRGB8_ALPHA8;
+                break;
+            case Render::Format::A2R10G10B10_UNORM_PACK32:
+                value = GL_RGB10_A2;
+                break;
+            //{Render::Format::A2R10G10B10_SNORM_PACK32, },
+            //case Render::Format::A2R10G10B10_USCALED_PACK32:
+            //{Render::Format::A2R10G10B10_SSCALED_PACK32, },
+            case Render::Format::A2R10G10B10_UINT_PACK32:
+                value = GL_RGB10_A2UI;
+                break;
+            //{Render::Format::A2R10G10B10_SINT_PACK32, },
+            case Render::Format::A2B10G10R10_UNORM_PACK32:
+                value = GL_RGB10_A2;
+                break;
+            //{Render::Format::A2B10G10R10_SNORM_PACK32, },
+            //case Render::Format::A2B10G10R10_USCALED_PACK32:
+            //{Render::Format::A2B10G10R10_SSCALED_PACK32, },
+            case Render::Format::A2B10G10R10_UINT_PACK32:
+                value = GL_RGB10_A2UI;
+                break;
+            //{Render::Format::A2B10G10R10_SINT_PACK32, },
+            case Render::Format::R16_UNORM:
+                value = GL_R16;
+                break;
+            case Render::Format::R16_SNORM:
+                value = GL_R16_SNORM;
+                break;
+            //case Render::Format::R16_USCALED:
+            //case Render::Format::R16_SSCALED:
+            case Render::Format::R16_UINT:
+                value = GL_R16UI;
+                break;
+            case Render::Format::R16_SINT:
+                value = GL_R16I;
+                break;
+            case Render::Format::R16_SFLOAT:
+                value = GL_R16F;
+                break;
+            case Render::Format::R16G16_UNORM:
+                value = GL_RG16;
+                break;
+            case Render::Format::R16G16_SNORM:
+                value = GL_RG16_SNORM;
+                break;
+            //case Render::Format::R16G16_USCALED:
+            //case Render::Format::R16G16_SSCALED:
+            case Render::Format::R16G16_UINT:
+                value = GL_RG16UI;
+                break;
+            case Render::Format::R16G16_SINT:
+                value = GL_RG16I;
+                break;
+            case Render::Format::R16G16_SFLOAT:
+                value = GL_RG16F;
+                break;
+            case Render::Format::R16G16B16_UNORM:
+                value = GL_RGB16;
+                break;
+            case Render::Format::R16G16B16_SNORM:
+                value = GL_RGB16_SNORM;
+                break;
+            //case Render::Format::R16G16B16_USCALED:
+            //case Render::Format::R16G16B16_SSCALED:
+            case Render::Format::R16G16B16_UINT:
+                value = GL_RGB16UI;
+                break;
+            case Render::Format::R16G16B16_SINT:
+                value = GL_RGB16I;
+                break;
+            case Render::Format::R16G16B16_SFLOAT:
+                value = GL_RGB16F;
+                break;
+            case Render::Format::R16G16B16A16_UNORM:
+                value = GL_RGBA16;
+                break;
+            case Render::Format::R16G16B16A16_SNORM:
+                value = GL_RGBA16_SNORM;
+                break;
+            //case Render::Format::R16G16B16A16_USCALED:
+            //case Render::Format::R16G16B16A16_SSCALED:
+            case Render::Format::R16G16B16A16_UINT:
+                value = GL_RGBA16UI;
+                break;
+            case Render::Format::R16G16B16A16_SINT:
+                value = GL_RGBA16I;
+                break;
+            case Render::Format::R16G16B16A16_SFLOAT:
+                value = GL_RGBA16F;
+                break;
+            case Render::Format::R32_UINT:
+                value = GL_R32UI;
+                break;
+            case Render::Format::R32_SINT:
+                value = GL_R32I;
+                break;
+            case Render::Format::R32_SFLOAT:
+                value = GL_R32F;
+                break;
+            case Render::Format::R32G32_UINT:
+                value = GL_RG32UI;
+                break;
+            case Render::Format::R32G32_SINT:
+                value = GL_RG32I;
+                break;
+            case Render::Format::R32G32_SFLOAT:
+                value = GL_RG32F;
+                break;
+            case Render::Format::R32G32B32_UINT:
+                value = GL_RGB32UI;
+                break;
+            case Render::Format::R32G32B32_SINT:
+                value = GL_RGB32I;
+                break;
+            case Render::Format::R32G32B32_SFLOAT:
+                value = GL_RGB32F;
+                break;
+            case Render::Format::R32G32B32A32_UINT:
+                value = GL_RGBA32UI;
+                break;
+            case Render::Format::R32G32B32A32_SINT:
+                value = GL_RGBA32I;
+                break;
+            case Render::Format::R32G32B32A32_SFLOAT:
+                value = GL_RGBA32F;
+                break;
+            //{Render::Format::R64_UINT, },
+            //{Render::Format::R64_SINT, },
+            //{Render::Format::R64_SFLOAT, },
+            //{Render::Format::R64G64_UINT, },
+            //{Render::Format::R64G64_SINT, },
+            //{Render::Format::R64G64_SFLOAT, },
+            //{Render::Format::R64G64B64_UINT, },
+            //{Render::Format::R64G64B64_SINT, },
+            //{Render::Format::R64G64B64_SFLOAT, },
+            //{Render::Format::R64G64B64A64_UINT, },
+            //{Render::Format::R64G64B64A64_SINT, },
+            //{Render::Format::R64G64B64A64_SFLOAT, },
+            case Render::Format::B10G11R11_UFLOAT_PACK32:
+                value = GL_R11F_G11F_B10F;
+                break;
+            case Render::Format::E5B9G9R9_UFLOAT_PACK32:
+                value = GL_RGB9_E5;
+                break;
+            case Render::Format::D16_UNORM:
+                value = GL_DEPTH_COMPONENT16;
+                break;
+            case Render::Format::X8_D24_UNORM_PACK32:
+                value = GL_DEPTH24_STENCIL8;
+                break;
+            case Render::Format::D32_SFLOAT:
+                value = GL_DEPTH_COMPONENT32F;
+                break;
+            case Render::Format::S8_UINT:
+                value = GL_STENCIL_INDEX8;
+                break;
+            //{Render::Format::D16_UNORM_S8_UINT,},
+            case Render::Format::D24_UNORM_S8_UINT:
+                value = GL_DEPTH24_STENCIL8;
+                break;
+            case Render::Format::D32_SFLOAT_S8_UINT:
+                value = GL_DEPTH32F_STENCIL8;
+                break;
+            case Render::Format::BC1_RGB_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC1_RGB_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC1_RGBA_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC1_RGBA_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+                break;
+            case Render::Format::BC2_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+                break;
+            case Render::Format::BC2_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+                break;
+            case Render::Format::BC3_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                break;
+            case Render::Format::BC3_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+                break;
+            case Render::Format::BC4_UNORM_BLOCK:
+                value = GL_COMPRESSED_RED_RGTC1;
+                break;
+            case Render::Format::BC4_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_RED_RGTC1;
+                break;
+            case Render::Format::BC5_UNORM_BLOCK:
+                value = GL_COMPRESSED_RG_RGTC2;
+                break;
+            case Render::Format::BC5_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_RG_RGTC2;
+                break;
+            case Render::Format::BC6H_UFLOAT_BLOCK:
+                value = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
+                break;
+            case Render::Format::BC6H_SFLOAT_BLOCK:
+                value = GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT;
+                break;
+            case Render::Format::BC7_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA_BPTC_UNORM;
+                break;
+            case Render::Format::BC7_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+                break;
+            case Render::Format::ETC2_R8G8B8_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGB8_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB8_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8A1_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8A1_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2;
+                break;
+            case Render::Format::ETC2_R8G8B8A8_UNORM_BLOCK:
+                value = GL_COMPRESSED_RGBA8_ETC2_EAC;
+                break;
+            case Render::Format::ETC2_R8G8B8A8_UNORM_SRGB_BLOCK:
+                value = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC;
+                break;
+            case Render::Format::EAC_R11_UNORM_BLOCK:
+                value = GL_COMPRESSED_R11_EAC;
+                break;
+            case Render::Format::EAC_R11_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_R11_EAC;
+                break;
+            case Render::Format::EAC_R11G11_UNORM_BLOCK:
+                value = GL_COMPRESSED_RG11_EAC;
+                break;
+            case Render::Format::EAC_R11G11_SNORM_BLOCK:
+                value = GL_COMPRESSED_SIGNED_RG11_EAC;
+                break;
+            case Render::Format::A4R4G4B4_UNORM_PACK16:
+                value = GL_RGBA4;
+                break;
+            case Render::Format::A4B4G4R4_UNORM_PACK16:
+                value = GL_RGBA4;
+                break;
+            case Render::Format::A1B5G5R5_UNORM_PACK16:
+                value = GL_RGB5_A1;
+                break;
+                //{Render::Format::A8_UNORM, },
+            default:
+                break;
+        }
 
-        return native != nullptr;
-    }
-
-    VertexInputTypeSize DecodeVertexInputTypeSizePair(Render::Format format)
-    {
-        CHECK_MAPPING_IS_SORTED(format_to_vertex_input_type_size_mapping)
-
-        const VertexInputTypeSize* native =
-            hrs::mapping_search(format_to_vertex_input_type_size_mapping, format);
-        if(native == nullptr)
-            throw std::runtime_error("No native format found");
-
-        return *native;
-
-        //RGB
-        //R3G3B2_Unorm = GL_R3_G3_B2,
-        //RGB4_UNorm = GL_RGB4,
-        //RGB5_Unorm = GL_RGB5,
-
-        //RGB10_UNorm = GL_RGB10,
-        //RGB12_UNorm = GL_RGB12,
-
-        //RGB8_UNorm = GL_RGB8,
-        //RGB8_SNorm = GL_RGB8_SNORM,
-        //RGB8_Int = GL_RGB8I,
-        //RGB8_UInt = GL_RGB8UI,
-
-        //RGB16_UNorm = GL_RGB16,
-        //RGB16_SNorm = GL_RGB16_SNORM,
-        //RGB16_Int = GL_RGB16I,
-        //RGB16_UInt = GL_RGB16UI,
-        //RGB16_Float = GL_RGB16F,
-
-        //SRGB8_UNorm = GL_SRGB8,
-
-        //RGBA
-        //RGBA2_UNorm = GL_RGBA2,
-
-        //RGBA12_UNorm = GL_RGBA12,
-
-        //Depth
-        //D24 = GL_DEPTH_COMPONENT24,
-        //D32 = GL_DEPTH_COMPONENT32,
-
-        //StencilIndex
-        //S1 = GL_STENCIL_INDEX1,
-        //S4 = GL_STENCIL_INDEX4,
-        //S8 = GL_STENCIL_INDEX8,
-        //S16 = GL_STENCIL_INDEX16,
-
-        //Compressed EAC/ETC2
-        //R11_EAC_UNorm = GL_COMPRESSED_R11_EAC,
-        //RG11_EAC_UNorm = GL_COMPRESSED_RG11_EAC,
-        //RGBA8_ETC2_EAC_UNorm = GL_COMPRESSED_RGBA8_ETC2_EAC,
-        //R11_EAC_SNorm = GL_COMPRESSED_SIGNED_R11_EAC,
-        //RG11_EAC_SNorm = GL_COMPRESSED_SIGNED_RG11_EAC,
-        //RGB8_ETC2 = GL_COMPRESSED_RGB8_ETC2,
-        //RGB8_A1_ETC2 = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
-        //SRGBA8_ETC2_EAC = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC,
-        //SRGB8_ETC2 = GL_COMPRESSED_SRGB8_ETC2,
-        //SRGB8_A1_ET2 = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+        return value;
     }
 
     ArrayDecodeResult<9>
     DebugMessengerTypeFlagsToNativeInverted(Render::DebugMessengerTypeFlags types)
     {
+#error HERE
         ArrayDecodeResult<9> res = {.data = {}, .size = 0};
 
         if(!(types & Render::DebugMessengerTypeFlagBits::General))
@@ -1021,6 +2008,7 @@ namespace OpenGL
     ArrayDecodeResult<4>
     DebugMessengerSeverityFlagsToNativeInverted(Render::DebugMessengerSeverityFlags severities)
     {
+#error HERE
         ArrayDecodeResult<4> res = {.data = {}, .size = 0};
 
         if(!(severities & Render::DebugMessengerSeverityFlagBits::Verbose))
@@ -1040,46 +2028,60 @@ namespace OpenGL
 
     Render::DebugMessengerTypeFlagBits NativeDebugMessengerTypeFlagBitToSpec(GLenum type)
     {
-        constexpr static std::pair<GLenum, Render::DebugMessengerTypeFlagBits> mapping[] = {
-            {GL_DEBUG_TYPE_ERROR, Render::DebugMessengerTypeFlagBits::Validation}, //56
-            {GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR,
-             Render::DebugMessengerTypeFlagBits::Validation}, //57
-            {GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR, Render::DebugMessengerTypeFlagBits::Validation}, //58
-            {GL_DEBUG_TYPE_PORTABILITY, Render::DebugMessengerTypeFlagBits::General}, //59
-            {GL_DEBUG_TYPE_PERFORMANCE, Render::DebugMessengerTypeFlagBits::Performance}, //60
-            {GL_DEBUG_TYPE_OTHER, Render::DebugMessengerTypeFlagBits::General}, //61
-        };
+        Render::DebugMessengerTypeFlagBits value;
+        switch(type)
+        {
+            case GL_DEBUG_TYPE_ERROR:
+                value = Render::DebugMessengerTypeFlagBits::Validation;
+                break;
+            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+                value = Render::DebugMessengerTypeFlagBits::Validation;
+                break;
+            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+                value = Render::DebugMessengerTypeFlagBits::Validation;
+                break;
+            case GL_DEBUG_TYPE_PORTABILITY:
+                value = Render::DebugMessengerTypeFlagBits::General;
+                break;
+            case GL_DEBUG_TYPE_PERFORMANCE:
+                value = Render::DebugMessengerTypeFlagBits::Performance;
+                break;
+            case GL_DEBUG_TYPE_OTHER:
+                value = Render::DebugMessengerTypeFlagBits::General;
+                break;
+            default:
+                value = Render::DebugMessengerTypeFlagBits::General;
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const Render::DebugMessengerTypeFlagBits* native = hrs::mapping_search(mapping, type);
-        if(native == nullptr)
-            return Render::DebugMessengerTypeFlagBits::
-                General; //return General due to driver-specific codes
-
-        return *native;
+        return value;
     }
 
     Render::DebugMessengerSeverityFlagBits
     NativeDebugMessengerSeverityFlagBitToSpec(GLenum severity)
     {
-        constexpr static std::pair<GLenum, Render::DebugMessengerSeverityFlagBits> mapping[] = {
-            {GL_DEBUG_SEVERITY_NOTIFICATION,
-             Render::DebugMessengerSeverityFlagBits::Verbose}, //33387
-            {GL_DEBUG_SEVERITY_HIGH, Render::DebugMessengerSeverityFlagBits::Error}, //37190
-            {GL_DEBUG_SEVERITY_MEDIUM, Render::DebugMessengerSeverityFlagBits::Warning}, //37191
-            {GL_DEBUG_SEVERITY_LOW, Render::DebugMessengerSeverityFlagBits::Info}, //37192
-        };
+        Render::DebugMessengerSeverityFlagBits value;
+        switch(severity)
+        {
+            case GL_DEBUG_SEVERITY_NOTIFICATION:
+                value = Render::DebugMessengerSeverityFlagBits::Verbose;
+                break;
+            case GL_DEBUG_SEVERITY_HIGH:
+                value = Render::DebugMessengerSeverityFlagBits::Error;
+                break;
+            case GL_DEBUG_SEVERITY_MEDIUM:
+                value = Render::DebugMessengerSeverityFlagBits::Warning;
+                break;
+            case GL_DEBUG_SEVERITY_LOW:
+                value = Render::DebugMessengerSeverityFlagBits::Info;
+                break;
+            default:
+                value = Render::DebugMessengerSeverityFlagBits::
+                    Verbose; //return Verbose due to driver-specific codes
+                break;
+        }
 
-        CHECK_MAPPING_IS_SORTED(mapping)
-
-        const Render::DebugMessengerSeverityFlagBits* native =
-            hrs::mapping_search(mapping, severity);
-        if(native == nullptr)
-            return Render::DebugMessengerSeverityFlagBits::
-                Verbose; //return Verbose due to driver-specific codes
-
-        return *native;
+        return value;
     }
 
     static GLbitfield
