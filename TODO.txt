@@ -45,3 +45,4 @@ new formats implement in OGL
 format texel alignment should not be set for GL_UNPACK/PACK ALIGNMENT -> only for buffer offset in copy regions
 NV extension for 64bit int vertex input
 glVertexAttribFormat -> check GL_BGRA and other restrictions on format
+Check transfer formats type and size specified in page 197 in spec -> check mapping in https://docs.google.com/spreadsheets/d/1t6xFXyhlrLnSVucg6bc_Gh5yrDVKZlQLH897NnsTpTY/edit?gid=0#gid=0
