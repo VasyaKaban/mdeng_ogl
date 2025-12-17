@@ -26,7 +26,6 @@ Check throw in commands and creation functions -> OGL only
 Change descriptor set binding -> instead of set and linear model use union of models + API type
 delete default statements in switch for formats -> populate cases via clangd quick fix
 check all static vectors and merge them into one common vector for temp info
-propagate vulkan and D3D formats with reversed endiannes or components and apply NON-REV/REV transfer types or GL_BGRA for them(OGL)
 after adding new formats also update DDS so it can handle formats with shifts
 https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf page: 222
 Descriptor descriptions:
@@ -41,8 +40,4 @@ Descriptor descriptions:
     //select binding(DescriptorDescription) -> if context.backend == OpenGL return opengl_binding...
 int16, int64, float16? for uniforms
 Create default framebuffers based on renderpass
-new formats implement in OGL
 format texel alignment should not be set for GL_UNPACK/PACK ALIGNMENT -> only for buffer offset in copy regions
-NV extension for 64bit int vertex input
-glVertexAttribFormat -> check GL_BGRA and other restrictions on format
-Check transfer formats type and size specified in page 197 in spec -> check mapping in https://docs.google.com/spreadsheets/d/1t6xFXyhlrLnSVucg6bc_Gh5yrDVKZlQLH897NnsTpTY/edit?gid=0#gid=0

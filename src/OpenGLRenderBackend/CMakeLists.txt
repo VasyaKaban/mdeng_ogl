@@ -24,8 +24,7 @@ set(GLAD_LOADER_NON_REQUIRED_EXTENSIONS
 	"GL_EXT_texture_sRGB" 
 	"GL_EXT_texture_sRGB_R8" 
 	"GL_EXT_texture_sRGB_RG8"
-	"GL_KHR_no_error"
-	"GL_NV_vertex_attrib_integer_64bit")
+	"GL_KHR_no_error")
 
 glad_add_library(glad_loader STATIC EXCLUDE_FROM_ALL REPRODUCIBLE LANGUAGE "c" MX API gl:core=4.6 EXTENSIONS ${GLAD_LOADER_NON_REQUIRED_EXTENSIONS})
 

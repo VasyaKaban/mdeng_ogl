@@ -40,12 +40,34 @@ namespace OpenGL
         {
             const auto& vertex_input_type_size_pair = DecodeVertexInputTypeSizePair(attr.format);
             loader.EnableVertexArrayAttrib(_vao, attr.location);
-            loader.VertexArrayAttribFormat(_vao,
-                                           attr.location,
-                                           vertex_input_type_size_pair.size,
-                                           vertex_input_type_size_pair.type,
-                                           vertex_input_type_size_pair.normalized,
-                                           attr.offset);
+            if(vertex_input_type_size_pair->function_type == VertexInputFunctionType::Integer)
+            {
+                loader.VertexArrayAttribIFormat(_vao,
+                                                attr.location,
+                                                vertex_input_type_size_pair->size,
+                                                vertex_input_type_size_pair->type,
+                                                attr.offset);
+            }
+            else if(vertex_input_type_size_pair->function_type == VertexInputFunctionType::Double)
+            {
+                loader.VertexArrayAttribLFormat(_vao,
+                                                attr.location,
+                                                vertex_input_type_size_pair->size,
+                                                vertex_input_type_size_pair->type,
+                                                attr.offset);
+            }
+            else
+            {
+                loader.VertexArrayAttribFormat(_vao,
+                                               attr.location,
+                                               vertex_input_type_size_pair->size,
+                                               vertex_input_type_size_pair->type,
+                                               (vertex_input_type_size_pair->function_type ==
+                                                        VertexInputFunctionType::Normalized ?
+                                                    GL_TRUE :
+                                                    GL_FALSE),
+                                               attr.offset);
+            }
 
             loader.VertexArrayAttribBinding(_vao, attr.location, attr.binding);
         }

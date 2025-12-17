@@ -66,11 +66,19 @@ namespace OpenGL
     std::optional<TransferImageTypeFormat>
     DecodeTransferTypeFormatPair(Render::Format format) noexcept;
 
+    enum class VertexInputFunctionType
+    {
+        Normalized,
+        Unnormalized,
+        Integer,
+        Double
+    };
+
     struct VertexInputTypeSize
     {
         GLenum type;
         GLenum size;
-        bool normalized;
+        VertexInputFunctionType function_type;
     };
 
     std::optional<VertexInputTypeSize>
