@@ -40,4 +40,3 @@ Descriptor descriptions:
     //select binding(DescriptorDescription) -> if context.backend == OpenGL return opengl_binding...
 int16, int64, float16? for uniforms
 Create default framebuffers based on renderpass
-format texel alignment should not be set for GL_UNPACK/PACK ALIGNMENT -> only for buffer offset in copy regions

@@ -102,6 +102,8 @@ namespace OpenGL
 
     GLbitfield PipelineBarrierToNative(const Render::PipelineBarrier& barrier);
 
+    GLuint GetPackUnpackTexelAlignemnt(Render::Format format) noexcept;
+
     /*
     registers:
         textures: CombinedImageSampler + SampledImage + UniformTexelBuffer + StorageTexelBuffer + InputAttachment

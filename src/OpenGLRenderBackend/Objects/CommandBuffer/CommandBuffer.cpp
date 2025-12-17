@@ -68,14 +68,14 @@ namespace OpenGL
         bool is_compressed = IsFormatCompressed(image_format);
         GLenum inner_type = dst_image->GetInnerType();
         GLHandle image_handle = dst_image->GetHandle();
-        std::uint16_t format_texel_alignment = GetFormatTexelAlignment(image_format);
         GLenum format = dst_image->GetInnerFormat();
 
         const TransferImageTypeFormat& transfer_type_format_pair =
             dst_image->GetTransferImageTypeFormatPair();
 
         parent->GetLoader().BindBuffer(GL_PIXEL_UNPACK_BUFFER, src_buffer->GetHandle());
-        parent->GetLoader().PixelStorei(GL_UNPACK_ALIGNMENT, format_texel_alignment);
+        parent->GetLoader().PixelStorei(GL_UNPACK_ALIGNMENT,
+                                        GetPackUnpackTexelAlignemnt(image_format));
 
         for(const auto& reg: regions)
         {
@@ -287,10 +287,10 @@ namespace OpenGL
         const auto& transfer_type_format_pair = src_image->GetTransferImageTypeFormatPair();
 
         bool is_compressed = IsFormatCompressed(image_format);
-        std::uint16_t format_texel_alignment = GetFormatTexelAlignment(image_format);
 
         parent->GetLoader().BindBuffer(GL_PIXEL_PACK_BUFFER, dst_buffer->GetHandle());
-        parent->GetLoader().PixelStorei(GL_PACK_ALIGNMENT, format_texel_alignment);
+        parent->GetLoader().PixelStorei(GL_PACK_ALIGNMENT,
+                                        GetPackUnpackTexelAlignemnt(image_format));
 
         for(const auto& reg: regions)
         {
