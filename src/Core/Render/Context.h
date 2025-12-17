@@ -15,6 +15,8 @@ namespace Render
 
         virtual const ContextProperties& GetProperties() const = 0;
 
+        virtual const ContextSurfaceCapabilities& GetSurfaceCapabilities() const = 0;
+
         virtual std::optional<BufferFormatProperties>
         GetBufferFormatProperties(const BufferFormatInfo& info) const = 0;
 

@@ -24,18 +24,6 @@ namespace Render
 
     std::uint16_t GetFormatTexelAlignment(Format format) noexcept;
 
-    enum class FormatType
-    {
-        UNORM,
-        SNORM,
-        UINT,
-        SINT,
-        SFLOAT,
-        UFLOAT,
-        USCALED,
-        SSCALED
-    };
-
     FormatType GetFormatType(Format format, ImageAspectFlagBits aspect) noexcept;
 
     bool IsFormatSRGB(Format format) noexcept;

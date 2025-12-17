@@ -12,9 +12,8 @@ namespace OpenGL
         Resolve();
         virtual ~Resolve() override;
 
-        virtual std::span<const Core::RenderBackendType> GetAvailableBackends() override;
-        virtual void Init(Core::RenderBackend* backend) override;
-        virtual std::span<const Render::ContextProperties> GetAvailableContexts() override;
+        virtual void Init(const Render::ResolveWin32Info& info) override;
+        virtual std::span<const Render::ContextInitProperties> GetAvailableContexts() override;
         virtual Render::Context* CreateContext(const Render::SelectedContextDesc& desc) override;
 
         static void operator delete(void* ptr) noexcept;

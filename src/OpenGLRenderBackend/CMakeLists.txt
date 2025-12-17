@@ -15,7 +15,7 @@ target_include_directories(OpenGLRenderBackend PUBLIC "../")
 
 find_package(OpenGL REQUIRED)
 
-set(GLAD_LOADER_NON_REQUIRED_EXTENSIONS 
+set(GLAD_OPENGL_LOADER_REQUIRED_EXTENSIONS 
 	"GL_ARB_gpu_shader_int64" 
 	"GL_ARB_polygon_offset_clamp" 
 	"GL_ARB_shader_draw_parameters" 
@@ -26,9 +26,25 @@ set(GLAD_LOADER_NON_REQUIRED_EXTENSIONS
 	"GL_EXT_texture_sRGB_RG8"
 	"GL_KHR_no_error")
 
-glad_add_library(glad_loader STATIC EXCLUDE_FROM_ALL REPRODUCIBLE LANGUAGE "c" MX API gl:core=4.6 EXTENSIONS ${GLAD_LOADER_NON_REQUIRED_EXTENSIONS})
+set(GLAD_WGL_LOADER_REQUIRED_EXTENSIONS
+	"WGL_ARB_create_context"
+	"WGL_ARB_create_context_no_error"#enable when WGL_CONTEXT_DEBUG_BIT_ARB(validation_layer) is not set
+	"WGL_ARB_create_context_profile"
+	"WGL_ARB_create_context_robustness"#enable when robustBufferAccess is enabled(+ add none notification)
+	"WGL_ARB_extensions_string"
+	"WGL_ARB_framebuffer_sRGB"#WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB in format choose
+	"WGL_ARB_pixel_format"
+	"WGL_ARB_pixel_format_float"#WGL_TYPE_RGBA_FLOAT_ARB in format choose
+	"WGL_EXT_swap_control"#0 - for immediate, 1 - for FIFO
+	"WGL_EXT_swap_control_tear")#-1 - for relaxed FIFO 
 
-string(REPLACE ";" "\",\"" OPENGL_NON_REQUIRED_EXTENSIONS_SET "${GLAD_LOADER_NON_REQUIRED_EXTENSIONS}")
+#create dummy window and dummy HDC + resolve main WGL functions + create dummy context + make current dummy context
+#destroy all prev dummy resources
+#create another dummy windows and dummy HDC + create dummy context with OGL core 4.5 + get all available pixel formats and context properties
+#destroy all prev dummy resources
+#get properties and create context on current window
+
+glad_add_library(glad_loader STATIC EXCLUDE_FROM_ALL REPRODUCIBLE LANGUAGE "c" MX API gl:core=4.6 wgl=1.0 EXTENSIONS ${GLAD_OPENGL_LOADER_REQUIRED_EXTENSIONS} ${GLAD_WGL_LOADER_REQUIRED_EXTENSIONS})
 
 target_link_libraries(OpenGLRenderBackend
 						PUBLIC Core

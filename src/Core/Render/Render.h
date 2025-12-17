@@ -538,6 +538,18 @@ namespace Render
         PVRTC2_4BPP_SRGB_BLOCK_IMG,*/
     };
 
+    enum class FormatType
+    {
+        UNORM,
+        SNORM,
+        UINT,
+        SINT,
+        SFLOAT,
+        UFLOAT,
+        USCALED,
+        SSCALED
+    };
+
     enum ImageUsageFlagBits
     {
         ImageUsageTransferSource = 1 << 0, //VK_IMAGE_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
@@ -1645,6 +1657,47 @@ namespace Render
         ClipSpaceDepthBounds clip_space_depth_bounds;
     };
 
+    enum PresentModeFlagBits
+    {
+        Immediate = 1 << 0,
+        FIFO = 1 << 1,
+        RelaxedFIFO = 1 << 2
+    };
+
+    using PresentModeFlags = std::underlying_type_t<PresentModeFlagBits>;
+
+#error format_type??? Are they either UNORM or SFLOAT?
+    struct SwapchainConfig
+    {
+        std::uint8_t red_bits_size;
+        std::uint8_t green_bits_size;
+        std::uint8_t blue_bits_size;
+        std::uint8_t alpha_bits_size;
+        std::uint16_t color_buffer_bits_size;
+        FormatType format_type;
+        bool srgb_format;
+    };
+
+    struct ContextSurfaceCapabilities
+    {
+        std::uint32_t min_image_count;
+        std::uint32_t max_image_count;
+        Extent2D current_extent;
+        Extent2D min_image_extent;
+        Extent2D max_image_extent;
+        PresentModeFlags supported_present_modes;
+
+        std::vector<SwapchainConfig> supported_configs;
+        //std::uint32_t max_image_array_layers;
+        //usage -> color attachment
+    };
+
+    struct ContextInitProperties
+    {
+        ContextProperties properties;
+        ContextSurfaceCapabilities surface_capabilities;
+    };
+
     struct QueueFamilyInfo
     {
         std::uint32_t index;
@@ -1693,6 +1746,10 @@ namespace Render
     {
         std::uint32_t index;
         std::vector<Render::QueueFamilyInfo> queue_family_infos;
+        std::uint32_t min_image_count;
+        std::uint32_t selected_config_index;
+        Extent2D swapchain_extent;
+        PresentModeFlagBits present_mode;
     };
 
     constexpr inline auto RENDER_RESOLVE_FUNCTION_NAME = "RenderResolve";

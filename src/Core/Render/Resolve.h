@@ -1,27 +1,30 @@
 #pragma once
 
+#include "hrs/detail/winapi/winapi.h"
 #include "Render.h"
 
 namespace Render
 {
+    struct ResolveWin32Info
+    {
+        HDC hdc;
+    };
+
     class Resolve
     {
     public:
         virtual ~Resolve()
         {}
 
-        //1. Retrieve available backends
-        virtual std::span<const Core::RenderBackendType> GetAvailableBackends() = 0;
+        //1. Init resolver
+        virtual void Init(const ResolveWin32Info& info) = 0;
 
-        //2. Init resolver with selected backend
-        virtual void Init(Core::RenderBackend* backend) = 0;
+        //2. Get available contexts and select one of them
+        virtual std::span<const ContextInitProperties> GetAvailableContexts() = 0;
 
-        //3. Get available contexts and select one of them
-        virtual std::span<const Render::ContextProperties> GetAvailableContexts() = 0;
-
-        //4. Create context from selected properties
+        //3. Create context from selected properties
         virtual Render::Context* CreateContext(const SelectedContextDesc& desc) = 0;
 
-        //5. Close the resolver(Init call does not important) -> call operator delete(should be overloaded from the implementation side, maybe just free some objects)
+        //4. Close the resolver(Init call does not important) -> call operator delete(should be overloaded from the implementation side, maybe just free some objects)
     };
 };
