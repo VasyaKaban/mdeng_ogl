@@ -7,7 +7,9 @@ namespace Render
 {
     struct ResolveWin32Info
     {
+        HWND window;
         HDC hdc;
+        HINSTANCE instance;
     };
 
     class Resolve

@@ -19,31 +19,6 @@
 
 namespace OpenGL
 {
-    static std::vector<Render::MemoryType> create_memory_types()
-    {
-        constexpr std::size_t MAX_MEMORY_TYPES_COUNT =
-            (Render::MemoryTypePropertyFlagBits::HostCached << 1) - 1;
-
-        std::vector<Render::MemoryType> types;
-        types.reserve(MAX_MEMORY_TYPES_COUNT);
-        for(std::size_t i = 0; i < MAX_MEMORY_TYPES_COUNT; i++)
-        {
-            if((i & Render::MemoryTypePropertyFlagBits::HostCoherent ||
-                i & Render::MemoryTypePropertyFlagBits::HostCached) &&
-               !(i & Render::MemoryTypePropertyFlagBits::HostMappingReadable ||
-                 i & Render::MemoryTypePropertyFlagBits::HostMappingWritable))
-            {
-                continue;
-            }
-
-            types.push_back(Render::MemoryType{
-                .memory_heap_flags = Render::MemoryHeapFlagBits::DeviceLocalHeap,
-                .memory_type_flags = static_cast<Render::MemoryTypePropertyFlags>(i)});
-        }
-
-        return types;
-    }
-
     //constexpr static std::array REQUIRED_EXTENSIONS = {OPENGL_REQUIRED_EXTENSIONS};
 
     static void GLAPIENTRY debug_messenger_callback(GLenum source,

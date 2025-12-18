@@ -24,7 +24,9 @@ set(GLAD_OPENGL_LOADER_REQUIRED_EXTENSIONS
 	"GL_EXT_texture_sRGB" 
 	"GL_EXT_texture_sRGB_R8" 
 	"GL_EXT_texture_sRGB_RG8"
-	"GL_KHR_no_error")
+	"GL_KHR_no_error"
+	"GL_EXT_shader_image_load_formatted"
+	"GL_AMD_gpu_shader_int16")
 
 set(GLAD_WGL_LOADER_REQUIRED_EXTENSIONS
 	"WGL_ARB_create_context"

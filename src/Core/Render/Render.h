@@ -1432,191 +1432,192 @@ namespace Render
         std::uint32_t index;
     };
 
-    struct ContextLimits
+    struct Range
     {
-        uint32_t maxImageDimension1D; //GL_MAX_TEXTURE_SIZE
-        uint32_t maxImageDimension2D; //GL_MAX_TEXTURE_SIZE
-        uint32_t maxImageDimension3D; //GL_MAX_3D_TEXTURE_SIZE
-        uint32_t maxImageDimensionCube; //GL_MAX_CUBE_MAP_TEXTURE_SIZE
-        uint32_t maxImageArrayLayers; //GL_MAX_ARRAY_TEXTURE_LAYERS
-        uint32_t maxTexelBufferElements; //GL_MAX_TEXTURE_BUFFER_SIZE
-        uint32_t maxUniformBufferRange; //GL_MAX_UNIFORM_BLOCK_SIZE
-        uint32_t maxStorageBufferRange; //GL_MAX_SHADER_STORAGE_BLOCK_SIZE
-        uint32_t
-            maxPushConstantsSize; //GL_MAX_UNIFORM_LOCATIONS GL_MAX_COMPUTE_UNIFORM_COMPONENTS, GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, GL_MAX_GEOMETRY_UNIFORM_COMPONENTS, GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS, GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS, GL_MAX_VERTEX_UNIFORM_COMPONENTS * 4
-        uint32_t maxMemoryAllocationCount; //OGL -> none
-        uint32_t maxSamplerAllocationCount; //OGL -> none
-        std::uint64_t bufferImageGranularity; //OGL -> none
-        //VkDeviceSize sparseAddressSpaceSize;
-        uint32_t maxBoundDescriptorSets; //OGL -> none
-        uint32_t
-            maxPerStageDescriptorSamplers; //GL_MAX_stage_TEXTURE_IMAGE_UNITS, GL_MAX_TEXTURE_IMAGE_UNITS (fragment), GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS GL_MAX_COMPUTE_TEXTURE_IMAGE_UNITS, GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS, GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS, GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS
-        uint32_t
-            maxPerStageDescriptorUniformBuffers; //GL_MAX_COMPUTE_UNIFORM_BLOCKS, GL_MAX_FRAGMENT_UNIFORM_BLOCKS, GL_MAX_GEOMETRY_UNIFORM_BLOCKS, GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS, GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS, GL_MAX_VERTEX_UNIFORM_BLOCKS
-        uint32_t
-            maxPerStageDescriptorStorageBuffers; //GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS
-        uint32_t maxPerStageDescriptorSampledImages; //same as maxPerStageDescriptorSamplers
-        uint32_t
-            maxPerStageDescriptorStorageImages; //GL_MAX_COMPUTE_IMAGE_UNIFORMS, GL_MAX_FRAGMENT_IMAGE_UNIFORMS, GL_MAX_GEOMETRY_IMAGE_UNIFORMS, GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS, GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS, GL_MAX_VERTEX_IMAGE_UNIFORMS, GL_MAX_IMAGE_UNITS
-        //uint32_t maxPerStageDescriptorInputAttachments;
-        uint32_t maxPerStageResources; //sum from above
-        uint32_t maxDescriptorSetSamplers; //same as maxPerStageDescriptorSamplers
-        uint32_t maxDescriptorSetUniformBuffers; //same as maxPerStageDescriptorUniformBuffers
-        //uint32_t maxDescriptorSetUniformBuffersDynamic;
-        uint32_t maxDescriptorSetStorageBuffers; //same as maxPerStageDescriptorStorageBuffers
-        //uint32_t maxDescriptorSetStorageBuffersDynamic;
-        uint32_t maxDescriptorSetSampledImages; //same as maxPerStageDescriptorSampledImages
-        uint32_t maxDescriptorSetStorageImages; //same as maxPerStageDescriptorStorageImages
-        //uint32_t maxDescriptorSetInputAttachments;
-        uint32_t maxVertexInputAttributes; //GL_MAX_VERTEX_ATTRIBS
-        uint32_t maxVertexInputBindings; //GL_MAX_VERTEX_ATTRIB_BINDINGS
-        uint32_t maxVertexInputAttributeOffset; //GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET
-        uint32_t maxVertexInputBindingStride; //GL_MAX_VERTEX_ATTRIB_STRIDE
-        uint32_t maxVertexOutputComponents; //GL_MAX_VERTEX_OUTPUT_COMPONENTS
-        uint32_t maxTessellationGenerationLevel; //GL_MAX_TESS_GEN_LEVEL
-        uint32_t maxTessellationPatchSize; //GL_MAX_PATCH_VERTICES
-        uint32_t
-            maxTessellationControlPerVertexInputComponents; //GL_MAX_TESS_CONTROL_INPUT_COMPONENTS
-        uint32_t
-            maxTessellationControlPerVertexOutputComponents; //GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS
-        uint32_t maxTessellationControlPerPatchOutputComponents; //GL_MAX_TESS_PATCH_COMPONENTS
-        uint32_t
-            maxTessellationControlTotalOutputComponents; //GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS
-        uint32_t maxTessellationEvaluationInputComponents; //GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS
-        uint32_t
-            maxTessellationEvaluationOutputComponents; //GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS
-        uint32_t maxGeometryShaderInvocations; //GL_MAX_GEOMETRY_SHADER_INVOCATIONS
-        uint32_t maxGeometryInputComponents; //GL_MAX_GEOMETRY_INPUT_COMPONENTS
-        uint32_t maxGeometryOutputComponents; //GL_MAX_GEOMETRY_OUTPUT_COMPONENTS
-        uint32_t maxGeometryOutputVertices; //GL_MAX_GEOMETRY_OUTPUT_VERTICES
-        uint32_t maxGeometryTotalOutputComponents; //GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS
-        uint32_t maxFragmentInputComponents; //GL_MAX_FRAGMENT_INPUT_COMPONENTS
-        uint32_t maxFragmentOutputAttachments; //GL_MAX_DRAW_BUFFERS
-        uint32_t maxFragmentDualSrcAttachments; //GL_MAX_DUAL_SOURCE_DRAW_BUFFERS
-        uint32_t maxFragmentCombinedOutputResources; //GL_MAX_COMBINED_SHADER_OUTPUT_RESOURCES
-        uint32_t maxComputeSharedMemorySize; //GL_MAX_COMPUTE_SHARED_MEMORY_SIZE
-        uint32_t maxComputeWorkGroupCount[3]; //GL_MAX_COMPUTE_WORK_GROUP_COUNT
-        uint32_t maxComputeWorkGroupInvocations; //GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS
-        uint32_t maxComputeWorkGroupSize[3]; //GL_MAX_COMPUTE_WORK_GROUP_SIZE
-        uint32_t subPixelPrecisionBits; //GL_SUBPIXEL_BITS
-        //uint32_t subTexelPrecisionBits;
-        //uint32_t mipmapPrecisionBits;
-        uint32_t maxDrawIndexedIndexValue; //GL_MAX_ELEMENT_INDEX
-        uint32_t maxDrawIndirectCount; //OGL: set max
-        float maxSamplerLodBias; //GL_MAX_TEXTURE_LOD_BIAS
-        float maxSamplerAnisotropy; //GL_MAX_TEXTURE_MAX_ANISOTROPY
-        uint32_t maxViewports; //GL_MAX_VIEWPORTS
-        uint32_t maxViewportDimensions[2]; //GL_MAX_VIEWPORT_DIMS
-        float viewportBoundsRange[2]; //GL_MAX_VIEWPORT_DIMS
-        uint32_t viewportSubPixelBits; //GL_VIEWPORT_SUBPIXEL_BITS
-        size_t minMemoryMapAlignment; //GL_MIN_MAP_BUFFER_ALIGNMENT
-        std::uint64_t minTexelBufferOffsetAlignment; //GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT
-        std::uint64_t minUniformBufferOffsetAlignment; //GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT
-        std::uint64_t minStorageBufferOffsetAlignment; //GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT
-        int32_t minTexelOffset; //GL_MIN_PROGRAM_TEXEL_OFFSET
-        uint32_t maxTexelOffset; //GL_MAX_PROGRAM_TEXEL_OFFSET
-        int32_t minTexelGatherOffset; //GL_MIN_PROGRAM_TEXTURE_GATHER_OFFSET
-        uint32_t maxTexelGatherOffset; //GL_MAX_PROGRAM_TEXTURE_GATHER_OFFSET
-        float minInterpolationOffset; //GL_MIN_FRAGMENT_INTERPOLATION_OFFSET
-        float maxInterpolationOffset; //GL_MAX_FRAGMENT_INTERPOLATION_OFFSET
-        uint32_t subPixelInterpolationOffsetBits; //GL_FRAGMENT_INTERPOLATION_OFFSET_BITS
-        uint32_t maxFramebufferWidth; //GL_MAX_FRAMEBUFFER_WIDTH
-        uint32_t maxFramebufferHeight; //GL_MAX_FRAMEBUFFER_HEIGHT
-        uint32_t maxFramebufferLayers; //GL_MAX_FRAMEBUFFER_LAYERS
-        SampleCountFlags framebufferColorSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
-        SampleCountFlags framebufferDepthSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
-        SampleCountFlags framebufferStencilSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
-        SampleCountFlags framebufferNoAttachmentsSampleCounts; //GL_MAX_FRAMEBUFFER_SAMPLES
-        uint32_t maxColorAttachments; //GL_MAX_COLOR_ATTACHMENTS
-        SampleCountFlags sampledImageColorSampleCounts; //GL_MAX_COLOR_TEXTURE_SAMPLES
-        SampleCountFlags sampledImageIntegerSampleCounts; //GL_MAX_INTEGER_SAMPLES
-        SampleCountFlags sampledImageDepthSampleCounts; //GL_MAX_DEPTH_TEXTURE_SAMPLES
-        SampleCountFlags sampledImageStencilSampleCounts; //GL_MAX_DEPTH_TEXTURE_SAMPLES
-        SampleCountFlags storageImageSampleCounts; //GL_MAX_IMAGE_SAMPLES
-        uint32_t maxSampleMaskWords; //GL_MAX_SAMPLE_MASK_WORDS
-        //VkBool32 timestampComputeAndGraphics;
-        //float timestampPeriod;
-        uint32_t maxClipDistances; //GL_MAX_CLIP_DISTANCES
-        uint32_t maxCullDistances; //GL_MAX_CULL_DISTANCES
-        uint32_t maxCombinedClipAndCullDistances; //GL_MAX_COMBINED_CLIP_AND_CULL_DISTANCES
-        uint32_t discreteQueuePriorities; //OGL: max
-        float pointSizeRange[2]; //GL_POINT_SIZE_RANGE
-        float lineWidthRange[2]; //GL_SMOOTH_LINE_WIDTH_RANGE
-        float pointSizeGranularity; //GL_POINT_SIZE_GRANULARITY
-        float lineWidthGranularity; //GL_SMOOTH_LINE_WIDTH_GRANULARITY
-        //VkBool32 strictLines;
-        //VkBool32 standardSampleLocations;
-        std::uint64_t optimalBufferCopyOffsetAlignment; //OGL: 1
-        std::uint64_t optimalBufferCopyRowPitchAlignment; //OGL: 1
-        std::uint64_t nonCoherentAtomSize; //OGL: 1
-        std::uint32_t maxCustomBorderColorSamplers; //OGL -> none
+        float min;
+        float max;
     };
 
-    struct VkPhysicalDeviceFeatures
+    struct ComputeGroupSize
     {
-        bool
-            robustBufferAccess; //OGL: WGL_ARB_create_context_robustness, GL_ARB_robustness, GL_KHR_robustness
-        bool fullDrawIndexUint32; //OGL: true
-        bool imageCubeArray; //OGL: true
-        bool independentBlend; //OGL: true
-        bool geometryShader; //OGL: true
-        bool tessellationShader; //OGL: true
-        bool sampleRateShading; //OGL: true
-        bool dualSrcBlend; //OGL: true
-        bool logicOp; //OGL: true
-        bool multiDrawIndirect; //GL_ARB_indirect_parameters???
-        bool drawIndirectFirstInstance; //OGL: true
-        bool depthClamp; //GL_EXT_polygon_offset_clamp, GL_ARB_polygon_offset_clamp
-        bool depthBiasClamp; //GL_EXT_polygon_offset_clamp, GL_ARB_polygon_offset_clamp
-        bool fillModeNonSolid; //OGL: true
-        bool depthBounds; //GL_EXT_depth_bounds_test
-        bool wideLines; //GL_SMOOTH_LINE_WIDTH_RANGE check range that is not only 1.0
-        bool largePoints; //GL_POINT_SIZE_RANGE check range that is not 1.0 only
-        bool alphaToOne; //OGL: true
-        bool multiViewport; //GL_MAX_VIEWPORTS check that is not 1
-        bool
-            samplerAnisotropy; //GL_ARB_texture_filter_anisotropic, GL_EXT_texture_filter_anisotropic
-        //bool textureCompressionETC2;
-        //bool textureCompressionASTC_LDR;
-        bool textureCompressionBC; //GL_EXT_texture_compression_s3tc, GL_EXT_texture_sRGB
-        //bool occlusionQueryPrecise;
-        //bool pipelineStatisticsQuery;
-        bool vertexPipelineStoresAndAtomics; //OGL: true -> 4.3
-        bool fragmentStoresAndAtomics; //OGL: true -> 4.3
-        bool shaderTessellationAndGeometryPointSize; //OGL: 4.0
-        bool shaderImageGatherExtended; //OGL: 4.0
-        bool shaderStorageImageExtendedFormats; //OGL: true
-        bool shaderStorageImageMultisample; //OGL 4.2
-        bool shaderStorageImageReadWithoutFormat; //OGL: true since 4.2???
-        bool shaderStorageImageWriteWithoutFormat; //OGL: true since 4.2???
-        bool shaderUniformBufferArrayDynamicIndexing; //OGL: 4.0
-        bool shaderSampledImageArrayDynamicIndexing; //OGL: 4.0
-        bool shaderStorageBufferArrayDynamicIndexing; //OGL: 4.3
-        bool shaderStorageImageArrayDynamicIndexing; //OGL: 4.3
-        bool shaderClipDistance; //OGL: 4.0 but not all stages supported in 3.3
-        bool shaderCullDistance; //OGL: 4.5 or GL_ARB_cull_distance(do not check this)
-        bool shaderFloat64; //OGL: 4.1
-        bool shaderInt64; //GL_ARB_gpu_shader_int64
-        bool shaderInt16; //GL_EXT_shader_explicit_arithmetic_types_int16 -> GL_AMD_gpu_shader_int16
-        //bool shaderResourceResidency;
-        bool shaderResourceMinLod; //OGL: true
-        //bool sparseBinding;
-        //bool sparseResidencyBuffer;
-        //bool sparseResidencyImage2D;
-        //bool sparseResidencyImage3D;
-        //bool sparseResidency2Samples;
-        //bool sparseResidency4Samples;
-        //bool sparseResidency8Samples;
-        //bool sparseResidency16Samples;
-        //bool sparseResidencyAliased;
-        bool variableMultisampleRate; //OGL: true
-        //bool inheritedQueries;
-        bool samplerMirrorClampToEdge; //OGL: true; VK_KHR_sampler_mirror_clamp_to_edge
-        bool customBorderColors; //OGL: true; VK_EXT_custom_border_color
-        bool customBorderColorWithoutFormat; //OGL: true; VK_EXT_custom_border_color
-        bool validation_layer; //OGL: debug context; VK: validation alyer
-        bool debug_messenger; //OGL: GL_DEBUG_OUTPUT(SYNC or not); VK: debug_utils + debug messenger
-        // we must set default logger for OGL that will send all messages into stdout like in VK
+        std::uint32_t x;
+        std::uint32_t y;
+        std::uint32_t z;
+    };
+
+    struct ContextLimits
+    {
+        std::uint32_t max_image_dimension_1D;
+        std::uint32_t max_image_dimension_2D;
+        std::uint32_t max_image_dimension_3D;
+        std::uint32_t max_image_dimension_cube;
+        std::uint32_t max_image_array_layers;
+        std::uint32_t max_texel_buffer_elements;
+        std::uint32_t max_uniform_buffer_range;
+        std::uint64_t max_storage_buffer_range;
+        std::uint32_t max_uniform_size;
+        //std::uint32_t max_memory_allocation_count;
+        std::uint32_t max_sampler_allocation_count;
+        //std::uint64_t buffer_image_granularity;
+        //std::uint64_t sparse_address_space_size;
+        std::uint32_t max_bound_descriptor_sets;
+        std::uint32_t max_per_stage_descriptor_samplers;
+        std::uint32_t max_per_stage_descriptor_uniform_buffers;
+        std::uint32_t max_per_stage_descriptor_storage_buffers;
+        std::uint32_t max_per_stage_descriptor_sampled_images;
+        std::uint32_t max_per_stage_descriptor_storage_images;
+        std::uint32_t max_per_stage_descriptor_input_attachments;
+        std::uint32_t max_per_stage_resources;
+        std::uint32_t max_descriptor_set_samplers;
+        std::uint32_t max_descriptor_set_uniform_buffers;
+        //std::uint32_t max_descriptor_set_uniform_buffers_dynamic;
+        std::uint32_t max_descriptor_set_storage_buffers;
+        //std::uint32_t max_descriptor_set_storage_buffers_dynamic;
+        std::uint32_t max_descriptor_set_sampled_images;
+        std::uint32_t max_descriptor_set_storage_images;
+        std::uint32_t max_descriptor_set_input_attachments;
+        std::uint32_t max_vertex_input_attributes;
+        std::uint32_t max_vertex_input_bindings;
+        std::uint32_t max_vertex_input_attribute_offset;
+        std::uint32_t max_vertex_input_binding_stride;
+        std::uint32_t max_vertex_output_components;
+        std::uint32_t max_tessellation_generation_level;
+        std::uint32_t max_tessellation_patch_size;
+        std::uint32_t max_tessellation_control_per_vertex_input_components;
+        std::uint32_t max_tessellation_control_per_vertex_output_components;
+        std::uint32_t max_tessellation_control_per_patch_output_components;
+        std::uint32_t max_tessellation_control_total_output_components;
+        std::uint32_t max_tessellation_evaluation_input_components;
+        std::uint32_t max_tessellation_evaluation_output_components;
+        std::uint32_t max_geometry_shader_invocations;
+        std::uint32_t max_geometry_input_components;
+        std::uint32_t max_geometry_output_components;
+        std::uint32_t max_geometry_output_vertices;
+        std::uint32_t max_geometry_total_output_components;
+        std::uint32_t max_fragment_input_components;
+        std::uint32_t max_fragment_output_attachments;
+        std::uint32_t max_fragment_dual_src_attachments;
+        std::uint32_t max_fragment_combined_output_resources;
+        std::uint32_t max_compute_shared_memory_size;
+        ComputeGroupSize max_compute_work_group_count;
+        std::uint32_t max_compute_work_group_invocations;
+        ComputeGroupSize max_compute_work_group_size;
+        std::uint32_t sub_pixel_precision_bits;
+        //std::uint32_t sub_texel_precision_bits;
+        //std::uint32_t mipmap_precision_bits;
+        std::uint32_t max_draw_indexed_index_value;
+        std::uint32_t max_draw_indirect_count;
+        float max_sampler_lod_bias;
+        float max_sampler_anisotropy;
+        std::uint32_t max_viewports;
+        Extent2D max_viewport_dimensions;
+        Range viewport_bounds_range;
+        std::uint32_t viewport_sub_pixel_bits;
+        std::size_t min_memory_map_alignment;
+        std::uint64_t min_texel_buffer_offset_alignment;
+        std::uint64_t min_uniform_buffer_offset_alignment;
+        std::uint64_t min_storage_buffer_offset_alignment;
+        std::int32_t min_texel_offset;
+        std::uint32_t max_texel_offset;
+        std::int32_t min_texel_gather_offset;
+        std::uint32_t max_texel_gather_offset;
+        float min_interpolation_offset;
+        float max_interpolation_offset;
+        std::uint32_t sub_pixel_interpolation_offset_bits;
+        std::uint32_t max_framebuffer_width;
+        std::uint32_t max_framebuffer_height;
+        std::uint32_t max_framebuffer_layers;
+        SampleCountFlags framebuffer_color_sample_counts;
+        SampleCountFlags framebuffer_depth_sample_counts;
+        SampleCountFlags framebuffer_stencil_sample_counts;
+        SampleCountFlags framebuffer_no_attachments_sample_counts;
+        std::uint32_t max_color_attachments;
+        SampleCountFlags sampled_image_color_sample_counts;
+        SampleCountFlags sampled_image_integer_sample_counts;
+        SampleCountFlags sampled_image_depth_sample_counts;
+        SampleCountFlags sampled_image_stencil_sample_counts;
+        SampleCountFlags storage_image_sample_counts;
+        uint32_t max_sample_mask_words;
+        //bool timestamp_compute_and_graphics;
+        //float timestamp_period;
+        std::uint32_t max_clip_distances;
+        std::uint32_t max_cull_distances;
+        std::uint32_t max_combined_clip_and_cull_distances;
+        std::uint32_t discrete_queue_priorities;
+        Range point_size_range;
+        Range line_width_range;
+        float point_size_granularity;
+        float line_width_granularity;
+        //bool strict_lines;
+        //bool standard_sample_locations;
+        std::uint64_t optimal_buffer_copy_offset_alignment;
+        std::uint64_t optimal_buffer_copy_row_pitch_alignment;
+        std::uint64_t non_coherent_atom_size;
+        std::uint32_t max_custom_border_color_samplers;
+    };
+
+    struct ContextFeatures
+    {
+        bool robust_buffer_access;
+        bool full_draw_index_uint32;
+        bool image_cube_array;
+        bool independent_blend;
+        bool geometry_shader;
+        bool tessellation_shader;
+        bool sample_rate_shading;
+        bool dual_src_blend;
+        bool logic_op;
+        bool multi_draw_indirect;
+        bool draw_indirect_first_instance;
+        bool depth_clamp;
+        bool depth_bias_clamp;
+        bool fill_mode_non_solid;
+        bool depth_bounds;
+        bool wide_lines;
+        bool large_points;
+        bool alpha_to_one;
+        bool multi_viewport;
+        bool sampler_anisotropy;
+        //bool texture_compression_ETC2;
+        //bool texture_compression_ASTC_LDR;
+        //bool texture_compression_BC;
+        //bool occlusion_query_precise;
+        //bool pipeline_statistics_query;
+        bool vertex_pipeline_stores_and_atomics;
+        bool fragment_stores_and_atomics;
+        bool shader_tessellation_and_geometry_point_size;
+        bool shader_image_gather_extended;
+        //bool shader_storage_image_extended_formats;
+        bool shader_storage_image_multisample;
+        bool shader_storage_image_read_without_format;
+        bool shader_storage_image_write_without_format;
+        bool shader_uniform_buffer_array_dynamic_indexing;
+        bool shader_sampled_image_array_dynamic_indexing;
+        bool shader_storage_buffer_array_dynamic_indexing;
+        bool shader_storage_image_array_dynamic_indexing;
+        bool shader_clip_distance;
+        bool shader_cull_distance;
+        bool shader_float64;
+        bool shader_int64;
+        bool shader_int16;
+        //bool shader_resource_residency;
+        bool shader_resource_min_lod;
+        //bool sparse_binding;
+        //bool sparse_residency_buffer;
+        //bool sparse_residency_image_2D;
+        //bool sparse_residency_image_3D;
+        //bool sparse_residency_2Samples;
+        //bool sparse_residency_4Samples;
+        //bool sparse_residency_8Samples;
+        //bool sparse_residency1_6Samples;
+        //bool sparse_residency_aliased;
+        bool variable_multisample_rate;
+        //bool inherited_queries;
+        bool sampler_mirror_clamp_to_edge;
+        bool custom_border_colors;
+        bool custom_border_color_without_format;
+        bool validation_layer;
+        bool debug_messenger;
     };
 
     enum class ContextDeviceType
@@ -1655,6 +1656,8 @@ namespace Render
         ContextDeviceType device_type;
         ViewOrigin view_origin;
         ClipSpaceDepthBounds clip_space_depth_bounds;
+        ContextLimits limits;
+        ContextFeatures features;
     };
 
     enum PresentModeFlagBits
@@ -1666,7 +1669,6 @@ namespace Render
 
     using PresentModeFlags = std::underlying_type_t<PresentModeFlagBits>;
 
-#error format_type??? Are they either UNORM or SFLOAT?
     struct SwapchainConfig
     {
         std::uint8_t red_bits_size;
@@ -1674,7 +1676,7 @@ namespace Render
         std::uint8_t blue_bits_size;
         std::uint8_t alpha_bits_size;
         std::uint16_t color_buffer_bits_size;
-        FormatType format_type;
+        FormatType format_type; //UNORM for OpenGL or SFLOAT on extension present
         bool srgb_format;
     };
 
@@ -1682,9 +1684,6 @@ namespace Render
     {
         std::uint32_t min_image_count;
         std::uint32_t max_image_count;
-        Extent2D current_extent;
-        Extent2D min_image_extent;
-        Extent2D max_image_extent;
         PresentModeFlags supported_present_modes;
 
         std::vector<SwapchainConfig> supported_configs;
