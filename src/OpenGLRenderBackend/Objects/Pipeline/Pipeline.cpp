@@ -1,5 +1,5 @@
 #include "Pipeline.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include <stdexcept>
 #include "hrs/scoped_call.hpp"
 #include "../Shader/Shader.h"
@@ -8,7 +8,7 @@
 
 namespace OpenGL
 {
-    Pipeline::Pipeline(Context* _parent, const Render::GraphicsPipelineInfo& info)
+    Pipeline::Pipeline(Device* _parent, const Render::GraphicsPipelineInfo& info)
         : parent(_parent)
     {
         GLHandle _handle = parent->GetLoader().CreateProgram();
@@ -50,7 +50,7 @@ namespace OpenGL
         handle = _handle;
     }
 
-    Pipeline::Pipeline(Context* _parent, const Render::ComputePipelineInfo& info)
+    Pipeline::Pipeline(Device* _parent, const Render::ComputePipelineInfo& info)
         : parent(_parent)
     {
         GLHandle _handle = parent->GetLoader().CreateProgram();
@@ -100,14 +100,14 @@ namespace OpenGL
         parent->GetLoader().DeleteProgram(handle);
     }
 
+    Render::Device* Pipeline::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLHandle Pipeline::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* Pipeline::GetContext() const noexcept
-    {
-        return parent;
     }
 
     void Pipeline::Bind(CommandBuffer& cmd)

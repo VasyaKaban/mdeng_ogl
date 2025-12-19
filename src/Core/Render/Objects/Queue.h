@@ -1,11 +1,10 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class Queue : public Object
+    class Queue
     {
     public:
         virtual ~Queue()
@@ -15,5 +14,7 @@ namespace Render
         virtual void Flush(const QueueFlushInfo& info) = 0;
 
         virtual void WaitIdle() = 0;
+
+        virtual Device* GetParent() const noexcept = 0;
     };
 };

@@ -1,6 +1,7 @@
 #include "GraphicsPipelineState.h"
 #include "Pipeline.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
+#include "../PhysicalDevice/PhysicalDevice.h"
 #include "../Shader/Shader.h"
 #include "../Buffer/Buffer.h"
 #include <stdexcept>
@@ -11,7 +12,7 @@ namespace OpenGL
 {
     static const GladGLContext& get_loader(const Pipeline& pipeline) noexcept
     {
-        return static_cast<const Context*>(pipeline.GetContext())->GetLoader();
+        return static_cast<const Device*>(pipeline.GetParent())->GetLoader();
     }
 
     GraphicsPipelineVertexInputState::GraphicsPipelineVertexInputState(
@@ -277,14 +278,14 @@ namespace OpenGL
             stencil_state_op_set(parent, GL_BACK, stencil_back_op);
         }
 
-        if(parent.GetContext()->GetProperties().features.depth_bounds)
+        if(parent.GetParent()->GetParent()->GetProperties().features.depth_bounds)
         {
             if(!depth_bounds_test_enabled)
-                loader.Disable(GL_DEPTH_BOUNDS_TEST);
+                loader.Disable(GL_DEPTH_BOUNDS_TEST_EXT);
             else
             {
-                loader.Enable(GL_DEPTH_BOUNDS_TEST);
-                loader.DepthBounds(min_depth_bounds, max_depth_bounds);
+                loader.Enable(GL_DEPTH_BOUNDS_TEST_EXT);
+                loader.DepthBoundsEXT(min_depth_bounds, max_depth_bounds);
             }
         }
     }
@@ -383,7 +384,7 @@ namespace OpenGL
     {
         const auto& loader = get_loader(parent);
 
-        if(parent.GetContext()->GetProperties().features.depth_clamp)
+        if(parent.GetParent()->GetParent()->GetProperties().features.depth_clamp)
         {
             if(depth_clamp_enabled)
                 loader.Enable(GL_DEPTH_CLAMP);
@@ -411,7 +412,7 @@ namespace OpenGL
         if(depth_bias_enabled)
         {
             loader.Enable(polygon_offset_mode);
-            if(parent.GetContext()->GetProperties().features.depth_bias_clamp)
+            if(parent.GetParent()->GetParent()->GetProperties().features.depth_bias_clamp)
                 loader.PolygonOffsetClamp(depth_bias_slope_factor,
                                           depth_bias_constant_factor,
                                           depth_bias_clamp);

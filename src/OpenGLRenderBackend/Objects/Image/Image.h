@@ -9,8 +9,10 @@ namespace OpenGL
     class Image : public Render::Image, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Image(Context* _parent, const Render::ImageInfo& info);
+        Image(Device* _parent, const Render::ImageInfo& info);
         virtual ~Image() override;
+
+        virtual Render::Device* GetParent() const noexcept override;
 
         GLenum GetInnerType() const noexcept;
         GLenum GetInnerFormat() const noexcept;
@@ -19,10 +21,8 @@ namespace OpenGL
         const TransferImageTypeFormat& GetTransferImageTypeFormatPair() const noexcept;
 
         GLHandle GetHandle() const noexcept;
-
-        virtual Render::Context* GetContext() const noexcept override;
     private:
-        Context* parent;
+        Device* parent;
         GLHandle handle;
 
         GLenum inner_type;

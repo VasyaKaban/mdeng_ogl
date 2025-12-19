@@ -2,11 +2,10 @@
 
 #include <span>
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class Buffer : public Object
+    class Buffer
     {
     public:
         virtual ~Buffer()
@@ -20,6 +19,8 @@ namespace Render
 
         virtual std::uint64_t
         GetInnerMemoryOffset() const noexcept = 0; //OGL -> 0; VK -> offset within VkDeviceMemory
+
+        virtual Device* GetParent() const noexcept = 0;
     };
 };
 

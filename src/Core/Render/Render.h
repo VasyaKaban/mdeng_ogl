@@ -12,7 +12,6 @@
 
 namespace Render
 {
-    class Object;
     class Buffer;
     class BufferView;
     class CommandBuffer;
@@ -1305,9 +1304,11 @@ namespace Render
     enum class UniformType
     {
         Float,
-        Int,
-        UInt,
-        Double
+        Int32,
+        UInt32,
+        Double,
+        Int64,
+        UInt64
     };
 
     enum class UniformExtent
@@ -1685,7 +1686,7 @@ namespace Render
     struct SurfaceCapabilities
     {
         std::uint32_t min_image_count;
-        std::uint32_t max_image_count;
+        std::uint32_t max_image_count; //0 -> no limit
         PresentModeFlags supported_present_modes;
         std::vector<SurfaceConfig> supported_configs;
         //std::uint32_t max_image_array_layers;
@@ -1748,10 +1749,8 @@ namespace Render
 
     struct SwapchainInfo
     {
-        Surface* surface;
         std::uint32_t min_image_count;
         std::uint32_t surface_config_index;
-        Extent2D extent;
         PresentModeFlagBits present_mode;
     };
 
@@ -1759,6 +1758,7 @@ namespace Render
     {
         std::vector<Render::QueueFamilyInfo> queue_family_infos;
         PhysicalDeviceFeatures enabled_features;
+        Surface* surface;
         SwapchainInfo swapchain_info;
     };
 

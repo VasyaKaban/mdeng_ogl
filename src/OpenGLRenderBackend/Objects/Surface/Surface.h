@@ -17,20 +17,33 @@ namespace OpenGL
     class Surface : public Render::Surface, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Surface(const Render::SurfaceWin32Info& info) noexcept;
+        Surface(Instance* _parent, const Render::SurfaceWin32Info& info) noexcept;
 
         virtual ~Surface() override;
 
+        virtual Render::Instance* GetParent() const noexcept override;
+
         Render::SurfaceCapabilities GetConnectedCapabilities() const;
+        PhysicalDevice* GetConnectedPhysicalDevice() const noexcept;
 
         void Connect(const SurfaceConnectInfo& info);
 
         bool IsConnected() const noexcept;
+
+        void SetSwapInterval(Render::PresentModeFlagBits present_mode);
+        void SwapWindow();
+        std::span<Render::Image*> GetImages() noexcept;
+        std::uint32_t GetImageIndex() const noexcept;
     private:
+        Instance* parent;
         Render::SurfaceWin32Info win32_info;
 
         HGLRC glrc; //real
+        PhysicalDevice* connected_physical_device;
 
         Render::SurfaceCapabilities connected_capabilities;
+        std::array<Render::Image*, SURFACE_IMAGE_COUNT> images;
+
+        std::uint32_t image_index;
     };
 };

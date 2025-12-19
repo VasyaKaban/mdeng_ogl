@@ -7,17 +7,42 @@
     },
     "configurePresets": [
         {
+            "name": "Windows-base",
+            "hidden": true,
+            "displayName": "Windows base preset",
+            "description": "Windows base preset with Ninja generator",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl",
+                "CMAKE_CXX_FLAGS": "/EHsc /utf-8 /Zi /Zc:preprocessor /std:c++20",
+                "SDL_OPENGL": "OFF",
+                "SDL_OPENGLES": "OFF",
+                "SDL_DIRECTX": "OFF",
+                "SDL_VULKAN": "OFF",
+                "SDL_TEST": "OFF"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": [
+                        "Windows"
+                    ]
+                }
+            }
+        },
+        {
+            "inherits": "Windows-base",
             "name": "Windows-debug",
             "displayName": "Windows debug preset",
-            "description": "Windows debug preset with Ninja generator",
-            "generator": "Ninja",
+            "description": "Windows debug preset",
             "binaryDir": "${sourceDir}/build/windows/debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_C_COMPILER": "cl",
-                "CMAKE_CXX_COMPILER": "cl",
-                "CMAKE_CXX_FLAGS": "/EHsc /utf-8 /Zi /Zc:preprocessor /std:c++20"
+                "CMAKE_BUILD_TYPE": "Debug"
             },
             "architecture": {
                 "value": "x64",
@@ -32,17 +57,13 @@
             }
         },
         {
+            "inherits": "Windows-base",
             "name": "Windows-release",
             "displayName": "Windows release preset",
-            "description": "Windows release preset with Ninja generator",
-            "generator": "Ninja",
+            "description": "Windows release preset",
             "binaryDir": "${sourceDir}/build/windows/release",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_C_COMPILER": "cl",
-                "CMAKE_CXX_COMPILER": "cl",
-                "CMAKE_CXX_FLAGS": "/EHsc /utf-8 /Zi /Zc:preprocessor /std:c++20"
+                "CMAKE_BUILD_TYPE": "Release"
             },
             "architecture": {
                 "value": "x64",
@@ -54,34 +75,6 @@
                         "Windows"
                     ]
                 }
-            }
-        },
-        {
-            "name": "Linux-debug",
-            "displayName": "Linux debug preset",
-            "description": "Linux debug preset with Ninja generator",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/linux/debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++",
-                "CMAKE_CXX_FLAGS": "-rdynamic -g"
-            }
-        },
-        {
-            "name": "Linux-release",
-            "displayName": "Linux release preset",
-            "description": "Linux release preset with Ninja generator",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/linux/release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++",
-                "CMAKE_CXX_FLAGS": "-rdynamic"
             }
         }
     ],
@@ -92,15 +85,7 @@
         },
         {
             "name": "Windows Release",
-            "configurePreset": "Windows-debug"
-        },
-        {
-            "name": "Linux Debug",
-            "configurePreset": "Linux-debug"
-        },
-        {
-            "name": "Linux Release",
-            "configurePreset": "Linux-release"
+            "configurePreset": "Windows-release"
         }
     ]
 }

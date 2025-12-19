@@ -1,5 +1,5 @@
 #include "DescriptorSet.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include "../DescriptorSetLayout/DescriptorSetLayout.h"
 #include "../ImageView/ImageView.h"
 #include "../Sampler/Sampler.h"
@@ -9,7 +9,7 @@
 
 namespace OpenGL
 {
-    DescriptorSet::DescriptorSet(Context* _parent,
+    DescriptorSet::DescriptorSet(Device* _parent,
                                  const DescriptorSetLayout* _layout,
                                  std::span<std::byte> _descriptors_data)
         : parent(_parent),
@@ -130,7 +130,7 @@ namespace OpenGL
         }
     }
 
-    Render::Context* DescriptorSet::GetContext() const noexcept
+    Render::Device* DescriptorSet::GetParent() const noexcept
     {
         return parent;
     }

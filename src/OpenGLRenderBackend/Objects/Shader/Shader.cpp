@@ -1,11 +1,11 @@
 #include "Shader.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include <stdexcept>
 #include "hrs/scoped_call.hpp"
 
 namespace OpenGL
 {
-    Shader::Shader(Context* _parent, const Render::ShaderInfo& info)
+    Shader::Shader(Device* _parent, const Render::ShaderInfo& info)
         : parent(_parent),
           stage(info.stage)
     {
@@ -50,6 +50,11 @@ namespace OpenGL
         parent->GetLoader().DeleteShader(handle);
     }
 
+    Render::Device* Shader::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLHandle Shader::GetHandle() const noexcept
     {
         return handle;
@@ -58,10 +63,5 @@ namespace OpenGL
     Render::ShaderStageFlagBits Shader::GetStage() const noexcept
     {
         return stage;
-    }
-
-    Render::Context* Shader::GetContext() const noexcept
-    {
-        return parent;
     }
 };

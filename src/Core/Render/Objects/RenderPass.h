@@ -1,14 +1,15 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class RenderPass : public Object
+    class RenderPass
     {
     public:
         virtual ~RenderPass()
         {}
+
+        virtual Device* GetParent() const noexcept = 0;
     };
 };

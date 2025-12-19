@@ -28,6 +28,8 @@ namespace OpenGL
 
         virtual Render::Device* CreateDevice(const Render::DeviceInfo& info) override;
 
+        virtual Render::Instance* GetParent() const noexcept override;
+
         GLADloadfunc GetProcAddressResolver() const noexcept;
 
         Render::SurfaceCapabilities

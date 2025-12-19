@@ -11,17 +11,17 @@ namespace OpenGL
         friend class Queue;
         void Set();
     public:
-        Fence(Context* _parent) noexcept;
+        Fence(Device* _parent) noexcept;
         virtual ~Fence() override;
 
         virtual bool Wait(std::uint64_t timeout_ns) noexcept override;
         virtual Render::FenceStatus GetStatus() const noexcept override;
 
-        GLsync GetHandle() const noexcept;
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        GLsync GetHandle() const noexcept;
     private:
-        Context* parent;
+        Device* parent;
         GLsync handle;
     };
 };

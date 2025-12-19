@@ -11,14 +11,14 @@ namespace OpenGL
     class RenderPass : public Render::RenderPass, hrs::non_copyable, hrs::non_movable
     {
     public:
-        RenderPass(Context* _parent, const Render::RenderPassInfo& info);
+        RenderPass(Device* _parent, const Render::RenderPassInfo& info);
         virtual ~RenderPass() override;
 
-        void Begin(CommandBuffer& cmd, const Render::RenderPassBeginInfo& info);
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        void Begin(CommandBuffer& cmd, const Render::RenderPassBeginInfo& info);
     private:
-        Context* parent;
+        Device* parent;
 
         struct ColorAttachmentDescription
         {

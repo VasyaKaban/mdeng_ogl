@@ -1,12 +1,12 @@
 #include "DescriptorPool.h"
 #include "../DescriptorSetLayout/DescriptorSetLayout.h"
 #include "../DescriptorSet/DescriptorSet.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include <algorithm>
 
 namespace OpenGL
 {
-    DescriptorPool::DescriptorPool(Context* _parent, const Render::DescriptorPoolInfo& info)
+    DescriptorPool::DescriptorPool(Device* _parent, const Render::DescriptorPoolInfo& info)
         : parent(_parent),
           offset(0)
     {
@@ -66,7 +66,7 @@ namespace OpenGL
         return set;
     }
 
-    Render::Context* DescriptorPool::GetContext() const noexcept
+    Render::Device* DescriptorPool::GetParent() const noexcept
     {
         return parent;
     }

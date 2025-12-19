@@ -1,5 +1,6 @@
 #include "CommandBuffer.h"
-#include "../../Context/Context.h"
+#include "Core/Render/Format.h"
+#include "../Device/Device.h"
 #include "../Buffer/Buffer.h"
 #include "../Image/Image.h"
 #include "../Pipeline/Pipeline.h"
@@ -11,7 +12,7 @@
 
 namespace OpenGL
 {
-    CommandBuffer::CommandBuffer(Context* _parent, CommandPool* _pool) noexcept
+    CommandBuffer::CommandBuffer(Device* _parent, CommandPool* _pool) noexcept
         : parent(_parent),
           pool(_pool),
           bound_pipeline(nullptr)
@@ -33,11 +34,6 @@ namespace OpenGL
     void CommandBuffer::End()
     {
         bound_pipeline = nullptr;
-    }
-
-    Render::Context* CommandBuffer::GetContext() const noexcept
-    {
-        return parent;
     }
 
     //Buffer
@@ -624,7 +620,7 @@ namespace OpenGL
                     reinterpret_cast<const GLfloat*>(data.data() + desc.offset)); \
             } \
             break; \
-            case Render::UniformType::Int: \
+            case Render::UniformType::Int32: \
             { \
                 parent->GetLoader().ProgramUniform##SIZE##iv( \
                     handle, \
@@ -633,7 +629,7 @@ namespace OpenGL
                     reinterpret_cast<const GLint*>(data.data() + desc.offset)); \
             } \
             break; \
-            case Render::UniformType::UInt: \
+            case Render::UniformType::UInt32: \
             { \
                 parent->GetLoader().ProgramUniform##SIZE##uiv( \
                     handle, \
@@ -649,6 +645,24 @@ namespace OpenGL
                     desc.location, \
                     desc.count, \
                     reinterpret_cast<const GLdouble*>(data.data() + desc.offset)); \
+            } \
+            break; \
+            case Render::UniformType::Int64: \
+            { \
+                parent->GetLoader().ProgramUniform##SIZE##i64vARB( \
+                    handle, \
+                    desc.location, \
+                    desc.count, \
+                    reinterpret_cast<const GLint64*>(data.data() + desc.offset)); \
+            } \
+            break; \
+            case Render::UniformType::UInt64: \
+            { \
+                parent->GetLoader().ProgramUniform##SIZE##ui64vARB( \
+                    handle, \
+                    desc.location, \
+                    desc.count, \
+                    reinterpret_cast<const GLuint64*>(data.data() + desc.offset)); \
             } \
             break; \
         } \
@@ -744,5 +758,10 @@ namespace OpenGL
             parent->GetLoader().MemoryBarrierByRegion(PipelineBarrierToNative(barrier));
         else
             parent->GetLoader().MemoryBarrier(PipelineBarrierToNative(barrier));
+    }
+
+    Render::Device* CommandBuffer::GetParent() const noexcept
+    {
+        return parent;
     }
 };

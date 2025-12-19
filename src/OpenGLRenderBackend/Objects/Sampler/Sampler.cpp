@@ -1,10 +1,10 @@
 #include "Sampler.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include <stdexcept>
 
 namespace OpenGL
 {
-    Sampler::Sampler(Context* _parent, const Render::SamplerInfo& info)
+    Sampler::Sampler(Device* _parent, const Render::SamplerInfo& info)
         : parent(_parent)
     {
         GLHandle _handle;
@@ -144,13 +144,13 @@ namespace OpenGL
         parent->GetLoader().DeleteSamplers(1, &handle);
     }
 
+    Render::Device* Sampler::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLHandle Sampler::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* Sampler::GetContext() const noexcept
-    {
-        return parent;
     }
 };

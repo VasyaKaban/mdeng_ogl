@@ -1,16 +1,14 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class Framebuffer : public Object
+    class Framebuffer
     {
     public:
-        virtual ~Framebuffer() = 0;
-    };
+        virtual ~Framebuffer() {};
 
-    inline Framebuffer::~Framebuffer()
-    {}
+        virtual Device* GetParent() const noexcept = 0;
+    };
 };

@@ -1,11 +1,10 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class CommandBuffer : public Object
+    class CommandBuffer
     {
     public:
         virtual ~CommandBuffer()
@@ -81,5 +80,7 @@ namespace Render
 
         //Common
         virtual void SetPipelineBarrier(const PipelineBarrier& barrier) = 0;
+
+        virtual Device* GetParent() const noexcept = 0;
     };
 };

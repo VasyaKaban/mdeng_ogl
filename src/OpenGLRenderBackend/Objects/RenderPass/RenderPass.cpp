@@ -1,10 +1,11 @@
 #include "RenderPass.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include "../Framebuffer/Framebuffer.h"
+#include "Core/Render/Format.h"
 
 namespace OpenGL
 {
-    RenderPass::RenderPass(Context* _parent, const Render::RenderPassInfo& info)
+    RenderPass::RenderPass(Device* _parent, const Render::RenderPassInfo& info)
         : parent(_parent)
     {
         color_attachment_descriptions.reserve(info.color_attachments.size());
@@ -30,6 +31,11 @@ namespace OpenGL
     RenderPass::~RenderPass()
     {
         //noop
+    }
+
+    Render::Device* RenderPass::GetParent() const noexcept
+    {
+        return parent;
     }
 
     void RenderPass::Begin(CommandBuffer& cmd, const Render::RenderPassBeginInfo& info)
@@ -77,6 +83,8 @@ namespace OpenGL
                                                                 GL_DRAW_BUFFER0 + i,
                                                                 info.clear_color_values[i].int32);
                     break;
+                default:
+                    break;
             }
         }
 
@@ -107,10 +115,5 @@ namespace OpenGL
                     &info.clear_depth_stencil_value.stencil);
             }
         }
-    }
-
-    Render::Context* RenderPass::GetContext() const noexcept
-    {
-        return parent;
     }
 };

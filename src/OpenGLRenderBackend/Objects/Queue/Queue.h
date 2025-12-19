@@ -9,7 +9,7 @@ namespace OpenGL
     class Queue : public Render::Queue, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Queue(Context* _parent) noexcept;
+        Queue(Device* _parent) noexcept;
 
         virtual ~Queue() override;
 
@@ -18,8 +18,8 @@ namespace OpenGL
 
         virtual void WaitIdle() override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        virtual Render::Device* GetParent() const noexcept override;
     private:
-        Context* parent;
+        Device* parent;
     };
 };

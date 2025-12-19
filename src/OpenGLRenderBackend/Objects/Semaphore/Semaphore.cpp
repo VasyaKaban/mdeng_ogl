@@ -1,6 +1,6 @@
 #include "Semaphore.h"
 #include <stdexcept>
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 
 namespace OpenGL
 {
@@ -26,7 +26,7 @@ namespace OpenGL
 #endif
     }
 
-    Semaphore::Semaphore(Context* _parent)
+    Semaphore::Semaphore(Device* _parent)
         : parent(_parent)
 #ifndef OPENGL_NOOP_SEMAPHORE
           ,
@@ -41,6 +41,11 @@ namespace OpenGL
 #endif
     }
 
+    Render::Device* Semaphore::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLsync Semaphore::GetHandle() const noexcept
     {
 #ifndef OPENGL_NOOP_SEMAPHORE
@@ -48,10 +53,5 @@ namespace OpenGL
 #else
         return nullptr;
 #endif
-    }
-
-    Render::Context* Semaphore::GetContext() const noexcept
-    {
-        return parent;
     }
 };

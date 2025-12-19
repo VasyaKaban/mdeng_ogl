@@ -38,6 +38,6 @@ Descriptor descriptions:
     };
 
     //select binding(DescriptorDescription) -> if context.backend == OpenGL return opengl_binding...
-int16, int64, float16? for uniforms
-Create default framebuffers based on renderpass
 nonCoherentAtomSize -> use in VK as inner parameter for mappings(maybe allocate buffers with alignment corrected to this size + size also align)
+remove #include winapi from Render -> change to forward declaration
+remove multi-jump in pipeline state(maybe add cacing with pointers to functions?)

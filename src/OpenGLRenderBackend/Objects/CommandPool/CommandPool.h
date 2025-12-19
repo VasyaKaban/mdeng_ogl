@@ -9,13 +9,13 @@ namespace OpenGL
     class CommandPool : public Render::CommandPool, hrs::non_copyable, hrs::non_movable
     {
     public:
-        CommandPool(Context* _parent, const Render::CommandPoolInfo& info) noexcept;
+        CommandPool(Device* _parent, const Render::CommandPoolInfo& info) noexcept;
         virtual ~CommandPool() override;
 
         virtual Render::CommandBuffer* Allocate() override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        virtual Render::Device* GetParent() const noexcept override;
     private:
-        Context* parent;
+        Device* parent;
     };
 };

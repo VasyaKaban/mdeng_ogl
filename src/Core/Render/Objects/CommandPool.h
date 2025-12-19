@@ -1,12 +1,10 @@
 #pragma once
 
-#include <memory>
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class CommandPool : public Object
+    class CommandPool
     {
     public:
         virtual ~CommandPool()
@@ -14,6 +12,6 @@ namespace Render
 
         virtual CommandBuffer* Allocate() = 0;
 
-        std::unique_ptr<CommandBuffer> AllocateUnique();
+        virtual Device* GetParent() const noexcept = 0;
     };
 };

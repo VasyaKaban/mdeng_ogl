@@ -1,11 +1,11 @@
 #include "Queue.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include "../Fence/Fence.h"
 #include "../Semaphore/Semaphore.h"
 
 namespace OpenGL
 {
-    Queue::Queue(Context* _parent) noexcept
+    Queue::Queue(Device* _parent) noexcept
         : parent(_parent)
     {}
 
@@ -39,7 +39,7 @@ namespace OpenGL
         parent->GetLoader().Finish();
     }
 
-    Render::Context* Queue::GetContext() const noexcept
+    Render::Device* Queue::GetParent() const noexcept
     {
         return parent;
     }

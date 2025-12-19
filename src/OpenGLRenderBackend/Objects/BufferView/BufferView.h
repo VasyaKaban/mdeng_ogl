@@ -9,14 +9,14 @@ namespace OpenGL
     class BufferView : public Render::BufferView, hrs::non_copyable, hrs::non_movable
     {
     public:
-        BufferView(Context* _parent, const Render::BufferViewInfo& info);
+        BufferView(Device* _parent, const Render::BufferViewInfo& info);
         virtual ~BufferView() override;
 
-        GLHandle GetHandle() const noexcept;
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        GLHandle GetHandle() const noexcept;
     private:
-        Context* parent;
+        Device* parent;
         GLHandle handle;
     };
 };

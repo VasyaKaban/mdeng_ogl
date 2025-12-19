@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include "../Render.h"
 
 namespace Render
@@ -13,12 +14,13 @@ namespace Render
 
         virtual void WaitIdle() noexcept = 0;
 
-        virtual bool AcquireNextSwapchainImage(
+        virtual std::optional<std::uint32_t> AcquireNextSwapchainImage(
             Semaphore*
                 signal_semaphore) = 0; //OGL -> noop; false -> should recreate window/swapchain
 
         virtual std::span<Image*> GetSwapchainImages() = 0;
-        virtual Framebuffer* CreateFramebufferFromSwapchainImage(std::uint32_t index) = 0;
+        virtual Framebuffer* CreateFramebufferFromSwapchainImage(std::uint32_t index,
+                                                                 RenderPass* renderpass) = 0;
 
         virtual bool ReleaseSwapchainImage(
             const PresentInfo&
@@ -58,5 +60,7 @@ namespace Render
         virtual Sampler* CreateSampler(const SamplerInfo& info) = 0;
         virtual Semaphore* CreateSemaphore() = 0;
         virtual Shader* CreateShader(const ShaderInfo& info) = 0;
+
+        virtual PhysicalDevice* GetParent() const noexcept = 0;
     };
 };

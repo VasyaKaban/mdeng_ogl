@@ -1,5 +1,5 @@
 #include "Framebuffer.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include <stdexcept>
 #include "../Image/Image.h"
 #include "../ImageView/ImageView.h"
@@ -7,11 +7,11 @@
 
 namespace OpenGL
 {
-    Framebuffer::Framebuffer(Context* _parent)
+    Framebuffer::Framebuffer(Device* _parent)
         : parent(_parent),
           handle(OGL_NULL_HANDLE)
     {}
-    Framebuffer::Framebuffer(Context* _parent, const Render::FramebufferInfo& info)
+    Framebuffer::Framebuffer(Device* _parent, const Render::FramebufferInfo& info)
         : parent(_parent)
     {
         GLHandle _handle;
@@ -60,13 +60,13 @@ namespace OpenGL
             parent->GetLoader().DeleteFramebuffers(1, &handle);
     }
 
+    Render::Device* Framebuffer::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLHandle Framebuffer::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* Framebuffer::GetContext() const noexcept
-    {
-        return parent;
     }
 };

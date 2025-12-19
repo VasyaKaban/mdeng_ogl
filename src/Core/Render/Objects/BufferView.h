@@ -1,16 +1,14 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class BufferView : public Object
+    class BufferView
     {
     public:
-        virtual ~BufferView() = 0;
-    };
+        virtual ~BufferView() {};
 
-    inline BufferView::~BufferView()
-    {}
+        virtual Device* GetParent() const noexcept = 0;
+    };
 };

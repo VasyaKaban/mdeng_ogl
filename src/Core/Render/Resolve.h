@@ -12,6 +12,8 @@ namespace Render
 
         virtual void Init() = 0;
 
+        virtual Render::Backend GetBackend() const noexcept = 0;
+
         virtual Instance* CreateInstance(const InstanceInfo& info) = 0;
     };
 };

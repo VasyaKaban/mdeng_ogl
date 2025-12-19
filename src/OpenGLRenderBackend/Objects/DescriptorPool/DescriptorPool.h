@@ -9,15 +9,15 @@ namespace OpenGL
     class DescriptorPool : public Render::DescriptorPool, hrs::non_copyable, hrs::non_movable
     {
     public:
-        DescriptorPool(Context* _parent, const Render::DescriptorPoolInfo& info);
+        DescriptorPool(Device* _parent, const Render::DescriptorPoolInfo& info);
         virtual ~DescriptorPool() override;
 
         virtual Render::DescriptorSet*
         Allocate(const Render::DescriptorSetAllocateInfo& info) override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        virtual Render::Device* GetParent() const noexcept override;
     private:
-        Context* parent;
+        Device* parent;
         std::byte* data;
         std::size_t size;
         std::size_t offset;

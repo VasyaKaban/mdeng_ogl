@@ -1,10 +1,11 @@
 #include "Buffer.h"
 #include <stdexcept>
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
+#include "../PhysicalDevice/PhysicalDevice.h"
 
 namespace OpenGL
 {
-    Buffer::Buffer(Context* _parent,
+    Buffer::Buffer(Device* _parent,
                    const Render::BufferInfo& info,
                    std::span<const std::uint32_t> desired_memory_type_indices)
         : parent(_parent)
@@ -18,7 +19,7 @@ namespace OpenGL
         if(!desired_memory_type_indices.empty())
         {
             const Render::MemoryType& mem_type =
-                parent->GetProperties().memory_types[desired_memory_type_indices[0]];
+                parent->GetParent()->GetProperties().memory_types[desired_memory_type_indices[0]];
             full_flags = DecodeMemoryTypePropertyFlagsToNative(mem_type.memory_type_flags);
         }
 
@@ -95,13 +96,13 @@ namespace OpenGL
         return 0;
     }
 
+    Render::Device* Buffer::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLHandle Buffer::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* Buffer::GetContext() const noexcept
-    {
-        return parent;
     }
 };

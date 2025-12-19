@@ -10,12 +10,11 @@ namespace OpenGL
     public:
         Resolve();
 
-        virtual ~Resolve()
-        {}
+        virtual ~Resolve() override;
 
         virtual void Init() override;
 
-        virtual Render::Backend GetBackend() const noexcept = 0;
+        virtual Render::Backend GetBackend() const noexcept override;
 
         virtual Render::Instance* CreateInstance(const Render::InstanceInfo& info) override;
     };

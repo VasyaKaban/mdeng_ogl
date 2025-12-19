@@ -1,6 +1,6 @@
 #include "DescriptorSetLayout.h"
 #include <algorithm>
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 
 namespace OpenGL
 {
@@ -27,7 +27,7 @@ namespace OpenGL
                                     index * decsriptor_size);
     }
 
-    DescriptorSetLayout::DescriptorSetLayout(Context* _parent,
+    DescriptorSetLayout::DescriptorSetLayout(Device* _parent,
                                              const Render::DescriptorSetLayoutInfo& info)
         : parent(_parent)
     {
@@ -144,7 +144,7 @@ namespace OpenGL
     DescriptorSetLayout::~DescriptorSetLayout()
     {}
 
-    Render::Context* DescriptorSetLayout::GetContext() const noexcept
+    Render::Device* DescriptorSetLayout::GetParent() const noexcept
     {
         return parent;
     }

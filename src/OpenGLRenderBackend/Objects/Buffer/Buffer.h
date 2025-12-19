@@ -9,7 +9,7 @@ namespace OpenGL
     class Buffer : public Render::Buffer, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Buffer(Context* _parent,
+        Buffer(Device* _parent,
                const Render::BufferInfo& info,
                std::span<const std::uint32_t> desired_memory_type_indices);
         virtual ~Buffer() override;
@@ -22,11 +22,11 @@ namespace OpenGL
 
         virtual std::uint64_t GetInnerMemoryOffset() const noexcept override;
 
-        GLHandle GetHandle() const noexcept;
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        GLHandle GetHandle() const noexcept;
     private:
-        Context* parent;
+        Device* parent;
         GLHandle handle;
         GLsizeiptr size;
         GLbitfield flags;

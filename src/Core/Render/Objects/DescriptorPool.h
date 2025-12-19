@@ -1,12 +1,10 @@
 #pragma once
 
-#include <memory>
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class DescriptorPool : public Object
+    class DescriptorPool
     {
     public:
         virtual ~DescriptorPool()
@@ -14,6 +12,6 @@ namespace Render
 
         virtual DescriptorSet* Allocate(const DescriptorSetAllocateInfo& info) = 0;
 
-        std::unique_ptr<DescriptorSet> AllocateUnique(const DescriptorSetAllocateInfo& info);
+        virtual Device* GetParent() const noexcept = 0;
     };
 };

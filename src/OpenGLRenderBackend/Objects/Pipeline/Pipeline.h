@@ -10,14 +10,14 @@ namespace OpenGL
     class Pipeline : public Render::Pipeline, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Pipeline(Context* _parent, const Render::GraphicsPipelineInfo& info);
-        Pipeline(Context* _parent, const Render::ComputePipelineInfo& info);
+        Pipeline(Device* _parent, const Render::GraphicsPipelineInfo& info);
+        Pipeline(Device* _parent, const Render::ComputePipelineInfo& info);
 
         virtual ~Pipeline() override;
 
-        GLHandle GetHandle() const noexcept;
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        GLHandle GetHandle() const noexcept;
 
         void Bind(CommandBuffer& cmd);
 
@@ -54,7 +54,7 @@ namespace OpenGL
                                  std::uint32_t draw_count,
                                  std::uint32_t stride);
     private:
-        Context* parent;
+        Device* parent;
         GLHandle handle;
 
         GraphicsPipelineState* state;

@@ -1,16 +1,14 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class Sampler : public Object
+    class Sampler
     {
     public:
-        virtual ~Sampler() = 0;
-    };
+        virtual ~Sampler() {};
 
-    inline Sampler::~Sampler()
-    {}
+        virtual Device* GetParent() const noexcept = 0;
+    };
 };

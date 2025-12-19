@@ -33,6 +33,8 @@ namespace OpenGL
 
     constexpr inline GLuint OGL_NULL_HANDLE = 0;
 
+    constexpr inline std::uint32_t SURFACE_IMAGE_COUNT = 1;
+
     GLenum ComapreOpToNative(Render::CompareOp op);
     GLenum SampleCountToNative(Render::SampleCount samples);
     GLbitfield DecodeMemoryTypePropertyFlagsToNative(Render::MemoryTypePropertyFlags flags);

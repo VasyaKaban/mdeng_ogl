@@ -1,10 +1,11 @@
 #include "Image.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
+#include "Core/Render/Format.h"
 #include <stdexcept>
 
 namespace OpenGL
 {
-    Image::Image(Context* _parent, const Render::ImageInfo& info)
+    Image::Image(Device* _parent, const Render::ImageInfo& info)
         : parent(_parent),
           format(info.format)
     {
@@ -18,7 +19,7 @@ namespace OpenGL
         if(_handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Failed to create image");
 
-        GLenum _inner_format = FormatToNative(info.format);
+        GLenum _inner_format = FormatToNative(info.format).value();
         GLenum _inner_sample_count = SampleCountToNative(info.samples);
 
         switch(_inner_type)
@@ -98,12 +99,17 @@ namespace OpenGL
         handle = _handle;
 
         if(!Render::IsFormatCompressed(info.format))
-            transfer_type_format_pair = DecodeTransferTypeFormatPair(info.format);
+            transfer_type_format_pair = DecodeTransferTypeFormatPair(info.format).value();
     }
 
     Image::~Image()
     {
         parent->GetLoader().DeleteTextures(1, &handle);
+    }
+
+    Render::Device* Image::GetParent() const noexcept
+    {
+        return parent;
     }
 
     GLenum Image::GetInnerType() const noexcept
@@ -129,10 +135,5 @@ namespace OpenGL
     GLHandle Image::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* Image::GetContext() const noexcept
-    {
-        return parent;
     }
 };

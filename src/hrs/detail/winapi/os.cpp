@@ -37,7 +37,7 @@ namespace hrs
         if(handle != nullptr)
             return std::nullopt;
 
-        return get_last_error();
+        return winapi_get_last_error();
     }
 
     bool dynamic_library::is_open() const noexcept

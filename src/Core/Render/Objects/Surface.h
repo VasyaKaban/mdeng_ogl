@@ -8,5 +8,7 @@ namespace Render
     {
     public:
         virtual ~Surface() {};
+
+        virtual Instance* GetParent() const noexcept = 0;
     };
 };

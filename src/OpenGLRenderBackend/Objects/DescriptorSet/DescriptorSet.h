@@ -9,18 +9,18 @@ namespace OpenGL
     class DescriptorSet : public Render::DescriptorSet, hrs::non_copyable, hrs::non_movable
     {
     public:
-        DescriptorSet(Context* _parent,
+        DescriptorSet(Device* _parent,
                       const DescriptorSetLayout* _layout,
                       std::span<std::byte> _descriptors_data);
         ~DescriptorSet();
 
         virtual void Write(std::span<const Render::UpdateDescriptorDesc> descs) override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        virtual Render::Device* GetParent() const noexcept override;
 
         void Bind(CommandBuffer& cmd) const;
     private:
-        Context* parent;
+        Device* parent;
         const DescriptorSetLayout* layout;
         std::span<std::byte> descriptors_data;
     };

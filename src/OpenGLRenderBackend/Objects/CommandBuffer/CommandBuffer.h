@@ -10,14 +10,12 @@ namespace OpenGL
     class CommandBuffer : public Render::CommandBuffer, hrs::non_copyable, hrs::non_movable
     {
     public:
-        CommandBuffer(Context* _parent, CommandPool* _pool) noexcept;
+        CommandBuffer(Device* _parent, CommandPool* _pool) noexcept;
         virtual ~CommandBuffer() override;
 
         virtual void Reset(const Render::CommandBufferResetInfo& reset_info) override;
         virtual void Begin(const Render::CommandBufferBeginInfo& begin_info) override;
         virtual void End() override;
-
-        virtual Render::Context* GetContext() const noexcept override;
 
         //Buffer
         virtual void
@@ -93,8 +91,10 @@ namespace OpenGL
 
         //Common
         virtual void SetPipelineBarrier(const Render::PipelineBarrier& barrier) override;
+
+        virtual Render::Device* GetParent() const noexcept override;
     private:
-        Context* parent;
+        Device* parent;
         CommandPool* pool;
 
         Pipeline* bound_pipeline;

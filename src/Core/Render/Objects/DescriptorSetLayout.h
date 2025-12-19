@@ -1,15 +1,15 @@
 #pragma once
 
-#include <span>
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class DescriptorSetLayout : public Object
+    class DescriptorSetLayout
     {
     public:
         virtual ~DescriptorSetLayout()
         {}
+
+        virtual Device* GetParent() const noexcept = 0;
     };
 };

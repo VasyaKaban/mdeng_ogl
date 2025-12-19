@@ -1,10 +1,10 @@
 #include "CommandPool.h"
 #include "../CommandBuffer/CommandBuffer.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 
 namespace OpenGL
 {
-    CommandPool::CommandPool(Context* _parent, const Render::CommandPoolInfo& info) noexcept
+    CommandPool::CommandPool(Device* _parent, const Render::CommandPoolInfo& info) noexcept
         : parent(_parent)
     {}
 
@@ -18,7 +18,7 @@ namespace OpenGL
         return new CommandBuffer(parent, this);
     }
 
-    Render::Context* CommandPool::GetContext() const noexcept
+    Render::Device* CommandPool::GetParent() const noexcept
     {
         return parent;
     }

@@ -1,11 +1,11 @@
 #include "BufferView.h"
-#include "../../Context/Context.h"
 #include "../Buffer/Buffer.h"
+#include "../Device/Device.h"
 #include <stdexcept>
 
 namespace OpenGL
 {
-    BufferView::BufferView(Context* _parent, const Render::BufferViewInfo& info)
+    BufferView::BufferView(Device* _parent, const Render::BufferViewInfo& info)
         : parent(_parent)
     {
         GLHandle _handle;
@@ -14,7 +14,7 @@ namespace OpenGL
             throw std::runtime_error("Failed to createe image view");
 
         parent->GetLoader().TextureBufferRange(_handle,
-                                               FormatToNative(info.format),
+                                               *FormatToNative(info.format),
                                                static_cast<Buffer*>(info.buffer)->GetHandle(),
                                                info.offset,
                                                info.size);
@@ -27,13 +27,13 @@ namespace OpenGL
         parent->GetLoader().DeleteTextures(1, &handle);
     }
 
+    Render::Device* BufferView::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLHandle BufferView::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* BufferView::GetContext() const noexcept
-    {
-        return parent;
     }
 };

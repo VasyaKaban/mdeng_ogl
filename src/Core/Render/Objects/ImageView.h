@@ -1,16 +1,14 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class ImageView : public Object
+    class ImageView
     {
     public:
-        virtual ~ImageView() = 0;
-    };
+        virtual ~ImageView() {};
 
-    inline ImageView::~ImageView()
-    {}
+        virtual Device* GetParent() const noexcept = 0;
+    };
 };

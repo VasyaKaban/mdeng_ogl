@@ -9,16 +9,16 @@ namespace OpenGL
     class Shader : public Render::Shader, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Shader(Context* _parent, const Render::ShaderInfo& info);
+        Shader(Device* _parent, const Render::ShaderInfo& info);
         virtual ~Shader() override;
+
+        virtual Render::Device* GetParent() const noexcept override;
 
         GLHandle GetHandle() const noexcept;
 
         Render::ShaderStageFlagBits GetStage() const noexcept;
-
-        virtual Render::Context* GetContext() const noexcept override;
     private:
-        Context* parent;
+        Device* parent;
         GLHandle handle;
 
         Render::ShaderStageFlagBits stage;

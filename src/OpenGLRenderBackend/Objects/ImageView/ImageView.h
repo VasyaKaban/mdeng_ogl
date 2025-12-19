@@ -9,14 +9,14 @@ namespace OpenGL
     class ImageView : public Render::ImageView, hrs::non_copyable, hrs::non_movable
     {
     public:
-        ImageView(Context* _parent, const Render::ImageViewInfo& info);
+        ImageView(Device* _parent, const Render::ImageViewInfo& info);
         virtual ~ImageView() override;
 
-        GLHandle GetHandle() const noexcept;
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        GLHandle GetHandle() const noexcept;
     private:
-        Context* parent;
+        Device* parent;
         GLHandle handle;
     };
 };

@@ -10,19 +10,19 @@ namespace OpenGL
 {
     class Semaphore : public Render::Semaphore, hrs::non_copyable, hrs::non_movable
     {
-        friend class Context;
+        friend class Device;
         friend class Queue;
         void Wait();
         void Set();
     public:
-        Semaphore(Context* _parent);
+        Semaphore(Device* _parent);
         virtual ~Semaphore() override;
 
-        GLsync GetHandle() const noexcept;
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        GLsync GetHandle() const noexcept;
     private:
-        Context* parent;
+        Device* parent;
 
 #ifndef OPENGL_NOOP_SEMAPHORE
         GLsync handle;

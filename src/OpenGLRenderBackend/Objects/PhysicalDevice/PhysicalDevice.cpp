@@ -4,6 +4,7 @@
 #include "hrs/expected.hpp"
 #include "hrs/scoped_call.hpp"
 #include "Core/Utils/Binary.hpp"
+#include "../Instance/Instance.h"
 #include "../Device/Device.h"
 #include "glad/wgl.h"
 #include "hrs/detail/winapi/winapi.h"
@@ -375,7 +376,7 @@ namespace OpenGL
             .depth_clamp = true,
             .depth_bias_clamp = (loader.VERSION_4_6 || loader.ARB_polygon_offset_clamp),
             .fill_mode_non_solid = true,
-            .depth_bounds = true,
+            .depth_bounds = static_cast<bool>(loader.EXT_depth_bounds_test),
             .wide_lines = !(limits.line_width_range.min == limits.line_width_range.max &&
                             limits.line_width_range.min == 1.0f),
             .large_points = !(limits.point_size_range.min == limits.point_size_range.max &&
@@ -625,8 +626,8 @@ namespace OpenGL
                     supported_present_modes |= Render::PresentModeFlagBits::RelaxedFIFO;
 
                 Render::SurfaceCapabilities surface_capabilities =
-                    Render::SurfaceCapabilities{.min_image_count = 0,
-                                                .max_image_count = 2,
+                    Render::SurfaceCapabilities{.min_image_count = SURFACE_IMAGE_COUNT,
+                                                .max_image_count = SURFACE_IMAGE_COUNT,
                                                 .supported_present_modes = supported_present_modes,
                                                 .supported_configs = std::move(surface_configs)};
 
@@ -716,15 +717,15 @@ namespace OpenGL
             throw window_param_exp.error();
         }
 
-        this->parent = _parent;
-        this->hinstance = _instance;
-        this->window = _window;
-        this->dc = window_param_exp->dc;
-        this->glrc = window_param_exp->glrc;
-        this->loader = std::move(window_param_exp->loader);
-        this->properties = std::move(window_param_exp->properties);
-        this->surface_capabilities = std::move(window_param_exp->surface_capabilities);
-        this->pixelformat_indices = std::move(window_param_exp->pixelformat_indices);
+        parent = _parent;
+        hinstance = _instance;
+        window = _window;
+        dc = window_param_exp->dc;
+        glrc = window_param_exp->glrc;
+        loader = std::move(window_param_exp->loader);
+        properties = std::move(window_param_exp->properties);
+        surface_capabilities = std::move(window_param_exp->surface_capabilities);
+        pixelformat_indices = std::move(window_param_exp->pixelformat_indices);
     }
 
     PhysicalDevice::~PhysicalDevice()
@@ -742,7 +743,11 @@ namespace OpenGL
 
     bool PhysicalDevice::GetSurfaceSupport(Render::Surface* surface) const noexcept
     {
-        return true;
+        Surface* impl_surface = static_cast<Surface*>(surface);
+        if(!impl_surface->IsConnected())
+            return true;
+
+        return impl_surface->GetConnectedPhysicalDevice() == this;
     }
 
     Render::SurfaceCapabilities
@@ -1059,11 +1064,16 @@ namespace OpenGL
 
     Render::Device* PhysicalDevice::CreateDevice(const Render::DeviceInfo& info)
     {
-        Surface* impl_surface = static_cast<Surface*>(info.swapchain_info.surface);
+        Surface* impl_surface = static_cast<Surface*>(info.surface);
         if(impl_surface->IsConnected())
             throw std::runtime_error("Surface is connected to other device");
 
         return new Device(this, info);
+    }
+
+    Render::Instance* PhysicalDevice::GetParent() const noexcept
+    {
+        return parent;
     }
 
     GLADloadfunc PhysicalDevice::GetProcAddressResolver() const noexcept

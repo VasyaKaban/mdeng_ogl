@@ -18,10 +18,10 @@ namespace OpenGL
                                 hrs::non_movable
     {
     public:
-        DescriptorSetLayout(Context* _parent, const Render::DescriptorSetLayoutInfo& info);
+        DescriptorSetLayout(Device* _parent, const Render::DescriptorSetLayoutInfo& info);
         virtual ~DescriptorSetLayout() override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        virtual Render::Device* GetParent() const noexcept override;
 
         std::size_t GetBindingsAllocationSize() const noexcept;
 
@@ -41,7 +41,7 @@ namespace OpenGL
 
         void Bind(CommandBuffer& cmd, std::span<std::byte> descriptors_data) const;
     private:
-        Context* parent;
+        Device* parent;
 
         std::vector<std::uint32_t> bindings;
 

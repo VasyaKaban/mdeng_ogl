@@ -9,15 +9,15 @@ namespace OpenGL
     class Framebuffer : public Render::Framebuffer, hrs::non_copyable, hrs::non_movable
     {
     public:
-        Framebuffer(Context* _parent);
-        Framebuffer(Context* _parent, const Render::FramebufferInfo& info);
+        Framebuffer(Device* _parent);
+        Framebuffer(Device* _parent, const Render::FramebufferInfo& info);
         virtual ~Framebuffer() override;
 
-        GLHandle GetHandle() const noexcept;
+        virtual Render::Device* GetParent() const noexcept override;
 
-        virtual Render::Context* GetContext() const noexcept override;
+        GLHandle GetHandle() const noexcept;
     private:
-        Context* parent;
+        Device* parent;
         GLHandle handle;
     };
 };

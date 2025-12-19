@@ -9,6 +9,7 @@
 
 #undef CreateWindow
 #undef CreateSemaphore
+#undef MemoryBarrier
 
 namespace hrs
 {

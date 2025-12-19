@@ -23,5 +23,7 @@ namespace Render
         GetImageFormatProperties(const ImageFormatInfo& info) const = 0;
 
         virtual Device* CreateDevice(const DeviceInfo& info) = 0;
+
+        virtual Instance* GetParent() const noexcept = 0;
     };
 };

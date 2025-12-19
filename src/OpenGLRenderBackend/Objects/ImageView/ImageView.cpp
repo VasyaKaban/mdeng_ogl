@@ -1,11 +1,11 @@
 #include "ImageView.h"
 #include "../Image/Image.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include <stdexcept>
 
 namespace OpenGL
 {
-    ImageView::ImageView(Context* _parent, const Render::ImageViewInfo& info)
+    ImageView::ImageView(Device* _parent, const Render::ImageViewInfo& info)
         : parent(_parent)
     {
         GLHandle _handle;
@@ -50,13 +50,13 @@ namespace OpenGL
         parent->GetLoader().DeleteTextures(1, &handle);
     }
 
+    Render::Device* ImageView::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLHandle ImageView::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* ImageView::GetContext() const noexcept
-    {
-        return parent;
     }
 };

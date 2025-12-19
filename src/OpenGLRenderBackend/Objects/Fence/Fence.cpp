@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Fence.h"
-#include "../../Context/Context.h"
+#include "../Device/Device.h"
 #include <stdexcept>
 
 namespace OpenGL
@@ -16,7 +16,7 @@ namespace OpenGL
             throw std::runtime_error("Failed to create fence object");
     }
 
-    Fence::Fence(Context* _parent) noexcept
+    Fence::Fence(Device* _parent) noexcept
         : parent(_parent),
           handle(nullptr)
     {}
@@ -55,13 +55,13 @@ namespace OpenGL
                                         Render::FenceStatus::Unsignaled);
     }
 
+    Render::Device* Fence::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     GLsync Fence::GetHandle() const noexcept
     {
         return handle;
-    }
-
-    Render::Context* Fence::GetContext() const noexcept
-    {
-        return parent;
     }
 };

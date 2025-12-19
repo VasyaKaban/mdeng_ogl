@@ -1,16 +1,14 @@
 #pragma once
 
 #include "../Render.h"
-#include "Object.h"
 
 namespace Render
 {
-    class Shader : public Object
+    class Shader
     {
     public:
-        virtual ~Shader() = 0;
-    };
+        virtual ~Shader() {};
 
-    inline Shader::~Shader()
-    {}
+        virtual Device* GetParent() const noexcept = 0;
+    };
 };

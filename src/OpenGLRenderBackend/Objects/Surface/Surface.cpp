@@ -2,13 +2,17 @@
 #include <stdexcept>
 #include "glad/wgl.h"
 #include "../PhysicalDevice/PhysicalDevice.h"
+#include "../Instance/Instance.h"
 
 namespace OpenGL
 {
 
-    Surface::Surface(const Render::SurfaceWin32Info& info) noexcept
-        : win32_info(info),
-          glrc(nullptr)
+    Surface::Surface(Instance* _parent, const Render::SurfaceWin32Info& info) noexcept
+        : parent(_parent),
+          win32_info(info),
+          glrc(nullptr),
+          connected_physical_device(nullptr),
+          image_index(0)
     {}
 
     Surface::~Surface()
@@ -17,9 +21,19 @@ namespace OpenGL
             wglDeleteContext(glrc);
     }
 
+    Render::Instance* Surface::GetParent() const noexcept
+    {
+        return parent;
+    }
+
     Render::SurfaceCapabilities Surface::GetConnectedCapabilities() const
     {
         return connected_capabilities;
+    }
+
+    PhysicalDevice* Surface::GetConnectedPhysicalDevice() const noexcept
+    {
+        return connected_physical_device;
     }
 
     void Surface::Connect(const SurfaceConnectInfo& info)
@@ -62,10 +76,67 @@ namespace OpenGL
 
         connected_capabilities = static_cast<PhysicalDevice*>(info.physical_device)
                                      ->GetSurfaceCapabilitiesByIndex(info.config_index);
+
+        connected_physical_device = info.physical_device;
+
+        for(std::uint32_t i = 0; i < SURFACE_IMAGE_COUNT; i++)
+            images[i] = reinterpret_cast<Render::Image*>(
+                this); //dirty pseudo-swapchain image -> not for use
     }
 
     bool Surface::IsConnected() const noexcept
     {
         return glrc != nullptr;
+    }
+
+    void Surface::SetSwapInterval(Render::PresentModeFlagBits present_mode)
+    {
+        int interval;
+        switch(present_mode)
+        {
+            case Render::PresentModeFlagBits::FIFO:
+                interval = 1;
+                break;
+            case Render::PresentModeFlagBits::Immediate:
+                interval = 0;
+                break;
+            case Render::PresentModeFlagBits::RelaxedFIFO:
+                interval = -1;
+                break;
+        }
+
+        if(!GLAD_WGL_EXT_swap_control) //only FIFO
+        {
+            if(present_mode != Render::PresentModeFlagBits::FIFO)
+                throw std::runtime_error("Only FIFO present mode is supported");
+        }
+        else if(!GLAD_WGL_EXT_swap_control_tear) //Immediate and FIFO
+        {
+            if(present_mode == Render::PresentModeFlagBits::RelaxedFIFO)
+                throw std::runtime_error("RelaxedFIFO present mode is not supported");
+
+            glad_wglSwapIntervalEXT(interval);
+        }
+        else //all
+        {
+            glad_wglSwapIntervalEXT(interval);
+        }
+    }
+
+    void Surface::SwapWindow()
+    {
+        wglSwapLayerBuffers(win32_info.hdc, WGL_SWAP_MAIN_PLANE);
+
+        image_index = (image_index + 1) % SURFACE_IMAGE_COUNT;
+    }
+
+    std::span<Render::Image*> Surface::GetImages() noexcept
+    {
+        return std::span{images.data(), images.size()};
+    }
+
+    std::uint32_t Surface::GetImageIndex() const noexcept
+    {
+        return image_index;
     }
 };
