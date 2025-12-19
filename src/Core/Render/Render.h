@@ -8,10 +8,10 @@
 #include <functional>
 #include <string>
 #include "Core/Window/RenderBackend.h"
+#include "hrs/detail/winapi/winapi.h"
 
 namespace Render
 {
-    class Context;
     class Object;
     class Buffer;
     class BufferView;
@@ -20,16 +20,20 @@ namespace Render
     class DescriptorPool;
     class DescriptorSet;
     class DescriptorSetLayout;
+    class Device;
     class Fence;
     class Framebuffer;
     class Image;
     class ImageView;
+    class Instance;
+    class PhysicalDevice;
     class Pipeline;
     class Queue;
     class RenderPass;
     class Sampler;
     class Semaphore;
     class Shader;
+    class Surface;
 
     constexpr inline std::uint32_t QUEUE_FAMILY_IGNORED = ~0U;
 
@@ -1375,8 +1379,7 @@ namespace Render
         TransferSpec = 1 << 0,
         GraphicsSpec = 1 << 1,
         ComputeSpec = 1 << 2,
-        PresentSpec = 1 << 3,
-        UnknownImplementationSpec = 1 << 4
+        UnknownImplementationSpec = 1 << 3
     };
 
     using QueueSpecializationFlags = std::underlying_type_t<QueueSpecializationFlagBits>;
@@ -1445,7 +1448,7 @@ namespace Render
         std::uint32_t z;
     };
 
-    struct ContextLimits
+    struct PhysicalDeviceLimits
     {
         std::uint32_t max_image_dimension_1D;
         std::uint32_t max_image_dimension_2D;
@@ -1552,11 +1555,11 @@ namespace Render
         //bool standard_sample_locations;
         std::uint64_t optimal_buffer_copy_offset_alignment;
         std::uint64_t optimal_buffer_copy_row_pitch_alignment;
-        std::uint64_t non_coherent_atom_size;
+        //std::uint64_t non_coherent_atom_size;
         std::uint32_t max_custom_border_color_samplers;
     };
 
-    struct ContextFeatures
+    struct PhysicalDeviceFeatures
     {
         bool robust_buffer_access;
         bool full_draw_index_uint32;
@@ -1620,7 +1623,7 @@ namespace Render
         bool debug_messenger;
     };
 
-    enum class ContextDeviceType
+    enum class PhysicalDeviceType
     {
         Other,
         IntegratedGPU,
@@ -1641,9 +1644,8 @@ namespace Render
         float max;
     };
 
-    struct ContextProperties
+    struct PhysicalDeviceProperties
     {
-        std::string context_name;
         Core::RenderBackendType supported_backend_type;
         std::uint32_t version; //major << 16 | minor
         std::string_view vendor_name;
@@ -1653,11 +1655,11 @@ namespace Render
         std::vector<QueueFamilyProperties> queue_family_properties;
         std::vector<MemoryType> memory_types;
         CommandBufferStrategy command_buffer_strategy;
-        ContextDeviceType device_type;
+        PhysicalDeviceType device_type;
         ViewOrigin view_origin;
         ClipSpaceDepthBounds clip_space_depth_bounds;
-        ContextLimits limits;
-        ContextFeatures features;
+        PhysicalDeviceLimits limits;
+        PhysicalDeviceFeatures features;
     };
 
     enum PresentModeFlagBits
@@ -1669,7 +1671,7 @@ namespace Render
 
     using PresentModeFlags = std::underlying_type_t<PresentModeFlagBits>;
 
-    struct SwapchainConfig
+    struct SurfaceConfig
     {
         std::uint8_t red_bits_size;
         std::uint8_t green_bits_size;
@@ -1680,21 +1682,14 @@ namespace Render
         bool srgb_format;
     };
 
-    struct ContextSurfaceCapabilities
+    struct SurfaceCapabilities
     {
         std::uint32_t min_image_count;
         std::uint32_t max_image_count;
         PresentModeFlags supported_present_modes;
-
-        std::vector<SwapchainConfig> supported_configs;
+        std::vector<SurfaceConfig> supported_configs;
         //std::uint32_t max_image_array_layers;
         //usage -> color attachment
-    };
-
-    struct ContextInitProperties
-    {
-        ContextProperties properties;
-        ContextSurfaceCapabilities surface_capabilities;
     };
 
     struct QueueFamilyInfo
@@ -1739,17 +1734,42 @@ namespace Render
         std::function<DebugMessengerCallback> callback;
     };
 
-    class Resolve;
-
-    struct SelectedContextDesc
+    enum class Backend
     {
-        std::uint32_t index;
-        std::vector<Render::QueueFamilyInfo> queue_family_infos;
+        OpenGL
+    };
+
+    struct InstanceInfo
+    {
+        const char* application_name;
+        std::uint32_t application_version;
+        std::uint32_t api_version;
+    };
+
+    struct SwapchainInfo
+    {
+        Surface* surface;
         std::uint32_t min_image_count;
-        std::uint32_t selected_config_index;
-        Extent2D swapchain_extent;
+        std::uint32_t surface_config_index;
+        Extent2D extent;
         PresentModeFlagBits present_mode;
     };
+
+    struct DeviceInfo
+    {
+        std::vector<Render::QueueFamilyInfo> queue_family_infos;
+        PhysicalDeviceFeatures enabled_features;
+        SwapchainInfo swapchain_info;
+    };
+
+    struct SurfaceWin32Info
+    {
+        HWND window;
+        HDC hdc;
+        HINSTANCE instance;
+    };
+
+    class Resolve;
 
     constexpr inline auto RENDER_RESOLVE_FUNCTION_NAME = "RenderResolve";
     using PFN_RenderResolve = Resolve* (*)();

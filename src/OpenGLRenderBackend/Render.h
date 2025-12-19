@@ -7,7 +7,6 @@
 
 namespace OpenGL
 {
-    class Context;
     class Buffer;
     class BufferView;
     class CommandBuffer;
@@ -15,17 +14,20 @@ namespace OpenGL
     class DescriptorPool;
     class DescriptorSet;
     class DescriptorSetLayout;
+    class Device;
     class Fence;
     class Framebuffer;
     class Image;
     class ImageView;
-    class Pipeline;
+    class Instance;
+    class PhysicalDevice;
     class Pipeline;
     class Queue;
     class RenderPass;
     class Sampler;
     class Semaphore;
     class Shader;
+    class Surface;
 
     using GLHandle = GLuint;
 

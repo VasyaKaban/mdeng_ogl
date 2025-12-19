@@ -83,9 +83,22 @@ namespace OpenGL
         types_string.clear();
     }
 
-    Context::Context(Core::OpenGLBackend* _parent)
-        : parent(_parent),
-          default_framebuffer(this),
+    /*
+    GladGLContext loader;
+
+    Framebuffer default_framebuffer;
+    Queue default_queue;
+
+    Render::ContextProperties properties;
+    Render::ContextSurfaceCapabilities surface_capabilities;
+
+    std::function<Render::DebugMessengerCallback> debug_callback;
+    */
+
+    Context::Context(const Render::ContextProperties& _properties,
+                     const Render::ContextSurfaceCapabilities& _surface_capabilities,
+                     const GladGLContext& _loader)
+        : default_framebuffer(this),
           default_queue(this)
     {
         int glad_ver =
@@ -99,6 +112,7 @@ namespace OpenGL
         loader.Enable(GL_PROGRAM_POINT_SIZE); //activate GLSL gl_PointSize
         loader.ProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
         loader.Enable(GL_FRAMEBUFFER_SRGB);
+        loader.Enable(GL_LINE_SMOOTH);
 
         GLint extensions_number = 0;
         loader.GetIntegerv(GL_NUM_EXTENSIONS, &extensions_number);
@@ -179,6 +193,11 @@ namespace OpenGL
     const Render::ContextProperties& Context::GetProperties() const
     {
         return properties;
+    }
+
+    const Render::ContextSurfaceCapabilities& Context::GetSurfaceCapabilities() const
+    {
+        return surface_capabilities;
     }
 
     std::optional<Render::BufferFormatProperties>

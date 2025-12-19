@@ -4,6 +4,7 @@
 
 namespace Render
 {
+#error ERASE!
     class Object
     {
     public:
