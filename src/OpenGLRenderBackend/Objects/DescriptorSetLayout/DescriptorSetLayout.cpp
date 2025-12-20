@@ -1,9 +1,16 @@
 #include "DescriptorSetLayout.h"
 #include <algorithm>
 #include "../Device/Device.h"
+#include "../Sampler/Sampler.h"
 
 namespace OpenGL
 {
+    struct ImmutableSampler
+    {
+        std::uint32_t binding;
+        GLHandle handle;
+    };
+
     static void append_layout_bindings(BindingsClass& binding_class,
                                        std::size_t size,
                                        std::size_t descriptor_size,
@@ -91,6 +98,9 @@ namespace OpenGL
                                allocation_offset,
                                bindings);
 
+        std::vector<ImmutableSampler> _immutable_samplers(texture_bindings_size);
+        immutable_samplers.resize(texture_bindings_size);
+
         std::size_t texture_bindings_index = 0;
         std::size_t uniform_bindings_index = 0;
         std::size_t shader_storage_bindings_index = 0;
@@ -107,6 +117,15 @@ namespace OpenGL
                     for(std::uint32_t i = 0; i < binding.descriptor_count; i++)
                     {
                         textures.bindings[texture_bindings_index + i] = binding.binding + i;
+
+                        GLHandle immutable_sampler_handle =
+                            (binding.immutable_samplers ?
+                                 static_cast<Sampler*>(binding.immutable_samplers[i])->GetHandle() :
+                                 OGL_NULL_HANDLE);
+
+                        _immutable_samplers[texture_bindings_index + i] =
+                            ImmutableSampler{.binding = binding.binding + i,
+                                             .handle = immutable_sampler_handle};
                     }
                     texture_bindings_index += binding.descriptor_count;
                     break;
@@ -136,6 +155,10 @@ namespace OpenGL
         }
 
         std::ranges::sort(textures.bindings);
+        std::ranges::sort(_immutable_samplers, {}, &ImmutableSampler::binding);
+        for(std::size_t i = 0; i < _immutable_samplers.size(); i++)
+            immutable_samplers[i] = _immutable_samplers[i].handle;
+
         std::ranges::sort(uniform_buffers.bindings);
         std::ranges::sort(storage_buffers.bindings);
         std::ranges::sort(storage_images.bindings);
@@ -234,8 +257,12 @@ namespace OpenGL
 
             parent->GetLoader().BindTextureUnit(textures.bindings[i], desc->image_view);
 
-            if(desc->sampler != OGL_NULL_HANDLE)
-                parent->GetLoader().BindSampler(textures.bindings[i], desc->sampler);
+            GLHandle sampler = immutable_samplers[i];
+            if(sampler == OGL_NULL_HANDLE)
+                sampler = desc->sampler;
+
+            if(sampler != OGL_NULL_HANDLE)
+                parent->GetLoader().BindSampler(textures.bindings[i], sampler);
         }
 
         for(std::size_t i = 0; i < uniform_buffers.bindings.size(); i++)

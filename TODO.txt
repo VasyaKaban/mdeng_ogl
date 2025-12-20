@@ -6,21 +6,15 @@ map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for even
 Add limits and features
 Add queries
 Add transform feedback
-Move to OpenGL 4.5 + use extensions to populate features
 FreeBlockList: Split begin and after iterators in free block! In for loop -> after always be the next of before
 "SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???" -> in Engine???
 glTextureStorage3D -> should we mul by 6 array layers???
 OpenGL/ES and D3D compatibily for Vulkan as features
 explicit dllimport/dllexport + INTERFACE targets
-cache Sampler, DescriptorSetLayout and PipelineLayout(for VK)
 VK_EXT_primitive_topology_list_restart for lists in VK as feature
 VK_EXT_border_color_swizzle???
-FormatToNative conversions for retrieving format properties shouldn't throw exceptions(OpenGL!)
-add immutable samplers
-OS-dependent context creation for OpenGL
 Pipeline state based on enabled features for OpenGL
 Check all PipelineInfo* structs and compare them with Vulkan spec
-GL_KHR_no_error -> should we add?
 constants like VK_LOD_CLAMP_NONE and other?
 Check throw in commands and creation functions -> OGL only
 Change descriptor set binding -> instead of set and linear model use union of models + API type
@@ -41,3 +35,6 @@ Descriptor descriptions:
 nonCoherentAtomSize -> use in VK as inner parameter for mappings(maybe allocate buffers with alignment corrected to this size + size also align)
 remove #include winapi from Render -> change to forward declaration
 remove multi-jump in pipeline state(maybe add cacing with pointers to functions?)
+move debug messenger to instance + remove from device properties + propagate debug messenger for all devices and physical devices
+    instance holds set of physical devices
+    physical device holds set of devices

@@ -6,7 +6,6 @@
 #include "hrs/non_creatable.hpp"
 #include "WindowEvents.h"
 #include "../Events/Events.hpp"
-#include "RenderBackend.h"
 
 namespace Core
 {
@@ -34,7 +33,7 @@ namespace Core
                           public Events::EventEmitter<MouseWheelEvent>
     {
         friend class WindowSubsystem;
-        GraphicWindow(const GraphicWindowInfo& info, const RenderBackendInfo& render_info);
+        GraphicWindow(const GraphicWindowInfo& info);
     public:
         ~GraphicWindow();
 
@@ -47,14 +46,9 @@ namespace Core
         WindowResolution GetResolution() const;
         WindowResolution GetDrawableResolution() const;
 
-        RenderBackend* GetRenderBackend() const noexcept;
-
         std::uint32_t GetID() const noexcept;
-
-        std::string_view GetWindowManagerName() const;
     private:
         SDL_Window* handle;
         std::uint32_t id;
-        std::unique_ptr<RenderBackend> render_backend;
     };
 };

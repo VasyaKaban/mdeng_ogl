@@ -7,7 +7,6 @@
 #include <string_view>
 #include <functional>
 #include <string>
-#include "Core/Window/RenderBackend.h"
 #include "hrs/detail/winapi/winapi.h"
 
 namespace Render
@@ -35,6 +34,7 @@ namespace Render
     class Surface;
 
     constexpr inline std::uint32_t QUEUE_FAMILY_IGNORED = ~0U;
+    constexpr inline float LOD_CLAMP_NONE = 1000.0f;
 
     enum class CompareOp
     {
@@ -1216,6 +1216,7 @@ namespace Render
         DescriptorType type;
         std::uint32_t descriptor_count;
         ShaderStageFlags stages;
+        Sampler** immutable_samplers;
     };
 
     struct DescriptorSetLayoutInfo
@@ -1647,7 +1648,6 @@ namespace Render
 
     struct PhysicalDeviceProperties
     {
-        Core::RenderBackendType supported_backend_type;
         std::uint32_t version; //major << 16 | minor
         std::string_view vendor_name;
         std::string_view device_name;

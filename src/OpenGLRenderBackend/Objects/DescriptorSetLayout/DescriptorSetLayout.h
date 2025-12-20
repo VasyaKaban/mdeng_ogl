@@ -46,6 +46,8 @@ namespace OpenGL
         std::vector<std::uint32_t> bindings;
 
         BindingsClass textures;
+        std::vector<GLHandle> immutable_samplers;
+
         BindingsClass uniform_buffers;
         BindingsClass storage_buffers;
         BindingsClass storage_images;
