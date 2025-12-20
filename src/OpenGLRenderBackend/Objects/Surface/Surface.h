@@ -20,6 +20,8 @@ namespace OpenGL
 
         virtual ~Surface() override;
 
+        virtual bool IsPresentable() const noexcept override;
+
         virtual Render::Instance* GetParent() const noexcept override;
 
         Render::SurfaceCapabilities GetConnectedCapabilities() const;
@@ -31,9 +33,6 @@ namespace OpenGL
 
         void SetSwapInterval(Render::PresentModeFlagBits present_mode);
         void SwapWindow();
-        std::span<Render::Image*> GetImages() noexcept;
-        std::uint32_t GetImageIndex() const noexcept;
-
         void MakeCurrent();
     private:
         Instance* parent;
@@ -43,8 +42,5 @@ namespace OpenGL
         PhysicalDevice* connected_physical_device;
 
         Render::SurfaceCapabilities connected_capabilities;
-        std::array<Render::Image*, SURFACE_IMAGE_COUNT> images;
-
-        std::uint32_t image_index;
     };
 };

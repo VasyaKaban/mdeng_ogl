@@ -16,12 +16,14 @@
 #include "../RenderPass/RenderPass.h"
 #include "../Sampler/Sampler.h"
 #include "../Shader/Shader.h"
+#include "../Swapchain/Swapchain.h"
 
 namespace OpenGL
 {
     Device::Device(PhysicalDevice* _parent, const Render::DeviceInfo& info)
         : parent(_parent),
           surface(static_cast<Surface*>(info.surface)),
+          swapchain(new Swapchain(this, surface, info.swapchain_info)),
           enabled_features(info.enabled_features),
           default_queue(new Queue(this))
     {
@@ -34,7 +36,8 @@ namespace OpenGL
         };
 
         impl_surface->Connect(connection_info); //we need to make current context
-        impl_surface->SetSwapInterval(info.swapchain_info.present_mode);
+
+        swapchain->Recreate(info.swapchain_info);
 
         int glad_ver = gladLoadGLContext(&loader, parent->GetProcAddressResolver());
         if(glad_ver == 0)
@@ -71,6 +74,7 @@ namespace OpenGL
     {
         WaitIdle();
 
+        delete swapchain;
         delete default_queue;
 
         parent->DeleteDeviceNotify();
@@ -90,39 +94,9 @@ namespace OpenGL
         loader.Finish();
     }
 
-    std::optional<std::uint32_t> Device::AcquireNextSwapchainImage(
-        Render::Semaphore*
-            signal_semaphore) //OGL -> noop; false -> should recreate window/swapchain
+    Render::Swapchain* Device::GetSwapchain() const noexcept
     {
-        static_cast<Semaphore*>(signal_semaphore)->Set();
-
-        return surface->GetImageIndex();
-    }
-
-    std::span<Render::Image*> Device::GetSwapchainImages()
-    {
-        return surface->GetImages();
-    }
-
-    Render::Framebuffer* Device::CreateFramebufferFromSwapchainImage(std::uint32_t index,
-                                                                     Render::RenderPass* renderpass)
-    {
-        return new Framebuffer(this);
-    }
-
-    bool Device::ReleaseSwapchainImage(const Render::PresentInfo& info)
-    {
-        for(auto& sem: info.wait_semaphores)
-            static_cast<Semaphore*>(sem)->Wait();
-
-        surface->SwapWindow();
-
-        return true;
-    }
-
-    void Device::RecreateSwapchain(const Render::SwapchainInfo& info)
-    {
-        surface->SetSwapInterval(info.present_mode);
+        return swapchain;
     }
 
     Render::Buffer* Device::CreateBuffer(const Render::BufferInfo& info,

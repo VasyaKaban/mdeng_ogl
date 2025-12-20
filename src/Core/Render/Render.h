@@ -32,6 +32,7 @@ namespace Render
     class Semaphore;
     class Shader;
     class Surface;
+    class Swapchain;
 
     constexpr inline std::uint32_t QUEUE_FAMILY_IGNORED = ~0U;
     constexpr inline float LOD_CLAMP_NONE = 1000.0f;
@@ -1341,6 +1342,7 @@ namespace Render
     struct PresentInfo
     {
         std::span<Semaphore*> wait_semaphores;
+        Queue* queue;
     };
 
     struct BufferMemoryBarrier

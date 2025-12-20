@@ -34,3 +34,6 @@ Descriptor descriptions:
 nonCoherentAtomSize -> use in VK as inner parameter for mappings(maybe allocate buffers with alignment corrected to this size + size also align)
 remove #include winapi from Render -> change to forward declaration
 remove multi-jump in pipeline state(maybe add cacing with pointers to functions?)
+
+Change plain pointer to unique_ptr due to the exceptions in constructor(see Device ctor!)
+Add enabled features check for every object like aniso in sampler and in pipeline state

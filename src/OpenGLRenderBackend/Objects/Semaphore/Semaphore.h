@@ -10,7 +10,7 @@ namespace OpenGL
 {
     class Semaphore : public Render::Semaphore, hrs::non_copyable, hrs::non_movable
     {
-        friend class Device;
+        friend class Swapchain;
         friend class Queue;
         void Wait();
         void Set();

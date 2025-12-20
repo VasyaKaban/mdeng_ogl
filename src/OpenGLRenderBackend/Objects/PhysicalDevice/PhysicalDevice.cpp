@@ -556,8 +556,8 @@ namespace OpenGL
                     supported_present_modes |= Render::PresentModeFlagBits::RelaxedFIFO;
 
                 Render::SurfaceCapabilities surface_capabilities =
-                    Render::SurfaceCapabilities{.min_image_count = SURFACE_IMAGE_COUNT,
-                                                .max_image_count = SURFACE_IMAGE_COUNT,
+                    Render::SurfaceCapabilities{.min_image_count = SWAPCHAIN_IMAGE_COUNT,
+                                                .max_image_count = SWAPCHAIN_IMAGE_COUNT,
                                                 .supported_present_modes = supported_present_modes,
                                                 .supported_configs = std::move(surface_configs)};
 

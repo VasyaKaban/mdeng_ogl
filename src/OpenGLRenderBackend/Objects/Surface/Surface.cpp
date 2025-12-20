@@ -11,14 +11,18 @@ namespace OpenGL
         : parent(_parent),
           win32_info(info),
           glrc(nullptr),
-          connected_physical_device(nullptr),
-          image_index(0)
+          connected_physical_device(nullptr)
     {}
 
     Surface::~Surface()
     {
         if(glrc)
             wglDeleteContext(glrc);
+    }
+
+    bool Surface::IsPresentable() const noexcept
+    {
+        return true; //in OpenGL we always have presentable contexts???
     }
 
     Render::Instance* Surface::GetParent() const noexcept
@@ -83,10 +87,6 @@ namespace OpenGL
                                      ->GetSurfaceCapabilitiesByIndex(info.config_index);
 
         connected_physical_device = info.physical_device;
-
-        for(std::uint32_t i = 0; i < SURFACE_IMAGE_COUNT; i++)
-            images[i] = reinterpret_cast<Render::Image*>(
-                this); //dirty pseudo-swapchain image -> not for use
     }
 
     bool Surface::IsConnected() const noexcept
@@ -131,18 +131,6 @@ namespace OpenGL
     void Surface::SwapWindow()
     {
         wglSwapLayerBuffers(win32_info.hdc, WGL_SWAP_MAIN_PLANE);
-
-        image_index = (image_index + 1) % SURFACE_IMAGE_COUNT;
-    }
-
-    std::span<Render::Image*> Surface::GetImages() noexcept
-    {
-        return std::span{images.data(), images.size()};
-    }
-
-    std::uint32_t Surface::GetImageIndex() const noexcept
-    {
-        return image_index;
     }
 
     void Surface::MakeCurrent()

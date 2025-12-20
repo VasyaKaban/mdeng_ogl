@@ -16,19 +16,7 @@ namespace OpenGL
 
         virtual void WaitIdle() noexcept override;
 
-        virtual std::optional<std::uint32_t>
-        AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore)
-            override; //OGL -> noop; false -> should recreate window/swapchain
-
-        virtual std::span<Render::Image*> GetSwapchainImages() override;
-        virtual Render::Framebuffer*
-        CreateFramebufferFromSwapchainImage(std::uint32_t index,
-                                            Render::RenderPass* renderpass) override;
-
-        virtual bool ReleaseSwapchainImage(const Render::PresentInfo& info)
-            override; //SDL_SwapWindow(); false -> should recreate window/swapchain
-
-        virtual void RecreateSwapchain(const Render::SwapchainInfo& info) override;
+        virtual Render::Swapchain* GetSwapchain() const noexcept override;
 
         virtual Render::Buffer*
         CreateBuffer(const Render::BufferInfo& info,
@@ -72,6 +60,7 @@ namespace OpenGL
     private:
         PhysicalDevice* parent;
         Surface* surface;
+        Swapchain* swapchain;
         GladGLContext loader;
         Render::PhysicalDeviceFeatures enabled_features;
 
