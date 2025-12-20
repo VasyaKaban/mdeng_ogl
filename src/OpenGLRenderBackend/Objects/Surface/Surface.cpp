@@ -64,7 +64,10 @@ namespace OpenGL
 
         //"WGL_ARB_create_context_no_error"#enable when WGL_CONTEXT_DEBUG_BIT_ARB(validation_layer) is not set
         //"WGL_ARB_create_context_robustness"#enable when robustBufferAccess is enabled(+ add none notification)
-        if(!info.validation_layer_enabled)
+
+        Instance* impl_instace = static_cast<Instance*>(info.physical_device->GetParent());
+        if(!(impl_instace->GetEnabledFeatures().debug_messenger ||
+             impl_instace->GetEnabledFeatures().validation_layer))
             profile_attributes[8] = WGL_CONTEXT_OPENGL_NO_ERROR_ARB;
 
         if(info.robust_buffer_access_enabled)
@@ -73,6 +76,8 @@ namespace OpenGL
         glrc = glad_wglCreateContextAttribsARB(win32_info.hdc, nullptr, profile_attributes);
         if(!glrc)
             throw hrs::winapi_get_last_error();
+
+        wglMakeCurrent(win32_info.hdc, glrc);
 
         connected_capabilities = static_cast<PhysicalDevice*>(info.physical_device)
                                      ->GetSurfaceCapabilitiesByIndex(info.config_index);
@@ -138,5 +143,10 @@ namespace OpenGL
     std::uint32_t Surface::GetImageIndex() const noexcept
     {
         return image_index;
+    }
+
+    void Surface::MakeCurrent()
+    {
+        wglMakeCurrent(win32_info.hdc, glrc);
     }
 };

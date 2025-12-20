@@ -2138,4 +2138,21 @@ namespace OpenGL
 
         return std::min<std::uint16_t>(format_texel_alignment, 8);
     }
+
+    void GLAPIENTRY debug_messenger_callback(GLenum source,
+                                             GLenum type,
+                                             GLuint id,
+                                             GLenum severity,
+                                             GLsizei length,
+                                             const GLchar* message,
+                                             const void* user_param)
+    {
+        const std::function<Render::DebugMessengerCallback>* callback =
+            reinterpret_cast<const std::function<Render::DebugMessengerCallback>*>(user_param);
+
+        (*callback)(NativeDebugMessengerSeverityFlagBitToSpec(severity),
+                    NativeDebugMessengerTypeFlagBitToSpec(type),
+                    id,
+                    {reinterpret_cast<const char*>(message), static_cast<std::size_t>(length)});
+    }
 }

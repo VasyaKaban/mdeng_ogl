@@ -148,4 +148,12 @@ namespace OpenGL
                   alignof(DescriptorUniformBufferDesc),
                   alignof(DescriptorStorageBufferDesc),
                   alignof(DescriptorStorageImageDesc)});
+
+    void GLAPIENTRY debug_messenger_callback(GLenum source,
+                                             GLenum type,
+                                             GLuint id,
+                                             GLenum severity,
+                                             GLsizei length,
+                                             const GLchar* message,
+                                             const void* user_param);
 };

@@ -28,8 +28,6 @@ namespace Render
 
         virtual void RecreateSwapchain(const SwapchainInfo& info) = 0;
 
-        virtual void SetDebugMessenger(const DebugMessengerInfo& info) = 0;
-
         virtual Buffer*
         CreateBuffer(const BufferInfo& info,
                      std::span<const std::uint32_t> desired_memory_type_indices) = 0;

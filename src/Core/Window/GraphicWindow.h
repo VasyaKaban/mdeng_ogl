@@ -6,6 +6,7 @@
 #include "hrs/non_creatable.hpp"
 #include "WindowEvents.h"
 #include "../Events/Events.hpp"
+#include "../Render/Render.h"
 
 namespace Core
 {
@@ -22,6 +23,11 @@ namespace Core
         Fullscreen = SDL_WINDOW_FULLSCREEN,
         Desktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
         Windowed = 0
+    };
+
+    enum class SurfaceType
+    {
+        Windows
     };
 
     class GraphicWindow : public Events::EventEmitter<WindowCloseEvent>,
@@ -47,8 +53,17 @@ namespace Core
         WindowResolution GetDrawableResolution() const;
 
         std::uint32_t GetID() const noexcept;
+
+        SurfaceType GetSurfaceType() const noexcept;
+        const Render::SurfaceWin32Info& GetWIN32SurfaceInfo() const;
     private:
         SDL_Window* handle;
         std::uint32_t id;
+
+        SurfaceType surface_type;
+        union
+        {
+            Render::SurfaceWin32Info win32;
+        } surface_info;
     };
 };

@@ -1,6 +1,5 @@
 #include "Device.h"
-#include <format>
-#include <iostream>
+#include "../Instance/Instance.h"
 #include "../PhysicalDevice/PhysicalDevice.h"
 #include "../Surface/Surface.h"
 #include "../Semaphore/Semaphore.h"
@@ -20,88 +19,26 @@
 
 namespace OpenGL
 {
-    static void GLAPIENTRY debug_messenger_callback(GLenum source,
-                                                    GLenum type,
-                                                    GLuint id,
-                                                    GLenum severity,
-                                                    GLsizei length,
-                                                    const GLchar* message,
-                                                    const void* userParam)
-    {
-        (*reinterpret_cast<const std::function<Render::DebugMessengerCallback>*>(userParam))(
-            NativeDebugMessengerSeverityFlagBitToSpec(severity),
-            NativeDebugMessengerTypeFlagBitToSpec(type),
-            id,
-            {reinterpret_cast<const char*>(message), static_cast<std::size_t>(length)});
-    }
-
-    static void default_debug_messenger(Render::DebugMessengerSeverityFlagBits severity,
-                                        Render::DebugMessengerTypeFlags types,
-                                        std::int64_t id,
-                                        std::string_view message)
-    {
-        std::string_view severity_string = "Unknown";
-        switch(severity)
-        {
-            case Render::DebugMessengerSeverityFlagBits::Error:
-                severity_string = "Error";
-                break;
-            case Render::DebugMessengerSeverityFlagBits::Warning:
-                severity_string = "Warning";
-                break;
-            case Render::DebugMessengerSeverityFlagBits::Info:
-                severity_string = "Info";
-                break;
-            case Render::DebugMessengerSeverityFlagBits::Verbose:
-                severity_string = "Verbose";
-                break;
-        }
-
-        static std::string types_string;
-        constexpr std::pair<Render::DebugMessengerTypeFlagBits, std::string_view>
-            TYPE_NAMES_MAPPING[] = {
-                {Render::DebugMessengerTypeFlagBits::General, "General"},
-                {Render::DebugMessengerTypeFlagBits::Validation, "Validation"},
-                {Render::DebugMessengerTypeFlagBits::Performance, "Performance"}};
-
-        for(const auto& [type, name]: TYPE_NAMES_MAPPING)
-        {
-            if(types_string.empty())
-                types_string += name;
-            else
-                types_string += std::format(" | {}", name);
-        }
-
-        std::format_to(std::ostream_iterator<char>(std::cout, "\n"),
-                       "[Severity: {}][Types: {}] ID: {}; {}",
-                       severity_string,
-                       types_string.empty() ? "Unknown" : types_string,
-                       id,
-                       message);
-
-        types_string.clear();
-    }
-
     Device::Device(PhysicalDevice* _parent, const Render::DeviceInfo& info)
         : parent(_parent),
           surface(static_cast<Surface*>(info.surface)),
           enabled_features(info.enabled_features),
           default_queue(new Queue(this))
     {
-        int glad_ver = gladLoadGLContext(&loader, parent->GetProcAddressResolver());
-        if(glad_ver == 0)
-            throw std::runtime_error("Failed to load GLAD");
-
         Surface* impl_surface = static_cast<Surface*>(info.surface);
 
         const SurfaceConnectInfo connection_info = {
             .physical_device = parent,
             .config_index = info.swapchain_info.surface_config_index,
-            .validation_layer_enabled = info.enabled_features.validation_layer,
             .robust_buffer_access_enabled = info.enabled_features.robust_buffer_access,
         };
-        impl_surface->Connect(connection_info);
+
+        impl_surface->Connect(connection_info); //we need to make current context
         impl_surface->SetSwapInterval(info.swapchain_info.present_mode);
+
+        int glad_ver = gladLoadGLContext(&loader, parent->GetProcAddressResolver());
+        if(glad_ver == 0)
+            throw std::runtime_error("Failed to load GLAD");
 
         loader.Enable(GL_TEXTURE_CUBE_MAP_SEAMLESS); //use only seamless cubemaps
         loader.ClipControl(/*GL_UPPER_LEFT*/ GL_LOWER_LEFT,
@@ -111,7 +48,9 @@ namespace OpenGL
         loader.Enable(GL_FRAMEBUFFER_SRGB);
         loader.Enable(GL_LINE_SMOOTH);
 
-        if(parent->GetProperties().features.debug_messenger)
+        Instance* impl_instance = static_cast<Instance*>(parent->GetParent());
+        if(impl_instance->GetEnabledFeatures().validation_layer ||
+           impl_instance->GetEnabledFeatures().debug_messenger)
         {
             loader.Enable(GL_DEBUG_OUTPUT);
 #ifndef NDEBUG
@@ -124,11 +63,7 @@ namespace OpenGL
                                        nullptr,
                                        GL_TRUE); //drop all filters
 
-            if(parent->GetProperties().features.validation_layer)
-            {
-                debug_callback = default_debug_messenger;
-                loader.DebugMessageCallback(debug_messenger_callback, &debug_callback);
-            }
+            SetDebugMessenger(impl_instance->GetDebugMessengerInfo());
         }
     }
 
@@ -137,6 +72,8 @@ namespace OpenGL
         WaitIdle();
 
         delete default_queue;
+
+        parent->DeleteDeviceNotify();
     }
 
     Render::Queue* Device::GetQueue(const Render::QueueInfo& info)
@@ -186,42 +123,6 @@ namespace OpenGL
     void Device::RecreateSwapchain(const Render::SwapchainInfo& info)
     {
         surface->SetSwapInterval(info.present_mode);
-    }
-
-    void Device::SetDebugMessenger(const Render::DebugMessengerInfo& info)
-    {
-        if(!parent->GetProperties().features.debug_messenger)
-            throw std::runtime_error("Context is not in debug mode");
-
-        auto filter_types = DebugMessengerTypeFlagsToNativeInverted(info.types);
-        auto filter_severities = DebugMessengerSeverityFlagsToNativeInverted(info.severities);
-
-        loader.DebugMessageControl(GL_DONT_CARE,
-                                   GL_DONT_CARE,
-                                   GL_DONT_CARE,
-                                   0,
-                                   nullptr,
-                                   GL_TRUE); //drop all filters
-
-        for(std::size_t i = 0; i < filter_types.size; i++)
-            loader.DebugMessageControl(GL_DONT_CARE,
-                                       filter_types.data[i],
-                                       GL_DONT_CARE,
-                                       0,
-                                       nullptr,
-                                       GL_FALSE);
-
-        for(std::size_t i = 0; i < filter_severities.size; i++)
-            loader.DebugMessageControl(GL_DONT_CARE,
-                                       GL_DONT_CARE,
-                                       filter_severities.data[i],
-                                       0,
-                                       nullptr,
-                                       GL_FALSE);
-
-        debug_callback = info.callback;
-
-        loader.DebugMessageCallback(debug_messenger_callback, &debug_callback);
     }
 
     Render::Buffer* Device::CreateBuffer(const Render::BufferInfo& info,
@@ -345,5 +246,38 @@ namespace OpenGL
     const GladGLContext& Device::GetLoader() const noexcept
     {
         return loader;
+    }
+
+    void Device::SetDebugMessenger(const Render::DebugMessengerInfo& info)
+    {
+        surface->MakeCurrent();
+
+        auto filter_types = DebugMessengerTypeFlagsToNativeInverted(info.types);
+        auto filter_severities = DebugMessengerSeverityFlagsToNativeInverted(info.severities);
+
+        loader.DebugMessageControl(GL_DONT_CARE,
+                                   GL_DONT_CARE,
+                                   GL_DONT_CARE,
+                                   0,
+                                   nullptr,
+                                   GL_TRUE); //drop all filters
+
+        for(std::size_t i = 0; i < filter_types.size; i++)
+            loader.DebugMessageControl(GL_DONT_CARE,
+                                       filter_types.data[i],
+                                       GL_DONT_CARE,
+                                       0,
+                                       nullptr,
+                                       GL_FALSE);
+
+        for(std::size_t i = 0; i < filter_severities.size; i++)
+            loader.DebugMessageControl(GL_DONT_CARE,
+                                       GL_DONT_CARE,
+                                       filter_severities.data[i],
+                                       0,
+                                       nullptr,
+                                       GL_FALSE);
+
+        loader.DebugMessageCallback(debug_messenger_callback, &info.callback);
     }
 };

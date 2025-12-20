@@ -10,7 +10,6 @@ namespace OpenGL
     {
         PhysicalDevice* physical_device;
         std::uint32_t config_index;
-        bool validation_layer_enabled;
         bool robust_buffer_access_enabled;
     };
 
@@ -34,6 +33,8 @@ namespace OpenGL
         void SwapWindow();
         std::span<Render::Image*> GetImages() noexcept;
         std::uint32_t GetImageIndex() const noexcept;
+
+        void MakeCurrent();
     private:
         Instance* parent;
         Render::SurfaceWin32Info win32_info;

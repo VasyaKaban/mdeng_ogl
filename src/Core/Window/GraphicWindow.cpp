@@ -12,10 +12,32 @@ namespace Core
                                                SDL_WINDOWPOS_UNDEFINED,
                                                info.resolution.width,
                                                info.resolution.height,
-                                               SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+                                               SDL_WINDOW_RESIZABLE);
 
         if(!_handle)
             throw std::runtime_error(SDL_GetError());
+
+        hrs::scoped_call cleanup = [_handle]()
+        {
+            SDL_DestroyWindow(_handle);
+        };
+
+        SDL_SysWMinfo sys_wm_info;
+        SDL_version(sys_wm_info.version);
+
+        auto res = SDL_GetWindowWMInfo(_handle, &sys_wm_info);
+        if(res != SDL_TRUE)
+            throw std::runtime_error(SDL_GetError());
+
+        if(sys_wm_info.subsystem != SDL_SYSWM_WINDOWS)
+            throw std::runtime_error("Bad subsystem info");
+
+        surface_type = SurfaceType::Windows;
+        surface_info.win32 = Render::SurfaceWin32Info{.window = sys_wm_info.info.win.window,
+                                                      .hdc = sys_wm_info.info.win.hdc,
+                                                      .instance = sys_wm_info.info.win.hinstance};
+
+        cleanup.drop();
 
         handle = _handle;
         id = SDL_GetWindowID(_handle);
@@ -66,5 +88,18 @@ namespace Core
     std::uint32_t GraphicWindow::GetID() const noexcept
     {
         return id;
+    }
+
+    SurfaceType GraphicWindow::GetSurfaceType() const noexcept
+    {
+        return surface_type;
+    }
+
+    const Render::SurfaceWin32Info& GraphicWindow::GetWIN32SurfaceInfo() const
+    {
+        if(surface_type != SurfaceType::Windows)
+            throw std::runtime_error("Bad surface type access");
+
+        return surface_info.win32;
     }
 };

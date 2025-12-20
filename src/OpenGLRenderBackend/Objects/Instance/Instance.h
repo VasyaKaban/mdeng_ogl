@@ -12,10 +12,17 @@ namespace OpenGL
         Instance(const Render::InstanceInfo& info);
         virtual ~Instance() override;
 
-        virtual std::vector<const Render::PhysicalDevice*> GetPhysicalDevices() const override;
+        virtual std::vector<Render::PhysicalDevice*> GetPhysicalDevices() const override;
 
         virtual Render::Surface* CreateSurface(const Render::SurfaceWin32Info& info) override;
+
+        virtual void SetDebugMessenger(const Render::DebugMessengerInfo& info) override;
+
+        const Render::InstanceFeatures& GetEnabledFeatures() const noexcept;
+        const Render::DebugMessengerInfo& GetDebugMessengerInfo() const noexcept;
     private:
-        std::vector<Render::PhysicalDevice*> physical_devices;
+        std::vector<PhysicalDevice*> physical_devices;
+        Render::InstanceFeatures enabled_features;
+        Render::DebugMessengerInfo debug_messenger_info;
     };
 };

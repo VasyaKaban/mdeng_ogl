@@ -30,8 +30,6 @@ namespace OpenGL
 
         virtual void RecreateSwapchain(const Render::SwapchainInfo& info) override;
 
-        virtual void SetDebugMessenger(const Render::DebugMessengerInfo& info) override;
-
         virtual Render::Buffer*
         CreateBuffer(const Render::BufferInfo& info,
                      std::span<const std::uint32_t> desired_memory_type_indices) override;
@@ -69,6 +67,8 @@ namespace OpenGL
         virtual Render::PhysicalDevice* GetParent() const noexcept override;
 
         const GladGLContext& GetLoader() const noexcept;
+
+        void SetDebugMessenger(const Render::DebugMessengerInfo& info);
     private:
         PhysicalDevice* parent;
         Surface* surface;
@@ -76,7 +76,5 @@ namespace OpenGL
         Render::PhysicalDeviceFeatures enabled_features;
 
         Queue* default_queue;
-
-        std::function<Render::DebugMessengerCallback> debug_callback;
     };
 };

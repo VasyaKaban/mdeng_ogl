@@ -1621,8 +1621,6 @@ namespace Render
         bool sampler_mirror_clamp_to_edge;
         bool custom_border_colors;
         bool custom_border_color_without_format;
-        bool validation_layer;
-        bool debug_messenger;
     };
 
     enum class PhysicalDeviceType
@@ -1740,11 +1738,18 @@ namespace Render
         OpenGL
     };
 
+    struct InstanceFeatures
+    {
+        bool validation_layer;
+        bool debug_messenger;
+    };
+
     struct InstanceInfo
     {
         const char* application_name;
         std::uint32_t application_version;
         std::uint32_t api_version;
+        InstanceFeatures enabled_features;
     };
 
     struct SwapchainInfo

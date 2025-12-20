@@ -34,6 +34,10 @@ namespace OpenGL
 
         Render::SurfaceCapabilities
         GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept;
+
+        void DeleteDeviceNotify() noexcept;
+
+        void SetDebugMessenger(const Render::DebugMessengerInfo& info);
     private:
         Instance* parent;
 
@@ -48,5 +52,7 @@ namespace OpenGL
         Render::PhysicalDeviceProperties properties;
         Render::SurfaceCapabilities surface_capabilities;
         std::vector<std::uint32_t> pixelformat_indices;
+
+        Device* device;
     };
 };

@@ -12,11 +12,12 @@
 
 namespace OpenGL
 {
-    constexpr static wchar_t DUMMY_WINDOW_CLASS_NAME[] = L"DUMMY_WINDOW_CLASS";
-    constexpr static wchar_t DUMMY_WINDOW_TITLE[] = L"DUMMY_WINDOW_TITLE";
+    constexpr static wchar_t DUMMY_WINDOW_CLASS_NAME[] = L"DUMMY_WINDOW_CLASS_PHYSICAL_DEVICE";
+    constexpr static wchar_t DUMMY_WINDOW_TITLE[] = L"DUMMY_WINDOW_TITLE_PHYSICAL_DEVICE";
 
     struct WindowParams
     {
+        Instance* input_instance;
         HDC dc;
         HGLRC glrc;
         GladGLContext loader;
@@ -406,12 +407,9 @@ namespace OpenGL
             .variable_multisample_rate = true,
             .sampler_mirror_clamp_to_edge = true,
             .custom_border_colors = true,
-            .custom_border_color_without_format = true,
-            .validation_layer = true,
-            .debug_messenger = true};
+            .custom_border_color_without_format = true};
 
         return Render::PhysicalDeviceProperties{
-            .supported_backend_type = Core::RenderBackendType::OpenGL,
             .version = Render::MakeVersion(major, minor),
             .vendor_name = reinterpret_cast<const char*>(loader.GetString(GL_VENDOR)),
             .device_name = reinterpret_cast<const char*>(loader.GetString(GL_RENDERER)),
@@ -453,67 +451,7 @@ namespace OpenGL
                         ReleaseDC(hwnd, _dc);
                 };
 
-                PIXELFORMATDESCRIPTOR pfd = {.nSize = sizeof(PIXELFORMATDESCRIPTOR),
-                                             .nVersion = 1,
-                                             .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL |
-                                                        PFD_DOUBLEBUFFER,
-                                             .iPixelType = PFD_TYPE_RGBA,
-                                             .cColorBits = 32,
-                                             .cRedBits = 0,
-                                             .cRedShift = 0,
-                                             .cGreenBits = 0,
-                                             .cGreenShift = 0,
-                                             .cBlueBits = 0,
-                                             .cBlueShift = 0,
-                                             .cAlphaBits = 0,
-                                             .cAlphaShift = 0,
-                                             .cAccumBits = 0,
-                                             .cAccumRedBits = 0,
-                                             .cAccumGreenBits = 0,
-                                             .cAccumBlueBits = 0,
-                                             .cAccumAlphaBits = 0,
-                                             .cDepthBits = 0,
-                                             .cStencilBits = 0,
-                                             .cAuxBuffers = 0,
-                                             .iLayerType = PFD_MAIN_PLANE,
-                                             .bReserved = 0,
-                                             .dwLayerMask = 0,
-                                             .dwVisibleMask = 0,
-                                             .dwDamageMask = 0};
-
                 _dc = GetDC(hwnd);
-                int format_index = ChoosePixelFormat(_dc, &pfd);
-                if(format_index == 0)
-                {
-                    *window_params_exp = hrs::winapi_get_last_error();
-                    return -1;
-                }
-
-                if(SetPixelFormat(_dc, format_index, &pfd) == FALSE)
-                {
-                    *window_params_exp = hrs::winapi_get_last_error();
-                    return -1;
-                }
-
-                _glrc = wglCreateContext(_dc);
-                if(_glrc == nullptr)
-                {
-                    *window_params_exp = hrs::winapi_get_last_error();
-                    return -1;
-                }
-
-                wglMakeCurrent(_dc, _glrc);
-
-                int wgl_version =
-                    gladLoadWGL(_dc, reinterpret_cast<GLADloadfunc>(wglGetProcAddress));
-                if(wgl_version == 0)
-                {
-                    *window_params_exp = std::runtime_error("Failed to load WGL context");
-                    return -1;
-                }
-
-                wglDeleteContext(_glrc);
-                _glrc = nullptr;
 
                 /*
                 GLAD_API_CALL int GLAD_WGL_VERSION_1_0;
@@ -529,14 +467,6 @@ namespace OpenGL
                 GLAD_API_CALL int GLAD_WGL_EXT_swap_control;
                 GLAD_API_CALL int GLAD_WGL_EXT_swap_control_tear;
                 */
-
-                if(!(GLAD_WGL_ARB_create_context && GLAD_WGL_ARB_create_context_profile &&
-                     GLAD_WGL_ARB_pixel_format))
-                {
-                    *window_params_exp = std::runtime_error(
-                        "WGL core context or pixel format selection is not available");
-                    return -1;
-                }
 
                 constexpr static int format_number_query_input[1] = {WGL_NUMBER_PIXEL_FORMATS_ARB};
                 int format_number_query_output[1] = {};
@@ -660,6 +590,55 @@ namespace OpenGL
                     return -1;
                 }
 
+                if(window_params_exp->value()
+                       .input_instance->GetEnabledFeatures()
+                       .validation_layer ||
+                   window_params_exp->value().input_instance->GetEnabledFeatures().debug_messenger)
+                {
+                    const auto& info =
+                        window_params_exp->value().input_instance->GetDebugMessengerInfo();
+
+                    loader.Enable(GL_DEBUG_OUTPUT);
+#ifndef NDEBUG
+                    loader.Enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
+                    loader.DebugMessageControl(GL_DONT_CARE,
+                                               GL_DONT_CARE,
+                                               GL_DONT_CARE,
+                                               0,
+                                               nullptr,
+                                               GL_TRUE); //drop all filters
+
+                    auto filter_types = DebugMessengerTypeFlagsToNativeInverted(info.types);
+                    auto filter_severities =
+                        DebugMessengerSeverityFlagsToNativeInverted(info.severities);
+
+                    loader.DebugMessageControl(GL_DONT_CARE,
+                                               GL_DONT_CARE,
+                                               GL_DONT_CARE,
+                                               0,
+                                               nullptr,
+                                               GL_TRUE); //drop all filters
+
+                    for(std::size_t i = 0; i < filter_types.size; i++)
+                        loader.DebugMessageControl(GL_DONT_CARE,
+                                                   filter_types.data[i],
+                                                   GL_DONT_CARE,
+                                                   0,
+                                                   nullptr,
+                                                   GL_FALSE);
+
+                    for(std::size_t i = 0; i < filter_severities.size; i++)
+                        loader.DebugMessageControl(GL_DONT_CARE,
+                                                   GL_DONT_CARE,
+                                                   filter_severities.data[i],
+                                                   0,
+                                                   nullptr,
+                                                   GL_FALSE);
+
+                    loader.DebugMessageCallback(debug_messenger_callback, &info.callback);
+                }
+
                 auto properties = get_physical_device_properties(loader);
                 *window_params_exp =
                     WindowParams{.dc = _dc,
@@ -692,7 +671,8 @@ namespace OpenGL
         if(register_res == 0)
             throw std::runtime_error("Failed to create dummy OpenGL window");
 
-        hrs::expected<WindowParams, std::runtime_error> window_param_exp = WindowParams{};
+        hrs::expected<WindowParams, std::runtime_error> window_param_exp =
+            WindowParams{.input_instance = _parent};
 
         HWND _window = CreateWindowExW(0,
                                        DUMMY_WINDOW_CLASS_NAME,
@@ -726,6 +706,7 @@ namespace OpenGL
         properties = std::move(window_param_exp->properties);
         surface_capabilities = std::move(window_param_exp->surface_capabilities);
         pixelformat_indices = std::move(window_param_exp->pixelformat_indices);
+        device = nullptr;
     }
 
     PhysicalDevice::~PhysicalDevice()
@@ -890,7 +871,8 @@ namespace OpenGL
         if(!support_mipmaps)
             max_mip_levels = 1;
         else
-            max_mip_levels = 1000; //in OpenGL spec it is a default value -> so do not care...
+            max_mip_levels =
+                Render::LOD_CLAMP_NONE; //in OpenGL spec it is a default value -> so do not care...
 
         GLint max_array_layers;
         if(info.type == Render::ImageType::Image3D && !info.layered)
@@ -1064,11 +1046,15 @@ namespace OpenGL
 
     Render::Device* PhysicalDevice::CreateDevice(const Render::DeviceInfo& info)
     {
+        if(device != nullptr)
+            throw std::runtime_error("Physical device already has created logical device");
+
         Surface* impl_surface = static_cast<Surface*>(info.surface);
         if(impl_surface->IsConnected())
             throw std::runtime_error("Surface is connected to other device");
 
-        return new Device(this, info);
+        device = new Device(this, info);
+        return device;
     }
 
     Render::Instance* PhysicalDevice::GetParent() const noexcept
@@ -1090,5 +1076,46 @@ namespace OpenGL
             .supported_present_modes = surface_capabilities.supported_present_modes,
             .supported_configs = {
                 surface_capabilities.supported_configs[pixelformat_indices[index]]}};
+    }
+
+    void PhysicalDevice::DeleteDeviceNotify() noexcept
+    {
+        device = nullptr;
+    }
+
+    void PhysicalDevice::SetDebugMessenger(const Render::DebugMessengerInfo& info)
+    {
+        wglMakeCurrent(dc, glrc);
+
+        auto filter_types = DebugMessengerTypeFlagsToNativeInverted(info.types);
+        auto filter_severities = DebugMessengerSeverityFlagsToNativeInverted(info.severities);
+
+        loader.DebugMessageControl(GL_DONT_CARE,
+                                   GL_DONT_CARE,
+                                   GL_DONT_CARE,
+                                   0,
+                                   nullptr,
+                                   GL_TRUE); //drop all filters
+
+        for(std::size_t i = 0; i < filter_types.size; i++)
+            loader.DebugMessageControl(GL_DONT_CARE,
+                                       filter_types.data[i],
+                                       GL_DONT_CARE,
+                                       0,
+                                       nullptr,
+                                       GL_FALSE);
+
+        for(std::size_t i = 0; i < filter_severities.size; i++)
+            loader.DebugMessageControl(GL_DONT_CARE,
+                                       GL_DONT_CARE,
+                                       filter_severities.data[i],
+                                       0,
+                                       nullptr,
+                                       GL_FALSE);
+
+        loader.DebugMessageCallback(debug_messenger_callback, &info.callback);
+
+        if(device)
+            device->SetDebugMessenger(info);
     }
 };

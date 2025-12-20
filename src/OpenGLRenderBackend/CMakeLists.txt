@@ -54,3 +54,9 @@ target_link_libraries(OpenGLRenderBackend
 						PRIVATE glad_loader
 						PRIVATE OpenGL::GL
 					)
+
+#Resolve -> WGL/GLX/EGL dummy context
+#Instance -> Physical device and debug messenger holder
+#PhysicalDevice -> Core OpenGL 4.5 with WGL/GLX/EGL native objects(WGL: Window, DC, GLRC) holder
+#Surface -> Real window holder that has connected and disconnected states(connected: associated with device, disconnected: no device); cannot be disconnected after connection with device due to the inner pixel format strong association with window 
+#Device -> Core OpenGL 4.5 holder with enabled features

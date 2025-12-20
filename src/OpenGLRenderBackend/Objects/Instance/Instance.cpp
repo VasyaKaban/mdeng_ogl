@@ -2,12 +2,75 @@
 #include "Core/Render/Objects/PhysicalDevice.h"
 #include "../Surface/Surface.h"
 #include "../PhysicalDevice/PhysicalDevice.h"
+#include <format>
+#include <iostream>
 
 namespace OpenGL
 {
+    static void default_debug_messenger(Render::DebugMessengerSeverityFlagBits severity,
+                                        Render::DebugMessengerTypeFlags types,
+                                        std::int64_t id,
+                                        std::string_view message)
+    {
+        std::string_view severity_string = "Unknown";
+        switch(severity)
+        {
+            case Render::DebugMessengerSeverityFlagBits::Error:
+                severity_string = "Error";
+                break;
+            case Render::DebugMessengerSeverityFlagBits::Warning:
+                severity_string = "Warning";
+                break;
+            case Render::DebugMessengerSeverityFlagBits::Info:
+                severity_string = "Info";
+                break;
+            case Render::DebugMessengerSeverityFlagBits::Verbose:
+                severity_string = "Verbose";
+                break;
+        }
+
+        static std::string types_string;
+        constexpr std::pair<Render::DebugMessengerTypeFlagBits, std::string_view>
+            TYPE_NAMES_MAPPING[] = {
+                {Render::DebugMessengerTypeFlagBits::General, "General"},
+                {Render::DebugMessengerTypeFlagBits::Validation, "Validation"},
+                {Render::DebugMessengerTypeFlagBits::Performance, "Performance"}};
+
+        for(const auto& [type, name]: TYPE_NAMES_MAPPING)
+        {
+            if(types_string.empty())
+                types_string += name;
+            else
+                types_string += std::format(" | {}", name);
+        }
+
+        std::format_to(std::ostream_iterator<char>(std::cout, "\n"),
+                       "[Severity: {}][Types: {}] ID: {}; {}",
+                       severity_string,
+                       types_string.empty() ? "Unknown" : types_string,
+                       id,
+                       message);
+
+        types_string.clear();
+    }
+
     Instance::Instance(const Render::InstanceInfo& info)
+        : enabled_features(info.enabled_features)
     {
         physical_devices.push_back(new PhysicalDevice(this)); //in OGL we have only one device
+
+        if(enabled_features.validation_layer)
+        {
+            debug_messenger_info = Render::DebugMessengerInfo{
+                .severities = Render::DebugMessengerSeverityFlagBits::Info |
+                              Render::DebugMessengerSeverityFlagBits::Error |
+                              Render::DebugMessengerSeverityFlagBits::Verbose |
+                              Render::DebugMessengerSeverityFlagBits::Warning,
+                .types = Render::DebugMessengerTypeFlagBits::General |
+                         Render::DebugMessengerTypeFlagBits::Performance |
+                         Render::DebugMessengerTypeFlagBits::Validation,
+                .callback = default_debug_messenger};
+        }
     }
 
     Instance::~Instance()
@@ -16,9 +79,9 @@ namespace OpenGL
             delete dev;
     }
 
-    std::vector<const Render::PhysicalDevice*> Instance::GetPhysicalDevices() const
+    std::vector<Render::PhysicalDevice*> Instance::GetPhysicalDevices() const
     {
-        std::vector<const Render::PhysicalDevice*> out;
+        std::vector<Render::PhysicalDevice*> out;
         out.reserve(physical_devices.size());
         for(auto& dev: physical_devices)
             out.push_back(dev);
@@ -28,6 +91,27 @@ namespace OpenGL
 
     Render::Surface* Instance::CreateSurface(const Render::SurfaceWin32Info& info)
     {
-        return new Surface(info);
+        return new Surface(this, info);
+    }
+
+    void Instance::SetDebugMessenger(const Render::DebugMessengerInfo& info)
+    {
+        if(!enabled_features.debug_messenger)
+            throw std::runtime_error("Debug messenger is not supported");
+
+        debug_messenger_info = info;
+
+        for(auto& dev: physical_devices)
+            static_cast<PhysicalDevice*>(dev)->SetDebugMessenger(info);
+    }
+
+    const Render::InstanceFeatures& Instance::GetEnabledFeatures() const noexcept
+    {
+        return enabled_features;
+    }
+
+    const Render::DebugMessengerInfo& Instance::GetDebugMessengerInfo() const noexcept
+    {
+        return debug_messenger_info;
     }
 };
