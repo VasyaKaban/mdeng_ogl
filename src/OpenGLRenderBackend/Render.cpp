@@ -76,25 +76,34 @@ namespace OpenGL
         return value;
     }
 
-    GLbitfield DecodeMemoryTypePropertyFlagsToNative(Render::MemoryTypePropertyFlags flags)
+    GLbitfield DecodeBufferStorageFlags(Render::MemoryTypePropertyFlags memory_flags,
+                                        Render::BufferMapUsageFlags map_usage)
     {
-        constexpr static std::pair<Render::MemoryTypePropertyFlagBits, GLbitfield> mapping[] = {
-            {Render::MemoryTypePropertyFlagBits::DeviceLocal, 0},
-            {Render::MemoryTypePropertyFlagBits::HostMappingReadable,
-             GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT},
-            {Render::MemoryTypePropertyFlagBits::HostMappingWritable,
-             GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT},
-            {Render::MemoryTypePropertyFlagBits::HostCoherent, GL_MAP_COHERENT_BIT},
-            {Render::MemoryTypePropertyFlagBits::HostCached, GL_CLIENT_STORAGE_BIT}};
+        constexpr static std::pair<Render::MemoryTypePropertyFlagBits, GLbitfield>
+            memory_mapping[] = {
+                {Render::MemoryTypePropertyFlagBits::DeviceLocal, 0},
+                {Render::MemoryTypePropertyFlagBits::HostVisible, GL_MAP_PERSISTENT_BIT},
+                {Render::MemoryTypePropertyFlagBits::HostCoherent, GL_MAP_COHERENT_BIT},
+                {Render::MemoryTypePropertyFlagBits::HostCached, GL_CLIENT_STORAGE_BIT}};
 
         GLbitfield mask = 0;
-        for(const auto& pr: mapping)
+        for(const auto& pr: memory_mapping)
         {
-            if(flags & pr.first)
+            if(memory_flags & pr.first)
                 mask |= pr.second;
         }
 
-        return mask;
+        GLbitfield map_mask = 0;
+        if(map_usage & Render::BufferMapUsageFlagBits::BufferMapUsageRead)
+            map_mask |= GL_MAP_READ_BIT;
+
+        if(map_usage & Render::BufferMapUsageFlagBits::BufferMapUsageWrite)
+            map_mask |= GL_MAP_WRITE_BIT;
+
+        if(map_mask == 0)
+            map_mask = GL_MAP_WRITE_BIT;
+
+        return mask | map_mask;
     }
 
     GLenum FenceStatusToNative(Render::FenceStatus status)

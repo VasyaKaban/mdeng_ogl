@@ -25,10 +25,7 @@ namespace Core
         Windowed = 0
     };
 
-    enum class SurfaceType
-    {
-        Windows
-    };
+    using WindowSurface = std::variant<Render::SurfaceWin32Info>;
 
     class GraphicWindow : public Events::EventEmitter<WindowCloseEvent>,
                           public Events::EventEmitter<WindowResizedEvent>,
@@ -54,16 +51,11 @@ namespace Core
 
         std::uint32_t GetID() const noexcept;
 
-        SurfaceType GetSurfaceType() const noexcept;
-        const Render::SurfaceWin32Info& GetWIN32SurfaceInfo() const;
+        const WindowSurface& GetSurface() const noexcept;
     private:
         SDL_Window* handle;
         std::uint32_t id;
 
-        SurfaceType surface_type;
-        union
-        {
-            Render::SurfaceWin32Info win32;
-        } surface_info;
+        WindowSurface surface;
     };
 };

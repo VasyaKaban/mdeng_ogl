@@ -20,7 +20,8 @@ namespace OpenGL
         {
             const Render::MemoryType& mem_type =
                 parent->GetParent()->GetProperties().memory_types[desired_memory_type_indices[0]];
-            full_flags = DecodeMemoryTypePropertyFlagsToNative(mem_type.memory_type_flags);
+
+            full_flags = DecodeBufferStorageFlags(mem_type.memory_type_flags, info.map_usage);
         }
 
         parent->GetLoader().NamedBufferStorage(_handle, info.size, nullptr, full_flags);

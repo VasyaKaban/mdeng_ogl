@@ -38,7 +38,8 @@ namespace OpenGL
 
     GLenum ComapreOpToNative(Render::CompareOp op);
     GLenum SampleCountToNative(Render::SampleCount samples);
-    GLbitfield DecodeMemoryTypePropertyFlagsToNative(Render::MemoryTypePropertyFlags flags);
+    GLbitfield DecodeBufferStorageFlags(Render::MemoryTypePropertyFlags memory_flags,
+                                        Render::BufferMapUsageFlags map_usage);
     GLenum FenceStatusToNative(Render::FenceStatus status);
     std::optional<GLenum> FormatToNative(Render::Format format) noexcept;
     GLenum ImageViewTypeToNative(Render::ImageViewType type);

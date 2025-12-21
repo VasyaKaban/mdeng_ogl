@@ -26,30 +26,51 @@ namespace OpenGL
         std::vector<std::uint32_t> pixelformat_indices;
     };
 
-    static std::vector<Render::MemoryType> create_memory_types()
-    {
-        constexpr std::size_t MAX_MEMORY_TYPES_COUNT =
-            (Render::MemoryTypePropertyFlagBits::HostCached << 1) - 1;
+    /*
+    1. DeviceLocal
+    2. DeviceLocal | HostVisible
+    3. DeviceLocal | HostVisible | HostCoherent
+    4. DeviceLocal | HostVisible | HostCached
+    5. DeviceLocal | HostVisible | HostCoherent | HostCached
 
-        std::vector<Render::MemoryType> types;
-        types.reserve(MAX_MEMORY_TYPES_COUNT);
-        for(std::size_t i = 0; i < MAX_MEMORY_TYPES_COUNT; i++)
-        {
-            if((i & Render::MemoryTypePropertyFlagBits::HostCoherent ||
-                i & Render::MemoryTypePropertyFlagBits::HostCached) &&
-               !(i & Render::MemoryTypePropertyFlagBits::HostMappingReadable ||
-                 i & Render::MemoryTypePropertyFlagBits::HostMappingWritable))
-            {
-                continue;
-            }
+    6. HostVisible
+    7. HostVisible | HostCoherent
+    8. HostVisible | HostCached
+    9. HostVisible | HostCoherent | HostCached
+    */
 
-            types.push_back(Render::MemoryType{
-                .memory_heap_flags = Render::MemoryHeapFlagBits::DeviceLocalHeap,
-                .memory_type_flags = static_cast<Render::MemoryTypePropertyFlags>(i)});
-        }
+    constexpr static Render::MemoryType AVAILABLE_MEMORY_TYPES[] = {
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCached},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent |
+             Render::MemoryTypePropertyFlagBits::HostCached},
 
-        return types;
-    }
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCached},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent |
+             Render::MemoryTypePropertyFlagBits::HostCached}};
 
     template<typename T>
     static T get_property(GladGLContext& loader, GLenum name) noexcept
@@ -360,6 +381,7 @@ namespace OpenGL
             .line_width_granularity = get_property<float>(loader, GL_SMOOTH_LINE_WIDTH_GRANULARITY),
             .optimal_buffer_copy_offset_alignment = 1,
             .optimal_buffer_copy_row_pitch_alignment = 1,
+            .non_coherent_atom_size = 1,
             .max_custom_border_color_samplers = std::numeric_limits<std::uint32_t>::max()};
 
         Render::PhysicalDeviceFeatures features = Render::PhysicalDeviceFeatures{
@@ -420,7 +442,8 @@ namespace OpenGL
                                   Render::QueueSpecializationFlagBits::ComputeSpec |
                                   Render::QueueSpecializationFlagBits::GraphicsSpec,
                 .queue_count = 1}},
-            .memory_types = create_memory_types(),
+            .memory_types =
+                std::vector(std::begin(AVAILABLE_MEMORY_TYPES), std::end(AVAILABLE_MEMORY_TYPES)),
             .command_buffer_strategy = Render::CommandBufferStrategy::Immediate,
             .device_type = Render::PhysicalDeviceType::Other,
             .view_origin = Render::ViewOrigin::BottomLeft,

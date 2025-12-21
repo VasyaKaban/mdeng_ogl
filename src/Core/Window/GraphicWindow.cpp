@@ -32,10 +32,9 @@ namespace Core
         if(sys_wm_info.subsystem != SDL_SYSWM_WINDOWS)
             throw std::runtime_error("Bad subsystem info");
 
-        surface_type = SurfaceType::Windows;
-        surface_info.win32 = Render::SurfaceWin32Info{.window = sys_wm_info.info.win.window,
-                                                      .hdc = sys_wm_info.info.win.hdc,
-                                                      .instance = sys_wm_info.info.win.hinstance};
+        surface = Render::SurfaceWin32Info{.window = sys_wm_info.info.win.window,
+                                           .hdc = sys_wm_info.info.win.hdc,
+                                           .instance = sys_wm_info.info.win.hinstance};
 
         cleanup.drop();
 
@@ -90,16 +89,8 @@ namespace Core
         return id;
     }
 
-    SurfaceType GraphicWindow::GetSurfaceType() const noexcept
+    const WindowSurface& GraphicWindow::GetSurface() const noexcept
     {
-        return surface_type;
-    }
-
-    const Render::SurfaceWin32Info& GraphicWindow::GetWIN32SurfaceInfo() const
-    {
-        if(surface_type != SurfaceType::Windows)
-            throw std::runtime_error("Bad surface type access");
-
-        return surface_info.win32;
+        return surface;
     }
 };

@@ -211,12 +211,11 @@ namespace Render
     enum MemoryTypePropertyFlagBits
     {
         DeviceLocal = 1 << 0, //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT = 0x00'00'00'01, + 0
-        HostMappingReadable = 1 << 1, //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT + GL_MAP_READ,
-        HostMappingWritable = 1 << 2, //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT + GL_MAP_WRITE,
+        HostVisible = 1 << 1, //VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT + GL_MAP_PERSISTENT_BIT,
         HostCoherent =
-            1 << 3, //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00'00'00'04, + GL_MAPPING_COHERENT
+            1 << 2, //VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00'00'00'04, + GL_MAPPING_COHERENT
         HostCached =
-            1 << 4, //VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00'00'00'08, + GL_CLIENT_STORAGE
+            1 << 3, //VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00'00'00'08, + GL_CLIENT_STORAGE
         //VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT = 0x00000010,
     };
 
@@ -228,10 +227,19 @@ namespace Render
         MemoryTypePropertyFlags memory_type_flags;
     };
 
+    enum BufferMapUsageFlagBits
+    {
+        BufferMapUsageRead = 1 << 0, //GL_MAP_READ
+        BufferMapUsageWrite = 1 << 1 //GL_MAP_WRITE
+    };
+
+    using BufferMapUsageFlags = std::underlying_type_t<BufferMapUsageFlagBits>;
+
     struct BufferInfo
     {
         std::uint64_t size;
         BufferUsageFlags usage;
+        BufferMapUsageFlags map_usage;
     };
 
     struct MappedRange
@@ -1559,7 +1567,7 @@ namespace Render
         //bool standard_sample_locations;
         std::uint64_t optimal_buffer_copy_offset_alignment;
         std::uint64_t optimal_buffer_copy_row_pitch_alignment;
-        //std::uint64_t non_coherent_atom_size;
+        std::uint64_t non_coherent_atom_size;
         std::uint32_t max_custom_border_color_samplers;
     };
 
