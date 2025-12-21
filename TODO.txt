@@ -33,10 +33,16 @@ Descriptor descriptions:
     //select binding(DescriptorDescription) -> if context.backend == OpenGL return opengl_binding...
 #nonCoherentAtomSize -> use in VK as inner parameter for mappings(maybe allocate buffers with alignment corrected to this size + size also align)
 remove #include winapi from Render -> change to forward declaration
-remove multi-jump in pipeline state(maybe add cacing with pointers to functions?)
+remove multi-jump in pipeline state(maybe add caching with pointers to functions?)
 
 Change plain pointer to unique_ptr due to the exceptions in constructor(see Device ctor!)
 Add enabled features check for every object like aniso in sampler and in pipeline state
 Make physical device current on device delete notify + think abound make current and reset previous current context + maybe use KHR_context_flush_control to disable queue flush on context switch
 
 maybe remove A8 format?
+
+MakeCurrent behaviour:
+    Create physical device -> make it current
+    Create device -> make it current
+    propagate debug messenger -> make current object and then propagate iterately
+    delete device -> make physical device current
