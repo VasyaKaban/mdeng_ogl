@@ -46,3 +46,5 @@ MakeCurrent behaviour:
     Create device -> make it current
     propagate debug messenger -> make current object and then propagate iterately
     delete device -> make physical device current
+
+move hrs to Core

@@ -1,308 +1,305 @@
 #include "DDS.h"
 #include <stdexcept>
 #include <format>
+#include <optional>
 #include <string_view>
 
 namespace DDS
 {
-#pragma message("USAGE AND IMAGE FLAGS!!!")
-    struct format_resolve_result
+    static std::optional<Render::Format> resolve_format(DXGIFormat format)
     {
-        Render::Format ctx_format;
-    };
-
-    static hrs::expected<format_resolve_result, std::runtime_error> resolve_format(DXGIFormat fmt)
-    {
-        format_resolve_result res;
-        switch(fmt)
+        std::optional<Render::Format> res;
+        switch(format)
         {
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_TYPELESS:
-                res.ctx_format = Render::Format::R32G32B32A32_UINT;
+                res = Render::Format::R32G32B32A32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_FLOAT:
-                res.ctx_format = Render::Format::R32G32B32A32_FLOAT;
+                res = Render::Format::R32G32B32A32_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_UINT:
-                res.ctx_format = Render::Format::R32G32B32A32_UINT;
+                res = Render::Format::R32G32B32A32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32A32_SINT:
-                res.ctx_format = Render::Format::R32G32B32A32_SINT;
+                res = Render::Format::R32G32B32A32_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_TYPELESS:
-                res.ctx_format = Render::Format::R32G32B32_UINT;
+                res = Render::Format::R32G32B32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_FLOAT:
-                res.ctx_format = Render::Format::R32G32B32_FLOAT;
+                res = Render::Format::R32G32B32_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_UINT:
-                res.ctx_format = Render::Format::R32G32B32_UINT;
+                res = Render::Format::R32G32B32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32B32_SINT:
-                res.ctx_format = Render::Format::R32G32B32A32_SINT;
+                res = Render::Format::R32G32B32A32_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_TYPELESS:
-                res.ctx_format = Render::Format::R16G16B16A16_UINT;
+                res = Render::Format::R16G16B16A16_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_FLOAT:
-                res.ctx_format = Render::Format::R16G16B16A16_FLOAT;
+                res = Render::Format::R16G16B16A16_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_UNORM:
-                res.ctx_format = Render::Format::R16G16B16A16_UNORM;
+                res = Render::Format::R16G16B16A16_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_UINT:
-                res.ctx_format = Render::Format::R16G16B16A16_UINT;
+                res = Render::Format::R16G16B16A16_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_SNORM:
-                res.ctx_format = Render::Format::R16G16B16A16_SNORM;
+                res = Render::Format::R16G16B16A16_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16B16A16_SINT:
-                res.ctx_format = Render::Format::R16G16B16A16_SINT;
+                res = Render::Format::R16G16B16A16_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_TYPELESS:
-                res.ctx_format = Render::Format::R32G32_UINT;
+                res = Render::Format::R32G32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_FLOAT:
-                res.ctx_format = Render::Format::R32G32_FLOAT;
+                res = Render::Format::R32G32_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_UINT:
-                res.ctx_format = Render::Format::R32G32_UINT;
+                res = Render::Format::R32G32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G32_SINT:
-                res.ctx_format = Render::Format::R32G32_SINT;
+                res = Render::Format::R32G32_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32G8X24_TYPELESS:
-                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res = Render::Format::D32_SFLOAT_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res = Render::Format::D32_SFLOAT_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res = Render::Format::D32_SFLOAT_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
-                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res = Render::Format::D32_SFLOAT_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R10G10B10A2_TYPELESS:
-                res.ctx_format = Render::Format::D32_FLOAT_S8X24_UINT;
+                res = Render::Format::A2B10G10R10_UNORM_PACK32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R10G10B10A2_UNORM:
-                res.ctx_format = Render::Format::R10G10B10A2_UNORM;
+                res = Render::Format::A2B10G10R10_UNORM_PACK32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R10G10B10A2_UINT:
-                res.ctx_format = Render::Format::R10G10B10A2_UINT;
+                res = Render::Format::A2B10G10R10_UINT_PACK32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R11G11B10_FLOAT:
-                res.ctx_format = Render::Format::R11G11B10_FLOAT;
+                res = Render::Format::B10G11R11_UFLOAT_PACK32;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_TYPELESS:
-                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res = Render::Format::R8G8B8A8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_UNORM:
-                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res = Render::Format::R8G8B8A8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res = Render::Format::R8G8B8A8_UNORM_SRGB;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_UINT:
-                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res = Render::Format::R8G8B8A8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_SNORM:
-                res.ctx_format = Render::Format::R8G8B8A8_SNORM;
+                res = Render::Format::R8G8B8A8_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8B8A8_SINT:
-                res.ctx_format = Render::Format::R8G8B8A8_SINT;
+                res = Render::Format::R8G8B8A8_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_TYPELESS:
-                res.ctx_format = Render::Format::R16G16_UINT;
+                res = Render::Format::R16G16_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_FLOAT:
-                res.ctx_format = Render::Format::R16G16_FLOAT;
+                res = Render::Format::R16G16_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_UNORM:
-                res.ctx_format = Render::Format::R16G16_UNORM;
+                res = Render::Format::R16G16_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_UINT:
-                res.ctx_format = Render::Format::R16G16_UINT;
+                res = Render::Format::R16G16_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_SNORM:
-                res.ctx_format = Render::Format::R16G16_SNORM;
+                res = Render::Format::R16G16_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16G16_SINT:
-                res.ctx_format = Render::Format::R16G16_SINT;
+                res = Render::Format::R16G16_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_TYPELESS:
-                res.ctx_format = Render::Format::R32_UINT;
+                res = Render::Format::R32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_D32_FLOAT:
-                res.ctx_format = Render::Format::D32_FLOAT;
+                res = Render::Format::D32_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_FLOAT:
-                res.ctx_format = Render::Format::R32_FLOAT;
+                res = Render::Format::R32_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_UINT:
-                res.ctx_format = Render::Format::R32_UINT;
+                res = Render::Format::R32_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R32_SINT:
-                res.ctx_format = Render::Format::R32_SINT;
+                res = Render::Format::R32_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R24G8_TYPELESS:
-                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res = Render::Format::D24_UNORM_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_D24_UNORM_S8_UINT:
-                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res = Render::Format::D24_UNORM_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res = Render::Format::D24_UNORM_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-                res.ctx_format = Render::Format::D24_UNORM_S8_UINT;
+                res = Render::Format::D24_UNORM_S8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_TYPELESS:
-                res.ctx_format = Render::Format::R8G8_UINT;
+                res = Render::Format::R8G8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_UNORM:
-                res.ctx_format = Render::Format::R8G8_UNORM;
+                res = Render::Format::R8G8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_UINT:
-                res.ctx_format = Render::Format::R8G8_UINT;
+                res = Render::Format::R8G8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_SNORM:
-                res.ctx_format = Render::Format::R8G8_SNORM;
+                res = Render::Format::R8G8_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8G8_SINT:
-                res.ctx_format = Render::Format::R8G8_SINT;
+                res = Render::Format::R8G8_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_TYPELESS:
-                res.ctx_format = Render::Format::R16_UINT;
+                res = Render::Format::R16_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_FLOAT:
-                res.ctx_format = Render::Format::R16_FLOAT;
+                res = Render::Format::R16_SFLOAT;
                 break;
             case DXGIFormat::DXGI_FORMAT_D16_UNORM:
-                res.ctx_format = Render::Format::D16_UNORM;
+                res = Render::Format::D16_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_UNORM:
-                res.ctx_format = Render::Format::R16_UNORM;
+                res = Render::Format::R16_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_UINT:
-                res.ctx_format = Render::Format::R16_UINT;
+                res = Render::Format::R16_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_SNORM:
-                res.ctx_format = Render::Format::R16_SNORM;
+                res = Render::Format::R16_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R16_SINT:
-                res.ctx_format = Render::Format::R16_SINT;
+                res = Render::Format::R16_SINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_TYPELESS:
-                res.ctx_format = Render::Format::R8_UINT;
+                res = Render::Format::R8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_UNORM:
-                res.ctx_format = Render::Format::R8_UNORM;
+                res = Render::Format::R8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_UINT:
-                res.ctx_format = Render::Format::R8_UINT;
+                res = Render::Format::R8_UINT;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_SNORM:
-                res.ctx_format = Render::Format::R8_SNORM;
+                res = Render::Format::R8_SNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R8_SINT:
-                res.ctx_format = Render::Format::R8_SINT;
+                res = Render::Format::R8_SINT;
+                break;
+            case DXGIFormat::DXGI_FORMAT_A8_UNORM:
+                res = Render::Format::A8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-                res.ctx_format = Render::Format::R9G9B9E5_SHAREDEXP;
+                res = Render::Format::E5B9G9R9_UFLOAT_PACK32;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC1_TYPELESS:
-                res.ctx_format = Render::Format::BC1_UNORM;
+                res = Render::Format::BC1_RGBA_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC1_UNORM:
-                res.ctx_format = Render::Format::BC1_UNORM;
+                res = Render::Format::BC1_RGBA_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC1_UNORM_SRGB:
-                res.ctx_format = Render::Format::BC1_UNORM_SRGB;
+                res = Render::Format::BC1_RGBA_UNORM_SRGB_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC2_TYPELESS:
-                res.ctx_format = Render::Format::BC2_UNORM;
+                res = Render::Format::BC2_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC2_UNORM:
-                res.ctx_format = Render::Format::BC2_UNORM;
+                res = Render::Format::BC2_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC2_UNORM_SRGB:
-                res.ctx_format = Render::Format::BC2_UNORM_SRGB;
+                res = Render::Format::BC2_UNORM_SRGB_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC3_TYPELESS:
-                res.ctx_format = Render::Format::BC3_UNORM;
+                res = Render::Format::BC3_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC3_UNORM:
-                res.ctx_format = Render::Format::BC3_UNORM;
+                res = Render::Format::BC3_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC3_UNORM_SRGB:
-                res.ctx_format = Render::Format::BC3_UNORM_SRGB;
+                res = Render::Format::BC3_UNORM_SRGB_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC4_TYPELESS:
-                res.ctx_format = Render::Format::BC4_UNORM;
+                res = Render::Format::BC4_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC4_UNORM:
-                res.ctx_format = Render::Format::BC4_UNORM;
+                res = Render::Format::BC4_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC4_SNORM:
-                res.ctx_format = Render::Format::BC4_SNORM;
+                res = Render::Format::BC4_SNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC5_TYPELESS:
-                res.ctx_format = Render::Format::BC5_UNORM;
+                res = Render::Format::BC5_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC5_UNORM:
-                res.ctx_format = Render::Format::BC5_UNORM;
+                res = Render::Format::BC5_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC5_SNORM:
-                res.ctx_format = Render::Format::BC5_SNORM;
+                res = Render::Format::BC5_SNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_B5G6R5_UNORM:
-                res.ctx_format = Render::Format::B5G6R5_UNORM;
+                res = Render::Format::R5G6B5_UNORM_PACK16;
                 break;
             case DXGIFormat::DXGI_FORMAT_B5G5R5A1_UNORM:
-                res.ctx_format = Render::Format::B5G5R5A1_UNORM;
+                res = Render::Format::A1R5G5B5_UNORM_PACK16;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8A8_UNORM:
-                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res = Render::Format::B8G8R8A8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8X8_UNORM:
-                res.ctx_format = Render::Format::R8G8B8A8_UNORM;
+                res = Render::Format::B8G8R8A8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8A8_TYPELESS:
-                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res = Render::Format::B8G8R8A8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-                res.ctx_format = Render::Format::R8G8B8A8_UNORM_SRGB;
+                res = Render::Format::B8G8R8A8_UNORM_SRGB;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8X8_TYPELESS:
-                res.ctx_format = Render::Format::R8G8B8A8_UINT;
+                res = Render::Format::B8G8R8A8_UNORM;
                 break;
             case DXGIFormat::DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-                res.ctx_format = Render::Format::R8G8B8A8_UNORM_SRGB;
+                res = Render::Format::B8G8R8A8_UNORM_SRGB;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC6H_TYPELESS:
-                res.ctx_format = Render::Format::BC6H_UF16;
+                res = Render::Format::BC6H_UFLOAT_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC6H_UF16:
-                res.ctx_format = Render::Format::BC6H_UF16;
+                res = Render::Format::BC6H_UFLOAT_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC6H_SF16:
-                res.ctx_format = Render::Format::BC6H_SF16;
+                res = Render::Format::BC6H_SFLOAT_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC7_TYPELESS:
-                res.ctx_format = Render::Format::BC7_UNORM;
+                res = Render::Format::BC7_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC7_UNORM:
-                res.ctx_format = Render::Format::BC7_UNORM;
+                res = Render::Format::BC7_UNORM_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_BC7_UNORM_SRGB:
-                res.ctx_format = Render::Format::BC7_UNORM_SRGB;
+                res = Render::Format::BC7_UNORM_SRGB_BLOCK;
                 break;
             case DXGIFormat::DXGI_FORMAT_B4G4R4A4_UNORM:
-                res.ctx_format = Render::Format::B4G4R4A4_UNORM;
+                res = Render::Format::A4R4G4B4_UNORM_PACK16;
                 break;
             case DXGIFormat::DXGI_FORMAT_UNKNOWN:
-            case DXGIFormat::DXGI_FORMAT_A8_UNORM:
             case DXGIFormat::DXGI_FORMAT_R1_UNORM:
             case DXGIFormat::DXGI_FORMAT_R8G8_B8G8_UNORM:
             case DXGIFormat::DXGI_FORMAT_G8R8_G8B8_UNORM:
@@ -327,77 +324,74 @@ namespace DDS
             case DXGIFormat::DXGI_FORMAT_V408:
             case DXGIFormat::DXGI_FORMAT_SAMPLER_FEEDBACK_MIN_MIP_OPAQUE:
             case DXGIFormat::DXGI_FORMAT_SAMPLER_FEEDBACK_MIP_REGION_USED_OPAQUE:
+                break;
             default:
-                return std::runtime_error(
-                    std::format("DXGI format: {} is not supported in graphics context",
-                                static_cast<std::underlying_type_t<DXGIFormat>>(fmt)));
                 break;
         }
 
         return res;
     }
 
-    static hrs::expected<format_resolve_result, std::runtime_error>
-    resolve_format(const PixelFormat& fmt)
+    static std::optional<Render::Format> resolve_format(const PixelFormat& fmt)
     {
-        format_resolve_result res;
+        Render::Format res;
         if(fmt.flags & PixelFormatFlagBits::DDPF_FOURCC)
         {
             switch(fmt.four_cc)
             {
                 case PixelFormatFourCC::DXT1:
-                    res.ctx_format = Render::Format::BC1_UNORM;
+                    res = Render::Format::BC1_RGB_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::DXT2:
-                    res.ctx_format = Render::Format::BC2_UNORM;
+                    res = Render::Format::BC2_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::DXT3:
-                    res.ctx_format = Render::Format::BC2_UNORM;
+                    res = Render::Format::BC2_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::DXT4:
-                    res.ctx_format = Render::Format::BC3_UNORM;
+                    res = Render::Format::BC3_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::DXT5:
-                    res.ctx_format = Render::Format::BC3_UNORM;
+                    res = Render::Format::BC3_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::BC4U:
-                    res.ctx_format = Render::Format::BC4_UNORM;
+                    res = Render::Format::BC4_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::BC4S:
-                    res.ctx_format = Render::Format::BC4_SNORM;
+                    res = Render::Format::BC4_SNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::BC4U_ATI1:
-                    res.ctx_format = Render::Format::BC4_UNORM;
+                    res = Render::Format::BC4_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::BC5U:
-                    res.ctx_format = Render::Format::BC5_UNORM;
+                    res = Render::Format::BC5_UNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::BC5S:
-                    res.ctx_format = Render::Format::BC5_SNORM;
+                    res = Render::Format::BC5_SNORM_BLOCK;
                     break;
                 case PixelFormatFourCC::R16G16B16A16_U:
-                    res.ctx_format = Render::Format::R16G16B16A16_UNORM;
+                    res = Render::Format::R16G16B16A16_UNORM;
                     break;
                 case PixelFormatFourCC::R16G16B16A16_S:
-                    res.ctx_format = Render::Format::R16G16B16A16_SNORM;
+                    res = Render::Format::R16G16B16A16_SNORM;
                     break;
                 case PixelFormatFourCC::R16_F:
-                    res.ctx_format = Render::Format::R16_FLOAT;
+                    res = Render::Format::R16_SFLOAT;
                     break;
                 case PixelFormatFourCC::R16G16_F:
-                    res.ctx_format = Render::Format::R16G16_FLOAT;
+                    res = Render::Format::R16G16_SFLOAT;
                     break;
                 case PixelFormatFourCC::R16G16B16A16_F:
-                    res.ctx_format = Render::Format::R16G16B16A16_FLOAT;
+                    res = Render::Format::R16G16B16A16_SFLOAT;
                     break;
                 case PixelFormatFourCC::R32_F:
-                    res.ctx_format = Render::Format::R32_FLOAT;
+                    res = Render::Format::R32_SFLOAT;
                     break;
                 case PixelFormatFourCC::R32G32_F:
-                    res.ctx_format = Render::Format::R32G32_FLOAT;
+                    res = Render::Format::R32G32_SFLOAT;
                     break;
                 case PixelFormatFourCC::R32G32B32A32_F:
-                    res.ctx_format = Render::Format::R32G32B32A32_FLOAT;
+                    res = Render::Format::R32G32B32A32_SFLOAT;
                     break;
                 case PixelFormatFourCC::R8G8_B8G8_U:
                 case PixelFormatFourCC::G8R8_G8B8_U:
@@ -405,19 +399,13 @@ namespace DDS
                 case PixelFormatFourCC::YUY2:
                 case PixelFormatFourCC::CxV8U8:
                 default:
-                {
-                    auto four_cc = ToDwordFourCC(fmt.four_cc);
-                    return std::runtime_error(std::format(
-                        "FourCC : {} -> {} is not supported in graphics context",
-                        std::string_view(reinterpret_cast<const char*>(four_cc.data()),
-                                         four_cc.size()),
-                        static_cast<std::underlying_type_t<PixelFormatFourCC>>(fmt.four_cc)));
-                }
-                break;
+                    break;
             }
         }
         else
         {
+#error HERE!
+
             //we can parse only R, RG, RGB AND RGBA-like formats due to dwFlags
             //YUV and LUMINANCE - are unsupported
 
@@ -678,6 +666,8 @@ namespace DDS
 
     hrs::expected<ResolveResult, std::runtime_error> Resolve(const DDSResult& result)
     {
+#error CORRECT HANDLING FOR CUBEMAPS AND THEIR ARRAY LAYER COUNT!
+
         ResolveResult resolve;
 
         resolve.image_info.extent.width = result.header->width;

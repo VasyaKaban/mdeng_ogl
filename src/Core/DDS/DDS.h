@@ -320,21 +320,28 @@ namespace DDS
 
     constexpr inline std::size_t DDS_DATA_ALIGNMENT = alignof(DDS_DWORD);
 
-    struct DDSResult
+    struct ParseResult
     {
         const Header* header;
         const DXT10Header* dxt10_header;
         std::span<const std::uint8_t> image_data;
     };
 
-    hrs::expected<DDSResult, std::runtime_error> Parse(std::span<const std::uint8_t> data);
+    hrs::expected<ParseResult, std::runtime_error> Parse(std::span<const std::uint8_t> data);
 
-    struct ResolveResult
+    struct ImageResult
     {
-        Render::ImageInfo image_info;
-        bool is_cubemap;
+        Render::ImageType image_type;
+        Render::Format format;
+        Render::Extent3D extent;
+        std::uint32_t mip_levels;
+        std::uint32_t array_layers;
+        Render::SampleCount samples;
+
+        std::variant<DXGIFormat, PixelFormatFourCC> original_format;
+
         std::vector<Render::MemoryImageCopyRegion> regions;
     };
 
-    hrs::expected<ResolveResult, std::runtime_error> Resolve(const DDSResult& result);
+    hrs::expected<ImageResult, std::runtime_error> Resolve(const ParseResult& result);
 };

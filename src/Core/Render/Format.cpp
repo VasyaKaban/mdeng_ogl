@@ -495,7 +495,8 @@ namespace Render
             case Format::D24_UNORM_S8_UINT:
                 alignment = 4;
                 break;
-            case Format::D32_SFLOAT_S8_UINT:
+            case Format::
+                D32_SFLOAT_S8_UINT: //we do not use depth-stencil formats as transferable -> so do not care + check FLOAT_32_UNSIGNED_INT_24_8_REV
                 alignment = 5;
                 break;
             case Format::R16G16B16_UNORM:
