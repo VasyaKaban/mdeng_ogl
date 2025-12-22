@@ -11,6 +11,10 @@ OpenGLRenderBackend
 	    ${SOURCES}
 )
 
+if(NOT WIN32)
+message(FATAL_ERROR "Not implemented yet...")
+endif()
+
 target_include_directories(OpenGLRenderBackend PUBLIC "../")
 
 find_package(OpenGL REQUIRED)
