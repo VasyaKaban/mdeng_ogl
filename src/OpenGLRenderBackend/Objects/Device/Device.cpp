@@ -55,17 +55,7 @@ namespace OpenGL
         if(impl_instance->GetEnabledFeatures().validation_layer ||
            impl_instance->GetEnabledFeatures().debug_messenger)
         {
-            loader.Enable(GL_DEBUG_OUTPUT);
-#ifndef NDEBUG
-            loader.Enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-#endif
-            loader.DebugMessageControl(GL_DONT_CARE,
-                                       GL_DONT_CARE,
-                                       GL_DONT_CARE,
-                                       0,
-                                       nullptr,
-                                       GL_TRUE); //drop all filters
-
+            EnableDebugMessenger(loader);
             SetDebugMessenger(impl_instance->GetDebugMessengerInfo());
         }
     }
@@ -226,32 +216,6 @@ namespace OpenGL
     {
         surface->MakeCurrent();
 
-        auto filter_types = DebugMessengerTypeFlagsToNativeInverted(info.types);
-        auto filter_severities = DebugMessengerSeverityFlagsToNativeInverted(info.severities);
-
-        loader.DebugMessageControl(GL_DONT_CARE,
-                                   GL_DONT_CARE,
-                                   GL_DONT_CARE,
-                                   0,
-                                   nullptr,
-                                   GL_TRUE); //drop all filters
-
-        for(std::size_t i = 0; i < filter_types.size; i++)
-            loader.DebugMessageControl(GL_DONT_CARE,
-                                       filter_types.data[i],
-                                       GL_DONT_CARE,
-                                       0,
-                                       nullptr,
-                                       GL_FALSE);
-
-        for(std::size_t i = 0; i < filter_severities.size; i++)
-            loader.DebugMessageControl(GL_DONT_CARE,
-                                       GL_DONT_CARE,
-                                       filter_severities.data[i],
-                                       0,
-                                       nullptr,
-                                       GL_FALSE);
-
-        loader.DebugMessageCallback(debug_messenger_callback, &info.callback);
+        OpenGL::SetDebugMessenger(loader, info);
     }
 };

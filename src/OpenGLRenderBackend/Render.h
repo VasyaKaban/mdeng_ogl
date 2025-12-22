@@ -36,6 +36,59 @@ namespace OpenGL
 
     constexpr inline std::uint32_t SWAPCHAIN_IMAGE_COUNT = 1;
 
+    /*
+    1. DeviceLocal
+    2. DeviceLocal | HostVisible
+    3. DeviceLocal | HostVisible | HostCoherent
+    4. DeviceLocal | HostVisible | HostCached
+    5. DeviceLocal | HostVisible | HostCoherent | HostCached
+
+    6. HostVisible
+    7. HostVisible | HostCoherent
+    8. HostVisible | HostCached
+    9. HostVisible | HostCoherent | HostCached
+    */
+
+    constexpr static Render::MemoryType AVAILABLE_MEMORY_TYPES[] = {
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCached},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::DeviceLocal |
+             Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent |
+             Render::MemoryTypePropertyFlagBits::HostCached},
+
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCached},
+        {Render::MemoryHeapFlagBits::DeviceLocalHeap,
+         Render::MemoryTypePropertyFlagBits::HostVisible |
+             Render::MemoryTypePropertyFlagBits::HostCoherent |
+             Render::MemoryTypePropertyFlagBits::HostCached}};
+
+    struct SurfaceConnectInfo
+    {
+        PhysicalDevice* physical_device;
+        std::uint32_t config_index;
+        bool robust_buffer_access_enabled;
+    };
+
     GLenum ComapreOpToNative(Render::CompareOp op);
     GLenum SampleCountToNative(Render::SampleCount samples);
     GLbitfield DecodeBufferStorageFlags(Render::MemoryTypePropertyFlags memory_flags,
@@ -156,4 +209,18 @@ namespace OpenGL
                                              GLsizei length,
                                              const GLchar* message,
                                              const void* user_param);
+
+    Render::PhysicalDeviceProperties GetPhysicalDeviceProperties(GladGLContext& loader,
+                                                                 bool robust_buffer_access);
+
+    std::optional<Render::BufferFormatProperties>
+    GetPhysicaldeviceBufferFormatProperties(const GladGLContext& loader,
+                                            const Render::BufferFormatInfo& info);
+
+    std::optional<Render::ImageFormatProperties>
+    GetPhysicalDeviceImageFormatProperties(const GladGLContext& loader,
+                                           const Render::ImageFormatInfo& info);
+
+    void EnableDebugMessenger(const GladGLContext& loader);
+    void SetDebugMessenger(const GladGLContext& loader, const Render::DebugMessengerInfo& info);
 };

@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include "glad/wgl.h"
 #include "../PhysicalDevice/PhysicalDevice.h"
-#include "../Instance/Instance.h"
+#include "../../../Objects/Instance/Instance.h"
 
 namespace OpenGL
 {
