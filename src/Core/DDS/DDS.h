@@ -10,10 +10,40 @@
 
 namespace DDS
 {
+    enum class Result
+    {
+        BadData,
+        UnsupportedPixelFormat,
+        UnsupportedFourCC,
+        UnsupportedDXGIFormat
+    };
+
+    class Exception : public std::exception
+    {
+    public:
+        Exception(Result _result, std::string_view _message);
+        Exception(Result _result, std::string&& _message) noexcept;
+
+        Exception(const Exception&) = default;
+        Exception(Exception&&) = default;
+        Exception& operator=(const Exception&) = default;
+        Exception& operator=(Exception&&) = default;
+
+        virtual ~Exception() override = default;
+
+        virtual const char* what() const noexcept override;
+
+        Result GetResult() const noexcept;
+        const std::string& GetMessage() const noexcept;
+    private:
+        Result result;
+        std::string message;
+    };
+
     using DDS_DWORD = std::uint32_t;
 
     constexpr DDS_DWORD
-    MafeFourCC(std::uint8_t a, std::uint8_t b, std::uint8_t c, std::uint8_t d) noexcept
+    MakeFourCC(std::uint8_t a, std::uint8_t b, std::uint8_t c, std::uint8_t d) noexcept
     {
         return static_cast<DDS_DWORD>(static_cast<std::uint8_t>(a)) << 0 |
                static_cast<DDS_DWORD>(static_cast<std::uint8_t>(b)) << 8 |
@@ -21,7 +51,7 @@ namespace DDS
                static_cast<DDS_DWORD>(static_cast<std::uint8_t>(d)) << 24;
     }
 
-    constexpr std::array<std::uint8_t, 4> ToDwordFourCC(DDS_DWORD value) noexcept
+    constexpr std::array<std::uint8_t, 4> SparseFourCC(DDS_DWORD value) noexcept
     {
         return std::array<std::uint8_t, 4>{static_cast<std::uint8_t>(value),
                                            static_cast<std::uint8_t>(value >> 8),
@@ -57,21 +87,21 @@ namespace DDS
 
     enum PixelFormatFourCC : DDS_DWORD
     {
-        DXT1 = MafeFourCC('D', 'X', 'T', '1'),
-        DXT2 = MafeFourCC('D', 'X', 'T', '2'),
-        DXT3 = MafeFourCC('D', 'X', 'T', '3'),
-        DXT4 = MafeFourCC('D', 'X', 'T', '4'),
-        DXT5 = MafeFourCC('D', 'X', 'T', '5'),
-        DX10 = MafeFourCC('D', 'X', '1', '0'),
+        DXT1 = MakeFourCC('D', 'X', 'T', '1'),
+        DXT2 = MakeFourCC('D', 'X', 'T', '2'),
+        DXT3 = MakeFourCC('D', 'X', 'T', '3'),
+        DXT4 = MakeFourCC('D', 'X', 'T', '4'),
+        DXT5 = MakeFourCC('D', 'X', 'T', '5'),
+        DX10 = MakeFourCC('D', 'X', '1', '0'),
 
-        BC4U = MafeFourCC('B', 'C', '4', 'U'),
-        BC4S = MafeFourCC('B', 'C', '4', 'S'),
-        BC4U_ATI1 = MafeFourCC('A', 'T', 'I', '1'),
-        BC5U = MafeFourCC('A', 'T', 'I', '2'),
-        BC5S = MafeFourCC('B', 'C', '5', 'S'),
+        BC4U = MakeFourCC('B', 'C', '4', 'U'),
+        BC4S = MakeFourCC('B', 'C', '4', 'S'),
+        BC4U_ATI1 = MakeFourCC('A', 'T', 'I', '1'),
+        BC5U = MakeFourCC('A', 'T', 'I', '2'),
+        BC5S = MakeFourCC('B', 'C', '5', 'S'),
 
-        R8G8_B8G8_U = MafeFourCC('R', 'G', 'B', 'G'),
-        G8R8_G8B8_U = MafeFourCC('G', 'R', 'G', 'B'),
+        R8G8_B8G8_U = MakeFourCC('R', 'G', 'B', 'G'),
+        G8R8_G8B8_U = MakeFourCC('G', 'R', 'G', 'B'),
 
         R16G16B16A16_U = 36,
         R16G16B16A16_S = 110,
@@ -82,8 +112,8 @@ namespace DDS
         R32G32_F = 115,
         R32G32B32A32_F = 116,
 
-        UYVY = MafeFourCC('U', 'Y', 'V', 'Y'),
-        YUY2 = MafeFourCC('Y', 'U', 'Y', '2'),
+        UYVY = MakeFourCC('U', 'Y', 'V', 'Y'),
+        YUY2 = MakeFourCC('Y', 'U', 'Y', '2'),
         CxV8U8 = 117
     };
 
@@ -134,7 +164,7 @@ namespace DDS
 
     using HeaderCaps4Flags = std::underlying_type_t<HeaderCaps4FlagBits>;
 
-    constexpr inline DDS_DWORD DDS_MAGIC_NUMBER = MafeFourCC('D', 'D', 'S', ' ');
+    constexpr inline DDS_DWORD DDS_MAGIC_NUMBER = MakeFourCC('D', 'D', 'S', ' ');
 
     struct Header
     {
@@ -327,7 +357,7 @@ namespace DDS
         std::span<const std::uint8_t> image_data;
     };
 
-    hrs::expected<ParseResult, std::runtime_error> Parse(std::span<const std::uint8_t> data);
+    hrs::expected<ParseResult, Exception> Parse(std::span<const std::uint8_t> data);
 
     struct ImageResult
     {
@@ -336,12 +366,11 @@ namespace DDS
         Render::Extent3D extent;
         std::uint32_t mip_levels;
         std::uint32_t array_layers;
-        Render::SampleCount samples;
 
         std::variant<DXGIFormat, PixelFormatFourCC> original_format;
 
         std::vector<Render::MemoryImageCopyRegion> regions;
     };
 
-    hrs::expected<ImageResult, std::runtime_error> Resolve(const ParseResult& result);
+    hrs::expected<ImageResult, Exception> Resolve(const ParseResult& result);
 };

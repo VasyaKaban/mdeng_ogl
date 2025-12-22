@@ -1,4 +1,5 @@
 #include "DDS.h"
+#include "Core/Render/Format.h"
 #include <stdexcept>
 #include <format>
 #include <optional>
@@ -332,9 +333,11 @@ namespace DDS
         return res;
     }
 
-    static std::optional<Render::Format> resolve_format(const PixelFormat& fmt)
+    static hrs::expected<std::pair<Render::Format, std::variant<DXGIFormat, PixelFormatFourCC>>,
+                         Result>
+    resolve_format(const PixelFormat& fmt)
     {
-        Render::Format res;
+        hrs::expected<std::pair<Render::Format, DXGIFormat>, Result> res;
         if(fmt.flags & PixelFormatFlagBits::DDPF_FOURCC)
         {
             switch(fmt.four_cc)
@@ -399,6 +402,7 @@ namespace DDS
                 case PixelFormatFourCC::YUY2:
                 case PixelFormatFourCC::CxV8U8:
                 default:
+                    res = Result::UnsupportedFourCC;
                     break;
             }
         }
@@ -620,20 +624,46 @@ namespace DDS
     //static void check_dds_dxt10_header(const DXT10Header* header)
     //{}
 
-    hrs::expected<DDSResult, std::runtime_error> Parse(std::span<const std::uint8_t> data)
+    Exception::Exception(Result _result, std::string_view _message)
+        : result(_result),
+          message(_message)
+    {}
+
+    Exception::Exception(Result _result, std::string&& _message) noexcept
+        : result(_result),
+          message(std::move(_message))
+    {}
+
+    const char* Exception::what() const noexcept
+    {
+        return message.c_str();
+    }
+
+    Result Exception::GetResult() const noexcept
+    {
+        return result;
+    }
+
+    const std::string& Exception::GetMessage() const noexcept
+    {
+        return message;
+    }
+
+    hrs::expected<ParseResult, Exception> Parse(std::span<const std::uint8_t> data)
     {
         constexpr std::size_t MIN_DDS_SIZE = sizeof(DDS_MAGIC_NUMBER) + sizeof(Header);
 
         if(data.size() < MIN_DDS_SIZE)
-            return std::runtime_error(
+            return Exception(
+                Result::BadData,
                 std::format("Size of data must be greater than or equal to MIN_DDS_SIZE({})",
                             MIN_DDS_SIZE));
 
-        if(DDS_MAGIC_NUMBER != MafeFourCC(data[0], data[1], data[2], data[3]))
-            return std::runtime_error(
-                std::format("Bad magic number. Must be: {}", DDS_MAGIC_NUMBER));
+        if(DDS_MAGIC_NUMBER != MakeFourCC(data[0], data[1], data[2], data[3]))
+            return Exception(Result::BadData,
+                             std::format("Bad magic number. Must be: {}", DDS_MAGIC_NUMBER));
 
-        DDSResult result = {};
+        ParseResult result = {};
         result.header = reinterpret_cast<const Header*>(data.data() + sizeof(DDS_MAGIC_NUMBER));
 
         //check_dds_header(result.header);
@@ -645,9 +675,11 @@ namespace DDS
                 sizeof(DDS_MAGIC_NUMBER) + sizeof(Header) + sizeof(DXT10Header);
 
             if(data.size() < MIN_DDS_SIZE_DXT10)
-                return std::runtime_error(std::format(
-                    "Size of data must be greater than or equal to MIN_DDS_SIZE_DXT10({})",
-                    MIN_DDS_SIZE_DXT10));
+                return Exception(
+                    Result::BadData,
+                    (std::format(
+                        "Size of data must be greater than or equal to MIN_DDS_SIZE_DXT10({})",
+                        MIN_DDS_SIZE_DXT10)));
 
             result.dxt10_header = reinterpret_cast<const DXT10Header*>(
                 data.data() + sizeof(DDS_MAGIC_NUMBER) + sizeof(Header));
@@ -664,79 +696,109 @@ namespace DDS
         return result;
     }
 
-    hrs::expected<ResolveResult, std::runtime_error> Resolve(const DDSResult& result)
+    hrs::expected<ImageResult, Exception> Resolve(const ParseResult& result)
     {
-#error CORRECT HANDLING FOR CUBEMAPS AND THEIR ARRAY LAYER COUNT!
+        //#error CORRECT HANDLING FOR CUBEMAPS AND THEIR ARRAY LAYER COUNT!
 
-        ResolveResult resolve;
+        ImageResult resolve;
 
-        resolve.image_info.extent.width = result.header->width;
-        resolve.image_info.extent.height = result.header->height;
-        resolve.image_info.extent.depth = 1;
-        resolve.image_info.image_type = Render::ImageType::Image2D;
+        resolve.extent.width = result.header->width;
+        resolve.extent.height = result.header->height;
+        resolve.extent.depth = 1;
+        resolve.image_type = Render::ImageType::Image2D;
 
         if(result.header->flags & HeaderFlagBits::DDSD_DEPTH ||
            result.header->caps3 & HeaderCaps2FlagBits::DDSCAPS2_VOLUME ||
            (result.dxt10_header &&
             result.dxt10_header->resource_dimension == ResourceDimension::TEXTURE3D))
         {
-            resolve.image_info.image_type = Render::ImageType::Image3D;
-            resolve.image_info.extent.depth = result.header->depth;
+            resolve.image_type = Render::ImageType::Image3D;
+            resolve.extent.depth = result.header->depth;
         }
         else if(result.dxt10_header)
         {
             if(result.dxt10_header->resource_dimension == ResourceDimension::TEXTURE1D)
-                resolve.image_info.image_type = Render::ImageType::Image1D;
+                resolve.image_type = Render::ImageType::Image1D;
         }
 
         if((result.header->flags & HeaderFlagBits::DDSD_MIPMAPCOUNT ||
             result.header->caps1 & HeaderCaps1FlagBits::DDSCAPS_MIPMAP) &&
            result.header->caps1 & HeaderCaps1FlagBits::DDSCAPS_COMPLEX)
-            resolve.image_info.mip_levels = result.header->mip_map_count;
+            resolve.mip_levels = result.header->mip_map_count;
         else
-            resolve.image_info.mip_levels = 1;
+            resolve.mip_levels = 1;
 
-        resolve.image_info.samples = Render::SampleCount::SampleCount_1;
-        resolve.image_info.array_layers = 1;
-
-        resolve.is_cubemap = false;
+        resolve.array_layers = 1;
 
         if((result.header->caps2 & HeaderCaps2FlagBits::DDSCAPS2_CUBEMAP &&
             result.header->caps1 & HeaderCaps1FlagBits::DDSCAPS_COMPLEX) ||
            (result.dxt10_header && result.dxt10_header->misc_flags1 &
                                        DXT10HeaderMiscFlag1Bits::DDS_RESOURCE_MISC_TEXTURECUBE))
         {
-            resolve.is_cubemap = true;
-            resolve.image_info.array_layers = 6;
+            resolve.image_type = Render::ImageType::CubeMap;
+            resolve.array_layers = 6;
         }
 
         if(result.dxt10_header)
-            resolve.image_info.array_layers *= result.dxt10_header->array_size;
+            resolve.array_layers *= result.dxt10_header->array_size;
 
         //format
         //array layers
 
-        auto resolved_format_exp =
-            (result.dxt10_header ? resolve_format(result.dxt10_header->format) :
-                                   resolve_format(result.header->pixel_format));
+        if(result.dxt10_header)
+        {
+            auto format_opt = resolve_format(result.dxt10_header->format);
+            if(!format_opt.has_value())
+                return Exception(Result::UnsupportedDXGIFormat,
+                                 std::format("Unsupported DXGI format: {}",
+                                             static_cast<DDS_DWORD>(result.dxt10_header->format)));
 
-        if(!resolved_format_exp)
-            return resolved_format_exp.error();
+            resolve.format = format_opt.value();
+            resolve.original_format = result.dxt10_header->format;
+        }
+        else
+        {
+            auto format_exp = resolve_format(result.header->pixel_format);
+            if(!format_exp.has_value())
+            {
+                std::string error_message;
+                switch(format_exp.error())
+                {
+                    case Result::UnsupportedFourCC:
+                    {
+                        auto sparsed = SparseFourCC(result.header->pixel_format.four_cc);
+                        error_message = std::format("Unsupported FourCC: {}{}{}{}",
+                                                    +sparsed[0],
+                                                    +sparsed[1],
+                                                    +sparsed[2],
+                                                    +sparsed[3]);
+                    }
+                    break;
+                    case Result::UnsupportedPixelFormat:
+                        error_message = "Unsupported pixel format";
+                        break;
+                    default:
+                        error_message = "Unknown error";
+                        break;
+                }
 
-        auto& resolved_format = *resolved_format_exp;
+                return Exception(format_exp.error(), std::move(error_message));
+            }
 
-        resolve.regions.reserve(resolve.image_info.array_layers * resolve.image_info.mip_levels);
+            resolve.format = format_exp->first;
+            resolve.original_format = format_exp->second;
+        }
 
-        resolve.image_info.format = resolved_format.ctx_format;
+        resolve.regions.reserve(resolve.array_layers * resolve.mip_levels);
 
-        bool is_compressed = IsFormatCompressed(resolve.image_info.format);
+        bool is_compressed = Render::IsFormatCompressed(resolve.format);
 
         const std::uint8_t* sub_image_data_ptr = result.image_data.data();
-        for(std::size_t layer = 0; layer < resolve.image_info.array_layers; layer++)
+        for(std::size_t layer = 0; layer < resolve.array_layers; layer++)
         {
-            Render::Extent3D extent = resolve.image_info.extent;
+            Render::Extent3D extent = resolve.extent;
 
-            for(std::size_t mipmap = 0; mipmap < resolve.image_info.mip_levels; mipmap++)
+            for(std::size_t mipmap = 0; mipmap < resolve.mip_levels; mipmap++)
             {
                 if(mipmap != 0)
                 {
@@ -748,7 +810,7 @@ namespace DDS
                 //we do not have R8G8_B8G8, G8R8_G8B8, legacy UYVY-packed, and legacy YUY2-packed formats
                 //so we do not care about them
                 DDS_DWORD sub_image_size;
-                if(IsFormatCompressed(resolve.image_info.format))
+                if(is_compressed)
                 {
                     //sub_image_size = std::max<DDS_DWORD>(1, ((extent.width + 3) / 4)) *
                     //                 extent.height * extent.depth *
@@ -757,11 +819,11 @@ namespace DDS
                     sub_image_size = std::max<DDS_DWORD>(1, ((extent.width + 3) / 4)) *
                                      std::max<DDS_DWORD>(1, ((extent.height + 3) / 4)) *
                                      std::max<DDS_DWORD>(1, ((extent.depth + 3) / 4)) *
-                                     GetFormatBlockSize(resolve.image_info.format);
+                                     GetFormatBlockSize(resolve.format);
                 }
                 else
                 {
-                    DDS_DWORD bits_per_pixel = GetFormatBitsPerPixel(resolve.image_info.format);
+                    DDS_DWORD bits_per_pixel = GetFormatBitsPerPixel(resolve.format);
 
                     sub_image_size =
                         ((extent.width * bits_per_pixel + 7) / 8) * extent.height * extent.depth;
@@ -782,6 +844,9 @@ namespace DDS
                 sub_image_data_ptr += sub_image_size;
             }
         }
+
+        if(resolve.image_type == Render::ImageType::CubeMap)
+            resolve.array_layers /= 6;
 
         return resolve;
     }
