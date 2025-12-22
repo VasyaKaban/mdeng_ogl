@@ -70,8 +70,6 @@ namespace OpenGL
             dst_image->GetTransferImageTypeFormatPair();
 
         parent->GetLoader().BindBuffer(GL_PIXEL_UNPACK_BUFFER, src_buffer->GetHandle());
-        parent->GetLoader().PixelStorei(GL_UNPACK_ALIGNMENT,
-                                        GetPackUnpackTexelAlignemnt(image_format));
 
         for(const auto& reg: regions)
         {
@@ -285,8 +283,6 @@ namespace OpenGL
         bool is_compressed = IsFormatCompressed(image_format);
 
         parent->GetLoader().BindBuffer(GL_PIXEL_PACK_BUFFER, dst_buffer->GetHandle());
-        parent->GetLoader().PixelStorei(GL_PACK_ALIGNMENT,
-                                        GetPackUnpackTexelAlignemnt(image_format));
 
         for(const auto& reg: regions)
         {

@@ -136,6 +136,7 @@ namespace Render
     };
 
     //no aspect mask -> only copy color images!
+    //offsets must have 4-byte alignemnt
     struct BufferImageCopyRegion
     {
         std::uint64_t buffer_offset;

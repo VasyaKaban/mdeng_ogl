@@ -1,6 +1,4 @@
 #include "Render.h"
-#include "Core/Render/Format.h"
-#include "Core/Utils/Binary.hpp"
 #include <stdexcept>
 
 namespace OpenGL
@@ -2137,15 +2135,6 @@ namespace OpenGL
         }
 
         return native;
-    }
-
-    GLuint GetPackUnpackTexelAlignemnt(Render::Format format) noexcept
-    {
-        std::uint16_t format_texel_alignment = GetFormatTexelAlignment(format);
-        if(!Core::IsPowerOf2(format_texel_alignment))
-            return 1;
-
-        return std::min<std::uint16_t>(format_texel_alignment, 8);
     }
 
     void GLAPIENTRY debug_messenger_callback(GLenum source,
