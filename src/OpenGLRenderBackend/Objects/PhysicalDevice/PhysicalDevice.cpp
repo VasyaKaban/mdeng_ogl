@@ -584,21 +584,35 @@ namespace OpenGL
                                                 .supported_present_modes = supported_present_modes,
                                                 .supported_configs = std::move(surface_configs)};
 
-                const int dummy_profile_attributes[] = {
+                bool debug_messenger_enabled =
+                    window_params_exp->value()
+                        .input_instance->GetEnabledFeatures()
+                        .validation_layer ||
+                    window_params_exp->value().input_instance->GetEnabledFeatures().debug_messenger;
+
+                std::vector<int> profile_attributes = {
                     WGL_CONTEXT_MAJOR_VERSION_ARB,
                     4,
                     WGL_CONTEXT_MINOR_VERSION_ARB,
                     5,
                     WGL_CONTEXT_FLAGS_ARB,
-                    WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+                    WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB |
+                        (debug_messenger_enabled ? WGL_CONTEXT_DEBUG_BIT_ARB : 0),
                     WGL_CONTEXT_PROFILE_MASK_ARB,
-                    WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-                    (GLAD_WGL_ARB_context_flush_control ? WGL_CONTEXT_RELEASE_BEHAVIOR_ARB : 0),
-                    (GLAD_WGL_ARB_context_flush_control ? WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB :
-                                                          0),
-                    0};
+                    WGL_CONTEXT_CORE_PROFILE_BIT_ARB};
 
-                _glrc = glad_wglCreateContextAttribsARB(_dc, nullptr, dummy_profile_attributes);
+                if(!debug_messenger_enabled && GLAD_WGL_ARB_create_context_no_error)
+                    profile_attributes.push_back(WGL_CONTEXT_OPENGL_NO_ERROR_ARB);
+
+                if(GLAD_WGL_ARB_context_flush_control)
+                {
+                    profile_attributes.push_back(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB);
+                    profile_attributes.push_back(WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
+                }
+
+                profile_attributes.push_back(0);
+
+                _glrc = glad_wglCreateContextAttribsARB(_dc, nullptr, profile_attributes.data());
                 if(_glrc == nullptr)
                 {
                     *window_params_exp = hrs::winapi_get_last_error();
@@ -616,10 +630,7 @@ namespace OpenGL
                     return -1;
                 }
 
-                if(window_params_exp->value()
-                       .input_instance->GetEnabledFeatures()
-                       .validation_layer ||
-                   window_params_exp->value().input_instance->GetEnabledFeatures().debug_messenger)
+                if(debug_messenger_enabled)
                 {
                     const auto& info =
                         window_params_exp->value().input_instance->GetDebugMessengerInfo();

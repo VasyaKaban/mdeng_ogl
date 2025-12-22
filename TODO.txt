@@ -48,4 +48,3 @@ MakeCurrent behaviour:
     delete device -> make physical device current
 
 move hrs to Core
-WGL_CONTEXT_DEBUG_BIT_ARB!!!

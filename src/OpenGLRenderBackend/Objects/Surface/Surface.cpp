@@ -52,41 +52,34 @@ namespace OpenGL
         if(SetPixelFormat(win32_info.hdc, info.config_index, &pfd) == FALSE)
             throw hrs::winapi_get_last_error();
 
-        int start_attrib_index = 8;
-        int profile_attributes[] = {
-            WGL_CONTEXT_MAJOR_VERSION_ARB, //0
-            4, //1
-            WGL_CONTEXT_MINOR_VERSION_ARB, //2
-            5, //3
-            WGL_CONTEXT_FLAGS_ARB, //4
-            WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB, //5
-            WGL_CONTEXT_PROFILE_MASK_ARB, //6
-            WGL_CONTEXT_CORE_PROFILE_BIT_ARB, //7
-            /*WGL_CONTEXT_OPENGL_NO_ERROR_ARB*/
-            0, //8 -> "WGL_ARB_create_context_no_error"#enable when WGL_CONTEXT_DEBUG_BIT_ARB(validation_layer) is not set
-            0, //WGL_CONTEXT_RELEASE_BEHAVIOR_ARB
-            0, //WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB
-            0 //9
-        };
-
-        //"WGL_ARB_create_context_no_error"#enable when WGL_CONTEXT_DEBUG_BIT_ARB(validation_layer) is not set
-        //"WGL_ARB_create_context_robustness"#enable when robustBufferAccess is enabled(+ add none notification)
-
         Instance* impl_instace = static_cast<Instance*>(info.physical_device->GetParent());
-        if(!(impl_instace->GetEnabledFeatures().debug_messenger ||
-             impl_instace->GetEnabledFeatures().validation_layer))
-            profile_attributes[start_attrib_index++] = WGL_CONTEXT_OPENGL_NO_ERROR_ARB;
+        bool debug_messenger_enabled = impl_instace->GetEnabledFeatures().validation_layer ||
+                                       impl_instace->GetEnabledFeatures().debug_messenger;
+
+        std::vector<int> profile_attributes = {
+            WGL_CONTEXT_MAJOR_VERSION_ARB,
+            4,
+            WGL_CONTEXT_MINOR_VERSION_ARB,
+            5,
+            WGL_CONTEXT_FLAGS_ARB,
+            WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB |
+                (debug_messenger_enabled ? WGL_CONTEXT_DEBUG_BIT_ARB : 0) |
+                (info.robust_buffer_access_enabled ? WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB : 0),
+            WGL_CONTEXT_PROFILE_MASK_ARB,
+            WGL_CONTEXT_CORE_PROFILE_BIT_ARB};
+
+        if(!debug_messenger_enabled && GLAD_WGL_ARB_create_context_no_error)
+            profile_attributes.push_back(WGL_CONTEXT_OPENGL_NO_ERROR_ARB);
 
         if(GLAD_WGL_ARB_context_flush_control)
         {
-            profile_attributes[start_attrib_index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_ARB;
-            profile_attributes[start_attrib_index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB;
+            profile_attributes.push_back(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB);
+            profile_attributes.push_back(WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
         }
 
-        if(info.robust_buffer_access_enabled)
-            profile_attributes[5] |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
+        profile_attributes.push_back(0);
 
-        glrc = glad_wglCreateContextAttribsARB(win32_info.hdc, nullptr, profile_attributes);
+        glrc = glad_wglCreateContextAttribsARB(win32_info.hdc, nullptr, profile_attributes.data());
         if(!glrc)
             throw hrs::winapi_get_last_error();
 
