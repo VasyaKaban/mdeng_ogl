@@ -613,12 +613,11 @@ namespace Render
         FormatFeatureDepthStencilAttachmentBit =
             1 << 9, //VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00'00'02'00,
         FormatFeatureSampledImageFilterLinearBit =
-            1 << 10 //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT = 0x00'00'10'00,
+            1 << 10, //VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT = 0x00'00'10'00,
 
         // Provided by VK_VERSION_1_1
-        //VK_FORMAT_FEATURE_TRANSFER_SRC_BIT = 0x00'00'40'00,
-        // Provided by VK_VERSION_1_1
-        //VK_FORMAT_FEATURE_TRANSFER_DST_BIT = 0x00'00'80'00,
+        FormatFeatureTransferSrcBit = 1 << 11, //VK_FORMAT_FEATURE_TRANSFER_SRC_BIT = 0x00'00'40'00,
+        FormatFeatureTransferDstBit = 1 << 12 //VK_FORMAT_FEATURE_TRANSFER_DST_BIT = 0x00'00'80'00,
     };
 
     using FormatFeatureFlags = std::underlying_type_t<FormatFeatureFlagBits>;

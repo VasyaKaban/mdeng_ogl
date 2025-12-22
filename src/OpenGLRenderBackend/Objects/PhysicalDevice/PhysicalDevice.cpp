@@ -950,6 +950,8 @@ namespace OpenGL
         //FormatFeatureColorAttachmentBlendBit; -> query
         //FormatFeatureDepthStencilAttachmentBit; -> query
         //FormatFeaturesampledImageFilterLinearBit; -> query
+        //FormatFeatureTransferSrcBit; -> decode
+        //FormatFeatureTransferDstBit; -> decode
 
         GLint texture_view_support;
         loader.GetInternalformativ(inner_type,
@@ -1055,6 +1057,10 @@ namespace OpenGL
             loader.GetInternalformativ(inner_type, native_format, GL_FILTER, 1, &linear_filter);
             if(linear_filter == GL_TRUE)
                 features |= Render::FormatFeatureSampledImageFilterLinearBit;
+
+            if(DecodeTransferTypeFormatPair(info.format).has_value())
+                features |=
+                    Render::FormatFeatureTransferSrcBit | Render::FormatFeatureTransferDstBit;
         }
 
         return Render::ImageFormatProperties{
