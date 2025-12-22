@@ -52,6 +52,7 @@ namespace OpenGL
         if(SetPixelFormat(win32_info.hdc, info.config_index, &pfd) == FALSE)
             throw hrs::winapi_get_last_error();
 
+        int start_attrib_index = 8;
         int profile_attributes[] = {
             WGL_CONTEXT_MAJOR_VERSION_ARB, //0
             4, //1
@@ -63,6 +64,8 @@ namespace OpenGL
             WGL_CONTEXT_CORE_PROFILE_BIT_ARB, //7
             /*WGL_CONTEXT_OPENGL_NO_ERROR_ARB*/
             0, //8 -> "WGL_ARB_create_context_no_error"#enable when WGL_CONTEXT_DEBUG_BIT_ARB(validation_layer) is not set
+            0, //WGL_CONTEXT_RELEASE_BEHAVIOR_ARB
+            0, //WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB
             0 //9
         };
 
@@ -72,7 +75,13 @@ namespace OpenGL
         Instance* impl_instace = static_cast<Instance*>(info.physical_device->GetParent());
         if(!(impl_instace->GetEnabledFeatures().debug_messenger ||
              impl_instace->GetEnabledFeatures().validation_layer))
-            profile_attributes[8] = WGL_CONTEXT_OPENGL_NO_ERROR_ARB;
+            profile_attributes[start_attrib_index++] = WGL_CONTEXT_OPENGL_NO_ERROR_ARB;
+
+        if(GLAD_WGL_ARB_context_flush_control)
+        {
+            profile_attributes[start_attrib_index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_ARB;
+            profile_attributes[start_attrib_index++] = WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB;
+        }
 
         if(info.robust_buffer_access_enabled)
             profile_attributes[5] |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;

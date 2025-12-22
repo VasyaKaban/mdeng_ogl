@@ -37,7 +37,7 @@ remove multi-jump in pipeline state(maybe add caching with pointers to functions
 
 Change plain pointer to unique_ptr due to the exceptions in constructor(see Device ctor!)
 Add enabled features check for every object like aniso in sampler and in pipeline state
-Make physical device current on device delete notify + think abound make current and reset previous current context + maybe use KHR_context_flush_control to disable queue flush on context switch
+Make physical device current on device delete notify + think abound make current and reset previous current context
 
 maybe remove A8 format?
 

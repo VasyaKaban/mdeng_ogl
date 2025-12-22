@@ -39,7 +39,9 @@ set(GLAD_WGL_LOADER_REQUIRED_EXTENSIONS
 	"WGL_ARB_pixel_format"
 	"WGL_ARB_pixel_format_float"#WGL_TYPE_RGBA_FLOAT_ARB in format choose
 	"WGL_EXT_swap_control"#0 - for immediate, 1 - for FIFO
-	"WGL_EXT_swap_control_tear")#-1 - for relaxed FIFO 
+	"WGL_EXT_swap_control_tear"#-1 - for relaxed FIFO 
+	"WGL_ARB_context_flush_control"
+	)
 
 #create dummy window and dummy HDC + resolve main WGL functions + create dummy context + make current dummy context
 #destroy all prev dummy resources

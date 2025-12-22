@@ -584,7 +584,7 @@ namespace OpenGL
                                                 .supported_present_modes = supported_present_modes,
                                                 .supported_configs = std::move(surface_configs)};
 
-                constexpr static int dummy_profile_attributes[] = {
+                const int dummy_profile_attributes[] = {
                     WGL_CONTEXT_MAJOR_VERSION_ARB,
                     4,
                     WGL_CONTEXT_MINOR_VERSION_ARB,
@@ -593,6 +593,9 @@ namespace OpenGL
                     WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
                     WGL_CONTEXT_PROFILE_MASK_ARB,
                     WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                    (GLAD_WGL_ARB_context_flush_control ? WGL_CONTEXT_RELEASE_BEHAVIOR_ARB : 0),
+                    (GLAD_WGL_ARB_context_flush_control ? WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB :
+                                                          0),
                     0};
 
                 _glrc = glad_wglCreateContextAttribsARB(_dc, nullptr, dummy_profile_attributes);
