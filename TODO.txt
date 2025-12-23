@@ -44,3 +44,7 @@ MakeCurrent behaviour:
     delete device -> make physical device current
 
 move hrs to Core
+Common naming for FlagBits
+ImageView -> remove MS types -> deduce from image like format
+Mutable format flag (+ set cube_map as flag + change image format properties query) + list of formats to use with image like in VK_KHR_image_format_list
+Add VK_PRESENT_MODE_MAILBOX_KHR as available present mode(check that Immediate(value=0) in OGL is mapped to Immediate in VK)

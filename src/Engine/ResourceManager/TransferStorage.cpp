@@ -67,8 +67,7 @@ namespace Engine
         buffer = parent->GetContext()->CreateBufferUnique(buffer_info, memory_type_indices);
 
         if(!should_remap)
-            mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = info.buffer_size},
-                                     Render::BufferMapContentPolicy::Discard);
+            mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = info.buffer_size});
 
         buffer_regions_cache.reserve(16);
         image_regions_cache.reserve(16);
@@ -239,8 +238,7 @@ namespace Engine
         if(!write_started)
         {
             if(should_remap)
-                mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = buffer_size},
-                                         Render::BufferMapContentPolicy::Discard);
+                mapped_ptr = buffer->Map(Render::MappedRange{.offset = 0, .size = buffer_size});
 
             const Render::QueueBeginInfo info = {.wait_seamphores = {}};
             queue->Begin(info);

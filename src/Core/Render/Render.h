@@ -181,8 +181,8 @@ namespace Render
 
     enum BufferUsageFlagBits
     {
-        BufferUsageTransferSource = 1 << 0, //VK_BUFFER_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
-        BufferUsageTransferDestination = 1 << 1, //VK_BUFFER_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
+        BufferUsageTransferSrc = 1 << 0, //VK_BUFFER_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
+        BufferUsageTransferDst = 1 << 1, //VK_BUFFER_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
         BufferUsageUniformTexelBuffer =
             1 << 2, //VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = 0x00'00'00'04,
         BufferUsageStorageTexelBuffer =
@@ -247,12 +247,6 @@ namespace Render
     {
         std::uint64_t offset;
         std::uint64_t size;
-    };
-
-    enum class BufferMapContentPolicy
-    {
-        None,
-        Discard //-> OGL: GL_MAP_INVALIDATE_RANGE_BIT ; VK: None
     };
 
     enum CommandPoolFlagBits
@@ -325,7 +319,6 @@ namespace Render
         CubeMap
     };
 
-    //formnat: LSB -> MSB
     enum class Format
     {
         UNDEFINED,
@@ -557,16 +550,16 @@ namespace Render
         SNORM,
         UINT,
         SINT,
-        SFLOAT,
         UFLOAT,
+        SFLOAT,
         USCALED,
         SSCALED
     };
 
     enum ImageUsageFlagBits
     {
-        ImageUsageTransferSource = 1 << 0, //VK_IMAGE_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
-        ImageUsageTransferDestination = 1 << 1, //VK_IMAGE_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
+        ImageUsageTransferSrc = 1 << 0, //VK_IMAGE_USAGE_TRANSFER_SRC_BIT = 0x00'00'00'01,
+        ImageUsageTransferDst = 1 << 1, //VK_IMAGE_USAGE_TRANSFER_DST_BIT = 0x00'00'00'02,
         ImageUsageSampled = 1 << 2, //VK_IMAGE_USAGE_SAMPLED_BIT = 0x00'00'00'04,
         ImageUsageStorage = 1 << 3, //VK_IMAGE_USAGE_STORAGE_BIT = 0x00'00'00'08,
         ImageUsageColorAttachment = 1 << 4, //VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT = 0x00'00'00'10,
@@ -603,7 +596,7 @@ namespace Render
             1 << 3, //VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT = 0x00'00'00'08,
         FormatFeatureStorageTexelBufferBit =
             1 << 4, //VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT = 0x00'00'00'10,
-        FormatFeatureStorageTexelBufferAtomicAtomicBit =
+        FormatFeatureStorageTexelBufferAtomicBit =
             1 << 5, //VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT = 0x00'00'00'20,
         FormatFeatureVertexBufferBit = 1
                                        << 6, //VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT = 0x00'00'00'40,

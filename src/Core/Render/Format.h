@@ -27,5 +27,4 @@ namespace Render
     FormatType GetFormatType(Format format, ImageAspectFlagBits aspect) noexcept;
 
     bool IsFormatSRGB(Format format) noexcept;
-
 };
