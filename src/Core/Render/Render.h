@@ -104,7 +104,7 @@ namespace Render
         Extent2D extent;
     };
 
-    struct ClearColorValue
+    union ClearColorValue
     {
         float float32[4];
         std::int32_t int32[4];

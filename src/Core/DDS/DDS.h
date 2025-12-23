@@ -85,7 +85,7 @@ namespace DDS
 
     using PixelFormatFlags = std::underlying_type_t<PixelFormatFlagBits>;
 
-    enum PixelFormatFourCC : DDS_DWORD
+    enum class PixelFormatFourCC : DDS_DWORD
     {
         DXT1 = MakeFourCC('D', 'X', 'T', '1'),
         DXT2 = MakeFourCC('D', 'X', 'T', '2'),
@@ -359,6 +359,8 @@ namespace DDS
 
     hrs::expected<ParseResult, Exception> Parse(std::span<const std::uint8_t> data);
 
+    using OriginalFormat = std::variant<DXGIFormat, PixelFormatFourCC>;
+
     struct ImageResult
     {
         Render::ImageType image_type;
@@ -367,7 +369,7 @@ namespace DDS
         std::uint32_t mip_levels;
         std::uint32_t array_layers;
 
-        std::variant<DXGIFormat, PixelFormatFourCC> original_format;
+        OriginalFormat original_format;
 
         std::vector<Render::MemoryImageCopyRegion> regions;
     };

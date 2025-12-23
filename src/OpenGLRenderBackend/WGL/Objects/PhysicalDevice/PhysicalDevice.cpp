@@ -362,6 +362,8 @@ namespace OpenGL
     void PhysicalDevice::DeleteDeviceNotify() noexcept
     {
         device = nullptr;
+
+        wglMakeCurrent(dc, glrc);
     }
 
     void PhysicalDevice::SetDebugMessenger(const Render::DebugMessengerInfo& info)

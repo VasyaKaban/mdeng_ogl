@@ -1,6 +1,5 @@
 SPEC: https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf
 
-Change DDS image info that will return self-created image info not a Render::ImageInfo
 hrs::forward_pool -> for what???
 map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for events -> reudce memory usage
 Add limits and features
@@ -19,7 +18,6 @@ Check throw in commands and creation functions -> OGL only
 Change descriptor set binding -> instead of set and linear model use union of models + API type
 delete default statements in switch for formats -> populate cases via clangd quick fix
 check all static vectors and merge them into one common vector for temp info
-after adding new formats also update DDS so it can handle formats with shifts
 https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf page: 222
 Descriptor descriptions:
      struct DescriptorDescription
@@ -38,8 +36,6 @@ remove multi-jump in pipeline state(maybe add caching with pointers to functions
 Change plain pointer to unique_ptr due to the exceptions in constructor(see Device ctor!)
 Add enabled features check for every object like aniso in sampler and in pipeline state
 Make physical device current on device delete notify + think abound make current and reset previous current context
-
-maybe remove A8 format?
 
 MakeCurrent behaviour:
     Create physical device -> make it current

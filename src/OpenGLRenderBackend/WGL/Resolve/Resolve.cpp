@@ -175,7 +175,7 @@ namespace OpenGL
         return Render::Backend::OpenGL;
     }
 
-    Render::Instance* CreateInstance(const Render::InstanceInfo& info)
+    Render::Instance* Resolve::CreateInstance(const Render::InstanceInfo& info)
     {
         return new Instance(info);
     }

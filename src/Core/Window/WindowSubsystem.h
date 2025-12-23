@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <map>
-#include "RenderBackend.h"
 #include "hrs/non_creatable.hpp"
 #include <SDL2/SDL_messagebox.h>
 
@@ -30,8 +29,7 @@ namespace Core
 
         void PollEvents();
 
-        GraphicWindow* CreateGraphicWindow(const GraphicWindowInfo& info,
-                                           const RenderBackendInfo& render_info);
+        GraphicWindow* CreateGraphicWindow(const GraphicWindowInfo& info);
 
         GraphicWindow* GetGraphicWindow(std::uint32_t id) const noexcept;
 

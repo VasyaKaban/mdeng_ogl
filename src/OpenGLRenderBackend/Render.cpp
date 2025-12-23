@@ -1,6 +1,7 @@
 #include "Render.h"
 #include <stdexcept>
 #include <bit>
+#include <cassert>
 #include "Core/Utils/Binary.hpp"
 
 namespace OpenGL

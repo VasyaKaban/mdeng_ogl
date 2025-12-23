@@ -151,10 +151,9 @@ namespace Core
         }
     }
 
-    GraphicWindow* WindowSubsystem::CreateGraphicWindow(const GraphicWindowInfo& info,
-                                                        const RenderBackendInfo& render_info)
+    GraphicWindow* WindowSubsystem::CreateGraphicWindow(const GraphicWindowInfo& info)
     {
-        std::unique_ptr<GraphicWindow> window(new GraphicWindow(info, render_info));
+        std::unique_ptr<GraphicWindow> window(new GraphicWindow(info));
         auto it = graphic_windows.insert({window->GetID(), std::move(window)});
         return it.first->second.get();
     }

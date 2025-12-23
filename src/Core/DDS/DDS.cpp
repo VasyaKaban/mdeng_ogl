@@ -333,68 +333,90 @@ namespace DDS
         return res;
     }
 
-    static hrs::expected<std::pair<Render::Format, std::variant<DXGIFormat, PixelFormatFourCC>>,
-                         Result>
-    resolve_format(const PixelFormat& fmt)
+    struct PixelFormatResult
     {
-        hrs::expected<std::pair<Render::Format, DXGIFormat>, Result> res;
+        Render::Format format;
+        OriginalFormat originl_format;
+    };
+
+    static hrs::expected<PixelFormatResult, Result> resolve_format(const PixelFormat& fmt)
+    {
+        hrs::expected<PixelFormatResult, Result> res;
         if(fmt.flags & PixelFormatFlagBits::DDPF_FOURCC)
         {
             switch(fmt.four_cc)
             {
                 case PixelFormatFourCC::DXT1:
-                    res = Render::Format::BC1_RGB_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC1_RGB_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::DXT1};
                     break;
                 case PixelFormatFourCC::DXT2:
-                    res = Render::Format::BC2_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC2_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::DXT2};
                     break;
                 case PixelFormatFourCC::DXT3:
-                    res = Render::Format::BC2_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC2_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::DXT3};
                     break;
                 case PixelFormatFourCC::DXT4:
-                    res = Render::Format::BC3_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC3_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::DXT4};
                     break;
                 case PixelFormatFourCC::DXT5:
-                    res = Render::Format::BC3_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC3_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::DXT5};
                     break;
                 case PixelFormatFourCC::BC4U:
-                    res = Render::Format::BC4_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC4_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::BC4U};
                     break;
                 case PixelFormatFourCC::BC4S:
-                    res = Render::Format::BC4_SNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC4_SNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::BC4S};
                     break;
                 case PixelFormatFourCC::BC4U_ATI1:
-                    res = Render::Format::BC4_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC4_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::BC4U_ATI1};
                     break;
                 case PixelFormatFourCC::BC5U:
-                    res = Render::Format::BC5_UNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC5_UNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::BC5U};
                     break;
                 case PixelFormatFourCC::BC5S:
-                    res = Render::Format::BC5_SNORM_BLOCK;
+                    res = PixelFormatResult{.format = Render::Format::BC5_SNORM_BLOCK,
+                                            .originl_format = PixelFormatFourCC::BC5S};
                     break;
                 case PixelFormatFourCC::R16G16B16A16_U:
-                    res = Render::Format::R16G16B16A16_UNORM;
+                    res = PixelFormatResult{.format = Render::Format::R16G16B16A16_UNORM,
+                                            .originl_format = PixelFormatFourCC::R16G16B16A16_U};
                     break;
                 case PixelFormatFourCC::R16G16B16A16_S:
-                    res = Render::Format::R16G16B16A16_SNORM;
+                    res = PixelFormatResult{.format = Render::Format::R16G16B16A16_SNORM,
+                                            .originl_format = PixelFormatFourCC::R16G16B16A16_S};
                     break;
                 case PixelFormatFourCC::R16_F:
-                    res = Render::Format::R16_SFLOAT;
+                    res = PixelFormatResult{.format = Render::Format::R16_SFLOAT,
+                                            .originl_format = PixelFormatFourCC::R16_F};
                     break;
                 case PixelFormatFourCC::R16G16_F:
-                    res = Render::Format::R16G16_SFLOAT;
+                    res = PixelFormatResult{.format = Render::Format::R16G16_SFLOAT,
+                                            .originl_format = PixelFormatFourCC::R16G16_F};
                     break;
                 case PixelFormatFourCC::R16G16B16A16_F:
-                    res = Render::Format::R16G16B16A16_SFLOAT;
+                    res = PixelFormatResult{.format = Render::Format::R16G16B16A16_SFLOAT,
+                                            .originl_format = PixelFormatFourCC::R16G16B16A16_F};
                     break;
                 case PixelFormatFourCC::R32_F:
-                    res = Render::Format::R32_SFLOAT;
+                    res = PixelFormatResult{.format = Render::Format::R32_SFLOAT,
+                                            .originl_format = PixelFormatFourCC::R32_F};
                     break;
                 case PixelFormatFourCC::R32G32_F:
-                    res = Render::Format::R32G32_SFLOAT;
+                    res = PixelFormatResult{.format = Render::Format::R32G32_SFLOAT,
+                                            .originl_format = PixelFormatFourCC::R32G32_F};
                     break;
                 case PixelFormatFourCC::R32G32B32A32_F:
-                    res = Render::Format::R32G32B32A32_SFLOAT;
+                    res = PixelFormatResult{.format = Render::Format::R32G32B32A32_SFLOAT,
+                                            .originl_format = PixelFormatFourCC::R32G32B32A32_F};
                     break;
                 case PixelFormatFourCC::R8G8_B8G8_U:
                 case PixelFormatFourCC::G8R8_G8B8_U:
@@ -408,10 +430,8 @@ namespace DDS
         }
         else
         {
-#error HERE!
-
             //we can parse only R, RG, RGB AND RGBA-like formats due to dwFlags
-            //YUV and LUMINANCE - are unsupported
+            //YUV - not unsupported
 
             //Luminance -> one channel
             //Luminance + DDPF_ALPHAPIXELS -> two channels
@@ -422,11 +442,8 @@ namespace DDS
                 if(!(fmt.flags & PixelFormatFlagBits::DDPF_ALPHAPIXELS))
                 {
                     //one channel
-                    if(fmt.rgb_bit_count == 8)
+                    if(fmt.rgb_bit_count == 8 && fmt.red_bit_mask == 0xFF)
                     {
-                        if(fmt.red_bit_mask != 0xFF)
-                            return std::runtime_error("Unsupported pixel format");
-
                         //DXGI_FORMAT_R8_TYPELESS = 60,
                         //DXGI_FORMAT_R8_UNORM = 61,
                         //DXGI_FORMAT_R8_UINT = 62,
@@ -435,7 +452,7 @@ namespace DDS
                         //DXGI_FORMAT_A8_UNORM = 65,
                         res = resolve_format(DXGIFormat::DXGI_FORMAT_R8_UNORM).value();
                     }
-                    else if(fmt.rgb_bit_count == 16)
+                    else if(fmt.rgb_bit_count == 16 && fmt.red_bit_mask == 0xFF'FF)
                     {
                         //DXGI_FORMAT_R16_TYPELESS = 53,
                         //DXGI_FORMAT_R16_FLOAT = 54,
@@ -443,44 +460,34 @@ namespace DDS
                         //DXGI_FORMAT_R16_UINT = 57,
                         //DXGI_FORMAT_R16_SNORM = 58,
                         //DXGI_FORMAT_R16_SINT = 59,
-
-                        if(fmt.red_bit_mask != 0xFF'FF)
-                            return std::runtime_error("Unsupported pixel format");
-
                         res = resolve_format(DXGIFormat::DXGI_FORMAT_R16_UNORM).value();
                     }
-                    else if(fmt.rgb_bit_count == 32)
+                    else if(fmt.rgb_bit_count == 32 && fmt.red_bit_mask == 0xFF'FF'FF'FF)
                     {
                         //DXGI_FORMAT_R32_TYPELESS = 39,
                         //DXGI_FORMAT_R32_FLOAT = 41,
                         //DXGI_FORMAT_R32_UINT = 42,
                         //DXGI_FORMAT_R32_SINT = 43,
-
-                        if(fmt.red_bit_mask != 0xFF'FF'FF'FF)
-                            return std::runtime_error("Unsupported pixel format");
-
                         res = resolve_format(DXGIFormat::DXGI_FORMAT_R32_UINT).value();
                     }
                     else
-                        return std::runtime_error("Unsupported pixel format");
+                        res = Result::UnsupportedPixelFormat;
                 }
                 else
                 {
                     //two channels
-                    if(fmt.rgb_bit_count == 16)
+                    if(fmt.rgb_bit_count == 16 && fmt.red_bit_mask == 0x00'FF &&
+                       fmt.alpha_bit_mask == 0xFF'00)
                     {
                         //DXGI_FORMAT_R8G8_TYPELESS = 48,
                         //DXGI_FORMAT_R8G8_UNORM = 49,
                         //DXGI_FORMAT_R8G8_UINT = 50,
                         //DXGI_FORMAT_R8G8_SNORM = 51,
                         //DXGI_FORMAT_R8G8_SINT = 52,
-
-                        if(!(fmt.red_bit_mask == 0x00'FF && fmt.alpha_bit_mask == 0xFF'00))
-                            return std::runtime_error("Unsupported pixel format");
-
                         res = resolve_format(DXGIFormat::DXGI_FORMAT_R8G8_UNORM).value();
                     }
-                    else if(fmt.rgb_bit_count == 32)
+                    else if(fmt.rgb_bit_count == 32 && fmt.red_bit_mask == 0xFF'FF &&
+                            fmt.alpha_bit_mask == 0xFF'FF'00'00)
                     {
                         //DXGI_FORMAT_R16G16_TYPELESS = 33,
                         //DXGI_FORMAT_R16G16_FLOAT = 34,
@@ -488,14 +495,10 @@ namespace DDS
                         //DXGI_FORMAT_R16G16_UINT = 36,
                         //DXGI_FORMAT_R16G16_SNORM = 37,
                         //DXGI_FORMAT_R16G16_SINT = 38,
-
-                        if(!(fmt.red_bit_mask == 0xFF'FF && fmt.alpha_bit_mask == 0xFF'FF'00'00))
-                            return std::runtime_error("Unsupported pixel format");
-
                         res = resolve_format(DXGIFormat::DXGI_FORMAT_R16G16_UNORM).value();
                     }
                     else
-                        return std::runtime_error("Unsupported pixel format");
+                        res = Result::UnsupportedPixelFormat;
                 }
             }
             else if(fmt.flags & PixelFormatFlagBits::DDPF_RGB)
@@ -509,7 +512,7 @@ namespace DDS
 
                         if(!(fmt.red_bit_mask == 0xF8'00 && fmt.green_bit_mask == 0x7E0 &&
                              fmt.blue_bit_mask == 0x1F))
-                            return std::runtime_error("Unsupported pixel format");
+                            res = Result::UnsupportedPixelFormat;
 
                         res = resolve_format(DXGIFormat::DXGI_FORMAT_B5G6R5_UNORM).value();
                     }
@@ -534,10 +537,10 @@ namespace DDS
                             res =
                                 resolve_format(DXGIFormat::DXGI_FORMAT_R9G9B9E5_SHAREDEXP).value();
                         else
-                            return std::runtime_error("Unsupported pixel format");
+                            res = Result::UnsupportedPixelFormat;
                     }
                     else
-                        return std::runtime_error("Unsupported pixel format");
+                        res = Result::UnsupportedPixelFormat;
                 }
                 else
                 {
@@ -555,7 +558,7 @@ namespace DDS
                                 fmt.blue_bit_mask == 0xF && fmt.alpha_bit_mask == 0xF0'00)
                             res = resolve_format(DXGIFormat::DXGI_FORMAT_B4G4R4A4_UNORM).value();
                         else
-                            return std::runtime_error("Unsupported pixel format");
+                            res = Result::UnsupportedPixelFormat;
                     }
                     else if(fmt.rgb_bit_count == 32)
                     {
@@ -585,14 +588,14 @@ namespace DDS
                                 fmt.blue_bit_mask == 0xFF && fmt.alpha_bit_mask == 0xFF'00'00'00)
                             res = resolve_format(DXGIFormat::DXGI_FORMAT_B8G8R8A8_UNORM).value();
                         else
-                            return std::runtime_error("Unsupported pixel format");
+                            res = Result::UnsupportedPixelFormat;
                     }
                     else
-                        return std::runtime_error("Unsupported pixel format");
+                        res = Result::UnsupportedPixelFormat;
                 }
             }
             else
-                return std::runtime_error("Unsupported pixel format");
+                res = Result::UnsupportedPixelFormat;
         }
         return res;
     }
@@ -766,7 +769,8 @@ namespace DDS
                 {
                     case Result::UnsupportedFourCC:
                     {
-                        auto sparsed = SparseFourCC(result.header->pixel_format.four_cc);
+                        auto sparsed = SparseFourCC(
+                            static_cast<DDS_DWORD>(result.header->pixel_format.four_cc));
                         error_message = std::format("Unsupported FourCC: {}{}{}{}",
                                                     +sparsed[0],
                                                     +sparsed[1],
@@ -785,8 +789,8 @@ namespace DDS
                 return Exception(format_exp.error(), std::move(error_message));
             }
 
-            resolve.format = format_exp->first;
-            resolve.original_format = format_exp->second;
+            resolve.format = format_exp->format;
+            resolve.original_format = format_exp->originl_format;
         }
 
         resolve.regions.reserve(resolve.array_layers * resolve.mip_levels);

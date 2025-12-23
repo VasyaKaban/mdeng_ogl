@@ -85,39 +85,41 @@ namespace OpenGL
                                                             border_color.int32);
                     break;
                 case Render::BorderColor::OpaqueBlackFloat:
-                    border_color = Render::ClearColorValue{std::numeric_limits<float>::min(),
-                                                           std::numeric_limits<float>::min(),
-                                                           std::numeric_limits<float>::min(),
-                                                           std::numeric_limits<float>::max()};
+                    border_color =
+                        Render::ClearColorValue{.float32 = {std::numeric_limits<float>::min(),
+                                                            std::numeric_limits<float>::min(),
+                                                            std::numeric_limits<float>::min(),
+                                                            std::numeric_limits<float>::max()}};
                     parent->GetLoader().SamplerParameterfv(_handle,
                                                            GL_TEXTURE_BORDER_COLOR,
                                                            border_color.float32);
                     break;
                 case Render::BorderColor::OpaqueBlackInt:
-                    border_color =
-                        Render::ClearColorValue{std::numeric_limits<std::int32_t>::min(),
-                                                std::numeric_limits<std::int32_t>::min(),
-                                                std::numeric_limits<std::int32_t>::min(),
-                                                std::numeric_limits<std::int32_t>::max()};
+                    border_color = Render::ClearColorValue{
+                        .int32 = {std::numeric_limits<std::int32_t>::min(),
+                                  std::numeric_limits<std::int32_t>::min(),
+                                  std::numeric_limits<std::int32_t>::min(),
+                                  std::numeric_limits<std::int32_t>::max()}};
                     parent->GetLoader().SamplerParameterIiv(_handle,
                                                             GL_TEXTURE_BORDER_COLOR,
                                                             border_color.int32);
                     break;
                 case Render::BorderColor::OpaqueWhiteFloat:
-                    border_color = Render::ClearColorValue{std::numeric_limits<float>::max(),
-                                                           std::numeric_limits<float>::max(),
-                                                           std::numeric_limits<float>::max(),
-                                                           std::numeric_limits<float>::max()};
+                    border_color =
+                        Render::ClearColorValue{.float32 = {std::numeric_limits<float>::max(),
+                                                            std::numeric_limits<float>::max(),
+                                                            std::numeric_limits<float>::max(),
+                                                            std::numeric_limits<float>::max()}};
                     parent->GetLoader().SamplerParameterfv(_handle,
                                                            GL_TEXTURE_BORDER_COLOR,
                                                            border_color.float32);
                     break;
                 case Render::BorderColor::OpaqueWhiteInt:
-                    border_color =
-                        Render::ClearColorValue{std::numeric_limits<std::int32_t>::max(),
-                                                std::numeric_limits<std::int32_t>::max(),
-                                                std::numeric_limits<std::int32_t>::max(),
-                                                std::numeric_limits<std::int32_t>::max()};
+                    border_color = Render::ClearColorValue{
+                        .int32 = {std::numeric_limits<std::int32_t>::max(),
+                                  std::numeric_limits<std::int32_t>::max(),
+                                  std::numeric_limits<std::int32_t>::max(),
+                                  std::numeric_limits<std::int32_t>::max()}};
                     parent->GetLoader().SamplerParameterIiv(_handle,
                                                             GL_TEXTURE_BORDER_COLOR,
                                                             border_color.int32);

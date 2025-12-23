@@ -44,6 +44,8 @@ namespace OpenGL
         surface->SwapWindow();
 
         image_index = (image_index + 1) % SWAPCHAIN_IMAGE_COUNT;
+
+        return true;
     }
 
     void Swapchain::Recreate(const Render::SwapchainInfo& info)
