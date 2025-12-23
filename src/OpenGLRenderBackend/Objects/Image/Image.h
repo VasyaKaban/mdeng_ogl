@@ -17,6 +17,7 @@ namespace OpenGL
         GLenum GetInnerType() const noexcept;
         GLenum GetInnerFormat() const noexcept;
         Render::Format GetFormat() const noexcept;
+        Render::SampleCount GetSampleCount() const noexcept;
 
         const TransferImageTypeFormat& GetTransferImageTypeFormatPair() const noexcept;
 
@@ -28,6 +29,7 @@ namespace OpenGL
         GLenum inner_type;
         GLenum inner_format;
         Render::Format format;
+        Render::SampleCount samples;
 
         TransferImageTypeFormat transfer_type_format_pair;
     };

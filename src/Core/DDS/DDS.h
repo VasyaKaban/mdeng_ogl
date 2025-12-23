@@ -368,6 +368,7 @@ namespace DDS
         Render::Extent3D extent;
         std::uint32_t mip_levels;
         std::uint32_t array_layers;
+        bool cubemap_compatible;
 
         OriginalFormat original_format;
 

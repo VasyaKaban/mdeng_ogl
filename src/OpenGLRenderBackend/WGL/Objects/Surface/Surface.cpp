@@ -110,6 +110,9 @@ namespace OpenGL
             case Render::PresentModeFlagBits::RelaxedFIFO:
                 interval = -1;
                 break;
+            case Render::PresentModeFlagBits::Mailbox:
+                throw std::runtime_error("Mailbox present mode is not supported");
+                break;
         }
 
         if(!GLAD_WGL_EXT_swap_control) //only FIFO

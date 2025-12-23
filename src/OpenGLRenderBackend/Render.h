@@ -95,7 +95,7 @@ namespace OpenGL
                                         Render::BufferMapUsageFlags map_usage);
     GLenum FenceStatusToNative(Render::FenceStatus status);
     std::optional<GLenum> FormatToNative(Render::Format format) noexcept;
-    GLenum ImageViewTypeToNative(Render::ImageViewType type);
+    GLenum ImageViewTypeToNative(Render::ImageViewType type, bool image_multisampled);
     GLint ComponentSwizzleToNative(Render::ComponentSwizzle swizzle, GLenum base);
     GLenum FilterToNative(Render::Filter filter);
     GLenum AddressModeToNative(Render::AddressMode mode);
@@ -114,7 +114,8 @@ namespace OpenGL
     GLenum FrontFaceToNative(Render::FrontFace face);
     GLenum IndexTypeToNative(Render::IndexType type);
 
-    GLenum DecodeImageType(Render::ImageType type, bool layered, bool sampled);
+    GLenum
+    DecodeImageType(Render::ImageType type, bool layered, bool sampled, bool cubemap_compatible);
 
     struct TransferImageTypeFormat
     {

@@ -531,7 +531,7 @@ namespace OpenGL
         return value;
     }
 
-    GLenum ImageViewTypeToNative(Render::ImageViewType type)
+    GLenum ImageViewTypeToNative(Render::ImageViewType type, bool is_image_multisampled)
     {
         GLenum value;
         switch(type)
@@ -540,7 +540,10 @@ namespace OpenGL
                 value = GL_TEXTURE_1D;
                 break;
             case Render::ImageViewType::ImageView2D:
-                value = GL_TEXTURE_2D;
+                if(!is_image_multisampled)
+                    value = GL_TEXTURE_2D;
+                else
+                    value = GL_TEXTURE_2D_MULTISAMPLE;
                 break;
             case Render::ImageViewType::ImageView3D:
                 value = GL_TEXTURE_3D;
@@ -552,16 +555,13 @@ namespace OpenGL
                 value = GL_TEXTURE_1D_ARRAY;
                 break;
             case Render::ImageViewType::ImageView2DArray:
-                value = GL_TEXTURE_2D_ARRAY;
+                if(!is_image_multisampled)
+                    value = GL_TEXTURE_2D_ARRAY;
+                else
+                    value = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
                 break;
             case Render::ImageViewType::ImageViewCubeMapArray:
                 value = GL_TEXTURE_CUBE_MAP_ARRAY;
-                break;
-            case Render::ImageViewType::ImageView2DMultisample:
-                value = GL_TEXTURE_2D_MULTISAMPLE;
-                break;
-            case Render::ImageViewType::ImageView2DMultisampleArray:
-                value = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
                 break;
             default:
                 throw std::runtime_error("No native ImageViewType found");
@@ -1056,7 +1056,8 @@ namespace OpenGL
         return value;
     }
 
-    GLenum DecodeImageType(Render::ImageType type, bool layered, bool sampled)
+    GLenum
+    DecodeImageType(Render::ImageType type, bool layered, bool sampled, bool cubemap_compatible)
     {
         GLenum _inner_type;
         switch(type)
@@ -1074,29 +1075,31 @@ namespace OpenGL
                 if(!layered)
                 {
                     if(!sampled)
-                        _inner_type = GL_TEXTURE_2D;
+                    {
+                        if(!cubemap_compatible)
+                            _inner_type = GL_TEXTURE_2D;
+                        else
+                            _inner_type = GL_TEXTURE_CUBE_MAP;
+                    }
                     else
                         _inner_type = GL_TEXTURE_2D_MULTISAMPLE;
                 }
                 else
                 {
                     if(!sampled)
-                        _inner_type = GL_TEXTURE_2D_ARRAY;
+                    {
+                        if(!cubemap_compatible)
+                            _inner_type = GL_TEXTURE_2D_ARRAY;
+                        else
+                            _inner_type = GL_TEXTURE_CUBE_MAP_ARRAY;
+                    }
                     else
                         _inner_type = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
                 }
             }
             break;
             case Render::ImageType::Image3D:
-            {
                 _inner_type = GL_TEXTURE_3D;
-            }
-            break;
-            case Render::ImageType::CubeMap:
-                if(!layered)
-                    _inner_type = GL_TEXTURE_CUBE_MAP;
-                else
-                    _inner_type = GL_TEXTURE_CUBE_MAP_ARRAY;
                 break;
         }
 
@@ -2593,8 +2596,8 @@ namespace OpenGL
 
                 if(info.format == Render::Format::R32_SINT ||
                    info.format == Render::Format::R32_UINT)
-                    image_format_features |= Render::FormatFeatureFlagBits::
-                        FormatFeatureStorageTexelBufferAtomicAtomicBit;
+                    image_format_features |=
+                        Render::FormatFeatureFlagBits::FormatFeatureStorageTexelBufferAtomicBit;
                 break;
             default:
                 image_format_features = {};
@@ -2627,7 +2630,11 @@ namespace OpenGL
     GetPhysicalDeviceImageFormatProperties(const GladGLContext& loader,
                                            const Render::ImageFormatInfo& info)
     {
-        GLenum inner_type = DecodeImageType(info.type, info.layered, info.sampled);
+        GLenum inner_type =
+            DecodeImageType(info.type,
+                            info.layered,
+                            info.sampled,
+                            info.flags & Render::ImageFlagBits::ImageCubeCompatible);
         auto native_format_opt = FormatToNative(info.format);
 
         if(!native_format_opt)

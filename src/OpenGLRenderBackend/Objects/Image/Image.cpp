@@ -7,11 +7,18 @@ namespace OpenGL
 {
     Image::Image(Device* _parent, const Render::ImageInfo& info)
         : parent(_parent),
-          format(info.format)
+          format(info.format),
+          samples(info.samples)
     {
-        GLenum _inner_type = DecodeImageType(info.image_type,
-                                             info.array_layers != 1,
-                                             info.samples != Render::SampleCount::SampleCount_1);
+        bool layered =
+            (info.flags & Render::ImageFlagBits::ImageCubeCompatible ? info.array_layers > 6 :
+                                                                       info.array_layers > 1);
+
+        GLenum _inner_type =
+            DecodeImageType(info.image_type,
+                            layered,
+                            info.samples != Render::SampleCount::SampleCount_1,
+                            info.flags & Render::ImageFlagBits::ImageCubeCompatible);
 
         GLHandle _handle;
         parent->GetLoader().CreateTextures(_inner_type, 1, &_handle);
@@ -90,7 +97,7 @@ namespace OpenGL
                                                      _inner_format,
                                                      info.extent.width,
                                                      info.extent.height,
-                                                     info.array_layers * 6);
+                                                     info.array_layers);
                 break;
         }
 
@@ -125,6 +132,11 @@ namespace OpenGL
     Render::Format Image::GetFormat() const noexcept
     {
         return format;
+    }
+
+    Render::SampleCount Image::GetSampleCount() const noexcept
+    {
+        return samples;
     }
 
     const TransferImageTypeFormat& Image::GetTransferImageTypeFormatPair() const noexcept

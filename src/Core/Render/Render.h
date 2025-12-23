@@ -315,8 +315,7 @@ namespace Render
     {
         Image1D,
         Image2D,
-        Image3D,
-        CubeMap
+        Image3D
     };
 
     enum class Format
@@ -571,17 +570,26 @@ namespace Render
 
     using ImageUsageFlags = std::underlying_type_t<ImageUsageFlagBits>;
 
+    enum ImageFlagBits
+    {
+        ImageMutableFormat = 1 << 0, //VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT = 0x00000008,
+        ImageCubeCompatible = 1 << 1 //VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT = 0x00000010,
+    };
+
+    using ImageFlags = std::underlying_type_t<ImageFlagBits>;
+
     struct ImageInfo
     {
         //std::span<const MemoryRequest> memory_requests;//only allocate in device-local memory first...
+        ImageFlags flags;
         ImageType image_type;
         Format format;
         Extent3D extent;
         std::uint32_t mip_levels;
-        std::uint32_t
-            array_layers; //for cube map: 1 layer -> plain cubemap with 6 inner layers, 2 or more layers -> cube map array with array_layers*6 inner layers
+        std::uint32_t array_layers;
         SampleCount samples;
         ImageUsageFlags usage;
+        std::span<const Format> compatible_image_view_fromats; //for mutable flag
     };
 
     enum FormatFeatureFlagBits
@@ -628,6 +636,7 @@ namespace Render
 
     struct ImageFormatInfo
     {
+        ImageFlags flags;
         Format format;
         ImageType type;
         bool layered;
@@ -652,9 +661,7 @@ namespace Render
         ImageViewCubeMap,
         ImageView1DArray,
         ImageView2DArray,
-        ImageViewCubeMapArray,
-        ImageView2DMultisample,
-        ImageView2DMultisampleArray
+        ImageViewCubeMapArray
     };
 
     enum class ComponentSwizzle
@@ -687,8 +694,8 @@ namespace Render
 
     struct ImageViewInfo
     {
-        //no format -> we do not use mutable format
-        const Image* image;
+        Image* image;
+        Format format;
         ImageViewType view_type;
         ComponentMapping components;
         ImageSubresourceRange subresource_range;
@@ -700,31 +707,6 @@ namespace Render
         Format format;
         std::uint64_t offset;
         std::uint64_t size;
-    };
-
-    struct QueueBeginInfo
-    {
-        std::span<Semaphore*> wait_seamphores;
-    };
-
-    struct QueueFlushInfo
-    {
-        Fence* signal_fence;
-        std::span<Semaphore*> signal_seamphores;
-        std::span<CommandBuffer*> command_buffers;
-    };
-
-    enum class ImageLayout
-    {
-        Undefined, //VK_IMAGE_LAYOUT_UNDEFINED = 0, -> on image init
-        General, //VK_IMAGE_LAYOUT_GENERAL = 1, -> after image init
-        ColorAttachmentOptimal, //VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL = 2,
-        DepthStencilAttachmentOptimal, //VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL = 3,
-        DepthStencilReadOnlyOptimal, //VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL = 4,
-        ShaderReadOnlyOptimal, //VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL = 5,
-        TransferSourceOptimal, //VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL = 6,
-        TransferDestinationOptimal, //VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL = 7,
-        PresentSource, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> for renderpass + default framebuffer
     };
 
     enum PipelineStageFlagBits
@@ -763,6 +745,39 @@ namespace Render
 
     using PipelineStageFlags = std::underlying_type_t<PipelineStageFlagBits>;
 
+    struct QueueWaitDesc
+    {
+        Semaphore* semaphore;
+        PipelineStageFlags dst_stage;
+    };
+
+    struct QueueBeginInfo
+    {
+        std::span<const QueueWaitDesc> wait_descs;
+    };
+
+    struct QueueFlushInfo
+    {
+        Fence* signal_fence;
+        std::span<Semaphore*> signal_seamphores;
+        std::span<CommandBuffer*> command_buffers;
+    };
+
+    enum class ImageLayout
+    {
+        Undefined, //VK_IMAGE_LAYOUT_UNDEFINED = 0, -> on image init
+        General, //VK_IMAGE_LAYOUT_GENERAL = 1, -> after image init
+        ColorAttachmentOptimal, //VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL = 2,
+        DepthStencilAttachmentOptimal, //VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL = 3,
+        DepthStencilReadOnlyOptimal, //VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL = 4,
+        ShaderReadOnlyOptimal, //VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL = 5,
+        TransferSourceOptimal, //VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL = 6,
+        TransferDestinationOptimal, //VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL = 7,
+        PresentSource, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> for renderpass + default framebuffer
+
+        //..maybe
+    };
+
     enum DependencyFlagBits
     {
         ByRegion = 1 << 0
@@ -778,7 +793,8 @@ namespace Render
         AccessVertexAttributeReadBit = 1
                                        << 2, //VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT = 0x00'00'00'04,
         AccessUniformReadBit = 1 << 3, //VK_ACCESS_UNIFORM_READ_BIT = 0x00'00'00'08,
-        //AccessInputAttachmentReadBit = 1 << 4, //VK_ACCESS_INPUT_ATTACHMENT_READ_BIT = 0x00'00'00'10,
+        AccessInputAttachmentReadBit = 1
+                                       << 4, //VK_ACCESS_INPUT_ATTACHMENT_READ_BIT = 0x00'00'00'10,
         AccessShaderReadBit = 1 << 5, //VK_ACCESS_SHADER_READ_BIT = 0x00'00'00'20,
         AccessShaderWriteBit = 1 << 6, //VK_ACCESS_SHADER_WRITE_BIT = 0x00'00'00'40,
         AccessColorAttachmentReadBit = 1
@@ -790,7 +806,7 @@ namespace Render
         AccessDepthStencilAttachmentWriteBit =
             1 << 10, //VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT = 0x00'00'04'00,
         AccessTransferReadBit = 1 << 11, //VK_ACCESS_TRANSFER_READ_BIT = 0x00'00'08'00,
-        AccessTransferWiteBit = 1 << 12, //VK_ACCESS_TRANSFER_WRITE_BIT = 0x00'00'10'00,
+        AccessTransferWriteBit = 1 << 12, //VK_ACCESS_TRANSFER_WRITE_BIT = 0x00'00'10'00,
         AccessHostReadBit = 1 << 13, //VK_ACCESS_HOST_READ_BIT = 0x00'00'20'00,
         AccessHostWriteBit = 1 << 14, //VK_ACCESS_HOST_WRITE_BIT = 0x00'00'40'00,
         AccessMemoryReadBit = 1 << 15, //VK_ACCESS_MEMORY_READ_BIT = 0x00'00'80'00,
@@ -972,17 +988,17 @@ namespace Render
     //InputAssembly
     enum class PrimitiveTopology
     {
-        Points,
-        Lines,
+        PointList,
+        LineList,
         LineStrip,
-        Triangles,
+        TriangleList,
         TriangleStrip,
         TriangleFan,
-        LinesAdjacency,
-        LineStripAdjacency,
-        TrianglesAdjacency,
-        TriangleStrIpAdjacency,
-        Patches
+        LineListWithAdjacency,
+        LineStripWithAdjacency,
+        TriangleListWithAdjacency,
+        TriangleStripWithAdjacency,
+        PatchList
 
         //LineLoop = GL_LINE_LOOP //unused in VK
     };
@@ -1031,7 +1047,7 @@ namespace Render
         Set,
         Copy,
         CopyInverted,
-        Noop,
+        NoOp,
         Invert,
         And,
         NotAnd,
@@ -1091,9 +1107,9 @@ namespace Render
         Keep,
         Zero,
         Replace,
-        Increment,
+        IncrementClamp,
         IncrementWrap,
-        Decrement,
+        DecrementClamp,
         DecrementWrap,
         Invert
     };
@@ -1106,7 +1122,7 @@ namespace Render
         CompareOp compare_op;
         std::uint32_t compare_mask;
         std::uint32_t write_mask;
-        std::int32_t reference;
+        std::uint32_t reference;
     };
 
     struct GraphicsPipelineDepthStencilStateInfo
@@ -1193,8 +1209,8 @@ namespace Render
     struct UniformRange
     {
         ShaderStageFlags stages;
-        std::uint32_t words_offset;
-        std::uint32_t words_size;
+        std::uint32_t words_offset; //VK: offset = words_offset * 4 -> multiple of 4
+        std::uint32_t words_size; //VK: size = words_size * 4 -> multiple of 4
     };
 
     enum class DescriptorType
@@ -1218,7 +1234,7 @@ namespace Render
         DescriptorType type;
         std::uint32_t descriptor_count;
         ShaderStageFlags stages;
-        Sampler** immutable_samplers;
+        Sampler* const* immutable_samplers;
     };
 
     struct DescriptorSetLayoutInfo
@@ -1277,8 +1293,16 @@ namespace Render
         Scissors
     };
 
+    enum PipelineFlagBits
+    {
+        DisableOptimization = 1 << 0
+    };
+
+    using PipelineFlags = std::underlying_type_t<PipelineFlagBits>;
+
     struct GraphicsPipelineStateInfo
     {
+        PipelineFlags flags;
         GraphicsPipelineVertexInputStateInfo vertex_input_state_info;
         GraphicsPipelineInputAssemblyStateInfo input_assembly_state_info;
         GraphicsPipelineTessellationStateInfo tessellation_state_info;
@@ -1667,8 +1691,9 @@ namespace Render
     enum PresentModeFlagBits
     {
         Immediate = 1 << 0,
-        FIFO = 1 << 1,
-        RelaxedFIFO = 1 << 2
+        Mailbox = 1 << 1,
+        FIFO = 1 << 2,
+        RelaxedFIFO = 1 << 3
     };
 
     using PresentModeFlags = std::underlying_type_t<PresentModeFlagBits>;

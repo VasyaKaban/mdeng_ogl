@@ -45,6 +45,12 @@ MakeCurrent behaviour:
 
 move hrs to Core
 Common naming for FlagBits
-ImageView -> remove MS types -> deduce from image like format
-Mutable format flag (+ set cube_map as flag + change image format properties query) + list of formats to use with image like in VK_KHR_image_format_list
-Add VK_PRESENT_MODE_MAILBOX_KHR as available present mode(check that Immediate(value=0) in OGL is mapped to Immediate in VK)
+pipeline binary retrieve -> format as pipelineCacheUUID(fill with zeroes in VK) + API flag -> use VkPipelineCache for VK?
+
+Render check:
+    GraphicsPipelineMultisampleStateInfo.sample_mask for sample count bigger than 64!
+    GraphicsPipelineViewportStateInfo split count into vieport and scissor count
+    IndexType::U8 as feature -> move to features + VK_EXT_index_type_uint8
+    DescriptorSetAllocateInfo -> multi allocate?
+    start from DescriptorImageDesc -> UpdateDescriptorDesc make like vkUpdateDescriptorSetswith multi write and copy
+    fix errors in OGL backend

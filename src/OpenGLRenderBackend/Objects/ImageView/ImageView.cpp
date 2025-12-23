@@ -13,8 +13,11 @@ namespace OpenGL
         if(_handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Failed to create image view");
 
-        GLenum _inner_type = ImageViewTypeToNative(info.view_type);
-        GLenum _inner_format = static_cast<const Image*>(info.image)->GetInnerFormat();
+        GLenum _inner_type = ImageViewTypeToNative(
+            info.view_type,
+            static_cast<Image*>(info.image)->GetSampleCount() != Render::SampleCount_1);
+
+        GLenum _inner_format = FormatToNative(info.format).value();
 
         parent->GetLoader().TextureView(_handle,
                                         _inner_type,

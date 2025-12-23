@@ -733,12 +733,13 @@ namespace DDS
 
         resolve.array_layers = 1;
 
+        resolve.cubemap_compatible = false;
         if((result.header->caps2 & HeaderCaps2FlagBits::DDSCAPS2_CUBEMAP &&
             result.header->caps1 & HeaderCaps1FlagBits::DDSCAPS_COMPLEX) ||
            (result.dxt10_header && result.dxt10_header->misc_flags1 &
                                        DXT10HeaderMiscFlag1Bits::DDS_RESOURCE_MISC_TEXTURECUBE))
         {
-            resolve.image_type = Render::ImageType::CubeMap;
+            resolve.cubemap_compatible = true;
             resolve.array_layers = 6;
         }
 
@@ -848,9 +849,6 @@ namespace DDS
                 sub_image_data_ptr += sub_image_size;
             }
         }
-
-        if(resolve.image_type == Render::ImageType::CubeMap)
-            resolve.array_layers /= 6;
 
         return resolve;
     }
