@@ -1302,7 +1302,6 @@ namespace Render
 
     struct GraphicsPipelineStateInfo
     {
-        PipelineFlags flags;
         GraphicsPipelineVertexInputStateInfo vertex_input_state_info;
         GraphicsPipelineInputAssemblyStateInfo input_assembly_state_info;
         GraphicsPipelineTessellationStateInfo tessellation_state_info;
@@ -1311,21 +1310,25 @@ namespace Render
         GraphicsPipelineMultisampleStateInfo multisample_state_info;
         GraphicsPipelineRasterizationStateInfo rasterization_state_info;
         GraphicsPipelineViewportStateInfo viewport_state_info;
-        std::span<const UniformRange> uniform_ranges;
-        std::span<const DescriptorSetLayout> descriptor_set_layouts;
         std::span<DynamicState> dynamic_states;
     };
 
     struct GraphicsPipelineInfo
     {
+        PipelineFlags flags;
         std::span<const Shader* const> shaders;
+        std::span<const UniformRange> uniform_ranges;
+        std::span<const DescriptorSetLayout> descriptor_set_layouts;
         GraphicsPipelineStateInfo state_info;
         RenderPass* render_pass;
     };
 
     struct ComputePipelineInfo
     {
+        PipelineFlags flags;
         const Shader* shader;
+        std::span<const UniformRange> uniform_ranges;
+        std::span<const DescriptorSetLayout> descriptor_set_layouts;
     };
 
     enum class UniformType
@@ -1361,7 +1364,7 @@ namespace Render
         UniformExtent extent;
         std::uint32_t count;
         std::uint32_t location;
-        std::uint32_t offset;
+        std::uint32_t offset; //within data buffer
     };
 
     struct PresentInfo
@@ -1402,7 +1405,7 @@ namespace Render
         std::span<const ImageMemoryBarrier> image_barriers;
     };
 
-    //In case if we want to get a DMA-transfer queue we can get a transfer wuqu with video encode/decode in vulkan that is obviously not a DMA queue -> so we add a new spec 'UnknownImplementationSpec' that will signal that current queue family also support other spec(this spec do not include sparse binding)
+    //In case if we want to get a DMA-transfer queue we can get a transfer queue with video encode/decode in vulkan that is obviously not a DMA queue -> so we add a new spec 'UnknownImplementationSpec' that will signal that current queue family also support other spec(this spec do not include sparse binding)
     enum QueueSpecializationFlagBits
     {
         TransferSpec = 1 << 0,
@@ -1417,6 +1420,7 @@ namespace Render
     {
         QueueSpecializationFlags specialization;
         std::uint32_t queue_count;
+        Extent3D min_image_transfer_granularity;
     };
 
     struct DrawIndirectCommand
@@ -1776,6 +1780,8 @@ namespace Render
     {
         const char* application_name;
         std::uint32_t application_version;
+        const char* engine_name;
+        std::uint32_t engine_version;
         std::uint32_t api_version;
         InstanceFeatures enabled_features;
     };

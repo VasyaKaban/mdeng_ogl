@@ -12,7 +12,8 @@ namespace Render
 
         virtual const PhysicalDeviceProperties& GetProperties() const noexcept = 0;
 
-        virtual bool GetSurfaceSupport(Surface* surface) const noexcept = 0;
+        virtual bool GetSurfaceSupport(Surface* surface,
+                                       std::uint32_t queue_family_index) const noexcept = 0;
 
         virtual SurfaceCapabilities GetSurfaceCapablities(Surface* surface) const noexcept = 0;
 

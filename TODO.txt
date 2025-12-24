@@ -54,3 +54,8 @@ Render check:
     DescriptorSetAllocateInfo -> multi allocate?
     start from DescriptorImageDesc -> UpdateDescriptorDesc make like vkUpdateDescriptorSetswith multi write and copy
     fix errors in OGL backend
+    More dynamic states?
+    QueueFamilyProperties add min_image_transfer_granularity
+    debug_utils -> add object labels?
+    GetSurfaceSupport -> add queue_family_inde in OGL + use vkGetPhysicalDeviceWin32PresentationSupportKHR in VK
+    vkGetPhysicalDeviceM<IMPL>PresentationSupportKHR -> or just ignore because we can create surface and check support without IMPL functions

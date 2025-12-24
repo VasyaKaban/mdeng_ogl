@@ -69,10 +69,10 @@ namespace Render
                                  std::span<const Viewport> viewports) = 0;
         virtual void SetScissors(std::uint32_t first_scissor, std::span<const Rect2D> scissors) = 0;
 
-        virtual void SetUniform(ShaderStageFlags stages,
-                                std::uint32_t offset,
-                                std::span<const std::byte> data,
-                                std::span<const UniformDesc> uniform_descs) = 0;
+        virtual void SetUniforms(ShaderStageFlags stages,
+                                 std::uint32_t offset,
+                                 std::span<const std::byte> data,
+                                 std::span<const UniformDesc> uniform_descs) = 0;
 
         //Renderpass
         virtual void BeginRenderPass(RenderPass* renderpass, const RenderPassBeginInfo& info) = 0;
