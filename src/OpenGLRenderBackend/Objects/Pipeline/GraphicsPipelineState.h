@@ -184,8 +184,8 @@ namespace OpenGL
     {
     public:
         GraphicsPipelineViewportState(const Render::GraphicsPipelineViewportStateInfo& info,
-                                      bool _predefined_viewport_enabled,
-                                      bool _predefined_scissors_enabled);
+                                      bool _dynamic_viewports,
+                                      bool _dynamic_scissors);
         GraphicsPipelineViewportState() = default;
         ~GraphicsPipelineViewportState() = default;
         GraphicsPipelineViewportState(GraphicsPipelineViewportState&&) = default;
@@ -194,11 +194,11 @@ namespace OpenGL
         void Set(CommandBuffer& cmd, Pipeline& parent) noexcept;
         void Destroy(Pipeline& parent) noexcept;
     private:
-        bool predefined_viewport_enabled;
-        bool predefined_scissors_enabled;
-        std::uint32_t count;
-        std::vector<Render::Viewport> predefined_viewports;
-        std::vector<Render::Rect2D> predefined_scissors;
+        bool dynamic_viewports;
+        bool dynamic_scissors;
+
+        std::vector<Render::Viewport> viewports;
+        std::vector<Render::Rect2D> scissors;
     };
 
     struct GraphicsPipelineDrawState : hrs::non_copyable

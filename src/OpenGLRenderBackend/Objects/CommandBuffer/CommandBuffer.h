@@ -79,10 +79,10 @@ namespace OpenGL
         virtual void SetScissors(std::uint32_t first_scissor,
                                  std::span<const Render::Rect2D> scissors) override;
 
-        virtual void SetUniform(Render::ShaderStageFlags stages,
-                                std::uint32_t offset,
-                                std::span<const std::byte> data,
-                                std::span<const Render::UniformDesc> uniform_descs) override;
+        virtual void SetUniforms(Render::ShaderStageFlags stages,
+                                 std::uint32_t offset,
+                                 std::span<const std::byte> data,
+                                 std::span<const Render::UniformDesc> uniform_descs) override;
 
         //Renderpass
         virtual void BeginRenderPass(Render::RenderPass* renderpass,

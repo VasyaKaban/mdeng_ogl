@@ -22,7 +22,6 @@ namespace Core
     struct WindowResizedEvent
     {
         WindowResolution resolution;
-        WindowResolution drawable_resolution;
     };
 
     struct WindowExposedEvent

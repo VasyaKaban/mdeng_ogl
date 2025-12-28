@@ -16,8 +16,8 @@ namespace OpenGL
 
     void Queue::Begin(const Render::QueueBeginInfo& info)
     {
-        for(auto& sem: info.wait_seamphores)
-            static_cast<Semaphore*>(sem)->Wait();
+        for(auto& desc: info.wait_descs)
+            static_cast<Semaphore*>(desc.semaphore)->Wait();
     }
 
     void Queue::Flush(const Render::QueueFlushInfo& info)

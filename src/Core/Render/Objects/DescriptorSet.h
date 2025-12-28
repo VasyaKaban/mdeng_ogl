@@ -11,7 +11,8 @@ namespace Render
         virtual ~DescriptorSet()
         {}
 
-        virtual void Write(std::span<const UpdateDescriptorDesc> descs) = 0;
+        virtual void Update(std::span<const WriteDescriptorDesc> writes,
+                            std::span<const CopyDescriptorDesc> copies) = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

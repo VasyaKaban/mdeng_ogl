@@ -47,7 +47,6 @@ namespace Core
         SDL_Window* GetWindowHandle() const noexcept;
 
         WindowResolution GetResolution() const;
-        WindowResolution GetDrawableResolution() const;
 
         std::uint32_t GetID() const noexcept;
 

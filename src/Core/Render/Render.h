@@ -1191,9 +1191,10 @@ namespace Render
     //Viewport
     struct GraphicsPipelineViewportStateInfo
     {
-        std::uint32_t count;
-        std::span<Viewport> predefined_viewports;
-        std::span<Rect2D> predefined_scissors;
+        std::uint32_t viewport_count;
+        const Viewport* viewports;
+        std::uint32_t scissor_count;
+        const Rect2D* scissors;
     };
     //~Viewport
 
@@ -1273,7 +1274,7 @@ namespace Render
         std::uint64_t size;
     };
 
-    struct UpdateDescriptorDesc
+    struct WriteDescriptorDesc
     {
         std::uint32_t binding;
         std::uint32_t array_index;
@@ -1285,6 +1286,17 @@ namespace Render
             DescriptorBufferDesc* buffer_desc;
             BufferView** texel_buffer_view;
         } desc;
+    };
+
+    struct CopyDescriptorDesc
+    {
+        DescriptorSet* src_set;
+        DescriptorType type;
+        std::uint32_t src_binding;
+        std::uint32_t src_array_element;
+        std::uint32_t dst_binding;
+        std::uint32_t dst_array_element;
+        std::uint32_t descriptor_count;
     };
 
     enum class DynamicState
@@ -1652,6 +1664,7 @@ namespace Render
         bool sampler_mirror_clamp_to_edge;
         bool custom_border_colors;
         bool custom_border_color_without_format;
+        bool index_type_uint8;
     };
 
     enum class PhysicalDeviceType

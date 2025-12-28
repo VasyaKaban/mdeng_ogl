@@ -293,7 +293,8 @@ namespace OpenGL
         return properties;
     }
 
-    bool PhysicalDevice::GetSurfaceSupport(Render::Surface* surface) const noexcept
+    bool PhysicalDevice::GetSurfaceSupport(Render::Surface* surface,
+                                           std::uint32_t queue_family_index) const noexcept
     {
         Surface* impl_surface = static_cast<Surface*>(surface);
         if(!impl_surface->IsConnected())

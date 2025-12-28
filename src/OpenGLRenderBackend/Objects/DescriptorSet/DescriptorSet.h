@@ -14,7 +14,8 @@ namespace OpenGL
                       std::span<std::byte> _descriptors_data);
         ~DescriptorSet();
 
-        virtual void Write(std::span<const Render::UpdateDescriptorDesc> descs) override;
+        virtual void Update(std::span<const Render::WriteDescriptorDesc> writes,
+                            std::span<const Render::CopyDescriptorDesc> copies) override;
 
         virtual Render::Device* GetParent() const noexcept override;
 

@@ -76,14 +76,6 @@ namespace Core
         return resolution;
     }
 
-    WindowResolution GraphicWindow::GetDrawableResolution() const
-    {
-        WindowResolution resolution;
-        SDL_GL_GetDrawableSize(handle, &resolution.width, &resolution.height);
-
-        return resolution;
-    }
-
     std::uint32_t GraphicWindow::GetID() const noexcept
     {
         return id;

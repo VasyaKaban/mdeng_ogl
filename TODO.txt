@@ -47,15 +47,8 @@ move hrs to Core
 Common naming for FlagBits
 pipeline binary retrieve -> format as pipelineCacheUUID(fill with zeroes in VK) + API flag -> use VkPipelineCache for VK?
 
-Render check:
-    GraphicsPipelineMultisampleStateInfo.sample_mask for sample count bigger than 64!
-    GraphicsPipelineViewportStateInfo split count into vieport and scissor count
-    IndexType::U8 as feature -> move to features + VK_EXT_index_type_uint8
-    DescriptorSetAllocateInfo -> multi allocate?
-    start from DescriptorImageDesc -> UpdateDescriptorDesc make like vkUpdateDescriptorSetswith multi write and copy
-    fix errors in OGL backend
-    More dynamic states?
-    QueueFamilyProperties add min_image_transfer_granularity
-    debug_utils -> add object labels?
-    GetSurfaceSupport -> add queue_family_inde in OGL + use vkGetPhysicalDeviceWin32PresentationSupportKHR in VK
-    vkGetPhysicalDeviceM<IMPL>PresentationSupportKHR -> or just ignore because we can create surface and check support without IMPL functions
+More dynamic states? -> to be added...
+debug_utils -> add object labels? Is VAO represent the same concept like VkPipelineLayout in Vulkan?
+WGL/EGL/... as base classes for WSI-like objects
+
+Should we add current extent method in surface or leave it for SDL? -> SDL_WINDOW_HIGH_PIXEL_DENSITY???

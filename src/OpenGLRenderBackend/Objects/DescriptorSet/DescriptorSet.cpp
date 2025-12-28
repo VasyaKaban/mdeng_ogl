@@ -22,9 +22,10 @@ namespace OpenGL
         //noop due to linear descriptor pool
     }
 
-    void DescriptorSet::Write(std::span<const Render::UpdateDescriptorDesc> descs)
+    void DescriptorSet::Update(std::span<const Render::WriteDescriptorDesc> writes,
+                               std::span<const Render::CopyDescriptorDesc> copies)
     {
-        for(const auto& desc: descs)
+        for(const auto& desc: writes)
         {
             switch(desc.type)
             {
@@ -123,6 +124,125 @@ namespace OpenGL
 
                         array_desc->image_view =
                             static_cast<ImageView*>(array_descriptor->image_view)->GetHandle();
+                    }
+                }
+                break;
+            }
+        }
+
+        for(const auto& desc: copies)
+        {
+            DescriptorSet* src_set = static_cast<DescriptorSet*>(desc.src_set);
+
+            switch(desc.type)
+            {
+                case Render::DescriptorType::CombinedImageSampler:
+                case Render::DescriptorType::SampledImage:
+                case Render::DescriptorType::InputAttachment:
+                {
+                    DescriptorTextureDesc* src_image_desc =
+                        src_set->layout->TranslateTextureDescriptor(desc.src_binding,
+                                                                    src_set->descriptors_data);
+
+                    DescriptorTextureDesc* dst_image_desc =
+                        layout->TranslateTextureDescriptor(desc.dst_binding, descriptors_data);
+
+                    assert(src_image_desc != nullptr && dst_image_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorTextureDesc* src_array_desc = src_image_desc + i;
+                        DescriptorTextureDesc* dst_array_desc = dst_image_desc + i;
+
+                        if(desc.type == Render::DescriptorType::CombinedImageSampler)
+                            dst_array_desc->sampler = src_array_desc->sampler;
+
+                        dst_array_desc->image_view = src_array_desc->image_view;
+                    }
+                }
+                break;
+                case Render::DescriptorType::UniformTexelBuffer:
+                case Render::DescriptorType::StorageTexelBuffer:
+                {
+                    DescriptorTextureDesc* src_image_desc =
+                        src_set->layout->TranslateTextureDescriptor(desc.src_binding,
+                                                                    src_set->descriptors_data);
+
+                    DescriptorTextureDesc* dst_image_desc =
+                        layout->TranslateTextureDescriptor(desc.dst_binding, descriptors_data);
+
+                    assert(src_image_desc != nullptr && dst_image_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorTextureDesc* src_array_desc = src_image_desc + i;
+                        DescriptorTextureDesc* dst_array_desc = dst_image_desc + i;
+
+                        dst_array_desc->image_view = src_array_desc->image_view;
+                    }
+                }
+                break;
+                case Render::DescriptorType::UnifromBuffer:
+                {
+                    DescriptorUniformBufferDesc* src_buffer_desc =
+                        src_set->layout->TranslateUniformBufferBinding(desc.src_binding,
+                                                                       src_set->descriptors_data);
+
+                    DescriptorUniformBufferDesc* dst_buffer_desc =
+                        layout->TranslateUniformBufferBinding(desc.dst_binding, descriptors_data);
+
+                    assert(src_buffer_desc != nullptr && dst_buffer_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorUniformBufferDesc* src_array_desc = src_buffer_desc + i;
+                        DescriptorUniformBufferDesc* dst_array_desc = dst_buffer_desc + i;
+
+                        dst_array_desc->buffer = src_array_desc->buffer;
+                        dst_array_desc->offset = src_array_desc->offset;
+                        dst_array_desc->size = src_array_desc->size;
+                    }
+                }
+                break;
+                case Render::DescriptorType::StorageBuffer:
+                {
+                    DescriptorStorageBufferDesc* src_buffer_desc =
+                        src_set->layout->TranslateStorageBufferBinding(desc.src_binding,
+                                                                       src_set->descriptors_data);
+
+                    DescriptorStorageBufferDesc* dst_buffer_desc =
+                        layout->TranslateStorageBufferBinding(desc.dst_binding, descriptors_data);
+
+                    assert(src_buffer_desc != nullptr && dst_buffer_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorStorageBufferDesc* src_array_desc = src_buffer_desc + i;
+                        DescriptorStorageBufferDesc* dst_array_desc = dst_buffer_desc + i;
+
+                        dst_array_desc->buffer = src_array_desc->buffer;
+                        dst_array_desc->offset = src_array_desc->offset;
+                        dst_array_desc->size = src_array_desc->size;
+                    }
+                }
+                break;
+                case Render::DescriptorType::StorageImage:
+                {
+                    DescriptorStorageImageDesc* src_image_desc =
+                        src_set->layout->TranslateStorageImageBinding(desc.src_binding,
+                                                                      src_set->descriptors_data);
+
+                    DescriptorStorageImageDesc* dst_image_desc =
+                        layout->TranslateStorageImageBinding(desc.dst_binding, descriptors_data);
+
+                    assert(src_image_desc != nullptr && dst_image_desc != nullptr);
+
+                    for(std::uint32_t i = 0; i < desc.descriptor_count; i++)
+                    {
+                        DescriptorStorageImageDesc* src_array_desc = src_image_desc + i;
+                        DescriptorStorageImageDesc* dst_array_desc = dst_image_desc + i;
+
+                        dst_array_desc->image_view = src_array_desc->image_view;
                     }
                 }
                 break;

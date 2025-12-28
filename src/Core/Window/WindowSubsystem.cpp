@@ -63,8 +63,7 @@ namespace Core
                             {
                                 const WindowResizedEvent event = {
                                     .resolution = WindowResolution{.width = window_event.data1,
-                                                                   .height = window_event.data2},
-                                    .drawable_resolution = window->GetDrawableResolution()};
+                                                                   .height = window_event.data2}};
 
                                 Events::Emit<WindowResizedEvent>(window, event);
                             }

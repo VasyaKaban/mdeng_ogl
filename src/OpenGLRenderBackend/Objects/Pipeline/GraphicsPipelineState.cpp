@@ -226,7 +226,7 @@ namespace OpenGL
                                     .pass_op = StencilOpToNative(op.pass_op),
                                     .depth_fail_op = StencilOpToNative(op.depth_fail_op),
                                     .compare_op = ComapreOpToNative(op.compare_op),
-                                    .reference = op.reference,
+                                    .reference = static_cast<std::int32_t>(op.reference),
                                     .compare_mask = op.compare_mask,
                                     .write_mask = op.write_mask};
     }
@@ -300,7 +300,6 @@ namespace OpenGL
         : sample_count(info.sample_count),
           sample_shading_enabled(info.sample_shading_enabled),
           min_sample_shading(info.min_sample_shading),
-          sample_mask(info.sample_mask.begin(), info.sample_mask.end()),
           alpha_to_coverage_enabled(info.alpha_to_coverage_enabled),
           alpha_to_one_enabled(info.alpha_to_one_enabled)
     {
@@ -310,13 +309,15 @@ namespace OpenGL
 
         if(multisample_enabled)
         {
-            if(!sample_mask.empty())
+            if(!info.sample_mask.empty())
             {
-                int mask_count = (sample_count == Render::SampleCount::SampleCount_64 ? 2 : 1);
-                if(!(sample_mask.size() >= mask_count))
+                std::size_t mask_count = std::max(static_cast<int>(sample_count) / 32, 1);
+                if(!(info.sample_mask.size() >= mask_count))
                     throw std::runtime_error(std::format("Sample mask size({}) must be >= {}",
-                                                         sample_mask.size(),
+                                                         info.sample_mask.size(),
                                                          mask_count));
+
+                sample_mask.assign(info.sample_mask.begin(), info.sample_mask.begin() + mask_count);
             }
         }
     }
@@ -351,9 +352,7 @@ namespace OpenGL
             if(!sample_mask.empty())
             {
                 loader.Enable(GL_SAMPLE_MASK);
-                int mask_count = (sample_count == Render::SampleCount::SampleCount_64 ? 2 : 1);
-
-                for(int i = 0; i < mask_count; i++)
+                for(std::size_t i = 0; i < sample_mask.size(); i++)
                     loader.SampleMaski(i, sample_mask[i]);
             }
             else
@@ -432,62 +431,46 @@ namespace OpenGL
 
     GraphicsPipelineViewportState::GraphicsPipelineViewportState(
         const Render::GraphicsPipelineViewportStateInfo& info,
-        bool _predefined_viewport_enabled,
-        bool _predefined_scissors_enabled)
-        : predefined_viewport_enabled(_predefined_viewport_enabled),
-          predefined_scissors_enabled(_predefined_scissors_enabled),
-          count(info.count)
+        bool _dynamic_viewports,
+        bool _dynamic_scissors)
+        : dynamic_viewports(_dynamic_viewports),
+          dynamic_scissors(_dynamic_scissors)
     {
-        if(count == 0)
+        if(info.viewport_count == 0)
             throw std::runtime_error("Count of viewports must be greater than zero");
 
-        if(predefined_viewport_enabled)
-        {
-            if(info.predefined_viewports.size() < count)
-                throw std::runtime_error(
-                    "Count of viewports must be equal to info.count parameter");
+        if(info.scissor_count == 0)
+            throw std::runtime_error("Count of scissors must be greater than zero");
 
-            predefined_viewports.assign(info.predefined_viewports.begin(),
-                                        info.predefined_viewports.begin() + count);
-        }
+        if(!dynamic_viewports)
+            viewports.assign(info.viewports, info.viewports + info.viewport_count);
 
-        if(predefined_scissors_enabled)
-        {
-            if(info.predefined_scissors.size() < count)
-                throw std::runtime_error(
-                    "Count of scissor boxes must be equal to info.count parameter");
-
-            predefined_scissors.assign(info.predefined_scissors.begin(),
-                                       info.predefined_scissors.begin() + count);
-        }
+        if(!dynamic_scissors)
+            scissors.assign(info.scissors, info.scissors + info.scissor_count);
     }
 
     void GraphicsPipelineViewportState::Set(CommandBuffer& cmd, Pipeline& parent) noexcept
     {
         const auto& loader = get_loader(parent);
 
-        if(predefined_viewport_enabled)
+        if(!dynamic_scissors)
         {
-            for(std::size_t i = 0; i < predefined_viewports.size(); i++)
+            for(std::size_t i = 0; i < viewports.size(); i++)
             {
                 loader.ViewportIndexedf(i,
-                                        predefined_viewports[i].x,
-                                        predefined_viewports[i].y,
-                                        predefined_viewports[i].width,
-                                        predefined_viewports[i].height);
-                loader.DepthRangeIndexed(i,
-                                         predefined_viewports[i].min_depth,
-                                         predefined_viewports[i].max_depth);
+                                        viewports[i].x,
+                                        viewports[i].y,
+                                        viewports[i].width,
+                                        viewports[i].height);
+                loader.DepthRangeIndexed(i, viewports[i].min_depth, viewports[i].max_depth);
             }
         }
 
-        if(predefined_scissors_enabled)
+        if(!dynamic_scissors)
         {
             loader.Enable(GL_SCISSOR_TEST);
-            loader.ScissorArrayv(0, predefined_scissors.size(), &predefined_scissors[0].offset.x);
+            loader.ScissorArrayv(0, scissors.size(), &scissors[0].offset.x);
         }
-        else
-            loader.Disable(GL_SCISSOR_TEST);
     }
 
     void GraphicsPipelineViewportState::Destroy(Pipeline& parent) noexcept
@@ -544,14 +527,14 @@ namespace OpenGL
                                              Render::ShaderStageFlagBits::TessellationEvaluation);
                                  }) != info.shaders.end();
 
-        bool predefined_viewport_enabled = false;
-        bool predefined_scissors_enabled = false;
+        bool dynamic_viewport = false;
+        bool dynamic_scissors = false;
         for(const auto& state: info.state_info.dynamic_states)
         {
             if(state == Render::DynamicState::Viewport)
-                predefined_viewport_enabled = true;
+                dynamic_viewport = true;
             else if(state == Render::DynamicState::Scissors)
-                predefined_scissors_enabled = true;
+                dynamic_scissors = true;
         }
 
         _vertex_input_state =
@@ -570,8 +553,8 @@ namespace OpenGL
         _rasterization_state =
             GraphicsPipelineRasterizationState(info.state_info.rasterization_state_info);
         _viewport_state = GraphicsPipelineViewportState(info.state_info.viewport_state_info,
-                                                        predefined_viewport_enabled,
-                                                        predefined_scissors_enabled);
+                                                        dynamic_viewport,
+                                                        dynamic_scissors);
 
         cleanup.drop();
 

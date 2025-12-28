@@ -15,7 +15,8 @@ namespace OpenGL
 
         virtual const Render::PhysicalDeviceProperties& GetProperties() const noexcept override;
 
-        virtual bool GetSurfaceSupport(Render::Surface* surface) const noexcept override;
+        virtual bool GetSurfaceSupport(Render::Surface* surface,
+                                       std::uint32_t queue_family_index) const noexcept override;
 
         virtual Render::SurfaceCapabilities
         GetSurfaceCapablities(Render::Surface* surface) const noexcept override;

@@ -707,16 +707,16 @@ namespace OpenGL
         GLenum value;
         switch(topology)
         {
-            case Render::PrimitiveTopology::Points:
+            case Render::PrimitiveTopology::PointList:
                 value = GL_POINTS;
                 break;
-            case Render::PrimitiveTopology::Lines:
+            case Render::PrimitiveTopology::LineList:
                 value = GL_LINES;
                 break;
             case Render::PrimitiveTopology::LineStrip:
                 value = GL_LINE_STRIP;
                 break;
-            case Render::PrimitiveTopology::Triangles:
+            case Render::PrimitiveTopology::TriangleList:
                 value = GL_TRIANGLES;
                 break;
             case Render::PrimitiveTopology::TriangleStrip:
@@ -725,19 +725,19 @@ namespace OpenGL
             case Render::PrimitiveTopology::TriangleFan:
                 value = GL_TRIANGLE_FAN;
                 break;
-            case Render::PrimitiveTopology::LinesAdjacency:
+            case Render::PrimitiveTopology::LineListWithAdjacency:
                 value = GL_LINES_ADJACENCY;
                 break;
-            case Render::PrimitiveTopology::LineStripAdjacency:
+            case Render::PrimitiveTopology::LineStripWithAdjacency:
                 value = GL_LINE_STRIP_ADJACENCY;
                 break;
-            case Render::PrimitiveTopology::TrianglesAdjacency:
+            case Render::PrimitiveTopology::TriangleListWithAdjacency:
                 value = GL_TRIANGLES_ADJACENCY;
                 break;
-            case Render::PrimitiveTopology::TriangleStrIpAdjacency:
+            case Render::PrimitiveTopology::TriangleStripWithAdjacency:
                 value = GL_TRIANGLE_STRIP_ADJACENCY;
                 break;
-            case Render::PrimitiveTopology::Patches:
+            case Render::PrimitiveTopology::PatchList:
                 value = GL_PATCHES;
                 break;
             default:
@@ -836,7 +836,7 @@ namespace OpenGL
             case Render::BlendLogicOp::CopyInverted:
                 value = GL_COPY_INVERTED;
                 break;
-            case Render::BlendLogicOp::Noop:
+            case Render::BlendLogicOp::NoOp:
                 value = GL_NOOP;
                 break;
             case Render::BlendLogicOp::Invert:
@@ -923,13 +923,13 @@ namespace OpenGL
             case Render::StencilOp::Replace:
                 value = GL_REPLACE;
                 break;
-            case Render::StencilOp::Increment:
+            case Render::StencilOp::IncrementClamp:
                 value = GL_INCR;
                 break;
             case Render::StencilOp::IncrementWrap:
                 value = GL_INCR_WRAP;
                 break;
-            case Render::StencilOp::Decrement:
+            case Render::StencilOp::DecrementClamp:
                 value = GL_DECR;
                 break;
             case Render::StencilOp::DecrementWrap:
@@ -2103,7 +2103,7 @@ namespace OpenGL
                  GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT},
             {Render::AccessFlagBits::AccessTransferReadBit,
              GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT},
-            {Render::AccessFlagBits::AccessTransferWiteBit,
+            {Render::AccessFlagBits::AccessTransferWriteBit,
              GL_PIXEL_BUFFER_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT},
             {Render::AccessFlagBits::AccessMemoryReadBit, GL_ALL_BARRIER_BITS},
             {Render::AccessFlagBits::AccessMemoryWriteBit, GL_ALL_BARRIER_BITS},
@@ -2120,7 +2120,7 @@ namespace OpenGL
             {Render::AccessFlagBits::AccessDepthStencilAttachmentWriteBit,
              GL_FRAMEBUFFER_BARRIER_BIT},
             {Render::AccessFlagBits::AccessTransferReadBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
-            {Render::AccessFlagBits::AccessTransferWiteBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
+            {Render::AccessFlagBits::AccessTransferWriteBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
             {Render::AccessFlagBits::AccessHostReadBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
             {Render::AccessFlagBits::AccessHostWriteBit, GL_TEXTURE_UPDATE_BARRIER_BIT},
             {Render::AccessFlagBits::AccessMemoryReadBit, GL_ALL_BARRIER_BITS},
@@ -2518,7 +2518,8 @@ namespace OpenGL
             .variable_multisample_rate = true,
             .sampler_mirror_clamp_to_edge = true,
             .custom_border_colors = true,
-            .custom_border_color_without_format = true};
+            .custom_border_color_without_format = true,
+            .index_type_uint8 = true};
 
         return Render::PhysicalDeviceProperties{
             .version = Render::MakeVersion(major, minor),
@@ -2530,7 +2531,9 @@ namespace OpenGL
                 .specialization = Render::QueueSpecializationFlagBits::TransferSpec |
                                   Render::QueueSpecializationFlagBits::ComputeSpec |
                                   Render::QueueSpecializationFlagBits::GraphicsSpec,
-                .queue_count = 1}},
+                .queue_count = 1,
+                .min_image_transfer_granularity =
+                    Render::Extent3D{.width = 1, .height = 1, .depth = 1}}},
             .memory_types =
                 std::vector(std::begin(AVAILABLE_MEMORY_TYPES), std::end(AVAILABLE_MEMORY_TYPES)),
             .command_buffer_strategy = Render::CommandBufferStrategy::Immediate,

@@ -584,7 +584,17 @@ namespace OpenGL
     void CommandBuffer::SetViewport(std::uint32_t first_viewport,
                                     std::span<const Render::Viewport> viewports)
     {
-        parent->GetLoader().ViewportArrayv(first_viewport, viewports.size(), &viewports.data()->x);
+        for(std::uint32_t i = 0; i < viewports.size(); i++)
+        {
+            parent->GetLoader().ViewportIndexedf(first_viewport + i,
+                                                 viewports[i].x,
+                                                 viewports[i].y,
+                                                 viewports[i].width,
+                                                 viewports[i].height);
+            parent->GetLoader().DepthRangeIndexed(first_viewport + i,
+                                                  viewports[i].min_depth,
+                                                  viewports[i].max_depth);
+        }
     }
 
     void CommandBuffer::SetScissors(std::uint32_t first_scissor,
@@ -596,10 +606,10 @@ namespace OpenGL
                                           &scissors.data()->offset.x);
     }
 
-    void CommandBuffer::SetUniform(Render::ShaderStageFlags stages,
-                                   std::uint32_t offset,
-                                   std::span<const std::byte> data,
-                                   std::span<const Render::UniformDesc> uniform_descs)
+    void CommandBuffer::SetUniforms(Render::ShaderStageFlags stages,
+                                    std::uint32_t offset,
+                                    std::span<const std::byte> data,
+                                    std::span<const Render::UniformDesc> uniform_descs)
     {
         GLHandle handle = bound_pipeline->GetHandle();
 
