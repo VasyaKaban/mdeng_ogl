@@ -1,8 +1,9 @@
-#include "Resolve.h"
+#include "ResolveBase.h"
 #include "hrs/scoped_call.hpp"
 #include <optional>
-#include "../../Objects/Instance/Instance.h"
+#include <stdexcept>
 #include "glad/wgl.h"
+#include "hrs/detail/winapi/winapi.h"
 
 namespace OpenGL
 {
@@ -120,18 +121,11 @@ namespace OpenGL
         return -1;
     }
 
-    Resolve::Resolve()
-        : instance_features{.validation_layer = true, .debug_messenger = true} //we use OGL4.5+
-    {}
-
-    Resolve::~Resolve()
-    {}
-
-    void Resolve::Init()
+    void ResolveBase::Init()
     {
         HINSTANCE _instance = GetModuleHandleW(nullptr);
 
-        WNDCLASS window_class = {};
+        WNDCLASSW window_class = {};
         window_class.lpszClassName = DUMMY_WINDOW_CLASS_NAME;
         window_class.hInstance = _instance;
         window_class.lpfnWndProc = DummyWindowProc;
@@ -160,23 +154,6 @@ namespace OpenGL
         UnregisterClassW(DUMMY_WINDOW_CLASS_NAME, _instance);
 
         if(!window_param_opt.has_value())
-        {
             throw window_param_opt.value();
-        }
-    }
-
-    const Render::InstanceFeatures& Resolve::GetInstanceFeatures() const noexcept
-    {
-        return instance_features;
-    }
-
-    Render::Backend Resolve::GetBackend() const noexcept
-    {
-        return Render::Backend::OpenGL;
-    }
-
-    Render::Instance* Resolve::CreateInstance(const Render::InstanceInfo& info)
-    {
-        return new Instance(info);
     }
 };

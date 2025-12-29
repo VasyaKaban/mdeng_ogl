@@ -1,12 +1,9 @@
-#include "PhysicalDevice.h"
+#include "PhysicalDeviceBase.h"
 #include <stdexcept>
 #include "hrs/expected.hpp"
 #include "hrs/scoped_call.hpp"
-#include "../../../Objects/Instance/Instance.h"
-#include "../../../Objects/Device/Device.h"
+#include "../Objects/Instance/Instance.h"
 #include "glad/wgl.h"
-#include "hrs/detail/winapi/winapi.h"
-#include "../Surface/Surface.h"
 
 namespace OpenGL
 {
@@ -18,8 +15,6 @@ namespace OpenGL
         Instance* input_instance;
         HDC dc;
         HGLRC glrc;
-        GladGLContext loader;
-        Render::PhysicalDeviceProperties properties;
         Render::SurfaceCapabilities surface_capabilities;
         std::vector<std::uint32_t> pixelformat_indices;
     };
@@ -191,31 +186,9 @@ namespace OpenGL
 
                 wglMakeCurrent(_dc, _glrc);
 
-                GladGLContext loader;
-                int glad_ver =
-                    gladLoadGLContext(&loader, reinterpret_cast<GLADloadfunc>(wglGetProcAddress));
-                if(glad_ver == 0)
-                {
-                    *window_params_exp = std::runtime_error("Failed to load GLAD");
-                    return -1;
-                }
-
-                if(debug_messenger_enabled)
-                {
-                    const auto& info =
-                        window_params_exp->value().input_instance->GetDebugMessengerInfo();
-
-                    EnableDebugMessenger(loader);
-                    SetDebugMessenger(loader, info);
-                }
-
-                auto properties =
-                    GetPhysicalDeviceProperties(loader, GLAD_WGL_ARB_create_context_robustness);
                 *window_params_exp =
                     WindowParams{.dc = _dc,
                                  .glrc = _glrc,
-                                 .loader = std::move(loader),
-                                 .properties = std::move(properties),
                                  .surface_capabilities = std::move(surface_capabilities),
                                  .pixelformat_indices = std::move(pixelformat_indices)};
 
@@ -230,11 +203,11 @@ namespace OpenGL
         return 0;
     }
 
-    PhysicalDevice::PhysicalDevice(Instance* _parent)
+    PhysicalDeviceBase::PhysicalDeviceBase(Instance* instance)
     {
         HINSTANCE _instance = GetModuleHandleW(nullptr);
 
-        WNDCLASS window_class = {};
+        WNDCLASSW window_class = {};
         window_class.lpszClassName = DUMMY_WINDOW_CLASS_NAME;
         window_class.hInstance = _instance;
         window_class.lpfnWndProc = DummyWindowProc;
@@ -243,7 +216,7 @@ namespace OpenGL
             throw std::runtime_error("Failed to create dummy OpenGL window");
 
         hrs::expected<WindowParams, std::runtime_error> window_param_exp =
-            WindowParams{.input_instance = _parent};
+            WindowParams{.input_instance = instance};
 
         HWND _window = CreateWindowExW(0,
                                        DUMMY_WINDOW_CLASS_NAME,
@@ -268,19 +241,15 @@ namespace OpenGL
             throw window_param_exp.error();
         }
 
-        parent = _parent;
         hinstance = _instance;
         window = _window;
         dc = window_param_exp->dc;
         glrc = window_param_exp->glrc;
-        loader = std::move(window_param_exp->loader);
-        properties = std::move(window_param_exp->properties);
         surface_capabilities = std::move(window_param_exp->surface_capabilities);
         pixelformat_indices = std::move(window_param_exp->pixelformat_indices);
-        device = nullptr;
     }
 
-    PhysicalDevice::~PhysicalDevice()
+    PhysicalDeviceBase::~PhysicalDeviceBase()
     {
         wglDeleteContext(glrc);
         ReleaseDC(window, dc);
@@ -288,69 +257,18 @@ namespace OpenGL
         UnregisterClassW(DUMMY_WINDOW_CLASS_NAME, hinstance);
     }
 
-    const Render::PhysicalDeviceProperties& PhysicalDevice::GetProperties() const noexcept
-    {
-        return properties;
-    }
-
-    bool PhysicalDevice::GetSurfaceSupport(Render::Surface* surface,
-                                           std::uint32_t queue_family_index) const noexcept
-    {
-        Surface* impl_surface = static_cast<Surface*>(surface);
-        if(!impl_surface->IsConnected())
-            return true;
-
-        return impl_surface->GetConnectedPhysicalDevice() == this;
-    }
-
-    Render::SurfaceCapabilities
-    PhysicalDevice::GetSurfaceCapablities(Render::Surface* surface) const noexcept
-    {
-        Surface* impl_surface = static_cast<Surface*>(surface);
-
-        if(impl_surface->IsConnected())
-            return impl_surface->GetConnectedCapabilities();
-
-        return surface_capabilities;
-    }
-
-    std::optional<Render::BufferFormatProperties>
-    PhysicalDevice::GetBufferFormatProperties(const Render::BufferFormatInfo& info) const
-    {
-        return GetPhysicaldeviceBufferFormatProperties(loader, info);
-    }
-
-    std::optional<Render::ImageFormatProperties>
-    PhysicalDevice::GetImageFormatProperties(const Render::ImageFormatInfo& info) const
-    {
-        return GetPhysicalDeviceImageFormatProperties(loader, info);
-    }
-
-    Render::Device* PhysicalDevice::CreateDevice(const Render::DeviceInfo& info)
-    {
-        if(device != nullptr)
-            throw std::runtime_error("Physical device already has created logical device");
-
-        Surface* impl_surface = static_cast<Surface*>(info.surface);
-        if(impl_surface->IsConnected())
-            throw std::runtime_error("Surface is connected to other device");
-
-        device = new Device(this, info);
-        return device;
-    }
-
-    Render::Instance* PhysicalDevice::GetParent() const noexcept
-    {
-        return parent;
-    }
-
-    GLADloadfunc PhysicalDevice::GetProcAddressResolver() const noexcept
+    GLADloadfunc PhysicalDeviceBase::GetProcAddressResolver() const noexcept
     {
         return reinterpret_cast<GLADloadfunc>(wglGetProcAddress);
     }
 
-    Render::SurfaceCapabilities
-    PhysicalDevice::GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept
+    const Render::SurfaceCapabilities& PhysicalDeviceBase::GetSurfaceCapabilities() const noexcept
+    {
+        return surface_capabilities;
+    }
+
+    const Render::SurfaceCapabilities
+    PhysicalDeviceBase::GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept
     {
         return Render::SurfaceCapabilities{
             .min_image_count = surface_capabilities.min_image_count,
@@ -360,20 +278,13 @@ namespace OpenGL
                 surface_capabilities.supported_configs[pixelformat_indices[index]]}};
     }
 
-    void PhysicalDevice::DeleteDeviceNotify() noexcept
+    void PhysicalDeviceBase::MakeCurrent()
     {
-        device = nullptr;
-
         wglMakeCurrent(dc, glrc);
     }
 
-    void PhysicalDevice::SetDebugMessenger(const Render::DebugMessengerInfo& info)
+    bool PhysicalDeviceBase::IsRobustContextSupported() const noexcept
     {
-        wglMakeCurrent(dc, glrc);
-
-        OpenGL::SetDebugMessenger(loader, info);
-
-        if(device)
-            device->SetDebugMessenger(info);
+        return GLAD_WGL_ARB_create_context_robustness != 0;
     }
 };

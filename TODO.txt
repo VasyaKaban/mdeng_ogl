@@ -49,6 +49,5 @@ pipeline binary retrieve -> format as pipelineCacheUUID(fill with zeroes in VK) 
 
 More dynamic states? -> to be added...
 debug_utils -> add object labels? Is VAO represent the same concept like VkPipelineLayout in Vulkan?
-WGL/EGL/... as base classes for WSI-like objects
 
 Should we add current extent method in surface or leave it for SDL? -> SDL_WINDOW_HIGH_PIXEL_DENSITY???

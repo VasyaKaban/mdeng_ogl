@@ -1,58 +1,39 @@
-#include "Surface.h"
+#include "SurfaceBase.h"
 #include <stdexcept>
 #include "glad/wgl.h"
-#include "../PhysicalDevice/PhysicalDevice.h"
-#include "../../../Objects/Instance/Instance.h"
+#include "../Objects/PhysicalDevice/PhysicalDevice.h"
+#include "../Objects/Instance/Instance.h"
 
 namespace OpenGL
 {
 
-    Surface::Surface(Instance* _parent, const Render::SurfaceWin32Info& info) noexcept
-        : parent(_parent),
-          win32_info(info),
-          glrc(nullptr),
-          connected_physical_device(nullptr)
+    SurfaceBase::SurfaceBase(const Render::SurfaceWin32Info& _info) noexcept
+        : info(_info),
+          glrc(nullptr)
     {}
 
-    Surface::~Surface()
+    SurfaceBase::~SurfaceBase()
     {
         if(glrc)
             wglDeleteContext(glrc);
     }
 
-    bool Surface::IsPresentable() const noexcept
-    {
-        return true; //in OpenGL we always have presentable contexts???
-    }
-
-    Render::Instance* Surface::GetParent() const noexcept
-    {
-        return parent;
-    }
-
-    Render::SurfaceCapabilities Surface::GetConnectedCapabilities() const
-    {
-        return connected_capabilities;
-    }
-
-    PhysicalDevice* Surface::GetConnectedPhysicalDevice() const noexcept
-    {
-        return connected_physical_device;
-    }
-
-    void Surface::Connect(const SurfaceConnectInfo& info)
+    void SurfaceBase::Connect(const SurfaceConnectInfo& connect_info)
     {
         if(glrc)
             throw std::runtime_error("Failed to create already created WGL context");
 
         //select pixel format for current DC
         PIXELFORMATDESCRIPTOR pfd;
-        DescribePixelFormat(win32_info.hdc, info.config_index, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+        DescribePixelFormat(info.hdc,
+                            connect_info.config_index,
+                            sizeof(PIXELFORMATDESCRIPTOR),
+                            &pfd);
 
-        if(SetPixelFormat(win32_info.hdc, info.config_index, &pfd) == FALSE)
+        if(SetPixelFormat(info.hdc, connect_info.config_index, &pfd) == FALSE)
             throw hrs::winapi_get_last_error();
 
-        Instance* impl_instace = static_cast<Instance*>(info.physical_device->GetParent());
+        Instance* impl_instace = static_cast<Instance*>(connect_info.physical_device->GetParent());
         bool debug_messenger_enabled = impl_instace->GetEnabledFeatures().validation_layer ||
                                        impl_instace->GetEnabledFeatures().debug_messenger;
 
@@ -64,7 +45,7 @@ namespace OpenGL
             WGL_CONTEXT_FLAGS_ARB,
             WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB |
                 (debug_messenger_enabled ? WGL_CONTEXT_DEBUG_BIT_ARB : 0) |
-                (info.robust_buffer_access_enabled ? WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB : 0),
+                (connect_info.robust_buffer_access_enabled ? WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB : 0),
             WGL_CONTEXT_PROFILE_MASK_ARB,
             WGL_CONTEXT_CORE_PROFILE_BIT_ARB};
 
@@ -79,24 +60,19 @@ namespace OpenGL
 
         profile_attributes.push_back(0);
 
-        glrc = glad_wglCreateContextAttribsARB(win32_info.hdc, nullptr, profile_attributes.data());
+        glrc = glad_wglCreateContextAttribsARB(info.hdc, nullptr, profile_attributes.data());
         if(!glrc)
             throw hrs::winapi_get_last_error();
 
-        wglMakeCurrent(win32_info.hdc, glrc);
-
-        connected_capabilities = static_cast<PhysicalDevice*>(info.physical_device)
-                                     ->GetSurfaceCapabilitiesByIndex(info.config_index);
-
-        connected_physical_device = info.physical_device;
+        wglMakeCurrent(info.hdc, glrc);
     }
 
-    bool Surface::IsConnected() const noexcept
+    bool SurfaceBase::IsConnected() const noexcept
     {
         return glrc != nullptr;
     }
 
-    void Surface::SetSwapInterval(Render::PresentModeFlagBits present_mode)
+    void SurfaceBase::SetSwapInterval(Render::PresentModeFlagBits present_mode)
     {
         int interval;
         switch(present_mode)
@@ -133,13 +109,13 @@ namespace OpenGL
         }
     }
 
-    void Surface::SwapWindow()
+    void SurfaceBase::SwapWindow()
     {
-        wglSwapLayerBuffers(win32_info.hdc, WGL_SWAP_MAIN_PLANE);
+        wglSwapLayerBuffers(info.hdc, WGL_SWAP_MAIN_PLANE);
     }
 
-    void Surface::MakeCurrent()
+    void SurfaceBase::MakeCurrent()
     {
-        wglMakeCurrent(win32_info.hdc, glrc);
+        wglMakeCurrent(info.hdc, glrc);
     }
 };

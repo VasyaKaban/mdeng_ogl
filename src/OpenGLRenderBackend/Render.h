@@ -203,25 +203,6 @@ namespace OpenGL
                   alignof(DescriptorStorageBufferDesc),
                   alignof(DescriptorStorageImageDesc)});
 
-    void GLAPIENTRY debug_messenger_callback(GLenum source,
-                                             GLenum type,
-                                             GLuint id,
-                                             GLenum severity,
-                                             GLsizei length,
-                                             const GLchar* message,
-                                             const void* user_param);
-
-    Render::PhysicalDeviceProperties GetPhysicalDeviceProperties(GladGLContext& loader,
-                                                                 bool robust_buffer_access);
-
-    std::optional<Render::BufferFormatProperties>
-    GetPhysicaldeviceBufferFormatProperties(const GladGLContext& loader,
-                                            const Render::BufferFormatInfo& info);
-
-    std::optional<Render::ImageFormatProperties>
-    GetPhysicalDeviceImageFormatProperties(const GladGLContext& loader,
-                                           const Render::ImageFormatInfo& info);
-
     void EnableDebugMessenger(const GladGLContext& loader);
     void SetDebugMessenger(const GladGLContext& loader, const Render::DebugMessengerInfo& info);
 };
