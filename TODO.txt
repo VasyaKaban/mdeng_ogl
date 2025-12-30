@@ -43,3 +43,15 @@ pipeline binary retrieve -> format as pipelineCacheUUID(fill with zeroes in VK) 
 
 More dynamic states? -> to be added...
 debug_utils -> add object labels? Is VAO represent the same concept like VkPipelineLayout in Vulkan?
+ 
+Should we use UnknownQueueSpec? AFAIK other flags like video encode/decode only appear on video encode/decode extension provided? -> but it will be listed anyway because we enable extensions on device creation while queue properties we get from physical device
+In vulkan:
+    if we map buffers each map call wil increment map counter in inner memory handle
+    each unmap also will decrement inner map counter
+Maybe add methods for device that will get info about:
+    two passed in buffers are bound to the same inner memory handle
+    FlushMappedRanges that will receive array of memory ranges to flush and buffers and create common arrays for VK? + same for invalidate -> do we really need to map a lot of buffers to use them within the same frame?
+
+buffer align: common(bufferImageGranularity, nonCoherentAtomSize, req.alignment)
+image align: common(bufferImageGranularity,req.alignment)
+Maybe add memory_allocation_size_hint for vulkan memory allocator as field in DeviceInfo? -> NoOp in OGL
