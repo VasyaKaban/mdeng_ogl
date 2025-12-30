@@ -9,7 +9,7 @@ namespace Render
     public:
         virtual ~Surface() {};
 
-        virtual bool IsPresentable() const noexcept = 0;
+        virtual Extent2D GetCurrentExtent() const noexcept = 0;
 
         virtual Instance* GetParent() const noexcept = 0;
     };

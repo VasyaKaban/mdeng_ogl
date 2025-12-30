@@ -19,7 +19,7 @@ namespace OpenGL
 
         virtual ~Surface() override;
 
-        virtual bool IsPresentable() const noexcept override;
+        virtual Render::Extent2D GetCurrentExtent() const noexcept override;
 
         virtual Render::Instance* GetParent() const noexcept override;
 

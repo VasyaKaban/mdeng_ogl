@@ -37,17 +37,9 @@ Change plain pointer to unique_ptr due to the exceptions in constructor(see Devi
 Add enabled features check for every object like aniso in sampler and in pipeline state
 Make physical device current on device delete notify + think abound make current and reset previous current context
 
-MakeCurrent behaviour:
-    Create physical device -> make it current
-    Create device -> make it current
-    propagate debug messenger -> make current object and then propagate iterately
-    delete device -> make physical device current
-
 move hrs to Core
 Common naming for FlagBits
 pipeline binary retrieve -> format as pipelineCacheUUID(fill with zeroes in VK) + API flag -> use VkPipelineCache for VK?
 
 More dynamic states? -> to be added...
 debug_utils -> add object labels? Is VAO represent the same concept like VkPipelineLayout in Vulkan?
-
-Should we add current extent method in surface or leave it for SDL? -> SDL_WINDOW_HIGH_PIXEL_DENSITY???

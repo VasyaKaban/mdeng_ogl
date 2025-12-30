@@ -15,9 +15,9 @@ namespace OpenGL
     Surface::~Surface()
     {}
 
-    bool Surface::IsPresentable() const noexcept
+    Render::Extent2D Surface::GetCurrentExtent() const noexcept
     {
-        return true; //in OpenGL we always have presentable contexts???
+        return this->SurfaceBase::GetCurrentExtent();
     }
 
     Render::Instance* Surface::GetParent() const noexcept

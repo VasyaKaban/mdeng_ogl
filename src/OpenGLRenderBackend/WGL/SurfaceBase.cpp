@@ -118,4 +118,14 @@ namespace OpenGL
     {
         wglMakeCurrent(info.hdc, glrc);
     }
+
+    Render::Extent2D SurfaceBase::GetCurrentExtent() const noexcept
+    {
+        LPRECT rect;
+        if(!GetClientRect(info.window, rect))
+            return Render::Extent2D{.width = 0, .height = 0};
+
+        return Render::Extent2D{.width = static_cast<std::uint32_t>(rect->right),
+                                .height = static_cast<std::uint32_t>(rect->bottom)};
+    }
 };
