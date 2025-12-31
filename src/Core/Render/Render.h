@@ -1812,6 +1812,7 @@ namespace Render
         PhysicalDeviceFeatures enabled_features;
         Surface* surface;
         SwapchainInfo swapchain_info;
+        std::uint64_t memory_allocation_size_hint;
     };
 
     struct SurfaceWin32Info

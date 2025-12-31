@@ -54,4 +54,3 @@ Maybe add methods for device that will get info about:
 
 buffer align: common(bufferImageGranularity, nonCoherentAtomSize, req.alignment)
 image align: common(bufferImageGranularity,req.alignment)
-Maybe add memory_allocation_size_hint for vulkan memory allocator as field in DeviceInfo? -> NoOp in OGL
