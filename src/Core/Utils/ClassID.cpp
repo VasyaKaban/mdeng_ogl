@@ -2,9 +2,9 @@
 
 namespace Core
 {
-    static std::uint64_t CLASS_BASE_ID_COUNTER = 0;
+    static ClassIDBase::Type CLASS_BASE_ID_COUNTER = 0;
 
-    std::uint64_t ClassIDBase::GenerateID() noexcept
+    ClassIDBase::Type ClassIDBase::GenerateID() noexcept
     {
         return CLASS_BASE_ID_COUNTER++;
     }

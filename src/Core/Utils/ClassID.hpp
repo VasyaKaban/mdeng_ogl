@@ -9,17 +9,19 @@ namespace Core
 
     class ClassIDBase
     {
+    public:
+        using Type = std::uint64_t;
     private:
         template<typename T>
         friend class ClassID;
 
-        static std::uint64_t GenerateID() noexcept;
+        static Type GenerateID() noexcept;
     };
 
     template<typename T>
     class ClassID
     {
     public:
-        static inline const std::uint64_t ID = ClassIDBase::GenerateID();
+        static inline const ClassIDBase::Type ID = ClassIDBase::GenerateID();
     };
 };
