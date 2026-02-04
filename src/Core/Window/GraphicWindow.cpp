@@ -23,7 +23,7 @@ namespace Core
         };
 
         SDL_SysWMinfo sys_wm_info;
-        SDL_version(sys_wm_info.version);
+        SDL_VERSION(&sys_wm_info.version);
 
         auto res = SDL_GetWindowWMInfo(_handle, &sys_wm_info);
         if(res != SDL_TRUE)
