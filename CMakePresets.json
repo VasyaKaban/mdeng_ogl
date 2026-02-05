@@ -58,6 +58,27 @@
         },
         {
             "inherits": "Windows-base",
+            "name": "Windows-mixed",
+            "displayName": "Windows mixed preset",
+            "description": "Windows mixed preset",
+            "binaryDir": "${sourceDir}/build/windows/mixed",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            },
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": [
+                        "Windows"
+                    ]
+                }
+            }
+        },
+        {
+            "inherits": "Windows-base",
             "name": "Windows-release",
             "displayName": "Windows release preset",
             "description": "Windows release preset",
@@ -82,6 +103,10 @@
         {
             "name": "Windows Debug",
             "configurePreset": "Windows-debug"
+        },
+        {
+            "name": "Windows Mixed",
+            "configurePreset": "Windows-mixed"
         },
         {
             "name": "Windows Release",
