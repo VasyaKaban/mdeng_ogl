@@ -52,7 +52,7 @@ namespace Core
                             if(window)
                             {
                                 const WindowCloseEvent event = {};
-                                Events::Emit<WindowCloseEvent>(window, event);
+                                window->Emit(event);
                             }
                         }
                         break;
@@ -65,7 +65,7 @@ namespace Core
                                     .resolution = WindowResolution{.width = window_event.data1,
                                                                    .height = window_event.data2}};
 
-                                Events::Emit<WindowResizedEvent>(window, event);
+                                window->Emit(event);
                             }
                         }
                         break;
@@ -75,7 +75,7 @@ namespace Core
                             if(window)
                             {
                                 const WindowExposedEvent event = {};
-                                Events::Emit<WindowExposedEvent>(window, event);
+                                window->Emit(event);
                             }
                         }
                         break;
@@ -88,7 +88,7 @@ namespace Core
                                     .position = WindowPosition{.x = window_event.data1,
                                                                .y = window_event.data2}};
 
-                                Events::Emit<WindowMovedEvent>(window, event);
+                                window->Emit(event);
                             }
                         }
                         break;
@@ -107,7 +107,7 @@ namespace Core
                                                         .motion_x = motion_event.xrel,
                                                         .motion_y = motion_event.yrel};
 
-                        Events::Emit<MouseMotionEvent>(window, event);
+                        window->Emit(event);
                     }
                 }
                 break;
@@ -127,7 +127,7 @@ namespace Core
                             .x = button_event.x,
                             .y = button_event.y};
 
-                        Events::Emit<MouseButtonEvent>(window, event);
+                        window->Emit(event);
                     }
                 }
                 break;
@@ -142,7 +142,7 @@ namespace Core
                                                        .x = wheel_event.mouseX,
                                                        .y = wheel_event.mouseY};
 
-                        Events::Emit<MouseWheelEvent>(window, event);
+                        window->Emit(event);
                     }
                 }
                 break;

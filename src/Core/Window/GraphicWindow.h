@@ -1,11 +1,8 @@
 #pragma once
 
-#include <memory>
-#include <string_view>
 #include <SDL2/SDL.h>
-#include "hrs/non_creatable.hpp"
 #include "WindowEvents.h"
-#include "../Events/Events.hpp"
+#include "Core/Events/Events.h"
 #include "../Render/Render.h"
 
 namespace Core
@@ -27,17 +24,18 @@ namespace Core
 
     using WindowSurface = std::variant<Render::SurfaceWin32Info>;
 
-    class GraphicWindow : public Events::EventEmitter<WindowCloseEvent>,
-                          public Events::EventEmitter<WindowResizedEvent>,
-                          public Events::EventEmitter<WindowExposedEvent>,
-                          public Events::EventEmitter<WindowMovedEvent>,
-                          public Events::EventEmitter<MouseMotionEvent>,
-                          public Events::EventEmitter<MouseButtonEvent>,
-                          public Events::EventEmitter<MouseWheelEvent>
+    class GraphicWindow : private Core::ReservedEventEmitter<WindowResizedEvent,
+                                                             WindowExposedEvent,
+                                                             WindowMovedEvent,
+                                                             MouseMotionEvent,
+                                                             MouseButtonEvent,
+                                                             MouseWheelEvent>
     {
         friend class WindowSubsystem;
         GraphicWindow(const GraphicWindowInfo& info);
     public:
+        using Core::EventEmitter::Connect;
+
         ~GraphicWindow();
 
         void SetFullscreenState(WindowFullscreenState state);

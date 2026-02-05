@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include "Core/Utils/ClassID.hpp"
 
 namespace Core
 {
@@ -16,18 +17,18 @@ namespace Core
         int y;
     };
 
-    struct WindowCloseEvent
+    struct WindowCloseEvent : public ClassID<WindowCloseEvent>
     {};
 
-    struct WindowResizedEvent
+    struct WindowResizedEvent : public ClassID<WindowResizedEvent>
     {
         WindowResolution resolution;
     };
 
-    struct WindowExposedEvent
+    struct WindowExposedEvent : public ClassID<WindowExposedEvent>
     {};
 
-    struct WindowMovedEvent
+    struct WindowMovedEvent : public ClassID<WindowMovedEvent>
     {
         WindowPosition position;
     };
@@ -71,7 +72,7 @@ namespace Core
 
     using MouseButtonMask = std::underlying_type_t<MouseButtonBits>;
 
-    struct MouseMotionEvent
+    struct MouseMotionEvent : public ClassID<MouseMotionEvent>
     {
         MouseButtonMask mask;
         std::int32_t x;
@@ -86,7 +87,7 @@ namespace Core
         Released
     };
 
-    struct MouseButtonEvent
+    struct MouseButtonEvent : public ClassID<MouseButtonEvent>
     {
         MouseButtonBits button;
         ButtonState state;
@@ -95,7 +96,7 @@ namespace Core
         std::int32_t y;
     };
 
-    struct MouseWheelEvent
+    struct MouseWheelEvent : public ClassID<MouseWheelEvent>
     {
         std::int32_t scrolled_x;
         std::int32_t scrolled_y;
