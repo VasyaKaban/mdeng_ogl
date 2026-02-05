@@ -8,6 +8,15 @@
 
 namespace Test
 {
+    template<typename T>
+    struct type_arg
+    {
+        using type = T;
+    };
+
+    template<typename T>
+    using type_arg_t = type_arg<T>;
+
     template<typename E>
     concept Event = std::is_base_of_v<Core::ClassID<E>, E>;
 
@@ -35,32 +44,98 @@ namespace Test
         ListenerNode* next;
     };
 
-    struct EmitterList : public EmitterNode
+    template<typename N>
+    requires std::same_as<N, EmitterNode> || std::same_as<N, ListenerNode>
+    struct NodeList : N
     {
         //prev = nullptr
-        EmitterNode* last;
+        N* last;
+
+        static NodeList CreateEmpty() noexcept
+        {
+            return NodeList{N{.prev = nullptr, .next = nullptr}, nullptr};
+        }
+
+        bool IsEmpty() const noexcept
+        {
+            return this->N::next == nullptr;
+        }
+
+        void Push(N* node) noexcept
+        {
+            if(IsEmpty())
+            {
+                this->N::next = node;
+                this->last = node;
+
+                node->next = this;
+                node->prev = this;
+            }
+            else
+            {
+                auto prev_last = last;
+
+                last = node;
+                prev_last->next = node;
+
+                node->next = this;
+                node->prev = prev_last;
+            }
+        }
+
+        static bool Erase(N* node) noexcept
+        {
+            if(node->prev == nullptr)
+                return false;
+
+            bool is_first = (node->prev->prev == nullptr);
+            bool is_last = (node->next->prev == nullptr);
+
+            if(is_first && is_last)
+            {
+                auto list = static_cast<NodeList*>(node->prev);
+
+                list->next = nullptr;
+                list->last = nullptr;
+            }
+            else if(is_first)
+            {
+                auto list = static_cast<NodeList*>(node->prev);
+
+                list->next = node->next;
+                node->next->prev = list;
+            }
+            else if(is_last)
+            {
+                auto list = static_cast<NodeList*>(node->next);
+
+                node->prev->next = list;
+            }
+            else //if(!is_first && !is_last)
+            {
+                node->prev->next = node->next;
+                node->next->prev = node->prev;
+            }
+
+            return true;
+        }
     };
 
-    struct ListenerList : public ListenerNode
-    {
-        //prev = nullptr
-        ListenerNode* last;
-    };
+    using EmitterList = NodeList<EmitterNode>;
+    using ListenerList = NodeList<ListenerNode>;
 
     template<Event E, EventHandlerFunc<E> F>
-    EventHandlerResult event_handler_caller_wrapper(std::byte* memory, const void* event)
+    EventHandlerResult event_handler_caller_wrapper(void* memory, const void* event)
     {
         return (*reinterpret_cast<F*>(memory))(*static_cast<const E*>(event));
     }
 
     template<Event E, EventHandlerFunc<E> F>
-    void event_handler_deleter_wrapper(std::byte* memory) noexcept
+    void event_handler_deleter_wrapper(void* memory) noexcept
     {
         delete reinterpret_cast<F*>(memory);
     }
 
-    class ListenerList;
-    class EmitterList;
     class EventHandlerRef;
 
     class EventHandler : public EmitterNode,
@@ -70,57 +145,23 @@ namespace Test
     {
     public:
         template<Event E, EventHandlerFunc<E> F>
-        EventHandler(const E&,
+        requires std::constructible_from<std::remove_cvref_t<F>, F>
+        EventHandler(type_arg<E> _arg,
                      F&& func,
                      bool _enabled,
                      EmitterList* emitter_list,
                      ListenerList* listener_list)
-            : handler_memory(reinterpret_cast<std::byte*>(new F(std::forward<F>(func)))),
+            : handler_memory(new F(std::forward<F>(func))),
               caller(event_handler_caller_wrapper<E, F>),
               deleter(event_handler_deleter_wrapper<E, F>),
               enabled(_enabled),
               counter(1) //for emitter
         {
-            if(emitter_list->next == nullptr)
-            {
-                emitter_list->next = this;
-                emitter_list->last = this;
-
-                this->EmitterNode::next = emitter_list;
-                this->EmitterNode::prev = emitter_list;
-            }
-            else
-            {
-                auto last = emitter_list->last;
-
-                emitter_list->last = this;
-                last->next = this;
-
-                this->EmitterNode::next = emitter_list;
-                this->EmitterNode::prev = last;
-            }
-
+            emitter_list->Push(this);
             if(listener_list)
             {
                 counter++;
-                if(listener_list->next == nullptr)
-                {
-                    listener_list->next = this;
-                    listener_list->last = this;
-
-                    this->ListenerNode::next = listener_list;
-                    this->ListenerNode::prev = listener_list;
-                }
-                else
-                {
-                    auto last = listener_list->last;
-
-                    listener_list->last = this;
-                    last->next = this;
-
-                    this->ListenerNode::next = listener_list;
-                    this->ListenerNode::prev = last;
-                }
+                listener_list->Push(this);
             }
             else
             {
@@ -154,80 +195,7 @@ namespace Test
             return enabled;
         }
 
-        void DropListener() noexcept
-        {
-            if(this->ListenerNode::prev == nullptr)
-                return;
-
-            assert(counter > 0);
-            counter--;
-
-            bool is_first = (this->ListenerNode::prev->prev == nullptr);
-            bool is_last = (this->ListenerNode::next->prev == nullptr);
-
-            if(is_first && is_last)
-            {
-                auto list = static_cast<ListenerList*>(this->ListenerNode::prev);
-
-                list->next = nullptr;
-                list->last = nullptr;
-            }
-            else if(is_first)
-            {
-                auto list = static_cast<ListenerList*>(this->ListenerNode::prev);
-
-                list->next = this->ListenerNode::next;
-                this->ListenerNode::next->prev = list;
-            }
-            else if(is_last)
-            {
-                auto list = static_cast<ListenerList*>(this->ListenerNode::next);
-
-                this->ListenerNode::prev->next = list;
-            }
-            else //if(!is_first && !is_last)
-            {
-                this->ListenerNode::prev->next = this->ListenerNode::next;
-                this->ListenerNode::next->prev = this->ListenerNode::prev;
-            }
-        }
-
-        void DropEmitter() noexcept
-        {
-            assert(counter > 0);
-            counter--;
-
-            bool is_first = (this->EmitterNode::prev->prev == nullptr);
-            bool is_last = (this->EmitterNode::next->prev == nullptr);
-
-            if(is_first && is_last)
-            {
-                auto list = static_cast<EmitterList*>(this->EmitterNode::prev);
-
-                list->next = nullptr;
-                list->last = nullptr;
-            }
-            else if(is_first)
-            {
-                auto list = static_cast<EmitterList*>(this->EmitterNode::prev);
-
-                list->next = this->EmitterNode::next;
-                this->EmitterNode::next->prev = list;
-            }
-            else if(is_last)
-            {
-                auto list = static_cast<EmitterList*>(this->EmitterNode::next);
-
-                this->EmitterNode::prev->next = list;
-            }
-            else //if(!is_first && !is_last)
-            {
-                this->EmitterNode::prev->next = this->EmitterNode::next;
-                this->EmitterNode::next->prev = this->EmitterNode::prev;
-            }
-        }
-
-        void GetRef() noexcept
+        void IncRef() noexcept
         {
             counter++;
         }
@@ -243,16 +211,36 @@ namespace Test
 
         void RefDisconnect()
         {
-            assert(counter > 0);
+            assert((counter > 0) && "Reference is not connected");
 
             counter--;
             if(counter == 0)
                 delete this;
         }
     private:
-        std::byte* handler_memory;
-        EventHandlerResult (*caller)(std::byte* memory, const void* event);
-        void (*deleter)(std::byte* memory) noexcept;
+        void DropListener() noexcept
+        {
+            bool erased = ListenerList::Erase(this);
+            if(erased)
+            {
+                assert((counter > 0) && "Listener is not connected");
+                counter--;
+            }
+        }
+
+        void DropEmitter() noexcept
+        {
+            bool erased = EmitterList::Erase(this);
+            if(erased)
+            {
+                assert((counter > 0) && "Emitter is not connected");
+                counter--;
+            }
+        }
+    private:
+        void* handler_memory;
+        EventHandlerResult (*caller)(void* memory, const void* event);
+        void (*deleter)(void* memory) noexcept;
         bool enabled;
 
         std::uint64_t counter;
@@ -261,11 +249,15 @@ namespace Test
     class EventHandlerRef
     {
     public:
+        EventHandlerRef() noexcept
+            : handler(nullptr)
+        {}
+
         EventHandlerRef(EventHandler* _handler) noexcept
             : handler(_handler)
         {
             if(handler)
-                handler->GetRef();
+                handler->IncRef();
         }
 
         ~EventHandlerRef()
@@ -278,7 +270,7 @@ namespace Test
             : handler(ref.handler)
         {
             if(handler)
-                handler->GetRef();
+                handler->IncRef();
         }
 
         EventHandlerRef(EventHandlerRef&& ref) noexcept
@@ -292,7 +284,7 @@ namespace Test
             handler = ref.handler;
 
             if(handler)
-                handler->GetRef();
+                handler->IncRef();
 
             return *this;
         }
@@ -336,8 +328,8 @@ namespace Test
         {
             if(handler)
             {
-                handler->RefDisconnect();
                 handler->ChainDisconnect();
+                handler->RefDisconnect();
                 handler = nullptr;
             }
         }
@@ -347,6 +339,7 @@ namespace Test
 
     class EventListener : hrs::non_copyable
     {
+        friend class EventEmitter;
     public:
         EventListener() noexcept
             : list(std::unique_ptr<ListenerList>(
@@ -355,34 +348,24 @@ namespace Test
 
         ~EventListener()
         {
-            while(list->next != nullptr)
+            if(list)
             {
-                auto handler = static_cast<EventHandler*>(list->next);
-                handler->ChainDisconnect();
+                while(list->next != nullptr)
+                {
+                    auto handler = static_cast<EventHandler*>(list->next);
+                    handler->ChainDisconnect();
+                }
             }
         }
 
-#pragma message("MOVE PTR BUT LEAVEE NULLPTR IN LISTENER???")
-        EventListener(EventListener&& listener) noexcept
-        {
-            list->prev = std::exchange(listener.list->prev, nullptr);
-            list->next = std::exchange(listener.list->next, nullptr);
-            list->last = std::exchange(listener.list->last, nullptr);
-        }
-
-        EventListener& operator=(EventListener&& listener) noexcept
-        {
-            this->~EventListener();
-
-            list->prev = std::exchange(listener.list->prev, nullptr);
-            list->next = std::exchange(listener.list->next, nullptr);
-            list->last = std::exchange(listener.list->last, nullptr);
-
-            return *this;
-        }
-
+        EventListener(EventListener&&) = default;
+        EventListener& operator=(EventListener&&) = default;
+    private:
         ListenerList* GetList() noexcept
         {
+            assert((list.get() != nullptr) &&
+                   "Listener without valid list. Possible use after move!");
+
             return list.get();
         }
     private:
@@ -470,10 +453,10 @@ namespace Test
         template<Event E, EventHandlerFunc<E> F>
         EventHandlerRef Connect(F&& func, EventListener* listener, bool enabled)
         {
-            EmitterList insert_list = {EmitterNode{.prev = nullptr, .next = nullptr}, nullptr};
+            EmitterList insert_list = EmitterList::CreateEmpty();
             auto [it, _] = mapping.insert(std::pair{Core::ClassID<E>::ID, insert_list});
 
-            EventHandler* handler = new EventHandler(E{},
+            EventHandler* handler = new EventHandler(type_arg<E>{},
                                                      std::forward<F>(func),
                                                      enabled,
                                                      &it->second,
@@ -492,7 +475,12 @@ struct EventType : Core::ClassID<EventType>
 };
 
 class CommonEmitter : public Test::EventEmitter
-{};
+{
+public:
+    CommonEmitter()
+        : Test::EventEmitter({EventType::ID})
+    {}
+};
 
 class CommonListener : public Test::EventListener
 {};
@@ -521,7 +509,7 @@ int main(int argc, char** argv)
 
                 num++;
 
-                if(event.data % 11 == 0)
+                if(i % 11 == 0)
                     return Test::EventHandlerResult::Erase;
 
                 return Test::EventHandlerResult::None;
