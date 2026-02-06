@@ -20,23 +20,23 @@ namespace Core
 
     struct WindowCloseEvent
     {};
-    EXPORT_CLASS_ID(CORE_API, WindowCloseEvent)
+    CORE_API_TEMPLATE template class CORE_API ClassID<WindowCloseEvent>;
 
     struct WindowResizedEvent
     {
         WindowResolution resolution;
     };
-    EXPORT_CLASS_ID(CORE_API, WindowResizedEvent)
+    CORE_API_TEMPLATE template class CORE_API ClassID<WindowResizedEvent>;
 
     struct WindowExposedEvent
     {};
-    EXPORT_CLASS_ID(CORE_API, WindowExposedEvent)
+    CORE_API_TEMPLATE template class CORE_API ClassID<WindowExposedEvent>;
 
     struct WindowMovedEvent
     {
         WindowPosition position;
     };
-    EXPORT_CLASS_ID(CORE_API, WindowMovedEvent)
+    CORE_API_TEMPLATE template class CORE_API ClassID<WindowMovedEvent>;
 
     enum MouseButtonBits : std::uint32_t
     {
@@ -85,7 +85,7 @@ namespace Core
         std::int32_t motion_x;
         std::int32_t motion_y;
     };
-    EXPORT_CLASS_ID(CORE_API, MouseMotionEvent)
+    CORE_API_TEMPLATE template class CORE_API ClassID<MouseMotionEvent>;
 
     enum class ButtonState
     {
@@ -101,7 +101,7 @@ namespace Core
         std::int32_t x;
         std::int32_t y;
     };
-    EXPORT_CLASS_ID(CORE_API, MouseButtonEvent)
+    CORE_API_TEMPLATE template class CORE_API ClassID<MouseButtonEvent>;
 
     struct MouseWheelEvent
     {
@@ -111,7 +111,7 @@ namespace Core
         std::int32_t y;
         //Uint32 direction;   /**< Set to one of the SDL_MOUSEWHEEL_* defines. When FLIPPED the values in X and Y will be opposite. Multiply by -1 to change them back */
     };
-    EXPORT_CLASS_ID(CORE_API, MouseWheelEvent)
+    CORE_API_TEMPLATE template class CORE_API ClassID<MouseWheelEvent>;
 
     //SDL_WINDOWEVENT_SHOWN,          /**< Window has been shown */
     //SDL_WINDOWEVENT_HIDDEN,         /**< Window has been hidden */
