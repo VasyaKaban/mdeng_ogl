@@ -3,6 +3,7 @@
 #include "glad/wgl.h"
 #include "../Objects/PhysicalDevice/PhysicalDevice.h"
 #include "../Objects/Instance/Instance.h"
+#include "Core/Utils/System.h"
 
 namespace OpenGL
 {
@@ -34,10 +35,10 @@ namespace OpenGL
                                       &pfd);
 
         if(res == 0)
-            throw hrs::winapi_get_last_error();
+            throw Core::System::GetLastError();
 
         if(SetPixelFormat(info.hdc, descibe_pixelformat_index, &pfd) == FALSE)
-            throw hrs::winapi_get_last_error();
+            throw Core::System::GetLastError();
 
         Instance* impl_instace = static_cast<Instance*>(connect_info.physical_device->GetParent());
         bool debug_messenger_enabled = impl_instace->GetEnabledFeatures().validation_layer ||
@@ -68,7 +69,7 @@ namespace OpenGL
 
         glrc = glad_wglCreateContextAttribsARB(info.hdc, nullptr, profile_attributes.data());
         if(!glrc)
-            throw hrs::winapi_get_last_error();
+            throw Core::System::GetLastError();
 
         wglMakeCurrent(info.hdc, glrc);
     }

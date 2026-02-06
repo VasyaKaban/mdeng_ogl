@@ -89,10 +89,12 @@ namespace OpenGL
         return out;
     }
 
+#ifdef _WIN32
     Render::Surface* Instance::CreateSurface(const Render::SurfaceWin32Info& info)
     {
         return new Surface(this, info);
     }
+#endif
 
     void Instance::SetDebugMessenger(const Render::DebugMessengerInfo& info)
     {

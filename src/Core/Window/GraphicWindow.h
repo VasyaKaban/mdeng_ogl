@@ -22,7 +22,11 @@ namespace Core
         Windowed = 0
     };
 
-    using WindowSurface = std::variant<Render::SurfaceWin32Info>;
+    using WindowSurface = std::variant<
+#ifdef _WIN32
+        Render::SurfaceWin32Info
+#endif
+        >;
 
     class CORE_API GraphicWindow : private Core::ReservedEventEmitter<WindowCloseEvent,
                                                                       WindowResizedEvent,

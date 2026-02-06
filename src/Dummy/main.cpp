@@ -2,7 +2,6 @@
 #include <vector>
 #include <format>
 #include "Core/Render/Resolve.h"
-#include "hrs/os.hpp"
 #include "Core/Render/Objects/Instance.h"
 #include "Core/Render/Objects/PhysicalDevice.h"
 #include "Core/Render/Objects/Device.h"
@@ -12,6 +11,7 @@
 #include <Core/Render/Objects/Fence.h>
 #include "Core/Window/GraphicWindow.h"
 #include "Core/Window/WindowSubsystem.h"
+#include "Core/Utils/DynamicLibrary.h"
 
 int main(int argc, char** argv)
 {
@@ -35,19 +35,14 @@ int main(int argc, char** argv)
             nullptr,
             Core::EventHandlerState::Enabled);
 
-        const auto& sur = win->GetSurface();
-        assert(std::holds_alternative<Render::SurfaceWin32Info>(sur));
-
-        const auto& win32_info = std::get<Render::SurfaceWin32Info>(sur);
-
-        hrs::dynamic_library lib;
-        auto bin_path = hrs::exe_path().parent_path();
-        auto lib_path = bin_path / hrs::decorate_shared_library_name("OpenGLRenderBackend");
-        if(auto err = lib.open(lib_path); err.has_value())
+        Core::DynamicLibrary lib;
+        auto lib_path = Core::System::GetExecutablePath().parent_path() /
+                        Core::System::DecorateDynamicLibraryName("OpenGLRenderBackend");
+        if(auto err = lib.Open(lib_path); err.has_value())
             throw err.value();
 
         Render::PFN_RenderResolve render_resolve = reinterpret_cast<Render::PFN_RenderResolve>(
-            lib.get_proc_address(Render::RENDER_RESOLVE_FUNCTION_NAME));
+            lib.GetProcAddress(Render::RENDER_RESOLVE_FUNCTION_NAME));
 
         if(!render_resolve)
             throw std::runtime_error(std::format("No '{}' in : {}",
@@ -68,7 +63,11 @@ int main(int argc, char** argv)
 
         std::unique_ptr<Render::Instance> instance(resolve->CreateInstance(instance_info));
 
-        std::unique_ptr<Render::Surface> surface(instance->CreateSurface(win32_info));
+#ifdef _WIN32
+        const auto& sur_info = std::get<Render::SurfaceWin32Info>(win->GetSurface());
+#endif
+
+        std::unique_ptr<Render::Surface> surface(instance->CreateSurface(sur_info));
 
         auto physical_devices = instance->GetPhysicalDevices();
 

@@ -7,8 +7,8 @@
 #include <string_view>
 #include <functional>
 #include <string>
-#include "hrs/detail/winapi/winapi.h"
 #include "Core/API.h"
+#include "Core/Utils/System.h"
 
 namespace Render
 {
@@ -1815,12 +1815,14 @@ namespace Render
         std::uint64_t memory_allocation_size_hint;
     };
 
+#ifdef _WIN32
     struct SurfaceWin32Info
     {
         HWND window;
         HDC hdc;
         HINSTANCE instance;
     };
+#endif
 
     class Resolve;
 

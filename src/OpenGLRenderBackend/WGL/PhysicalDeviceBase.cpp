@@ -4,6 +4,7 @@
 #include "hrs/scoped_call.hpp"
 #include "../Objects/Instance/Instance.h"
 #include "glad/wgl.h"
+#include "Core/Utils/System.h"
 
 namespace OpenGL
 {
@@ -209,20 +210,20 @@ namespace OpenGL
                 int format_index = ChoosePixelFormat(_dc, &pfd);
                 if(format_index == 0)
                 {
-                    *window_params_exp = hrs::winapi_get_last_error();
+                    *window_params_exp = Core::System::GetLastError();
                     return -1;
                 }
 
                 if(SetPixelFormat(_dc, format_index, &pfd) == FALSE)
                 {
-                    *window_params_exp = hrs::winapi_get_last_error();
+                    *window_params_exp = Core::System::GetLastError();
                     return -1;
                 }
 
                 _glrc = glad_wglCreateContextAttribsARB(_dc, nullptr, profile_attributes.data());
                 if(_glrc == nullptr)
                 {
-                    *window_params_exp = hrs::winapi_get_last_error();
+                    *window_params_exp = Core::System::GetLastError();
                     return -1;
                 }
 

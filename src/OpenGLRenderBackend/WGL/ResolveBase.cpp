@@ -3,7 +3,7 @@
 #include <optional>
 #include <stdexcept>
 #include "glad/wgl.h"
-#include "hrs/detail/winapi/winapi.h"
+#include "Core/Utils/System.h"
 
 namespace OpenGL
 {
@@ -63,20 +63,20 @@ namespace OpenGL
                 int format_index = ChoosePixelFormat(_dc, &pfd);
                 if(format_index == 0)
                 {
-                    *window_param_opt = hrs::winapi_get_last_error();
+                    *window_param_opt = Core::System::GetLastError();
                     return -1;
                 }
 
                 if(SetPixelFormat(_dc, format_index, &pfd) == FALSE)
                 {
-                    *window_param_opt = hrs::winapi_get_last_error();
+                    *window_param_opt = Core::System::GetLastError();
                     return -1;
                 }
 
                 _glrc = wglCreateContext(_dc);
                 if(_glrc == nullptr)
                 {
-                    *window_param_opt = hrs::winapi_get_last_error();
+                    *window_param_opt = Core::System::GetLastError();
                     return -1;
                 }
 
