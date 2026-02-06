@@ -3,6 +3,7 @@
 #include <string_view>
 #include <concepts>
 #include "Doc.h"
+#include "Core/API.h"
 
 namespace JSON
 {
@@ -49,7 +50,7 @@ namespace JSON
     }
 
     template<>
-    bool Parse(const Doc& doc);
+    CORE_API bool Parse(const Doc& doc);
 
     template<typename T>
     T ParseKey(const Doc& doc, std::string_view key)

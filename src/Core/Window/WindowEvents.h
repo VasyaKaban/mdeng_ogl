@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include "Core/Utils/ClassID.hpp"
+#include "Core/API.h"
 
 namespace Core
 {
@@ -17,21 +18,25 @@ namespace Core
         int y;
     };
 
-    struct WindowCloseEvent : public ClassID<WindowCloseEvent>
+    struct WindowCloseEvent
     {};
+    EXPORT_CLASS_ID(CORE_API, WindowCloseEvent)
 
-    struct WindowResizedEvent : public ClassID<WindowResizedEvent>
+    struct WindowResizedEvent
     {
         WindowResolution resolution;
     };
+    EXPORT_CLASS_ID(CORE_API, WindowResizedEvent)
 
-    struct WindowExposedEvent : public ClassID<WindowExposedEvent>
+    struct WindowExposedEvent
     {};
+    EXPORT_CLASS_ID(CORE_API, WindowExposedEvent)
 
-    struct WindowMovedEvent : public ClassID<WindowMovedEvent>
+    struct WindowMovedEvent
     {
         WindowPosition position;
     };
+    EXPORT_CLASS_ID(CORE_API, WindowMovedEvent)
 
     enum MouseButtonBits : std::uint32_t
     {
@@ -72,7 +77,7 @@ namespace Core
 
     using MouseButtonMask = std::underlying_type_t<MouseButtonBits>;
 
-    struct MouseMotionEvent : public ClassID<MouseMotionEvent>
+    struct MouseMotionEvent
     {
         MouseButtonMask mask;
         std::int32_t x;
@@ -80,6 +85,7 @@ namespace Core
         std::int32_t motion_x;
         std::int32_t motion_y;
     };
+    EXPORT_CLASS_ID(CORE_API, MouseMotionEvent)
 
     enum class ButtonState
     {
@@ -87,7 +93,7 @@ namespace Core
         Released
     };
 
-    struct MouseButtonEvent : public ClassID<MouseButtonEvent>
+    struct MouseButtonEvent
     {
         MouseButtonBits button;
         ButtonState state;
@@ -95,8 +101,9 @@ namespace Core
         std::int32_t x;
         std::int32_t y;
     };
+    EXPORT_CLASS_ID(CORE_API, MouseButtonEvent)
 
-    struct MouseWheelEvent : public ClassID<MouseWheelEvent>
+    struct MouseWheelEvent
     {
         std::int32_t scrolled_x;
         std::int32_t scrolled_y;
@@ -104,6 +111,7 @@ namespace Core
         std::int32_t y;
         //Uint32 direction;   /**< Set to one of the SDL_MOUSEWHEEL_* defines. When FLIPPED the values in X and Y will be opposite. Multiply by -1 to change them back */
     };
+    EXPORT_CLASS_ID(CORE_API, MouseWheelEvent)
 
     //SDL_WINDOWEVENT_SHOWN,          /**< Window has been shown */
     //SDL_WINDOWEVENT_HIDDEN,         /**< Window has been hidden */

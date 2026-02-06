@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class Resolve
+    class CORE_API Resolve
     {
     public:
-        virtual ~Resolve()
-        {}
+        virtual ~Resolve() = 0;
 
         virtual void Init() = 0;
 

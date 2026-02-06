@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class Fence
+    class CORE_API Fence
     {
     public:
-        virtual ~Fence()
-        {}
+        virtual ~Fence() = 0;
 
         virtual bool Wait(std::uint64_t timeout_ns) noexcept = 0;
         virtual FenceStatus GetStatus() const noexcept = 0;

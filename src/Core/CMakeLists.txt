@@ -14,6 +14,8 @@ Core
 target_include_directories(Core 
 							PUBLIC "../")
 
+target_compile_definitions(Core PRIVATE CORE_API_EXPORT)
+
 target_link_libraries(Core
 	                    PUBLIC hrs
 						PUBLIC SDL2::SDL2main

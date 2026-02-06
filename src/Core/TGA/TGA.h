@@ -3,6 +3,7 @@
 #include <optional>
 #include <string_view>
 #include <stdexcept>
+#include "Core/API.h"
 
 namespace TGA
 {
@@ -82,5 +83,5 @@ namespace TGA
         std::string_view id;
     };
 
-    std::optional<std::runtime_error> Write(const WriteInfo& info);
+    CORE_API std::optional<std::runtime_error> Write(const WriteInfo& info);
 };

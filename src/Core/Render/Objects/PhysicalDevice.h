@@ -5,10 +5,10 @@
 
 namespace Render
 {
-    class PhysicalDevice
+    class CORE_API PhysicalDevice
     {
     public:
-        virtual ~PhysicalDevice() {};
+        virtual ~PhysicalDevice() = 0;
 
         virtual const PhysicalDeviceProperties& GetProperties() const noexcept = 0;
 

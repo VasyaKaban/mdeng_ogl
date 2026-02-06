@@ -5,11 +5,12 @@
 #include <memory>
 #include "hrs/non_creatable.hpp"
 #include "Core/Utils/ClassID.hpp"
+#include "Core/API.h"
 
 namespace Core
 {
     template<typename E>
-    concept Event = std::is_base_of_v<Core::ClassID<E>, E>;
+    concept Event = true; //std::is_base_of_v<Core::ClassID<E>, E>;
 
     enum class EventHandlerResult
     {
@@ -29,8 +30,17 @@ namespace Core
         { std::forward<F>(func)(event) } -> std::same_as<EventHandlerResult>;
     };
 
-    struct EmitterNode;
-    struct ListenerNode;
+    struct EmitterNode
+    {
+        EmitterNode* prev;
+        EmitterNode* next;
+    };
+
+    struct ListenerNode
+    {
+        ListenerNode* prev;
+        ListenerNode* next;
+    };
 
     template<Event E, EventHandlerFunc<E> F>
     EventHandlerResult event_handler_caller_wrapper(void* memory, const void* event)
@@ -50,7 +60,7 @@ namespace Core
 
     class EventHandler;
 
-    class EventHandlerRef
+    class CORE_API EventHandlerRef
     {
     public:
         EventHandlerRef() noexcept;
@@ -75,12 +85,87 @@ namespace Core
 
     template<typename N>
     requires std::same_as<N, EmitterNode> || std::same_as<N, ListenerNode>
-    struct NodeList;
+    struct NodeList : N
+    {
+        //prev = nullptr
+        N* last;
+
+        static NodeList CreateEmpty() noexcept
+        {
+            return NodeList{N{.prev = nullptr, .next = nullptr}, nullptr};
+        }
+
+        bool IsEmpty() const noexcept
+        {
+            return this->N::next == nullptr;
+        }
+
+        void Push(N* node) noexcept
+        {
+            if(IsEmpty())
+            {
+                this->N::next = node;
+                this->last = node;
+
+                node->next = this;
+                node->prev = this;
+            }
+            else
+            {
+                auto prev_last = last;
+
+                last = node;
+                prev_last->next = node;
+
+                node->next = this;
+                node->prev = prev_last;
+            }
+        }
+
+        static bool Erase(N* node) noexcept
+        {
+            if(node->prev == nullptr)
+                return false;
+
+            bool is_first = (node->prev->prev == nullptr);
+            bool is_last = (node->next->prev == nullptr);
+
+            if(is_first && is_last)
+            {
+                auto list = static_cast<NodeList*>(node->prev);
+
+                list->next = nullptr;
+                list->last = nullptr;
+            }
+            else if(is_first)
+            {
+                auto list = static_cast<NodeList*>(node->prev);
+
+                list->next = node->next;
+                node->next->prev = list;
+            }
+            else if(is_last)
+            {
+                auto list = static_cast<NodeList*>(node->next);
+
+                node->prev->next = list;
+            }
+            else //if(!is_first && !is_last)
+            {
+                node->prev->next = node->next;
+                node->next->prev = node->prev;
+            }
+
+            node->prev = nullptr; //mark as erased
+
+            return true;
+        }
+    };
 
     using EmitterList = NodeList<EmitterNode>;
     using ListenerList = NodeList<ListenerNode>;
 
-    class EventListener : hrs::non_copyable
+    class CORE_API EventListener : hrs::non_copyable
     {
         friend class EventEmitter;
     public:
@@ -93,7 +178,7 @@ namespace Core
         std::unique_ptr<ListenerList> list;
     };
 
-    class EventEmitter : hrs::non_copyable
+    class CORE_API EventEmitter : hrs::non_copyable
     {
     public:
         EventEmitter() = default;

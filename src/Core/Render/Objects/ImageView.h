@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class ImageView
+    class CORE_API ImageView
     {
     public:
-        virtual ~ImageView() {};
+        virtual ~ImageView() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

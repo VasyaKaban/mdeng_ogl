@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class CommandPool
+    class CORE_API CommandPool
     {
     public:
-        virtual ~CommandPool()
-        {}
+        virtual ~CommandPool() = 0;
 
         virtual CommandBuffer* Allocate() = 0;
 

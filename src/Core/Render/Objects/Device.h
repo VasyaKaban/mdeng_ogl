@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class Device
+    class CORE_API Device
     {
     public:
-        virtual ~Device() {};
+        virtual ~Device() = 0;
 
         virtual Queue* GetQueue(const QueueInfo& info) = 0;
 

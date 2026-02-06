@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class BufferView
+    class CORE_API BufferView
     {
     public:
-        virtual ~BufferView() {};
+        virtual ~BufferView() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class DescriptorPool
+    class CORE_API DescriptorPool
     {
     public:
-        virtual ~DescriptorPool()
-        {}
+        virtual ~DescriptorPool() = 0;
 
         virtual DescriptorSet* Allocate(const DescriptorSetAllocateInfo& info) = 0;
 

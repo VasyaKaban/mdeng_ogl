@@ -519,13 +519,16 @@ namespace OpenGL
             });
 
         bool have_tessellation_stage =
-            std::ranges::find_if(info.shaders,
-                                 [](const Render::Shader* const shader)
-                                 {
-                                     return static_cast<const Shader*>(shader)->GetStage() ==
-                                            (Render::ShaderStageFlagBits::TessellationControl ||
-                                             Render::ShaderStageFlagBits::TessellationEvaluation);
-                                 }) != info.shaders.end();
+            std::ranges::find_if(
+                info.shaders,
+                [](const Render::Shader* const shader)
+                {
+                    Render::ShaderStageFlagBits stage =
+                        static_cast<const Shader*>(shader)->GetStage();
+
+                    return stage == Render::ShaderStageFlagBits::TessellationControl ||
+                           stage == Render::ShaderStageFlagBits::TessellationEvaluation;
+                }) != info.shaders.end();
 
         bool dynamic_viewport = false;
         bool dynamic_scissors = false;

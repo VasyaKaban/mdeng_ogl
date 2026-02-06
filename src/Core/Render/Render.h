@@ -8,6 +8,7 @@
 #include <functional>
 #include <string>
 #include "hrs/detail/winapi/winapi.h"
+#include "Core/API.h"
 
 namespace Render
 {

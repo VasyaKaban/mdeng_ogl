@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class Framebuffer
+    class CORE_API Framebuffer
     {
     public:
-        virtual ~Framebuffer() {};
+        virtual ~Framebuffer() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

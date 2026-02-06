@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class Image
+    class CORE_API Image
     {
     public:
-        virtual ~Image()
-        {}
+        virtual ~Image() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

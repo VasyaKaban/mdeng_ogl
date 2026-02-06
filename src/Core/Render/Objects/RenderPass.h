@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class RenderPass
+    class CORE_API RenderPass
     {
     public:
-        virtual ~RenderPass()
-        {}
+        virtual ~RenderPass() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class Pipeline
+    class CORE_API Pipeline
     {
     public:
-        virtual ~Pipeline() {};
+        virtual ~Pipeline() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

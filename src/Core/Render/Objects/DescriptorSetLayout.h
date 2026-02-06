@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class DescriptorSetLayout
+    class CORE_API DescriptorSetLayout
     {
     public:
-        virtual ~DescriptorSetLayout()
-        {}
+        virtual ~DescriptorSetLayout() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

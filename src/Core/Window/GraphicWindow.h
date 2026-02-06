@@ -24,13 +24,13 @@ namespace Core
 
     using WindowSurface = std::variant<Render::SurfaceWin32Info>;
 
-    class GraphicWindow : private Core::ReservedEventEmitter<WindowCloseEvent,
-                                                             WindowResizedEvent,
-                                                             WindowExposedEvent,
-                                                             WindowMovedEvent,
-                                                             MouseMotionEvent,
-                                                             MouseButtonEvent,
-                                                             MouseWheelEvent>
+    class CORE_API GraphicWindow : private Core::ReservedEventEmitter<WindowCloseEvent,
+                                                                      WindowResizedEvent,
+                                                                      WindowExposedEvent,
+                                                                      WindowMovedEvent,
+                                                                      MouseMotionEvent,
+                                                                      MouseButtonEvent,
+                                                                      MouseWheelEvent>
     {
         friend class WindowSubsystem;
         GraphicWindow(const GraphicWindowInfo& info);

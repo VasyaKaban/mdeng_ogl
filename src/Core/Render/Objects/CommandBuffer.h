@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class CommandBuffer
+    class CORE_API CommandBuffer
     {
     public:
-        virtual ~CommandBuffer()
-        {}
+        virtual ~CommandBuffer() = 0;
 
         virtual void Reset(const CommandBufferResetInfo& reset_info) = 0;
         virtual void Begin(const CommandBufferBeginInfo& begin_info) = 0;

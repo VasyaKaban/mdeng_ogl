@@ -5,11 +5,10 @@
 
 namespace Render
 {
-    class Buffer
+    class CORE_API Buffer
     {
     public:
-        virtual ~Buffer()
-        {}
+        virtual ~Buffer() = 0;
 
         virtual std::byte* Map(const MappedRange& rng) = 0;
         virtual void Unmap() noexcept = 0;

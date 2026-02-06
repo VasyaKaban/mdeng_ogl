@@ -1,9 +1,10 @@
 #include "Resolve.h"
 #include "../Objects/Instance/Instance.h"
+#include "OpenGLRenderBackend/API.h"
 
 namespace OpenGL
 {
-    extern "C" Render::Resolve* RenderResolve()
+    extern "C" OGL_RENDER_BACKEND_API_EXPORT Render::Resolve* RenderResolve()
     {
         return new Resolve;
     }

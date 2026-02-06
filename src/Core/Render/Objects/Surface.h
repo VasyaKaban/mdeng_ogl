@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class Surface
+    class CORE_API Surface
     {
     public:
-        virtual ~Surface() {};
+        virtual ~Surface() = 0;
 
         virtual Extent2D GetCurrentExtent() const noexcept = 0;
 

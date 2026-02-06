@@ -4,11 +4,10 @@
 
 namespace Render
 {
-    class Queue
+    class CORE_API Queue
     {
     public:
-        virtual ~Queue()
-        {}
+        virtual ~Queue() = 0;
 
         virtual void Begin(const QueueBeginInfo& info) = 0;
         virtual void Flush(const QueueFlushInfo& info) = 0;

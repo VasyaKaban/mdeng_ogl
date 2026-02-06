@@ -5,10 +5,10 @@
 
 namespace Render
 {
-    class Swapchain
+    class CORE_API Swapchain
     {
     public:
-        virtual ~Swapchain() {};
+        virtual ~Swapchain() = 0;
 
         virtual std::vector<Image*> GetSwapchainImages() const = 0;
         virtual Framebuffer* CreateFramebufferFromSwapchainImage(std::uint32_t index,

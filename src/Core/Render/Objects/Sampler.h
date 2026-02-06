@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class Sampler
+    class CORE_API Sampler
     {
     public:
-        virtual ~Sampler() {};
+        virtual ~Sampler() = 0;
 
         virtual Device* GetParent() const noexcept = 0;
     };

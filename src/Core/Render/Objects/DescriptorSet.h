@@ -5,11 +5,10 @@
 
 namespace Render
 {
-    class DescriptorSet
+    class CORE_API DescriptorSet
     {
     public:
-        virtual ~DescriptorSet()
-        {}
+        virtual ~DescriptorSet() = 0;
 
         virtual void Update(std::span<const WriteDescriptorDesc> writes,
                             std::span<const CopyDescriptorDesc> copies) = 0;

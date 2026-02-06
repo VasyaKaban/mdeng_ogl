@@ -4,10 +4,10 @@
 
 namespace Render
 {
-    class Instance
+    class CORE_API Instance
     {
     public:
-        virtual ~Instance() {};
+        virtual ~Instance() = 0;
 
         virtual std::vector<PhysicalDevice*> GetPhysicalDevices() const = 0;
 

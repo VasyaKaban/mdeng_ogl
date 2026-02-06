@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include "hrs/expected.hpp"
 #include "../Render/Render.h"
+#include "Core/API.h"
 
 namespace DDS
 {
@@ -18,7 +19,7 @@ namespace DDS
         UnsupportedDXGIFormat
     };
 
-    class Exception : public std::exception
+    class CORE_API Exception : public std::exception
     {
     public:
         Exception(Result _result, std::string_view _message);
@@ -357,7 +358,7 @@ namespace DDS
         std::span<const std::uint8_t> image_data;
     };
 
-    hrs::expected<ParseResult, Exception> Parse(std::span<const std::uint8_t> data);
+    CORE_API hrs::expected<ParseResult, Exception> Parse(std::span<const std::uint8_t> data);
 
     using OriginalFormat = std::variant<DXGIFormat, PixelFormatFourCC>;
 
@@ -375,5 +376,5 @@ namespace DDS
         std::vector<Render::MemoryImageCopyRegion> regions;
     };
 
-    hrs::expected<ImageResult, Exception> Resolve(const ParseResult& result);
+    CORE_API hrs::expected<ImageResult, Exception> Resolve(const ParseResult& result);
 };
