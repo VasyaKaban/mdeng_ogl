@@ -26,7 +26,8 @@ namespace OpenGL
             case WM_CREATE:
             {
                 hrs::expected<WindowParams, std::runtime_error>* window_params_exp =
-                    reinterpret_cast<hrs::expected<WindowParams, std::runtime_error>*>(lParam);
+                    reinterpret_cast<hrs::expected<WindowParams, std::runtime_error>*>(
+                        reinterpret_cast<CREATESTRUCTW*>(lParam)->lpCreateParams);
 
                 HDC _dc = nullptr;
                 HGLRC _glrc = nullptr;
@@ -177,6 +178,47 @@ namespace OpenGL
 
                 profile_attributes.push_back(0);
 
+                PIXELFORMATDESCRIPTOR pfd = {.nSize = sizeof(PIXELFORMATDESCRIPTOR),
+                                             .nVersion = 1,
+                                             .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL |
+                                                        PFD_DOUBLEBUFFER,
+                                             .iPixelType = PFD_TYPE_RGBA,
+                                             .cColorBits = 32,
+                                             .cRedBits = 0,
+                                             .cRedShift = 0,
+                                             .cGreenBits = 0,
+                                             .cGreenShift = 0,
+                                             .cBlueBits = 0,
+                                             .cBlueShift = 0,
+                                             .cAlphaBits = 0,
+                                             .cAlphaShift = 0,
+                                             .cAccumBits = 0,
+                                             .cAccumRedBits = 0,
+                                             .cAccumGreenBits = 0,
+                                             .cAccumBlueBits = 0,
+                                             .cAccumAlphaBits = 0,
+                                             .cDepthBits = 0,
+                                             .cStencilBits = 0,
+                                             .cAuxBuffers = 0,
+                                             .iLayerType = PFD_MAIN_PLANE,
+                                             .bReserved = 0,
+                                             .dwLayerMask = 0,
+                                             .dwVisibleMask = 0,
+                                             .dwDamageMask = 0};
+
+                int format_index = ChoosePixelFormat(_dc, &pfd);
+                if(format_index == 0)
+                {
+                    *window_params_exp = hrs::winapi_get_last_error();
+                    return -1;
+                }
+
+                if(SetPixelFormat(_dc, format_index, &pfd) == FALSE)
+                {
+                    *window_params_exp = hrs::winapi_get_last_error();
+                    return -1;
+                }
+
                 _glrc = glad_wglCreateContextAttribsARB(_dc, nullptr, profile_attributes.data());
                 if(_glrc == nullptr)
                 {
@@ -276,6 +318,12 @@ namespace OpenGL
             .supported_present_modes = surface_capabilities.supported_present_modes,
             .supported_configs = {
                 surface_capabilities.supported_configs[pixelformat_indices[index]]}};
+    }
+
+    std::uint32_t
+    PhysicalDeviceBase::GetDescribePixelFormatIndex(std::uint32_t index) const noexcept
+    {
+        return pixelformat_indices[index];
     }
 
     void PhysicalDeviceBase::MakeCurrent()

@@ -9,7 +9,7 @@
 namespace OpenGL
 {
     template<typename T>
-    static T get_property(GladGLContext& loader, GLenum name) noexcept
+    static auto get_property(GladGLContext& loader, GLenum name) noexcept
     {
         if constexpr(std::same_as<std::uint32_t, T> || std::same_as<std::int32_t, T>)
         {
@@ -58,26 +58,23 @@ namespace OpenGL
 
             return Render::Range{.min = values[0], .max = values[1]};
         }
-        else if constexpr(std::same_as<Render::SampleCountFlags, T>)
+        else if constexpr(std::same_as<Render::SampleCount, T>)
         {
             GLint value;
             loader.GetIntegerv(name, &value);
 
-            static_assert(std::is_signed_v<Render::SampleCountFlags> &&
+            static_assert(/*std::is_signed_v<Render::SampleCountFlags> &&*/
                           sizeof(Render::SampleCountFlags) == 4);
 
             std::uint32_t u_value = static_cast<std::uint32_t>(value);
             if(!Core::IsPowerOf2(u_value))
                 value = std::bit_floor(u_value);
 
-            Render::SampleCountFlags samples = 0;
-            while(!(samples & u_value))
-            {
-                samples |= 0x1;
-                samples <<= 1;
-            }
+            Render::SampleCountFlags samples = u_value;
+            if(samples == 1)
+                return samples;
 
-            return samples;
+            return samples | (samples - 1);
         }
         else
             assert(false);
@@ -288,24 +285,24 @@ namespace OpenGL
             .max_framebuffer_layers =
                 get_property<std::uint32_t>(loader, GL_MAX_FRAMEBUFFER_LAYERS),
             .framebuffer_color_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
             .framebuffer_depth_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
             .framebuffer_stencil_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
             .framebuffer_no_attachments_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_FRAMEBUFFER_SAMPLES),
             .max_color_attachments = get_property<std::uint32_t>(loader, GL_MAX_COLOR_ATTACHMENTS),
             .sampled_image_color_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_COLOR_TEXTURE_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_COLOR_TEXTURE_SAMPLES),
             .sampled_image_integer_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_INTEGER_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_INTEGER_SAMPLES),
             .sampled_image_depth_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_DEPTH_TEXTURE_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_DEPTH_TEXTURE_SAMPLES),
             .sampled_image_stencil_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_DEPTH_TEXTURE_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_DEPTH_TEXTURE_SAMPLES),
             .storage_image_sample_counts =
-                get_property<Render::SampleCountFlags>(loader, GL_MAX_IMAGE_SAMPLES),
+                get_property<Render::SampleCount>(loader, GL_MAX_IMAGE_SAMPLES),
             .max_sample_mask_words = get_property<std::uint32_t>(loader, GL_MAX_SAMPLE_MASK_WORDS),
             .max_clip_distances = get_property<std::uint32_t>(loader, GL_MAX_CLIP_DISTANCES),
             .max_cull_distances = get_property<std::uint32_t>(loader, GL_MAX_CULL_DISTANCES),
@@ -790,6 +787,11 @@ namespace OpenGL
     PhysicalDevice::GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept
     {
         return this->PhysicalDeviceBase::GetSurfaceCapabilitiesByIndex(index);
+    }
+
+    std::uint32_t PhysicalDevice::GetDescribePixelFormatIndex(std::uint32_t index) const noexcept
+    {
+        return this->PhysicalDeviceBase::GetDescribePixelFormatIndex(index);
     }
 
     void PhysicalDevice::DeleteDeviceNotify() noexcept

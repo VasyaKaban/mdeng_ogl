@@ -1585,7 +1585,7 @@ namespace Render
         SampleCountFlags sampled_image_depth_sample_counts;
         SampleCountFlags sampled_image_stencil_sample_counts;
         SampleCountFlags storage_image_sample_counts;
-        uint32_t max_sample_mask_words;
+        std::uint32_t max_sample_mask_words;
         //bool timestamp_compute_and_graphics;
         //float timestamp_period;
         std::uint32_t max_clip_distances;
@@ -1740,7 +1740,7 @@ namespace Render
     {
         std::uint32_t index;
         std::uint32_t queue_count;
-        std::span<const float> queue_priorities;
+        const float* queue_priorities;
     };
 
     enum DebugMessengerSeverityFlagBits
@@ -1795,7 +1795,6 @@ namespace Render
         std::uint32_t application_version;
         const char* engine_name;
         std::uint32_t engine_version;
-        std::uint32_t api_version;
         InstanceFeatures enabled_features;
     };
 

@@ -17,6 +17,8 @@ namespace OpenGL
         const Render::SurfaceCapabilities
         GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept;
 
+        std::uint32_t GetDescribePixelFormatIndex(std::uint32_t index) const noexcept;
+
         void MakeCurrent();
 
         bool IsRobustContextSupported() const noexcept;

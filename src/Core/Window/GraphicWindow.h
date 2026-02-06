@@ -24,7 +24,8 @@ namespace Core
 
     using WindowSurface = std::variant<Render::SurfaceWin32Info>;
 
-    class GraphicWindow : private Core::ReservedEventEmitter<WindowResizedEvent,
+    class GraphicWindow : private Core::ReservedEventEmitter<WindowCloseEvent,
+                                                             WindowResizedEvent,
                                                              WindowExposedEvent,
                                                              WindowMovedEvent,
                                                              MouseMotionEvent,

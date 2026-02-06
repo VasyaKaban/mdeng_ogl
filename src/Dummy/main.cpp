@@ -1,77 +1,459 @@
 #include <iostream>
 #include <vector>
 #include <format>
-#include "Core/Events/Events.h"
-
-struct EventType : Core::ClassID<EventType>
-{
-    int data;
-};
-
-class CommonEmitter : public Core::ReservedEventEmitter<EventType>
-{};
-
-class CommonListener : public Core::EventListener
-{};
+#include "Core/Render/Resolve.h"
+#include "hrs/os.hpp"
+#include "Core/Render/Objects/Instance.h"
+#include "Core/Render/Objects/PhysicalDevice.h"
+#include "Core/Render/Objects/Device.h"
+#include "Core/Render/Objects/Surface.h"
+#include "Core/Render/Objects/Swapchain.h"
+#include <Core/Render/Objects/Semaphore.h>
+#include <Core/Render/Objects/Fence.h>
+#include "Core/Window/GraphicWindow.h"
+#include "Core/Window/WindowSubsystem.h"
 
 int main(int argc, char** argv)
 {
-    constexpr std::size_t SIZE = 100;
-
-    CommonEmitter emitter;
-    CommonListener listener;
-
-    std::size_t num = 0;
-
-    std::vector<Core::EventHandlerRef> refs;
-    refs.reserve(SIZE);
-    for(std::size_t i = 0; i < SIZE; i++)
+    try
     {
-        auto ref = emitter.Connect<EventType>(
-            [&num, i](const EventType& event) -> Core::EventHandlerResult
+        auto win_sys = Core::WindowSubsystem::Init();
+
+        const Core::GraphicWindowInfo win_info = {
+            .resolution = Core::WindowResolution{.width = 800, .height = 600},
+            .title = "app"};
+        auto win = win_sys->CreateGraphicWindow(win_info);
+
+        bool is_run = true;
+        win->Connect<Core::WindowCloseEvent>(
+            [&is_run](const Core::WindowCloseEvent&)
             {
-                std::cout << std::format("Num: {}; Index: {}; data: {}", num, i, event.data)
-                          << std::endl;
-
-                num++;
-
-                if(i % 11 == 0)
-                    return Core::EventHandlerResult::Erase;
+                is_run = false;
 
                 return Core::EventHandlerResult::None;
             },
-            /*&listener,*/ nullptr,
+            nullptr,
             Core::EventHandlerState::Enabled);
 
-        refs.push_back(ref);
+        const auto& sur = win->GetSurface();
+        assert(std::holds_alternative<Render::SurfaceWin32Info>(sur));
+
+        const auto& win32_info = std::get<Render::SurfaceWin32Info>(sur);
+
+        hrs::dynamic_library lib;
+        auto bin_path = hrs::exe_path().parent_path();
+        auto lib_path = bin_path / hrs::decorate_shared_library_name("OpenGLRenderBackend");
+        if(auto err = lib.open(lib_path); err.has_value())
+            throw err.value();
+
+        Render::PFN_RenderResolve render_resolve = reinterpret_cast<Render::PFN_RenderResolve>(
+            lib.get_proc_address(Render::RENDER_RESOLVE_FUNCTION_NAME));
+
+        if(!render_resolve)
+            throw std::runtime_error(std::format("No '{}' in : {}",
+                                                 Render::RENDER_RESOLVE_FUNCTION_NAME,
+                                                 lib_path.string()));
+
+        std::unique_ptr<Render::Resolve> resolve(render_resolve());
+        resolve->Init();
+
+        auto backend = resolve->GetBackend();
+        auto features = resolve->GetInstanceFeatures();
+
+        const Render::InstanceInfo instance_info = {.application_name = "app",
+                                                    .application_version = 1,
+                                                    .engine_name = "engine",
+                                                    .engine_version = 1,
+                                                    .enabled_features = features};
+
+        std::unique_ptr<Render::Instance> instance(resolve->CreateInstance(instance_info));
+
+        std::unique_ptr<Render::Surface> surface(instance->CreateSurface(win32_info));
+
+        auto physical_devices = instance->GetPhysicalDevices();
+
+        Render::PhysicalDevice* selected_dev = nullptr;
+        std::uint32_t present_queue_family = 0;
+        for(std::size_t i = 0; i < physical_devices.size(); i++)
+        {
+            auto props = physical_devices[i]->GetProperties();
+
+            std::cout << std::format("Physical device #{}\n", i);
+            std::cout << std::format("\tBackend: {}\n",
+                                     (backend == Render::Backend::OpenGL ? "OpenGL" : "Unknown"));
+            std::cout << std::format("\tVersion: {}.{}\n",
+                                     Render::GetMajorVersion(props.version),
+                                     Render::GetMinorVersion(props.version));
+            std::cout << std::format("\tVendor: {}\n", props.vendor_name);
+            std::cout << std::format("\tDevice: {}\n", props.device_name);
+
+            if(props.supported_syntax | Render::ShaderSyntaxFlagBits::GLSL)
+                std::cout << "\tShader syntax: GLSL\n";
+
+            std::cout << std::format(
+                "\tCommand buffer strategy: {}\n",
+                (props.command_buffer_strategy == Render::CommandBufferStrategy::Immediate ?
+                     "Immediate" :
+                     "Deffered"));
+
+            std::string_view device_type;
+            switch(props.device_type)
+            {
+                case Render::PhysicalDeviceType::CPU:
+                    device_type = "CPU";
+                    break;
+                case Render::PhysicalDeviceType::DiscreteGPU:
+                    device_type = "DiscreteGPU";
+                    break;
+                case Render::PhysicalDeviceType::IntegratedGPU:
+                    device_type = "IntegratedGPU";
+                    break;
+                case Render::PhysicalDeviceType::VirtualGPU:
+                    device_type = "VirtualGPU";
+                    break;
+                case Render::PhysicalDeviceType::Other:
+                    device_type = "Other";
+                    break;
+            }
+
+            std::cout << std::format("\tDevice type: {}\n", device_type);
+            std::cout << std::format(
+                "\tView origin: {}\n",
+                (props.view_origin == Render::ViewOrigin::TopLeft ? "TopLeft" : "BottomLeft"));
+            std::cout << std::format("\tClip space depth bounds. Min: {}; Max: {}\n",
+                                     props.clip_space_depth_bounds.min,
+                                     props.clip_space_depth_bounds.max);
+
+            std::cout << "\tMemory types:\n";
+            for(std::size_t j = 0; j < props.memory_types.size(); j++)
+            {
+                auto memory_type = props.memory_types[j];
+
+                std::cout << std::format("\t\tMemory type #{}\n", j);
+                std::cout << std::format(
+                    "\t\t\tHeap flags: {}\n",
+                    (memory_type.memory_heap_flags & Render::MemoryHeapFlagBits::DeviceLocalHeap ?
+                         "DeviceLocalHeap" :
+                         "0"));
+
+                std::string type_flags = "";
+                for(const auto& type:
+                    {std::pair{Render::MemoryTypePropertyFlagBits::DeviceLocal, "DeviceLocal"},
+                     std::pair{Render::MemoryTypePropertyFlagBits::HostVisible, "HostVisible"},
+                     std::pair{Render::MemoryTypePropertyFlagBits::HostCoherent, "HostCoherent"},
+                     std::pair{Render::MemoryTypePropertyFlagBits::HostCached, "HostCached"}})
+                {
+                    if(!(memory_type.memory_type_flags & type.first))
+                        continue;
+
+                    if(type_flags.empty())
+                        type_flags = type.second;
+                    else
+                        type_flags += std::format(" | {}", type.second);
+                }
+
+                std::cout << std::format("\t\t\tType flags: {}\n",
+                                         (!type_flags.empty() ? type_flags : "0"));
+            }
+
+            std::cout << "\tExtensions:\n";
+            for(std::size_t j = 0; j < props.extensions.size(); j++)
+            {
+                std::cout << std::format("\t\t#{}: {}\n", j, props.extensions[j]);
+            }
+
+            std::cout << "\tQueues:\n";
+            for(std::size_t j = 0; j < props.queue_family_properties.size(); j++)
+            {
+                const auto& queue_family = props.queue_family_properties[j];
+
+                std::cout << std::format("\t\tQueue family #{}\n", j);
+                std::cout << std::format("\t\t\tQueue count: {}\n", queue_family.queue_count);
+                std::cout << std::format("\t\t\tMin image transfer granularity: {}.{}.{}\n",
+                                         queue_family.min_image_transfer_granularity.width,
+                                         queue_family.min_image_transfer_granularity.height,
+                                         queue_family.min_image_transfer_granularity.depth);
+
+                std::string spec_flags = "";
+                for(const auto& type:
+                    {std::pair{Render::QueueSpecializationFlagBits::TransferSpec, "TransferSpec"},
+                     std::pair{Render::QueueSpecializationFlagBits::GraphicsSpec, "GraphicsSpec"},
+                     std::pair{Render::QueueSpecializationFlagBits::ComputeSpec, "ComputeSpec"},
+                     std::pair{Render::QueueSpecializationFlagBits::UnknownImplementationSpec,
+                               "UnknownImplementationSpec"}})
+                {
+                    if(!(queue_family.specialization & type.first))
+                        continue;
+
+                    if(spec_flags.empty())
+                        spec_flags = type.second;
+                    else
+                        spec_flags += std::format(" | {}", type.second);
+                }
+
+                std::cout << std::format("\t\t\tSpecialization flags: {}\n",
+                                         (!spec_flags.empty() ? spec_flags : "0"));
+            }
+
+            std::cout << "\tFeatures:\n";
+#define PRINT_FEATURE(NAME) \
+    std::cout << std::format("\t\t{} = {}\n", #NAME, (props.features.NAME ? "true" : "false"));
+
+            PRINT_FEATURE(robust_buffer_access);
+            PRINT_FEATURE(full_draw_index_uint32);
+            PRINT_FEATURE(image_cube_array);
+            PRINT_FEATURE(independent_blend);
+            PRINT_FEATURE(geometry_shader);
+            PRINT_FEATURE(tessellation_shader);
+            PRINT_FEATURE(sample_rate_shading);
+            PRINT_FEATURE(dual_src_blend);
+            PRINT_FEATURE(logic_op);
+            PRINT_FEATURE(multi_draw_indirect);
+            PRINT_FEATURE(draw_indirect_first_instance);
+            PRINT_FEATURE(depth_clamp);
+            PRINT_FEATURE(depth_bias_clamp);
+            PRINT_FEATURE(fill_mode_non_solid);
+            PRINT_FEATURE(depth_bounds);
+            PRINT_FEATURE(wide_lines);
+            PRINT_FEATURE(large_points);
+            PRINT_FEATURE(alpha_to_one);
+            PRINT_FEATURE(multi_viewport);
+            PRINT_FEATURE(sampler_anisotropy);
+            PRINT_FEATURE(vertex_pipeline_stores_and_atomics);
+            PRINT_FEATURE(fragment_stores_and_atomics);
+            PRINT_FEATURE(shader_tessellation_and_geometry_point_size);
+            PRINT_FEATURE(shader_image_gather_extended);
+            PRINT_FEATURE(shader_storage_image_multisample);
+            PRINT_FEATURE(shader_storage_image_read_without_format);
+            PRINT_FEATURE(shader_storage_image_write_without_format);
+            PRINT_FEATURE(shader_uniform_buffer_array_dynamic_indexing);
+            PRINT_FEATURE(shader_sampled_image_array_dynamic_indexing);
+            PRINT_FEATURE(shader_storage_buffer_array_dynamic_indexing);
+            PRINT_FEATURE(shader_storage_image_array_dynamic_indexing);
+            PRINT_FEATURE(shader_clip_distance);
+            PRINT_FEATURE(shader_cull_distance);
+            PRINT_FEATURE(shader_float64);
+            PRINT_FEATURE(shader_int64);
+            PRINT_FEATURE(shader_int16);
+            PRINT_FEATURE(shader_resource_min_lod);
+            PRINT_FEATURE(variable_multisample_rate);
+            PRINT_FEATURE(sampler_mirror_clamp_to_edge);
+            PRINT_FEATURE(custom_border_colors);
+            PRINT_FEATURE(custom_border_color_without_format);
+            PRINT_FEATURE(index_type_uint8);
+
+            std::cout << "\tLimits:\n";
+#define PRINT_LIMIT_U32(NAME) std::cout << std::format("\t\t{} = {}\n", #NAME, props.limits.NAME);
+#define PRINT_LIMIT_U64(NAME) std::cout << std::format("\t\t{} = {}\n", #NAME, props.limits.NAME);
+#define PRINT_LIMIT_COMPUTE_GROUP_SIZE(NAME) \
+    std::cout << std::format("\t\t{} = {}.{}.{}\n", \
+                             #NAME, \
+                             props.limits.NAME.x, \
+                             props.limits.NAME.y, \
+                             props.limits.NAME.z);
+#define PRINT_LIMIT_F32(NAME) std::cout << std::format("\t\t{} = {}\n", #NAME, props.limits.NAME);
+#define PRINT_LIMIT_EXTENT2D(NAME) \
+    std::cout << std::format("\t\t{} = {}\n", \
+                             #NAME, \
+                             props.limits.NAME.width, \
+                             props.limits.NAME.height);
+#define PRINT_LIMIT_RANGE(NAME) \
+    std::cout << std::format("\t\t{} = {}\n", #NAME, props.limits.NAME.min, props.limits.NAME.max);
+#define PRINT_LIMIT_SIZE(NAME) std::cout << std::format("\t\t{} = {}\n", #NAME, props.limits.NAME);
+#define PRINT_LIMIT_I32(NAME) std::cout << std::format("\t\t{} = {}\n", #NAME, props.limits.NAME);
+#define PRINT_LIMIT_SAMPLES(NAME) \
+    { \
+        auto samples = props.limits.NAME; \
+        std::string value = ""; \
+        for(std::underlying_type_t<Render::SampleCount> i = 1; \
+            i <= std::numeric_limits<decltype(i)>::digits; \
+            i <<= 1) \
+        { \
+            if(samples & i) \
+            { \
+                if(value.empty()) \
+                    value = std::format("{}", i); \
+                else \
+                    value += std::format(" | {}", i); \
+            } \
+        } \
+        std::cout << std::format("\t\t{} = {}\n", #NAME, value); \
     }
 
-    num = 0;
-    emitter.Emit(EventType{.data = 42});
+            PRINT_LIMIT_U32(max_image_dimension_1D);
+            PRINT_LIMIT_U32(max_image_dimension_2D);
+            PRINT_LIMIT_U32(max_image_dimension_3D);
+            PRINT_LIMIT_U32(max_image_dimension_cube);
+            PRINT_LIMIT_U32(max_image_array_layers);
+            PRINT_LIMIT_U32(max_texel_buffer_elements);
+            PRINT_LIMIT_U32(max_uniform_buffer_range);
+            PRINT_LIMIT_U64(max_storage_buffer_range);
+            PRINT_LIMIT_U32(max_uniform_size);
+            PRINT_LIMIT_U32(max_sampler_allocation_count);
+            PRINT_LIMIT_U32(max_bound_descriptor_sets);
+            PRINT_LIMIT_U32(max_per_stage_descriptor_samplers);
+            PRINT_LIMIT_U32(max_per_stage_descriptor_uniform_buffers);
+            PRINT_LIMIT_U32(max_per_stage_descriptor_storage_buffers);
+            PRINT_LIMIT_U32(max_per_stage_descriptor_sampled_images);
+            PRINT_LIMIT_U32(max_per_stage_descriptor_storage_images);
+            PRINT_LIMIT_U32(max_per_stage_descriptor_input_attachments);
+            PRINT_LIMIT_U32(max_per_stage_resources);
+            PRINT_LIMIT_U32(max_descriptor_set_samplers);
+            PRINT_LIMIT_U32(max_descriptor_set_uniform_buffers);
+            PRINT_LIMIT_U32(max_descriptor_set_storage_buffers);
+            PRINT_LIMIT_U32(max_descriptor_set_sampled_images);
+            PRINT_LIMIT_U32(max_descriptor_set_storage_images);
+            PRINT_LIMIT_U32(max_descriptor_set_input_attachments);
+            PRINT_LIMIT_U32(max_vertex_input_attributes);
+            PRINT_LIMIT_U32(max_vertex_input_bindings);
+            PRINT_LIMIT_U32(max_vertex_input_attribute_offset);
+            PRINT_LIMIT_U32(max_vertex_input_binding_stride);
+            PRINT_LIMIT_U32(max_vertex_output_components);
+            PRINT_LIMIT_U32(max_tessellation_generation_level);
+            PRINT_LIMIT_U32(max_tessellation_patch_size);
+            PRINT_LIMIT_U32(max_tessellation_control_per_vertex_input_components);
+            PRINT_LIMIT_U32(max_tessellation_control_per_vertex_output_components);
+            PRINT_LIMIT_U32(max_tessellation_control_per_patch_output_components);
+            PRINT_LIMIT_U32(max_tessellation_control_total_output_components);
+            PRINT_LIMIT_U32(max_tessellation_evaluation_input_components);
+            PRINT_LIMIT_U32(max_tessellation_evaluation_output_components);
+            PRINT_LIMIT_U32(max_geometry_shader_invocations);
+            PRINT_LIMIT_U32(max_geometry_input_components);
+            PRINT_LIMIT_U32(max_geometry_output_components);
+            PRINT_LIMIT_U32(max_geometry_output_vertices);
+            PRINT_LIMIT_U32(max_geometry_total_output_components);
+            PRINT_LIMIT_U32(max_fragment_input_components);
+            PRINT_LIMIT_U32(max_fragment_output_attachments);
+            PRINT_LIMIT_U32(max_fragment_dual_src_attachments);
+            PRINT_LIMIT_U32(max_fragment_combined_output_resources);
+            PRINT_LIMIT_U32(max_compute_shared_memory_size);
+            PRINT_LIMIT_COMPUTE_GROUP_SIZE(max_compute_work_group_count);
+            PRINT_LIMIT_U32(max_compute_work_group_invocations);
+            PRINT_LIMIT_COMPUTE_GROUP_SIZE(max_compute_work_group_size);
+            PRINT_LIMIT_U32(sub_pixel_precision_bits);
+            PRINT_LIMIT_U32(max_draw_indexed_index_value);
+            PRINT_LIMIT_U32(max_draw_indirect_count);
+            PRINT_LIMIT_F32(max_sampler_lod_bias);
+            PRINT_LIMIT_F32(max_sampler_anisotropy);
+            PRINT_LIMIT_U32(max_viewports);
+            PRINT_LIMIT_EXTENT2D(max_viewport_dimensions);
+            PRINT_LIMIT_RANGE(viewport_bounds_range);
+            PRINT_LIMIT_U32(viewport_sub_pixel_bits);
+            PRINT_LIMIT_SIZE(min_memory_map_alignment);
+            PRINT_LIMIT_U64(min_texel_buffer_offset_alignment);
+            PRINT_LIMIT_U64(min_uniform_buffer_offset_alignment);
+            PRINT_LIMIT_U64(min_storage_buffer_offset_alignment);
+            PRINT_LIMIT_I32(min_texel_offset);
+            PRINT_LIMIT_U32(max_texel_offset);
+            PRINT_LIMIT_I32(min_texel_gather_offset);
+            PRINT_LIMIT_U32(max_texel_gather_offset);
+            PRINT_LIMIT_F32(min_interpolation_offset);
+            PRINT_LIMIT_F32(max_interpolation_offset);
+            PRINT_LIMIT_U32(sub_pixel_interpolation_offset_bits);
+            PRINT_LIMIT_U32(max_framebuffer_width);
+            PRINT_LIMIT_U32(max_framebuffer_height);
+            PRINT_LIMIT_U32(max_framebuffer_layers);
+            PRINT_LIMIT_SAMPLES(framebuffer_color_sample_counts);
+            PRINT_LIMIT_SAMPLES(framebuffer_depth_sample_counts);
+            PRINT_LIMIT_SAMPLES(framebuffer_stencil_sample_counts);
+            PRINT_LIMIT_SAMPLES(framebuffer_no_attachments_sample_counts);
+            PRINT_LIMIT_U32(max_color_attachments);
+            PRINT_LIMIT_SAMPLES(sampled_image_color_sample_counts);
+            PRINT_LIMIT_SAMPLES(sampled_image_integer_sample_counts);
+            PRINT_LIMIT_SAMPLES(sampled_image_depth_sample_counts);
+            PRINT_LIMIT_SAMPLES(sampled_image_stencil_sample_counts);
+            PRINT_LIMIT_SAMPLES(storage_image_sample_counts);
+            PRINT_LIMIT_U32(max_sample_mask_words);
+            PRINT_LIMIT_U32(max_clip_distances);
+            PRINT_LIMIT_U32(max_cull_distances);
+            PRINT_LIMIT_U32(max_combined_clip_and_cull_distances);
+            PRINT_LIMIT_U32(discrete_queue_priorities);
+            PRINT_LIMIT_RANGE(point_size_range);
+            PRINT_LIMIT_RANGE(line_width_range);
+            PRINT_LIMIT_F32(point_size_granularity);
+            PRINT_LIMIT_F32(line_width_granularity);
+            PRINT_LIMIT_U64(optimal_buffer_copy_offset_alignment);
+            PRINT_LIMIT_U64(optimal_buffer_copy_row_pitch_alignment);
+            PRINT_LIMIT_U64(non_coherent_atom_size);
+            PRINT_LIMIT_U32(max_custom_border_color_samplers);
 
-    for(std::size_t i = 0; i < refs.size(); i++)
+            std::int64_t present_family_index = -1;
+            for(std::size_t j = 0; j < props.queue_family_properties.size(); j++)
+            {
+                if(physical_devices[i]->GetSurfaceSupport(surface.get(), j) &&
+                   props.queue_family_properties[j].specialization &
+                       Render::QueueSpecializationFlagBits::GraphicsSpec)
+                {
+                    present_family_index = j;
+                    break;
+                }
+            }
+
+            if(present_family_index == -1)
+                continue;
+
+            present_queue_family = present_family_index;
+            selected_dev = physical_devices[i];
+        }
+
+        if(!selected_dev)
+            throw std::runtime_error("No compatible physical device found");
+
+        auto surface_caps = selected_dev->GetSurfaceCapablities(surface.get());
+
+        std::array<float, 1> queue_priorities = {1.0f};
+        const Render::DeviceInfo device_info = {
+            .queue_family_infos = {Render::QueueFamilyInfo{.index = present_queue_family,
+                                                           .queue_count = 1,
+                                                           .queue_priorities =
+                                                               queue_priorities.data()}},
+            .enabled_features = Render::PhysicalDeviceFeatures{},
+            .surface = surface.get(),
+            .swapchain_info =
+                Render::SwapchainInfo{.min_image_count = surface_caps.min_image_count,
+                                      .surface_config_index = 0,
+                                      .present_mode = Render::PresentModeFlagBits::FIFO},
+            .memory_allocation_size_hint = 1024 * 1024 * 16};
+
+        std::unique_ptr<Render::Device> device(selected_dev->CreateDevice(device_info));
+        Render::Swapchain* swapchain = device->GetSwapchain();
+        Render::Queue* queue =
+            device->GetQueue(Render::QueueInfo{.family_index = present_queue_family, .index = 0});
+
+        constexpr std::size_t FRAMES_COUNT = 3;
+
+        std::array<std::unique_ptr<Render::Semaphore>, FRAMES_COUNT> acquire_semaphores;
+        for(std::size_t i = 0; i < FRAMES_COUNT; i++)
+        {
+            acquire_semaphores[i] = std::unique_ptr<Render::Semaphore>(device->CreateSemaphore());
+        }
+
+        std::size_t frame_index = 0;
+        while(is_run)
+        {
+            win_sys->PollEvents();
+
+            auto image_index_opt =
+                swapchain->AcquireNextSwapchainImage(acquire_semaphores[frame_index].get());
+            assert(image_index_opt);
+
+            Render::Semaphore* wait_sem = acquire_semaphores[frame_index].get();
+            const Render::PresentInfo present_info = {.wait_semaphores = {&wait_sem, 1},
+                                                      .queue = queue};
+            bool present_res = swapchain->PresentSwapchainImage(present_info);
+            assert(present_res);
+
+            frame_index = (frame_index + 1) % FRAMES_COUNT;
+        }
+    }
+    catch(const std::exception& ex)
     {
-        if(i % 7 == 0)
-            refs[i].Disable();
+        std::cerr << ex.what() << std::endl;
     }
-
-    num = 0;
-    emitter.Emit(EventType{.data = 123});
-
-    for(std::size_t i = 0; i < refs.size(); i++)
+    catch(...)
     {
-        if(i % 9 == 0)
-            refs[i].Disconnect();
+        std::cerr << "Undefined exception" << std::endl;
     }
 
-    num = 0;
-    emitter.Emit(EventType{.data = 1024});
-
-    for(std::size_t i = 0; i < refs.size(); i++)
-    {
-        refs[i].Disconnect();
-    }
-
-    num = 0;
-    emitter.Emit(EventType{.data = 0});
+    return 0;
 }

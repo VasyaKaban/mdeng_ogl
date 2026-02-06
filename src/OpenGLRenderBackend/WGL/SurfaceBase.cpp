@@ -24,13 +24,19 @@ namespace OpenGL
             throw std::runtime_error("Failed to create already created WGL context");
 
         //select pixel format for current DC
-        PIXELFORMATDESCRIPTOR pfd;
-        DescribePixelFormat(info.hdc,
-                            connect_info.config_index,
-                            sizeof(PIXELFORMATDESCRIPTOR),
-                            &pfd);
+        auto descibe_pixelformat_index =
+            connect_info.physical_device->GetDescribePixelFormatIndex(connect_info.config_index);
 
-        if(SetPixelFormat(info.hdc, connect_info.config_index, &pfd) == FALSE)
+        PIXELFORMATDESCRIPTOR pfd;
+        int res = DescribePixelFormat(info.hdc,
+                                      descibe_pixelformat_index,
+                                      sizeof(PIXELFORMATDESCRIPTOR),
+                                      &pfd);
+
+        if(res == 0)
+            throw hrs::winapi_get_last_error();
+
+        if(SetPixelFormat(info.hdc, descibe_pixelformat_index, &pfd) == FALSE)
             throw hrs::winapi_get_last_error();
 
         Instance* impl_instace = static_cast<Instance*>(connect_info.physical_device->GetParent());

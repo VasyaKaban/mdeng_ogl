@@ -17,7 +17,8 @@ namespace OpenGL
             case WM_CREATE:
             {
                 std::optional<std::runtime_error>* window_param_opt =
-                    reinterpret_cast<std::optional<std::runtime_error>*>(lParam);
+                    reinterpret_cast<std::optional<std::runtime_error>*>(
+                        reinterpret_cast<CREATESTRUCTW*>(lParam)->lpCreateParams);
 
                 HDC _dc = nullptr;
                 HGLRC _glrc = nullptr;
@@ -153,7 +154,7 @@ namespace OpenGL
 
         UnregisterClassW(DUMMY_WINDOW_CLASS_NAME, _instance);
 
-        if(!window_param_opt.has_value())
+        if(window_param_opt.has_value())
             throw window_param_opt.value();
     }
 };
