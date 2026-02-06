@@ -54,3 +54,5 @@ Maybe add methods for device that will get info about:
 
 buffer align: common(bufferImageGranularity, nonCoherentAtomSize, req.alignment)
 image align: common(bufferImageGranularity,req.alignment)
+
+dllexport/dllimport for linux(mostly for templates) -> use extern template?
