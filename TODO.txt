@@ -56,3 +56,12 @@ buffer align: common(bufferImageGranularity, nonCoherentAtomSize, req.alignment)
 image align: common(bufferImageGranularity,req.alignment)
 
 dllexport/dllimport for linux(mostly for templates) -> use extern template?
+WinAPI -> can receive at any time
+Xlib -> can receive at any time
+Wayland -> sends configure only on init...(that's why currentExtent in VkSurfaceKHR is always 0xFF...)
+
+in SurfaceInfo:
+	Extent2D min_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
+	Extent2D max_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
+	Extent2D current_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
+	
