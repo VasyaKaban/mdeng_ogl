@@ -1,5 +1,6 @@
 #include "PhysicalDeviceBase.h"
 #include <stdexcept>
+#include <map>
 #include "hrs/expected.hpp"
 #include "hrs/scoped_call.hpp"
 #include "../Objects/Instance/Instance.h"
@@ -18,6 +19,18 @@ namespace OpenGL
         HGLRC glrc;
         Render::SurfaceCapabilities surface_capabilities;
         std::vector<std::uint32_t> pixelformat_indices;
+        GladGLContext loader;
+    };
+
+    struct FormatDesc
+    {
+        /*
+        WGL_NO_ACCELERATION_ARB                 0x2025
+        WGL_GENERIC_ACCELERATION_ARB            0x2026
+        WGL_FULL_ACCELERATION_ARB               0x2027
+        */
+        int acceleration;
+        int index;
     };
 
     static LRESULT CALLBACK DummyWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -57,99 +70,6 @@ namespace OpenGL
                 GLAD_API_CALL int GLAD_WGL_EXT_swap_control;
                 GLAD_API_CALL int GLAD_WGL_EXT_swap_control_tear;
                 */
-
-                constexpr static int format_number_query_input[1] = {WGL_NUMBER_PIXEL_FORMATS_ARB};
-                int format_number_query_output[1] = {};
-
-                std::vector<Render::SurfaceConfig> surface_configs;
-                std::vector<std::uint32_t> pixelformat_indices;
-                glad_wglGetPixelFormatAttribivARB(_dc,
-                                                  0,
-                                                  0,
-                                                  1,
-                                                  format_number_query_input,
-                                                  format_number_query_output);
-                surface_configs.reserve(format_number_query_output[0]);
-                pixelformat_indices.reserve(format_number_query_output[0]);
-
-                constexpr static int format_query_input[] = {
-                    WGL_DRAW_TO_WINDOW_ARB, //0
-                    WGL_ACCELERATION_ARB, //1
-                    WGL_SUPPORT_OPENGL_ARB, //2
-                    WGL_DOUBLE_BUFFER_ARB, //3
-                    WGL_PIXEL_TYPE_ARB, //4
-                    WGL_COLOR_BITS_ARB, //5
-                    WGL_RED_BITS_ARB, //6
-                    WGL_GREEN_BITS_ARB, //7
-                    WGL_BLUE_BITS_ARB, //8
-                    WGL_ALPHA_BITS_ARB, //9
-                    WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB //10
-                };
-
-                int format_query_output[std::size(format_query_input)] = {};
-
-                std::size_t format_query_input_size =
-                    (GLAD_WGL_ARB_framebuffer_sRGB ? std::size(format_query_input) :
-                                                     std::size(format_query_input) - 1);
-
-                for(std::size_t i = 0; i < format_number_query_output[0]; i++)
-                {
-                    glad_wglGetPixelFormatAttribivARB(_dc,
-                                                      i,
-                                                      0,
-                                                      format_query_input_size,
-                                                      format_query_input,
-                                                      format_query_output);
-
-                    if(format_query_output[0 /*WGL_DRAW_TO_WINDOW_ARB*/] == FALSE ||
-                       format_query_output[1 /*WGL_ACCELERATION_ARB*/] !=
-                           WGL_FULL_ACCELERATION_ARB ||
-                       format_query_output[2 /*WGL_SUPPORT_OPENGL_ARB*/] == FALSE ||
-                       format_query_output[3 /*WGL_DOUBLE_BUFFER_ARB*/] == FALSE ||
-                       format_query_output[4 /*WGL_PIXEL_TYPE_ARB*/] == WGL_TYPE_COLORINDEX_ARB)
-                    {
-                        continue;
-                    }
-
-                    pixelformat_indices.push_back(i);
-
-                    Render::SurfaceConfig cfg = {
-                        .red_bits_size =
-                            static_cast<std::uint8_t>(format_query_output[6 /*WGL_RED_BITS_ARB*/]),
-                        .green_bits_size = static_cast<std::uint8_t>(
-                            format_query_output[7 /*WGL_GREEN_BITS_ARB*/]),
-                        .blue_bits_size =
-                            static_cast<std::uint8_t>(format_query_output[8 /*WGL_BLUE_BITS_ARB*/]),
-                        .alpha_bits_size = static_cast<std::uint8_t>(
-                            format_query_output[9 /*WGL_ALPHA_BITS_ARB*/]),
-                        .color_buffer_bits_size = static_cast<std::uint8_t>(
-                            format_query_output[5 /*WGL_COLOR_BITS_ARB*/]),
-                        .format_type = (format_query_output[4 /*WGL_PIXEL_TYPE_ARB*/] ==
-                                                WGL_TYPE_RGBA_FLOAT_ARB ?
-                                            Render::FormatType::SFLOAT :
-                                            Render::FormatType::UNORM),
-                        .srgb_format =
-                            (GLAD_WGL_ARB_framebuffer_sRGB ?
-                                 static_cast<bool>(
-                                     format_query_output[10 /*WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB*/]) :
-                                 false)};
-
-                    surface_configs.push_back(cfg);
-                }
-
-                Render::PresentModeFlags supported_present_modes =
-                    Render::PresentModeFlagBits::FIFO;
-                if(GLAD_WGL_EXT_swap_control)
-                    supported_present_modes |= Render::PresentModeFlagBits::Immediate;
-
-                if(GLAD_WGL_EXT_swap_control_tear)
-                    supported_present_modes |= Render::PresentModeFlagBits::RelaxedFIFO;
-
-                Render::SurfaceCapabilities surface_capabilities =
-                    Render::SurfaceCapabilities{.min_image_count = SWAPCHAIN_IMAGE_COUNT,
-                                                .max_image_count = SWAPCHAIN_IMAGE_COUNT,
-                                                .supported_present_modes = supported_present_modes,
-                                                .supported_configs = std::move(surface_configs)};
 
                 bool debug_messenger_enabled =
                     window_params_exp->value()
@@ -229,11 +149,138 @@ namespace OpenGL
 
                 wglMakeCurrent(_dc, _glrc);
 
+                GladGLContext loader;
+
+                int glad_ver =
+                    gladLoadGLContext(&loader, reinterpret_cast<GLADloadfunc>(wglGetProcAddress));
+                if(glad_ver == 0)
+                {
+                    *window_params_exp = std::runtime_error("Failed to load GLAD");
+                    return -1;
+                }
+
+                constexpr static int format_number_query_input[1] = {WGL_NUMBER_PIXEL_FORMATS_ARB};
+                int format_number_query_output[1] = {};
+
+                std::vector<Render::Format> surface_formats;
+                std::vector<std::uint32_t> pixelformat_indices;
+                glad_wglGetPixelFormatAttribivARB(_dc,
+                                                  0,
+                                                  0,
+                                                  1,
+                                                  format_number_query_input,
+                                                  format_number_query_output);
+
+                constexpr static int format_query_input[] = {
+                    WGL_DRAW_TO_WINDOW_ARB, //0
+                    WGL_ACCELERATION_ARB, //1
+                    WGL_SUPPORT_OPENGL_ARB, //2
+                    WGL_DOUBLE_BUFFER_ARB, //3
+                    WGL_PIXEL_TYPE_ARB, //4
+                    WGL_COLOR_BITS_ARB, //5
+                    WGL_RED_BITS_ARB, //6
+                    WGL_GREEN_BITS_ARB, //7
+                    WGL_BLUE_BITS_ARB, //8
+                    WGL_ALPHA_BITS_ARB, //9
+                    WGL_RED_SHIFT_ARB, //10
+                    WGL_GREEN_SHIFT_ARB, //11
+                    WGL_BLUE_SHIFT_ARB, //12
+                    WGL_ALPHA_SHIFT_ARB, //13
+                    WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, //14
+                };
+
+                int format_query_output[std::size(format_query_input)] = {};
+
+                std::size_t format_query_input_size =
+                    (GLAD_WGL_ARB_framebuffer_sRGB ? std::size(format_query_input) :
+                                                     std::size(format_query_input) - 1);
+
+                struct std::map<Render::Format, FormatDesc> formats_set;
+
+                for(std::size_t i = 0; i < format_number_query_output[0]; i++)
+                {
+                    glad_wglGetPixelFormatAttribivARB(_dc,
+                                                      i,
+                                                      0,
+                                                      format_query_input_size,
+                                                      format_query_input,
+                                                      format_query_output);
+
+                    if(format_query_output[0 /*WGL_DRAW_TO_WINDOW_ARB*/] == FALSE ||
+                       format_query_output[2 /*WGL_SUPPORT_OPENGL_ARB*/] == FALSE ||
+                       //format_query_output[3 /*WGL_DOUBLE_BUFFER_ARB*/] == FALSE ||
+                       format_query_output[4 /*WGL_PIXEL_TYPE_ARB*/] == WGL_TYPE_COLORINDEX_ARB)
+                    {
+                        continue;
+                    }
+
+                    auto format_opt = DecodePixelFormat(
+                        loader,
+                        format_query_output[6 /*WGL_RED_BITS_ARB*/],
+                        format_query_output[10 /*WGL_RED_SHIFT_ARB*/],
+                        format_query_output[7 /*WGL_GREEN_BITS_ARB*/],
+                        format_query_output[11 /*WGL_GREEN_SHIFT_ARB*/],
+                        format_query_output[8 /*WGL_BLUE_BITS_ARB*/],
+                        format_query_output[12 /*WGL_BLUE_SHIFT_ARB*/],
+                        format_query_output[9 /*WGL_ALPHA_BITS_ARB*/],
+                        format_query_output[13 /*WGL_ALPHA_SHIFT_ARB*/],
+                        format_query_output[5 /*WGL_COLOR_BITS_ARB*/],
+                        (GLAD_WGL_ARB_framebuffer_sRGB ?
+                             static_cast<bool>(
+                                 format_query_output[14 /*WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB*/]) :
+                             false),
+                        format_query_output[4 /*WGL_PIXEL_TYPE_ARB*/] == WGL_TYPE_RGBA_FLOAT_ARB);
+
+                    if(!format_opt)
+                        continue;
+
+                    FormatDesc format_desc =
+                        FormatDesc{.acceleration = format_query_output[1 /*WGL_ACCELERATION_ARB*/],
+                                   .index = static_cast<int>(i)};
+                    auto [it, inserted] = formats_set.insert({*format_opt, format_desc});
+                    if(!inserted)
+                    {
+                        if(it->second.acceleration < format_desc.acceleration)
+                            it->second = format_desc;
+                    }
+                }
+
+                if(formats_set.empty())
+                {
+                    *window_params_exp =
+                        std::runtime_error("Physical device does not contain any formats");
+                    return -1;
+                }
+
+                pixelformat_indices.reserve(formats_set.size());
+                surface_formats.reserve(formats_set.size());
+
+                for(const auto& [format, desc]: formats_set)
+                {
+                    pixelformat_indices.push_back(desc.index);
+                    surface_formats.push_back(format);
+                }
+
+                Render::PresentModeFlags supported_present_modes =
+                    Render::PresentModeFlagBits::FIFO;
+                if(GLAD_WGL_EXT_swap_control)
+                    supported_present_modes |= Render::PresentModeFlagBits::Immediate;
+
+                if(GLAD_WGL_EXT_swap_control_tear)
+                    supported_present_modes |= Render::PresentModeFlagBits::RelaxedFIFO;
+
+                Render::SurfaceCapabilities surface_capabilities =
+                    Render::SurfaceCapabilities{.min_image_count = SWAPCHAIN_IMAGE_COUNT,
+                                                .max_image_count = SWAPCHAIN_IMAGE_COUNT,
+                                                .supported_present_modes = supported_present_modes,
+                                                .supported_formats = std::move(surface_formats)};
+
                 *window_params_exp =
                     WindowParams{.dc = _dc,
                                  .glrc = _glrc,
                                  .surface_capabilities = std::move(surface_capabilities),
-                                 .pixelformat_indices = std::move(pixelformat_indices)};
+                                 .pixelformat_indices = std::move(pixelformat_indices),
+                                 .loader = loader};
 
                 cleanup.drop();
                 break;
@@ -290,6 +337,8 @@ namespace OpenGL
         glrc = window_param_exp->glrc;
         surface_capabilities = std::move(window_param_exp->surface_capabilities);
         pixelformat_indices = std::move(window_param_exp->pixelformat_indices);
+
+        loader = window_param_exp->loader;
     }
 
     PhysicalDeviceBase::~PhysicalDeviceBase()
@@ -317,8 +366,7 @@ namespace OpenGL
             .min_image_count = surface_capabilities.min_image_count,
             .max_image_count = surface_capabilities.max_image_count,
             .supported_present_modes = surface_capabilities.supported_present_modes,
-            .supported_configs = {
-                surface_capabilities.supported_configs[pixelformat_indices[index]]}};
+            .supported_formats = {surface_capabilities.supported_formats[index]}};
     }
 
     std::uint32_t

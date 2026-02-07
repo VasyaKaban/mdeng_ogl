@@ -22,6 +22,8 @@ namespace OpenGL
         void MakeCurrent();
 
         bool IsRobustContextSupported() const noexcept;
+    protected:
+        GladGLContext loader;
     private:
         HINSTANCE hinstance;
         //all dummy

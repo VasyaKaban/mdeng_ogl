@@ -85,7 +85,7 @@ namespace OpenGL
     struct SurfaceConnectInfo
     {
         PhysicalDevice* physical_device;
-        std::uint32_t config_index;
+        std::uint32_t format_index;
         bool robust_buffer_access_enabled;
     };
 
@@ -205,4 +205,17 @@ namespace OpenGL
 
     void EnableDebugMessenger(const GladGLContext& loader);
     void SetDebugMessenger(const GladGLContext& loader, const Render::DebugMessengerInfo& info);
+
+    std::optional<Render::Format> DecodePixelFormat(const GladGLContext& loader,
+                                                    std::uint8_t red_bits,
+                                                    std::uint8_t red_shift,
+                                                    std::uint8_t green_bits,
+                                                    std::uint8_t green_shift,
+                                                    std::uint8_t blue_bits,
+                                                    std::uint8_t blue_shift,
+                                                    std::uint8_t alpha_bits,
+                                                    std::uint8_t alpha_shift,
+                                                    std::uint8_t color_bits,
+                                                    bool is_srgb,
+                                                    bool is_float);
 };

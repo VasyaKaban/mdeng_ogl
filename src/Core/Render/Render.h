@@ -1380,6 +1380,12 @@ namespace Render
         std::uint32_t offset; //within data buffer
     };
 
+    struct AcquireNextImageInfo
+    {
+        Semaphore* semaphore;
+        Fence* fence;
+    };
+
     struct PresentInfo
     {
         std::span<Semaphore*> wait_semaphores;
@@ -1716,23 +1722,12 @@ namespace Render
 
     using PresentModeFlags = std::underlying_type_t<PresentModeFlagBits>;
 
-    struct SurfaceConfig
-    {
-        std::uint8_t red_bits_size;
-        std::uint8_t green_bits_size;
-        std::uint8_t blue_bits_size;
-        std::uint8_t alpha_bits_size;
-        std::uint16_t color_buffer_bits_size;
-        FormatType format_type; //UNORM for OpenGL or SFLOAT on extension present
-        bool srgb_format;
-    };
-
     struct SurfaceCapabilities
     {
         std::uint32_t min_image_count;
         std::uint32_t max_image_count; //0 -> no limit
         PresentModeFlags supported_present_modes;
-        std::vector<SurfaceConfig> supported_configs;
+        std::vector<Format> supported_formats;
         //std::uint32_t max_image_array_layers;
         //usage -> color attachment
     };
@@ -1802,7 +1797,7 @@ namespace Render
     struct SwapchainInfo
     {
         std::uint32_t min_image_count;
-        std::uint32_t surface_config_index;
+        std::uint32_t format_index;
         PresentModeFlagBits present_mode;
     };
 

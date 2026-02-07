@@ -19,7 +19,7 @@ namespace OpenGL
                                             Render::RenderPass* renderpass) override;
 
         virtual std::optional<std::uint32_t>
-        AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore) override;
+        AcquireNextSwapchainImage(const Render::AcquireNextImageInfo& info) override;
 
         virtual bool PresentSwapchainImage(const Render::PresentInfo& info) override;
 

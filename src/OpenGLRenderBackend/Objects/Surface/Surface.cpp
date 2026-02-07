@@ -40,7 +40,7 @@ namespace OpenGL
         this->SurfaceBase::Connect(info);
 
         connected_capabilities = static_cast<PhysicalDevice*>(info.physical_device)
-                                     ->GetSurfaceCapabilitiesByIndex(info.config_index);
+                                     ->GetSurfaceCapabilitiesByIndex(info.format_index);
 
         connected_physical_device = info.physical_device;
     }

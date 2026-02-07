@@ -15,7 +15,7 @@ namespace Render
                                                                  RenderPass* renderpass) = 0;
 
         virtual std::optional<std::uint32_t>
-        AcquireNextSwapchainImage(Semaphore* signal_semaphore) = 0;
+        AcquireNextSwapchainImage(const Render::AcquireNextImageInfo& info) = 0;
 
         virtual bool PresentSwapchainImage(const PresentInfo& info) = 0;
 

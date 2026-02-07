@@ -830,4 +830,497 @@ namespace Render
 
         return is_srgb;
     }
+
+    std::string_view FormatToString(Format format) noexcept
+    {
+        std::string_view out;
+        switch(format)
+        {
+            case Format::UNDEFINED:
+                out = "UNDEFINED";
+                break;
+            case Format::R4G4_UNORM_PACK8:
+                out = "R4G4_UNORM_PACK8";
+                break;
+            case Format::R4G4B4A4_UNORM_PACK16:
+                out = "R4G4B4A4_UNORM_PACK16";
+                break;
+            case Format::B4G4R4A4_UNORM_PACK16:
+                out = "B4G4R4A4_UNORM_PACK16";
+                break;
+            case Format::R5G6B5_UNORM_PACK16:
+                out = "R5G6B5_UNORM_PACK16";
+                break;
+            case Format::B5G6R5_UNORM_PACK16:
+                out = "B5G6R5_UNORM_PACK16";
+                break;
+            case Format::R5G5B5A1_UNORM_PACK16:
+                out = "R5G5B5A1_UNORM_PACK16";
+                break;
+            case Format::B5G5R5A1_UNORM_PACK16:
+                out = "B5G5R5A1_UNORM_PACK16";
+                break;
+            case Format::A1R5G5B5_UNORM_PACK16:
+                out = "A1R5G5B5_UNORM_PACK16";
+                break;
+            case Format::R8_UNORM:
+                out = "R8_UNORM";
+                break;
+            case Format::R8_SNORM:
+                out = "R8_SNORM";
+                break;
+            case Format::R8_USCALED:
+                out = "R8_USCALED";
+                break;
+            case Format::R8_SSCALED:
+                out = "R8_SSCALED";
+                break;
+            case Format::R8_UINT:
+                out = "R8_UINT";
+                break;
+            case Format::R8_SINT:
+                out = "R8_SINT";
+                break;
+            case Format::R8_UNORM_SRGB:
+                out = "R8_UNORM_SRGB";
+                break;
+            case Format::R8G8_UNORM:
+                out = "R8G8_UNORM";
+                break;
+            case Format::R8G8_SNORM:
+                out = "R8G8_SNORM";
+                break;
+            case Format::R8G8_USCALED:
+                out = "R8G8_USCALED";
+                break;
+            case Format::R8G8_SSCALED:
+                out = "R8G8_SSCALED";
+                break;
+            case Format::R8G8_UINT:
+                out = "R8G8_UINT";
+                break;
+            case Format::R8G8_SINT:
+                out = "R8G8_SINT";
+                break;
+            case Format::R8G8_UNORM_SRGB:
+                out = "R8G8_UNORM_SRGB";
+                break;
+            case Format::R8G8B8_UNORM:
+                out = "R8G8B8_UNORM";
+                break;
+            case Format::R8G8B8_SNORM:
+                out = "R8G8B8_SNORM";
+                break;
+            case Format::R8G8B8_USCALED:
+                out = "R8G8B8_USCALED";
+                break;
+            case Format::R8G8B8_SSCALED:
+                out = "R8G8B8_SSCALED";
+                break;
+            case Format::R8G8B8_UINT:
+                out = "R8G8B8_UINT";
+                break;
+            case Format::R8G8B8_SINT:
+                out = "R8G8B8_SINT";
+                break;
+            case Format::R8G8B8_UNORM_SRGB:
+                out = "R8G8B8_UNORM_SRGB";
+                break;
+            case Format::B8G8R8_UNORM:
+                out = "B8G8R8_UNORM";
+                break;
+            case Format::B8G8R8_SNORM:
+                out = "B8G8R8_SNORM";
+                break;
+            case Format::B8G8R8_USCALED:
+                out = "B8G8R8_USCALED";
+                break;
+            case Format::B8G8R8_SSCALED:
+                out = "B8G8R8_SSCALED";
+                break;
+            case Format::B8G8R8_UINT:
+                out = "B8G8R8_UINT";
+                break;
+            case Format::B8G8R8_SINT:
+                out = "B8G8R8_SINT";
+                break;
+            case Format::B8G8R8_UNORM_SRGB:
+                out = "B8G8R8_UNORM_SRGB";
+                break;
+            case Format::R8G8B8A8_UNORM:
+                out = "R8G8B8A8_UNORM";
+                break;
+            case Format::R8G8B8A8_SNORM:
+                out = "R8G8B8A8_SNORM";
+                break;
+            case Format::R8G8B8A8_USCALED:
+                out = "R8G8B8A8_USCALED";
+                break;
+            case Format::R8G8B8A8_SSCALED:
+                out = "R8G8B8A8_SSCALED";
+                break;
+            case Format::R8G8B8A8_UINT:
+                out = "R8G8B8A8_UINT";
+                break;
+            case Format::R8G8B8A8_SINT:
+                out = "R8G8B8A8_SINT";
+                break;
+            case Format::R8G8B8A8_UNORM_SRGB:
+                out = "R8G8B8A8_UNORM_SRGB";
+                break;
+            case Format::B8G8R8A8_UNORM:
+                out = "B8G8R8A8_UNORM";
+                break;
+            case Format::B8G8R8A8_SNORM:
+                out = "B8G8R8A8_SNORM";
+                break;
+            case Format::B8G8R8A8_USCALED:
+                out = "B8G8R8A8_USCALED";
+                break;
+            case Format::B8G8R8A8_SSCALED:
+                out = "B8G8R8A8_SSCALED";
+                break;
+            case Format::B8G8R8A8_UINT:
+                out = "B8G8R8A8_UINT";
+                break;
+            case Format::B8G8R8A8_SINT:
+                out = "B8G8R8A8_SINT";
+                break;
+            case Format::B8G8R8A8_UNORM_SRGB:
+                out = "B8G8R8A8_UNORM_SRGB";
+                break;
+            case Format::A8B8G8R8_UNORM_PACK32:
+                out = "A8B8G8R8_UNORM_PACK32";
+                break;
+            case Format::A8B8G8R8_SNORM_PACK32:
+                out = "A8B8G8R8_SNORM_PACK32";
+                break;
+            case Format::A8B8G8R8_USCALED_PACK32:
+                out = "A8B8G8R8_USCALED_PACK32";
+                break;
+            case Format::A8B8G8R8_SSCALED_PACK32:
+                out = "A8B8G8R8_SSCALED_PACK32";
+                break;
+            case Format::A8B8G8R8_UINT_PACK32:
+                out = "A8B8G8R8_UINT_PACK32";
+                break;
+            case Format::A8B8G8R8_SINT_PACK32:
+                out = "A8B8G8R8_SINT_PACK32";
+                break;
+            case Format::A8B8G8R8_UNORM_SRGB_PACK32:
+                out = "A8B8G8R8_UNORM_SRGB_PACK32";
+                break;
+            case Format::A2R10G10B10_UNORM_PACK32:
+                out = "A2R10G10B10_UNORM_PACK32";
+                break;
+            case Format::A2R10G10B10_SNORM_PACK32:
+                out = "A2R10G10B10_SNORM_PACK32";
+                break;
+            case Format::A2R10G10B10_USCALED_PACK32:
+                out = "A2R10G10B10_USCALED_PACK32";
+                break;
+            case Format::A2R10G10B10_SSCALED_PACK32:
+                out = "A2R10G10B10_SSCALED_PACK32";
+                break;
+            case Format::A2R10G10B10_UINT_PACK32:
+                out = "A2R10G10B10_UINT_PACK32";
+                break;
+            case Format::A2R10G10B10_SINT_PACK32:
+                out = "A2R10G10B10_SINT_PACK32";
+                break;
+            case Format::A2B10G10R10_UNORM_PACK32:
+                out = "A2B10G10R10_UNORM_PACK32";
+                break;
+            case Format::A2B10G10R10_SNORM_PACK32:
+                out = "A2B10G10R10_SNORM_PACK32";
+                break;
+            case Format::A2B10G10R10_USCALED_PACK32:
+                out = "A2B10G10R10_USCALED_PACK32";
+                break;
+            case Format::A2B10G10R10_SSCALED_PACK32:
+                out = "A2B10G10R10_SSCALED_PACK32";
+                break;
+            case Format::A2B10G10R10_UINT_PACK32:
+                out = "A2B10G10R10_UINT_PACK32";
+                break;
+            case Format::A2B10G10R10_SINT_PACK32:
+                out = "A2B10G10R10_SINT_PACK32";
+                break;
+            case Format::R16_UNORM:
+                out = "R16_UNORM";
+                break;
+            case Format::R16_SNORM:
+                out = "R16_SNORM";
+                break;
+            case Format::R16_USCALED:
+                out = "R16_USCALED";
+                break;
+            case Format::R16_SSCALED:
+                out = "R16_SSCALED";
+                break;
+            case Format::R16_UINT:
+                out = "R16_UINT";
+                break;
+            case Format::R16_SINT:
+                out = "R16_SINT";
+                break;
+            case Format::R16_SFLOAT:
+                out = "R16_SFLOAT";
+                break;
+            case Format::R16G16_UNORM:
+                out = "R16G16_UNORM";
+                break;
+            case Format::R16G16_SNORM:
+                out = "R16G16_SNORM";
+                break;
+            case Format::R16G16_USCALED:
+                out = "R16G16_USCALED";
+                break;
+            case Format::R16G16_SSCALED:
+                out = "R16G16_SSCALED";
+                break;
+            case Format::R16G16_UINT:
+                out = "R16G16_UINT";
+                break;
+            case Format::R16G16_SINT:
+                out = "R16G16_SINT";
+                break;
+            case Format::R16G16_SFLOAT:
+                out = "R16G16_SFLOAT";
+                break;
+            case Format::R16G16B16_UNORM:
+                out = "R16G16B16_UNORM";
+                break;
+            case Format::R16G16B16_SNORM:
+                out = "R16G16B16_SNORM";
+                break;
+            case Format::R16G16B16_USCALED:
+                out = "R16G16B16_USCALED";
+                break;
+            case Format::R16G16B16_SSCALED:
+                out = "R16G16B16_SSCALED";
+                break;
+            case Format::R16G16B16_UINT:
+                out = "R16G16B16_UINT";
+                break;
+            case Format::R16G16B16_SINT:
+                out = "R16G16B16_SINT";
+                break;
+            case Format::R16G16B16_SFLOAT:
+                out = "R16G16B16_SFLOAT";
+                break;
+            case Format::R16G16B16A16_UNORM:
+                out = "R16G16B16A16_UNORM";
+                break;
+            case Format::R16G16B16A16_SNORM:
+                out = "R16G16B16A16_SNORM";
+                break;
+            case Format::R16G16B16A16_USCALED:
+                out = "R16G16B16A16_USCALED";
+                break;
+            case Format::R16G16B16A16_SSCALED:
+                out = "R16G16B16A16_SSCALED";
+                break;
+            case Format::R16G16B16A16_UINT:
+                out = "R16G16B16A16_UINT";
+                break;
+            case Format::R16G16B16A16_SINT:
+                out = "R16G16B16A16_SINT";
+                break;
+            case Format::R16G16B16A16_SFLOAT:
+                out = "R16G16B16A16_SFLOAT";
+                break;
+            case Format::R32_UINT:
+                out = "R32_UINT";
+                break;
+            case Format::R32_SINT:
+                out = "R32_SINT";
+                break;
+            case Format::R32_SFLOAT:
+                out = "R32_SFLOAT";
+                break;
+            case Format::R32G32_UINT:
+                out = "R32G32_UINT";
+                break;
+            case Format::R32G32_SINT:
+                out = "R32G32_SINT";
+                break;
+            case Format::R32G32_SFLOAT:
+                out = "R32G32_SFLOAT";
+                break;
+            case Format::R32G32B32_UINT:
+                out = "R32G32B32_UINT";
+                break;
+            case Format::R32G32B32_SINT:
+                out = "R32G32B32_SINT";
+                break;
+            case Format::R32G32B32_SFLOAT:
+                out = "R32G32B32_SFLOAT";
+                break;
+            case Format::R32G32B32A32_UINT:
+                out = "R32G32B32A32_UINT";
+                break;
+            case Format::R32G32B32A32_SINT:
+                out = "R32G32B32A32_SINT";
+                break;
+            case Format::R32G32B32A32_SFLOAT:
+                out = "R32G32B32A32_SFLOAT";
+                break;
+            case Format::R64_UINT:
+                out = "R64_UINT";
+                break;
+            case Format::R64_SINT:
+                out = "R64_SINT";
+                break;
+            case Format::R64_SFLOAT:
+                out = "R64_SFLOAT";
+                break;
+            case Format::R64G64_UINT:
+                out = "R64G64_UINT";
+                break;
+            case Format::R64G64_SINT:
+                out = "R64G64_SINT";
+                break;
+            case Format::R64G64_SFLOAT:
+                out = "R64G64_SFLOAT";
+                break;
+            case Format::R64G64B64_UINT:
+                out = "R64G64B64_UINT";
+                break;
+            case Format::R64G64B64_SINT:
+                out = "R64G64B64_SINT";
+                break;
+            case Format::R64G64B64_SFLOAT:
+                out = "R64G64B64_SFLOAT";
+                break;
+            case Format::R64G64B64A64_UINT:
+                out = "R64G64B64A64_UINT";
+                break;
+            case Format::R64G64B64A64_SINT:
+                out = "R64G64B64A64_SINT";
+                break;
+            case Format::R64G64B64A64_SFLOAT:
+                out = "R64G64B64A64_SFLOAT";
+                break;
+            case Format::B10G11R11_UFLOAT_PACK32:
+                out = "B10G11R11_UFLOAT_PACK32";
+                break;
+            case Format::E5B9G9R9_UFLOAT_PACK32:
+                out = "E5B9G9R9_UFLOAT_PACK32";
+                break;
+            case Format::D16_UNORM:
+                out = "D16_UNORM";
+                break;
+            case Format::X8_D24_UNORM_PACK32:
+                out = "X8_D24_UNORM_PACK32";
+                break;
+            case Format::D32_SFLOAT:
+                out = "D32_SFLOAT";
+                break;
+            case Format::S8_UINT:
+                out = "S8_UINT";
+                break;
+            case Format::D16_UNORM_S8_UINT:
+                out = "D16_UNORM_S8_UINT";
+                break;
+            case Format::D24_UNORM_S8_UINT:
+                out = "D24_UNORM_S8_UINT";
+                break;
+            case Format::D32_SFLOAT_S8_UINT:
+                out = "D32_SFLOAT_S8_UINT";
+                break;
+            case Format::BC1_RGB_UNORM_BLOCK:
+                out = "BC1_RGB_UNORM_BLOCK";
+                break;
+            case Format::BC1_RGB_UNORM_SRGB_BLOCK:
+                out = "BC1_RGB_UNORM_SRGB_BLOCK";
+                break;
+            case Format::BC1_RGBA_UNORM_BLOCK:
+                out = "BC1_RGBA_UNORM_BLOCK";
+                break;
+            case Format::BC1_RGBA_UNORM_SRGB_BLOCK:
+                out = "BC1_RGBA_UNORM_SRGB_BLOCK";
+                break;
+            case Format::BC2_UNORM_BLOCK:
+                out = "BC2_UNORM_BLOCK";
+                break;
+            case Format::BC2_UNORM_SRGB_BLOCK:
+                out = "BC2_UNORM_SRGB_BLOCK";
+                break;
+            case Format::BC3_UNORM_BLOCK:
+                out = "BC3_UNORM_BLOCK";
+                break;
+            case Format::BC3_UNORM_SRGB_BLOCK:
+                out = "BC3_UNORM_SRGB_BLOCK";
+                break;
+            case Format::BC4_UNORM_BLOCK:
+                out = "BC4_UNORM_BLOCK";
+                break;
+            case Format::BC4_SNORM_BLOCK:
+                out = "BC4_SNORM_BLOCK";
+                break;
+            case Format::BC5_UNORM_BLOCK:
+                out = "BC5_UNORM_BLOCK";
+                break;
+            case Format::BC5_SNORM_BLOCK:
+                out = "BC5_SNORM_BLOCK";
+                break;
+            case Format::BC6H_UFLOAT_BLOCK:
+                out = "BC6H_UFLOAT_BLOCK";
+                break;
+            case Format::BC6H_SFLOAT_BLOCK:
+                out = "BC6H_SFLOAT_BLOCK";
+                break;
+            case Format::BC7_UNORM_BLOCK:
+                out = "BC7_UNORM_BLOCK";
+                break;
+            case Format::BC7_UNORM_SRGB_BLOCK:
+                out = "BC7_UNORM_SRGB_BLOCK";
+                break;
+            case Format::ETC2_R8G8B8_UNORM_BLOCK:
+                out = "ETC2_R8G8B8_UNORM_BLOCK";
+                break;
+            case Format::ETC2_R8G8B8_UNORM_SRGB_BLOCK:
+                out = "ETC2_R8G8B8_UNORM_SRGB_BLOCK";
+                break;
+            case Format::ETC2_R8G8B8A1_UNORM_BLOCK:
+                out = "ETC2_R8G8B8A1_UNORM_BLOCK";
+                break;
+            case Format::ETC2_R8G8B8A1_UNORM_SRGB_BLOCK:
+                out = "ETC2_R8G8B8A1_UNORM_SRGB_BLOCK";
+                break;
+            case Format::ETC2_R8G8B8A8_UNORM_BLOCK:
+                out = "ETC2_R8G8B8A8_UNORM_BLOCK";
+                break;
+            case Format::ETC2_R8G8B8A8_UNORM_SRGB_BLOCK:
+                out = "ETC2_R8G8B8A8_UNORM_SRGB_BLOCK";
+                break;
+            case Format::EAC_R11_UNORM_BLOCK:
+                out = "EAC_R11_UNORM_BLOCK";
+                break;
+            case Format::EAC_R11_SNORM_BLOCK:
+                out = "EAC_R11_SNORM_BLOCK";
+                break;
+            case Format::EAC_R11G11_UNORM_BLOCK:
+                out = "EAC_R11G11_UNORM_BLOCK";
+                break;
+            case Format::EAC_R11G11_SNORM_BLOCK:
+                out = "EAC_R11G11_SNORM_BLOCK";
+                break;
+            case Format::A4R4G4B4_UNORM_PACK16:
+                out = "A4R4G4B4_UNORM_PACK16";
+                break;
+            case Format::A4B4G4R4_UNORM_PACK16:
+                out = "A4B4G4R4_UNORM_PACK16";
+                break;
+            case Format::A1B5G5R5_UNORM_PACK16:
+                out = "A1B5G5R5_UNORM_PACK16";
+                break;
+            case Format::A8_UNORM:
+                out = "A8_UNORM";
+                break;
+        }
+
+        return out;
+    }
 };

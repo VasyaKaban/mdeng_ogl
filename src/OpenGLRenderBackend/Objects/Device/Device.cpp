@@ -31,7 +31,7 @@ namespace OpenGL
 
         const SurfaceConnectInfo connection_info = {
             .physical_device = parent,
-            .config_index = info.swapchain_info.surface_config_index,
+            .format_index = info.swapchain_info.format_index,
             .robust_buffer_access_enabled = info.enabled_features.robust_buffer_access,
         };
 

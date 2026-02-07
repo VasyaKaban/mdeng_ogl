@@ -65,3 +65,4 @@ in SurfaceInfo:
 	Extent2D max_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
 	Extent2D current_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
 	
+change enum to enum class + use template operator|

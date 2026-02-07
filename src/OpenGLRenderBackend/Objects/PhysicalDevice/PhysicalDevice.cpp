@@ -398,11 +398,6 @@ namespace OpenGL
     {
         device = nullptr;
 
-        int glad_ver =
-            gladLoadGLContext(&loader, reinterpret_cast<GLADloadfunc>(wglGetProcAddress));
-        if(glad_ver == 0)
-            throw std::runtime_error("Failed to load GLAD");
-
         bool debug_messenger_enabled = parent->GetEnabledFeatures().validation_layer ||
                                        parent->GetEnabledFeatures().debug_messenger;
 

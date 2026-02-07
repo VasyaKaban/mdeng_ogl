@@ -49,8 +49,6 @@ namespace OpenGL
         void SetDebugMessenger(const Render::DebugMessengerInfo& info);
     private:
         Instance* parent;
-
-        GladGLContext loader;
         Render::PhysicalDeviceProperties properties;
 
         Device* device;

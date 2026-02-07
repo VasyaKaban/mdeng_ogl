@@ -29,4 +29,6 @@ namespace Render
     CORE_API FormatType GetFormatType(Format format, ImageAspectFlagBits aspect) noexcept;
 
     CORE_API bool IsFormatSRGB(Format format) noexcept;
+
+    CORE_API std::string_view FormatToString(Format format) noexcept;
 };

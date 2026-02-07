@@ -6,10 +6,11 @@
 
 namespace OpenGL
 {
+    //handle = nullptr -> unsignaled
     void Fence::Set()
     {
         if(handle)
-            throw std::runtime_error("Fence is in signaled state");
+            throw std::runtime_error("Fence is already set");
 
         handle = parent->GetLoader().FenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         if(!handle)
@@ -33,20 +34,24 @@ namespace OpenGL
             return true;
 
         auto res = parent->GetLoader().ClientWaitSync(handle, 0, timeout_ns);
-        if(res == GL_CONDITION_SATISFIED || res == GL_ALREADY_SIGNALED)
-        {
-            parent->GetLoader().DeleteSync(handle);
-            handle = nullptr;
-            return true;
-        }
+        return (res == GL_CONDITION_SATISFIED || res == GL_ALREADY_SIGNALED);
+    }
 
-        return false;
+    bool Fence::Reset() noexcept
+    {
+        if(!handle)
+            return true;
+
+        parent->GetLoader().DeleteSync(handle);
+        handle = nullptr;
+
+        return true;
     }
 
     Render::FenceStatus Fence::GetStatus() const noexcept
     {
         if(!handle)
-            return Render::FenceStatus::Signaled;
+            return Render::FenceStatus::Unsignaled;
 
         GLint status;
         parent->GetLoader().GetSynciv(handle, GL_SYNC_STATUS, sizeof(status), nullptr, &status);

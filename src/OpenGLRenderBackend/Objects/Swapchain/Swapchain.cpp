@@ -2,6 +2,7 @@
 #include "../Surface/Surface.h"
 #include "../Framebuffer/Framebuffer.h"
 #include "../Semaphore/Semaphore.h"
+#include "../Fence/Fence.h"
 #include "../Device/Device.h"
 
 namespace OpenGL
@@ -32,9 +33,13 @@ namespace OpenGL
     }
 
     std::optional<std::uint32_t>
-    Swapchain::AcquireNextSwapchainImage(Render::Semaphore* signal_semaphore)
+    Swapchain::AcquireNextSwapchainImage(const Render::AcquireNextImageInfo& info)
     {
-        static_cast<Semaphore*>(signal_semaphore)->Set();
+        if(info.semaphore)
+            static_cast<Semaphore*>(info.semaphore)->Set();
+
+        if(info.fence)
+            static_cast<Fence*>(info.fence)->Set();
 
         return image_index;
     }

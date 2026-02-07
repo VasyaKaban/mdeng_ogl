@@ -9,6 +9,7 @@
 #include "Core/Render/Objects/Swapchain.h"
 #include <Core/Render/Objects/Semaphore.h>
 #include <Core/Render/Objects/Fence.h>
+#include "Core/Render/Format.h"
 #include "Core/Window/GraphicWindow.h"
 #include "Core/Window/WindowSubsystem.h"
 #include "Core/Utils/DynamicLibrary.h"
@@ -399,6 +400,33 @@ int main(int argc, char** argv)
             throw std::runtime_error("No compatible physical device found");
 
         auto surface_caps = selected_dev->GetSurfaceCapablities(surface.get());
+        std::cout << "Surface:\n";
+        std::cout << std::format("\tMin image count: {}\n", surface_caps.min_image_count);
+        std::cout << std::format("\tMax image count: {}\n", surface_caps.max_image_count);
+        std::cout << "\tSurface formats:\n";
+        for(std::size_t i = 0; i < surface_caps.supported_formats.size(); i++)
+        {
+            std::cout << std::format("\t\t#{}: {}\n",
+                                     i,
+                                     Render::FormatToString(surface_caps.supported_formats[i]));
+        }
+
+        std::string present_modes = "";
+        for(const auto& mode: {std::pair{Render::PresentModeFlagBits::FIFO, "FIFO"},
+                               std::pair{Render::PresentModeFlagBits::RelaxedFIFO, "RelaxedFIFO"},
+                               std::pair{Render::PresentModeFlagBits::Immediate, "Immediate"},
+                               std::pair{Render::PresentModeFlagBits::Mailbox, "Mailbox"}})
+        {
+            if(!(surface_caps.supported_present_modes & mode.first))
+                continue;
+
+            if(present_modes.empty())
+                present_modes = mode.second;
+            else
+                present_modes += std::format(" | {}", mode.second);
+        }
+
+        std::cout << std::format("\tpresent modes: {}\n", present_modes);
 
         std::array<float, 1> queue_priorities = {1.0f};
         const Render::DeviceInfo device_info = {
@@ -410,7 +438,7 @@ int main(int argc, char** argv)
             .surface = surface.get(),
             .swapchain_info =
                 Render::SwapchainInfo{.min_image_count = surface_caps.min_image_count,
-                                      .surface_config_index = 0,
+                                      .format_index = 0,
                                       .present_mode = Render::PresentModeFlagBits::FIFO},
             .memory_allocation_size_hint = 1024 * 1024 * 16};
 
@@ -422,9 +450,13 @@ int main(int argc, char** argv)
         constexpr std::size_t FRAMES_COUNT = 3;
 
         std::array<std::unique_ptr<Render::Semaphore>, FRAMES_COUNT> acquire_semaphores;
+        std::array<std::unique_ptr<Render::Fence>, FRAMES_COUNT> acquire_fences;
+        std::array<bool, FRAMES_COUNT> acquire_fences_statuses;
         for(std::size_t i = 0; i < FRAMES_COUNT; i++)
         {
             acquire_semaphores[i] = std::unique_ptr<Render::Semaphore>(device->CreateSemaphore());
+            acquire_fences[i] = std::unique_ptr<Render::Fence>(device->CreateFence());
+            acquire_fences_statuses[i] = false;
         }
 
         std::size_t frame_index = 0;
@@ -432,9 +464,22 @@ int main(int argc, char** argv)
         {
             win_sys->PollEvents();
 
-            auto image_index_opt =
-                swapchain->AcquireNextSwapchainImage(acquire_semaphores[frame_index].get());
+            if(acquire_fences_statuses[frame_index] == true) //do wait
+            {
+                auto wait_fence = acquire_fences[frame_index].get();
+                if(!wait_fence->Wait(std::numeric_limits<std::uint64_t>::max()))
+                    throw std::runtime_error("Failed to wait on fence");
+
+                wait_fence->Reset();
+            }
+
+            const Render::AcquireNextImageInfo next_image_info = {
+                .semaphore = acquire_semaphores[frame_index].get(),
+                .fence = acquire_fences[frame_index].get()};
+            auto image_index_opt = swapchain->AcquireNextSwapchainImage(next_image_info);
             assert(image_index_opt);
+
+            acquire_fences_statuses[frame_index] = true;
 
             Render::Semaphore* wait_sem = acquire_semaphores[frame_index].get();
             const Render::PresentInfo present_info = {.wait_semaphores = {&wait_sem, 1},

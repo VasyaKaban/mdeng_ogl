@@ -26,7 +26,7 @@ namespace OpenGL
 
         //select pixel format for current DC
         auto descibe_pixelformat_index =
-            connect_info.physical_device->GetDescribePixelFormatIndex(connect_info.config_index);
+            connect_info.physical_device->GetDescribePixelFormatIndex(connect_info.format_index);
 
         PIXELFORMATDESCRIPTOR pfd;
         int res = DescribePixelFormat(info.hdc,

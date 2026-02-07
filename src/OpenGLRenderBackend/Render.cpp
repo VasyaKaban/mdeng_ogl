@@ -2198,4 +2198,251 @@ namespace OpenGL
 
         loader.DebugMessageCallback(debug_messenger_callback, &info.callback);
     }
+
+    std::optional<Render::Format> DecodePixelFormat(const GladGLContext& loader,
+                                                    std::uint8_t red_bits,
+                                                    std::uint8_t red_shift,
+                                                    std::uint8_t green_bits,
+                                                    std::uint8_t green_shift,
+                                                    std::uint8_t blue_bits,
+                                                    std::uint8_t blue_shift,
+                                                    std::uint8_t alpha_bits,
+                                                    std::uint8_t alpha_shift,
+                                                    std::uint8_t color_bits,
+                                                    bool is_srgb,
+                                                    bool is_float)
+    {
+        std::optional<Render::Format> out;
+
+        if(color_bits == 8)
+        {
+            if(green_bits == 4 && green_shift == 0 && red_bits == 4 && red_shift == 4 &&
+               is_srgb == false && is_float == false)
+                out = Render::Format::R4G4_UNORM_PACK8;
+            else if(red_bits == 8 && is_srgb == false && is_float == false)
+                out = Render::Format::R8_UNORM;
+            else if(red_bits == 8 && is_srgb == true && is_float == false)
+                out = Render::Format::R8_UNORM_SRGB;
+            else if(alpha_bits == 8 && is_srgb == false && is_float == false)
+                out = Render::Format::A8_UNORM;
+        }
+        else if(color_bits == 16)
+        {
+            if(alpha_bits == 4 && alpha_shift == 0 && blue_bits == 4 && blue_shift == 4 &&
+               green_bits == 4 && green_shift == 8 && red_bits == 4 && red_shift == 12 &&
+               is_srgb == false && is_float == false)
+                out = Render::Format::R4G4B4A4_UNORM_PACK16;
+            else if(alpha_bits == 4 && alpha_shift == 0 && red_bits == 4 && red_shift == 4 &&
+                    green_bits == 4 && green_shift == 8 && blue_bits == 4 && blue_shift == 12 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::B4G4R4A4_UNORM_PACK16;
+            else if(blue_bits == 5 && blue_shift == 0 && green_bits == 6 && green_shift == 5 &&
+                    red_bits == 5 && red_shift == 11 && is_srgb == false && is_float == false)
+                out = Render::Format::R5G6B5_UNORM_PACK16;
+            else if(red_bits == 5 && red_shift == 0 && green_bits == 6 && green_shift == 5 &&
+                    blue_bits == 5 && blue_shift == 11 && is_srgb == false && is_float == false)
+                out = Render::Format::B5G6R5_UNORM_PACK16;
+            else if(alpha_bits == 1 && alpha_shift == 0 && blue_bits == 5 && blue_shift == 1 &&
+                    green_bits == 5 && green_shift == 6 && red_bits == 5 && red_shift == 11 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::R5G5B5A1_UNORM_PACK16;
+            else if(alpha_bits == 1 && alpha_shift == 0 && red_bits == 5 && red_shift == 1 &&
+                    green_bits == 5 && green_shift == 6 && blue_bits == 5 && blue_shift == 11 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::B5G5R5A1_UNORM_PACK16;
+            else if(blue_bits == 5 && blue_shift == 0 && green_bits == 5 && green_shift == 5 &&
+                    red_bits == 5 && red_shift == 10 && alpha_bits == 1 && alpha_shift == 15 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::A1R5G5B5_UNORM_PACK16;
+            else if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::R8G8_UNORM;
+            else if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    is_srgb == true && is_float == false)
+                out = Render::Format::R8G8_UNORM_SRGB;
+            else if(red_bits == 16 && is_srgb == false && is_float == false)
+                out = Render::Format::R16_UNORM;
+            else if(red_bits == 16 && is_srgb == false && is_float == true)
+                out = Render::Format::R16_SFLOAT;
+            else if(blue_bits == 4 && blue_shift == 0 && green_bits == 4 && green_shift == 4 &&
+                    red_bits == 4 && red_shift == 8 && alpha_bits == 4 && alpha_shift == 12 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::A4R4G4B4_UNORM_PACK16;
+            else if(red_bits == 4 && red_shift == 0 && green_bits == 4 && green_shift == 4 &&
+                    blue_bits == 4 && blue_shift == 8 && alpha_bits == 4 && alpha_shift == 12 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::A4B4G4R4_UNORM_PACK16;
+            else if(red_bits == 5 && red_shift == 0 && green_bits == 5 && green_shift == 5 &&
+                    blue_bits == 5 && blue_shift == 10 && alpha_bits == 1 && alpha_shift == 15 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::A1B5G5R5_UNORM_PACK16;
+        }
+        else if(color_bits == 24)
+        {
+            if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+               blue_bits == 8 && blue_shift == 16 && is_srgb == false && is_float == false)
+                out = Render::Format::R8G8B8_UNORM;
+            else if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    blue_bits == 8 && blue_shift == 16 && is_srgb == true && is_float == false)
+                out = Render::Format::R8G8B8_UNORM_SRGB;
+            else if(blue_bits == 8 && blue_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    red_bits == 8 && red_shift == 16 && is_srgb == false && is_float == false)
+                out = Render::Format::B8G8R8_UNORM;
+            else if(blue_bits == 8 && blue_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    red_bits == 8 && red_shift == 16 && is_srgb == true && is_float == false)
+                out = Render::Format::B8G8R8_UNORM_SRGB;
+        }
+        else if(color_bits == 32)
+        {
+            if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+               blue_bits == 8 && blue_shift == 16 && alpha_bits == 8 && alpha_shift == 24 &&
+               is_srgb == false && is_float == false)
+                out = Render::Format::R8G8B8A8_UNORM;
+            else if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    blue_bits == 8 && blue_shift == 16 && alpha_bits == 8 && alpha_shift == 24 &&
+                    is_srgb == true && is_float == false)
+                out = Render::Format::R8G8B8A8_UNORM_SRGB;
+            else if(blue_bits == 8 && blue_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    red_bits == 8 && red_shift == 16 && alpha_bits == 8 && alpha_shift == 24 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::B8G8R8A8_UNORM;
+            else if(blue_bits == 8 && blue_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    red_bits == 8 && red_shift == 16 && alpha_bits == 8 && alpha_shift == 24 &&
+                    is_srgb == true && is_float == false)
+                out = Render::Format::B8G8R8A8_UNORM_SRGB;
+            else if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    blue_bits == 8 && blue_shift == 16 && alpha_bits == 8 && alpha_shift == 24 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::A8B8G8R8_UNORM_PACK32;
+            else if(red_bits == 8 && red_shift == 0 && green_bits == 8 && green_shift == 8 &&
+                    blue_bits == 8 && blue_shift == 16 && alpha_bits == 8 && alpha_shift == 24 &&
+                    is_srgb == true && is_float == false)
+                out = Render::Format::A8B8G8R8_UNORM_SRGB_PACK32;
+            else if(blue_bits == 10 && blue_shift == 0 && green_bits == 10 && green_shift == 10 &&
+                    red_bits == 10 && red_shift == 20 && alpha_bits == 2 && alpha_shift == 30 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::A2R10G10B10_UNORM_PACK32;
+            else if(red_bits == 10 && red_shift == 0 && green_bits == 10 && green_shift == 10 &&
+                    blue_bits == 10 && blue_shift == 20 && alpha_bits == 2 && alpha_shift == 30 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::A2B10G10R10_UNORM_PACK32;
+            else if(red_bits == 16 && red_shift == 0 && green_bits == 16 && green_shift == 16 &&
+                    is_srgb == false && is_float == false)
+                out = Render::Format::R16G16_UNORM;
+            else if(red_bits == 16 && red_shift == 0 && green_bits == 16 && green_shift == 16 &&
+                    is_srgb == false && is_float == true)
+                out = Render::Format::R16G16_SFLOAT;
+            else if(red_bits == 32 && is_srgb == false && is_float == true)
+                out = Render::Format::R32_SFLOAT;
+            /*else if(red_bits == 11 && red_shift == 0 && green_bits == 11 && green_shift == 11 &&
+                    blue_bits == 10 && blue_shift == 22 && is_srgb == false && is_float == true)
+                out = Render::Format::B10G11R11_UFLOAT_PACK32;
+            else if(red_bits == 9 && red_shift == 0 && green_bits == 9 && green_shift == 9 &&
+                    blue_bits == 9 && blue_shift == 18 && is_srgb == false && is_float == true)
+                out = Render::Format::E5B9G9R9_UFLOAT_PACK32;*/
+        }
+        else if(color_bits == 48)
+        {
+            if(red_bits == 16 && red_shift == 0 && green_bits == 16 && green_shift == 16 &&
+               blue_bits == 16 && blue_shift == 32 && is_srgb == false && is_float == false)
+                out = Render::Format::R16G16B16_UNORM;
+            else if(red_bits == 16 && red_shift == 0 && green_bits == 16 && green_shift == 16 &&
+                    blue_bits == 16 && blue_shift == 32 && is_srgb == false && is_float == true)
+                out = Render::Format::R16G16B16_SFLOAT;
+        }
+        else if(color_bits == 64)
+        {
+            if(red_bits == 16 && red_shift == 0 && green_bits == 16 && green_shift == 16 &&
+               blue_bits == 16 && blue_shift == 32 && alpha_bits == 16 && alpha_shift == 48 &&
+               is_srgb == false && is_float == false)
+                out = Render::Format::R16G16B16A16_UNORM;
+            else if(red_bits == 16 && red_shift == 0 && green_bits == 16 && green_shift == 16 &&
+                    blue_bits == 16 && blue_shift == 32 && alpha_bits == 16 && alpha_shift == 48 &&
+                    is_srgb == false && is_float == true)
+                out = Render::Format::R16G16B16A16_SFLOAT;
+            else if(red_bits == 32 && red_shift == 0 && green_bits == 32 && green_shift == 32 &&
+                    is_srgb == false && is_float == true)
+                out = Render::Format::R32G32_SFLOAT;
+        }
+        else if(color_bits == 96)
+        {
+            if(red_bits == 32 && red_shift == 0 && green_bits == 32 && green_shift == 32 &&
+               blue_bits == 32 && blue_shift == 64 && is_srgb == false && is_float == true)
+                out = Render::Format::R32G32B32_SFLOAT;
+        }
+        else if(color_bits == 128)
+        {
+            if(red_bits == 32 && red_shift == 0 && green_bits == 32 && green_shift == 32 &&
+               blue_bits == 32 && blue_shift == 64 && alpha_bits == 32 && alpha_shift == 96 &&
+               is_srgb == false && is_float == true)
+                out = Render::Format::R32G32B32A32_SFLOAT;
+        }
+
+        if(out.has_value())
+        {
+            GLenum inner_type = DecodeImageType(Render::ImageType::Image2D, false, false, {});
+            auto native_format_opt = FormatToNative(*out);
+
+            if(!native_format_opt)
+                out = std::nullopt;
+            else
+            {
+                GLenum native_format = native_format_opt.value();
+
+                GLint supported = GL_FALSE;
+                //do not check extension formats -< we just init is with GL_FALSE so on error we still get false
+                loader.GetInternalformativ(inner_type,
+                                           native_format,
+                                           GL_INTERNALFORMAT_SUPPORTED,
+                                           1,
+                                           &supported);
+                if(supported == GL_FALSE)
+                    out = std::nullopt;
+            }
+        }
+
+        return out;
+
+        /*
+    R4G4_UNORM_PACK8 -> G(0-3)0, R(4-7)4
+    R4G4B4A4_UNORM_PACK16 -> A(0-3)0, B(4-7)4, G(8-11)8, R(12-15)12
+    B4G4R4A4_UNORM_PACK16
+    R5G6B5_UNORM_PACK16
+    B5G6R5_UNORM_PACK16
+    R5G5B5A1_UNORM_PACK16
+    B5G5R5A1_UNORM_PACK16
+    A1R5G5B5_UNORM_PACK16
+    R8_UNORM
+    R8_UNORM_SRGB
+    R8G8_UNORM
+    R8G8_UNORM_SRGB
+    R8G8B8_UNORM
+    R8G8B8_UNORM_SRGB
+    B8G8R8_UNORM
+    B8G8R8_UNORM_SRGB
+    R8G8B8A8_UNORM
+    R8G8B8A8_UNORM_SRGB
+    B8G8R8A8_UNORM
+    B8G8R8A8_UNORM_SRGB
+    A8B8G8R8_UNORM_PACK32
+    A8B8G8R8_UNORM_SRGB_PACK32
+    A2R10G10B10_UNORM_PACK32
+    A2B10G10R10_UNORM_PACK32
+    R16_UNORM
+    R16_SFLOAT
+    R16G16_UNORM
+    R16G16_SFLOAT
+    R16G16B16_UNORM,
+    R16G16B16_SFLOAT,
+    R16G16B16A16_UNORM,
+    R16G16B16A16_SFLOAT,
+    R32_SFLOAT
+    R32G32_SFLOAT,
+    R32G32B32_SFLOAT,
+    R32G32B32A32_SFLOAT,
+    A4R4G4B4_UNORM_PACK16
+    A4B4G4R4_UNORM_PACK16
+    A1B5G5R5_UNORM_PACK16
+    A8_UNORM*/
+    }
 }
