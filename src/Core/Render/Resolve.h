@@ -15,6 +15,8 @@ namespace Render
 
         virtual Backend GetBackend() const noexcept = 0;
 
+        virtual const std::span<const SurfaceBackend> GetAvailableSurfaceBackends() const = 0;
+
         virtual Instance* CreateInstance(const InstanceInfo& info) = 0;
     };
 };

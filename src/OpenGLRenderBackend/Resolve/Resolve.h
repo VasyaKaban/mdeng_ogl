@@ -23,6 +23,9 @@ namespace OpenGL
 
         virtual Render::Backend GetBackend() const noexcept override;
 
+        virtual const std::span<const Render::SurfaceBackend>
+        GetAvailableSurfaceBackends() const override;
+
         virtual Render::Instance* CreateInstance(const Render::InstanceInfo& info) override;
     private:
         Render::InstanceFeatures instance_features;

@@ -17,7 +17,7 @@ namespace OpenGL
         Instance* input_instance;
         HDC dc;
         HGLRC glrc;
-        Render::SurfaceCapabilities surface_capabilities;
+        PhysicalDeviceSurfaceDesc surface_desc;
         std::vector<std::uint32_t> pixelformat_indices;
         GladGLContext loader;
     };
@@ -269,16 +269,14 @@ namespace OpenGL
                 if(GLAD_WGL_EXT_swap_control_tear)
                     supported_present_modes |= Render::PresentModeFlagBits::RelaxedFIFO;
 
-                Render::SurfaceCapabilities surface_capabilities =
-                    Render::SurfaceCapabilities{.min_image_count = SWAPCHAIN_IMAGE_COUNT,
-                                                .max_image_count = SWAPCHAIN_IMAGE_COUNT,
-                                                .supported_present_modes = supported_present_modes,
-                                                .supported_formats = std::move(surface_formats)};
+                PhysicalDeviceSurfaceDesc surface_desc = {
+                    .supported_present_modes = supported_present_modes,
+                    .supported_formats = std::move(surface_formats)};
 
                 *window_params_exp =
                     WindowParams{.dc = _dc,
                                  .glrc = _glrc,
-                                 .surface_capabilities = std::move(surface_capabilities),
+                                 .surface_desc = std::move(surface_desc),
                                  .pixelformat_indices = std::move(pixelformat_indices),
                                  .loader = loader};
 
@@ -335,7 +333,7 @@ namespace OpenGL
         window = _window;
         dc = window_param_exp->dc;
         glrc = window_param_exp->glrc;
-        surface_capabilities = std::move(window_param_exp->surface_capabilities);
+        surface_desc = std::move(window_param_exp->surface_desc);
         pixelformat_indices = std::move(window_param_exp->pixelformat_indices);
 
         loader = window_param_exp->loader;
@@ -354,19 +352,17 @@ namespace OpenGL
         return reinterpret_cast<GLADloadfunc>(wglGetProcAddress);
     }
 
-    const Render::SurfaceCapabilities& PhysicalDeviceBase::GetSurfaceCapabilities() const noexcept
+    const PhysicalDeviceSurfaceDesc& PhysicalDeviceBase::GetSurfaceDesc() const noexcept
     {
-        return surface_capabilities;
+        return surface_desc;
     }
 
-    const Render::SurfaceCapabilities
-    PhysicalDeviceBase::GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept
+    const PhysicalDeviceSurfaceDesc
+    PhysicalDeviceBase::GetSurfaceDescByIndex(std::uint32_t index) const noexcept
     {
-        return Render::SurfaceCapabilities{
-            .min_image_count = surface_capabilities.min_image_count,
-            .max_image_count = surface_capabilities.max_image_count,
-            .supported_present_modes = surface_capabilities.supported_present_modes,
-            .supported_formats = {surface_capabilities.supported_formats[index]}};
+        return PhysicalDeviceSurfaceDesc{
+            .supported_present_modes = surface_desc.supported_present_modes,
+            .supported_formats = {surface_desc.supported_formats[index]}};
     }
 
     std::uint32_t

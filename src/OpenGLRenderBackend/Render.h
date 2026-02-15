@@ -34,8 +34,6 @@ namespace OpenGL
 
     constexpr inline GLuint OGL_NULL_HANDLE = 0;
 
-    constexpr inline std::uint32_t SWAPCHAIN_IMAGE_COUNT = 1;
-
     /*
     1. DeviceLocal
     2. DeviceLocal | HostVisible
@@ -87,6 +85,22 @@ namespace OpenGL
         PhysicalDevice* physical_device;
         std::uint32_t format_index;
         bool robust_buffer_access_enabled;
+    };
+
+    //shared across all OpenGL implementations
+    constexpr inline std::uint32_t SWAPCHAIN_IMAGE_COUNT = 1;
+    constexpr inline std::uint32_t SURFACE_MIN_IMAGE_COUNT = 1;
+    constexpr inline std::uint32_t SURFACE_MAX_IMAGE_COUNT = 1;
+    constexpr inline Render::Extent2D SURFACE_MIN_EXTENT = {.width = 0, .height = 0};
+    constexpr inline Render::Extent2D SURFACE_CURRENT_EXTENT = {.width = 0, .height = 0};
+    constexpr inline Render::Extent2D SURFACE_MAX_EXTENT = {.width = 0, .height = 0};
+    constexpr inline Render::SurfaceExtentMode SURFACE_EXTENT_MODE =
+        Render::SurfaceExtentMode::DoNotCare;
+
+    struct PhysicalDeviceSurfaceDesc
+    {
+        Render::PresentModeFlags supported_present_modes;
+        std::vector<Render::Format> supported_formats;
     };
 
     GLenum ComapreOpToNative(Render::CompareOp op);

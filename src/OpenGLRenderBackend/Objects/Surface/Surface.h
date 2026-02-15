@@ -19,8 +19,6 @@ namespace OpenGL
 
         virtual ~Surface() override;
 
-        virtual Render::Extent2D GetCurrentExtent() const noexcept override;
-
         virtual Render::Instance* GetParent() const noexcept override;
 
         const Render::SurfaceCapabilities& GetConnectedCapabilities() const;

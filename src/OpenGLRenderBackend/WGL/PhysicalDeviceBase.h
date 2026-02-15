@@ -13,9 +13,8 @@ namespace OpenGL
 
         GLADloadfunc GetProcAddressResolver() const noexcept;
 
-        const Render::SurfaceCapabilities& GetSurfaceCapabilities() const noexcept;
-        const Render::SurfaceCapabilities
-        GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept;
+        const PhysicalDeviceSurfaceDesc& GetSurfaceDesc() const noexcept;
+        const PhysicalDeviceSurfaceDesc GetSurfaceDescByIndex(std::uint32_t index) const noexcept;
 
         std::uint32_t GetDescribePixelFormatIndex(std::uint32_t index) const noexcept;
 
@@ -31,7 +30,7 @@ namespace OpenGL
         HDC dc;
         HGLRC glrc;
 
-        Render::SurfaceCapabilities surface_capabilities;
+        PhysicalDeviceSurfaceDesc surface_desc;
         std::vector<std::uint32_t> pixelformat_indices;
     };
 };

@@ -440,7 +440,16 @@ namespace OpenGL
         if(impl_surface->IsConnected())
             return impl_surface->GetConnectedCapabilities();
 
-        return this->PhysicalDeviceBase::GetSurfaceCapabilities();
+        return Render::SurfaceCapabilities{
+            .min_image_count = SURFACE_MIN_IMAGE_COUNT,
+            .max_image_count = SURFACE_MAX_IMAGE_COUNT,
+            .supported_present_modes =
+                this->PhysicalDeviceBase::GetSurfaceDesc().supported_present_modes,
+            .supported_formats = this->PhysicalDeviceBase::GetSurfaceDesc().supported_formats,
+            .min_extent = SURFACE_MIN_EXTENT,
+            .current_extent = SURFACE_CURRENT_EXTENT,
+            .max_extent = SURFACE_MAX_EXTENT,
+            .extent_mode = SURFACE_EXTENT_MODE};
     }
 
     std::optional<Render::BufferFormatProperties>
@@ -778,10 +787,10 @@ namespace OpenGL
         return this->PhysicalDeviceBase::GetProcAddressResolver();
     }
 
-    const Render::SurfaceCapabilities
-    PhysicalDevice::GetSurfaceCapabilitiesByIndex(std::uint32_t index) const noexcept
+    const PhysicalDeviceSurfaceDesc
+    PhysicalDevice::GetSurfaceDescByIndex(std::uint32_t index) const noexcept
     {
-        return this->PhysicalDeviceBase::GetSurfaceCapabilitiesByIndex(index);
+        return this->PhysicalDeviceBase::GetSurfaceDescByIndex(index);
     }
 
     std::uint32_t PhysicalDevice::GetDescribePixelFormatIndex(std::uint32_t index) const noexcept

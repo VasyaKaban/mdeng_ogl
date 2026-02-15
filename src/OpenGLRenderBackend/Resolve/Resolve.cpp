@@ -31,6 +31,11 @@ namespace OpenGL
         return Render::Backend::OpenGL;
     }
 
+    const std::span<const Render::SurfaceBackend> Resolve::GetAvailableSurfaceBackends() const
+    {
+        return this->ResolveBase::GetAvailableSurfaceBackends();
+    }
+
     Render::Instance* Resolve::CreateInstance(const Render::InstanceInfo& info)
     {
         return new Instance(info);

@@ -15,11 +15,6 @@ namespace OpenGL
     Surface::~Surface()
     {}
 
-    Render::Extent2D Surface::GetCurrentExtent() const noexcept
-    {
-        return this->SurfaceBase::GetCurrentExtent();
-    }
-
     Render::Instance* Surface::GetParent() const noexcept
     {
         return parent;
@@ -39,8 +34,18 @@ namespace OpenGL
     {
         this->SurfaceBase::Connect(info);
 
-        connected_capabilities = static_cast<PhysicalDevice*>(info.physical_device)
-                                     ->GetSurfaceCapabilitiesByIndex(info.format_index);
+        auto surface_desc = static_cast<PhysicalDevice*>(info.physical_device)
+                                ->GetSurfaceDescByIndex(info.format_index);
+
+        connected_capabilities = Render::SurfaceCapabilities{
+            .min_image_count = SURFACE_MIN_IMAGE_COUNT,
+            .max_image_count = SURFACE_MAX_IMAGE_COUNT,
+            .supported_present_modes = surface_desc.supported_present_modes,
+            .supported_formats = surface_desc.supported_formats,
+            .min_extent = SURFACE_MIN_EXTENT,
+            .current_extent = SURFACE_CURRENT_EXTENT,
+            .max_extent = SURFACE_MAX_EXTENT,
+            .extent_mode = SURFACE_EXTENT_MODE};
 
         connected_physical_device = info.physical_device;
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Render/Render.h"
 #include "hrs/non_creatable.hpp"
 
 namespace OpenGL
@@ -11,5 +12,7 @@ namespace OpenGL
         ~ResolveBase() = default;
 
         void Init();
+
+        const std::span<const Render::SurfaceBackend> GetAvailableSurfaceBackends() const;
     };
 };

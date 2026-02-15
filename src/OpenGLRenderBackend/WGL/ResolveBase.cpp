@@ -10,6 +10,9 @@ namespace OpenGL
     constexpr static wchar_t DUMMY_WINDOW_CLASS_NAME[] = L"DUMMY_WINDOW_CLASS_RESOLVE";
     constexpr static wchar_t DUMMY_WINDOW_TITLE[] = L"DUMMY_WINDOW_TITLE_RESOLVE";
 
+    constexpr static Render::SurfaceBackend WIN32_AVAILABLE_SURFACE_BACKEND =
+        Render::SurfaceBackend::Win32;
+
     static LRESULT CALLBACK DummyWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         switch(uMsg)
@@ -156,5 +159,10 @@ namespace OpenGL
 
         if(window_param_opt.has_value())
             throw window_param_opt.value();
+    }
+
+    const std::span<const Render::SurfaceBackend> ResolveBase::GetAvailableSurfaceBackends() const
+    {
+        return {&WIN32_AVAILABLE_SURFACE_BACKEND, 1};
     }
 };

@@ -17,7 +17,6 @@ namespace OpenGL
         void SetSwapInterval(Render::PresentModeFlagBits present_mode);
         void SwapWindow();
         void MakeCurrent();
-        Render::Extent2D GetCurrentExtent() const noexcept;
     private:
         Render::SurfaceWin32Info info;
         HGLRC glrc; //real

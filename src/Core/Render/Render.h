@@ -1722,12 +1722,31 @@ namespace Render
 
     using PresentModeFlags = std::underlying_type_t<PresentModeFlagBits>;
 
+    enum class SurfaceBackend
+    {
+        Win32,
+        XLib,
+        Wayland,
+        XCB
+    };
+
+    enum class SurfaceExtentMode
+    {
+        DoNotCare, //value of current_extent should not be used for user purposes(OpenGL)
+        Current, //value of current_extent should be used for user purposes(WSI: WinAPI, XLib)
+        Undefined, //value of current_extent is should not be used for user purposes but user should set this value in SwapchainInfo(WSI: Wayland)
+    };
+
     struct SurfaceCapabilities
     {
         std::uint32_t min_image_count;
-        std::uint32_t max_image_count; //0 -> no limit
+        std::uint32_t max_image_count;
         PresentModeFlags supported_present_modes;
         std::vector<Format> supported_formats;
+        Extent2D min_extent;
+        Extent2D current_extent;
+        Extent2D max_extent;
+        SurfaceExtentMode extent_mode;
         //std::uint32_t max_image_array_layers;
         //usage -> color attachment
     };
@@ -1792,6 +1811,7 @@ namespace Render
         const char* engine_name;
         std::uint32_t engine_version;
         InstanceFeatures enabled_features;
+        SurfaceBackend surface_backend;
     };
 
     struct SwapchainInfo
