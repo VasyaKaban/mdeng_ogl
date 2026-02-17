@@ -1817,8 +1817,9 @@ namespace Render
     struct SwapchainInfo
     {
         std::uint32_t min_image_count;
-        std::uint32_t format_index;
+        Format format;
         PresentModeFlagBits present_mode;
+        Extent2D extent;
     };
 
     struct DeviceInfo
@@ -1831,10 +1832,9 @@ namespace Render
     };
 
 #ifdef _WIN32
-    struct SurfaceWin32Info
+    struct Win32SurfaceInfo
     {
         HWND window;
-        HDC hdc;
         HINSTANCE instance;
     };
 #endif

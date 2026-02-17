@@ -15,7 +15,7 @@ namespace OpenGL
         virtual std::vector<Render::PhysicalDevice*> GetPhysicalDevices() const override;
 
 #ifdef _WIN32
-        virtual Render::Surface* CreateSurface(const Render::SurfaceWin32Info& info) override;
+        virtual Render::Surface* CreateSurface(const Render::Win32SurfaceInfo& info) override;
 #endif
 
         virtual void SetDebugMessenger(const Render::DebugMessengerInfo& info) override;

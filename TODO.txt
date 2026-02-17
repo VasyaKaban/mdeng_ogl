@@ -66,3 +66,4 @@ in SurfaceInfo:
 	Extent2D current_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
 	
 change enum to enum class + use template operator|
+final spec in all virtual classes

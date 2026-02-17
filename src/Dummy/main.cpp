@@ -65,7 +65,7 @@ int main(int argc, char** argv)
         std::unique_ptr<Render::Instance> instance(resolve->CreateInstance(instance_info));
 
 #ifdef _WIN32
-        const auto& sur_info = std::get<Render::SurfaceWin32Info>(win->GetSurface());
+        const auto& sur_info = std::get<Render::Win32SurfaceInfo>(win->GetSurface());
 #endif
 
         std::unique_ptr<Render::Surface> surface(instance->CreateSurface(sur_info));
@@ -429,6 +429,10 @@ int main(int argc, char** argv)
         std::cout << std::format("\tpresent modes: {}\n", present_modes);
 
         std::array<float, 1> queue_priorities = {1.0f};
+        auto window_resolution = win->GetResolution();
+        Render::Extent2D swapchain_extent = {
+            .width = static_cast<std::uint32_t>(window_resolution.width),
+            .height = static_cast<std::uint32_t>(window_resolution.height)};
         const Render::DeviceInfo device_info = {
             .queue_family_infos = {Render::QueueFamilyInfo{.index = present_queue_family,
                                                            .queue_count = 1,
@@ -437,10 +441,27 @@ int main(int argc, char** argv)
             .enabled_features = Render::PhysicalDeviceFeatures{},
             .surface = surface.get(),
             .swapchain_info =
-                Render::SwapchainInfo{.min_image_count = surface_caps.min_image_count,
-                                      .format_index = 0,
-                                      .present_mode = Render::PresentModeFlagBits::FIFO},
+                Render::SwapchainInfo{
+                    .min_image_count = surface_caps.min_image_count,
+                    .format = surface_caps.supported_formats[0],
+                    .present_mode = Render::PresentModeFlagBits::FIFO,
+                    .extent = (surface_caps.extent_mode == Render::SurfaceExtentMode::Undefined ?
+                                   swapchain_extent :
+                                   surface_caps.current_extent)},
             .memory_allocation_size_hint = 1024 * 1024 * 16};
+
+        if(surface_caps.extent_mode == Render::SurfaceExtentMode::Undefined)
+        {
+            if(!(swapchain_extent.width >= surface_caps.min_extent.width &&
+                 swapchain_extent.height >= surface_caps.min_extent.height &&
+                 swapchain_extent.width <= surface_caps.max_extent.width &&
+                 swapchain_extent.height <= surface_caps.max_extent.height))
+            {
+                throw std::runtime_error(std::format("Cannot create swapchain with extent: {}.{}",
+                                                     swapchain_extent.width,
+                                                     swapchain_extent.height));
+            }
+        }
 
         std::unique_ptr<Render::Device> device(selected_dev->CreateDevice(device_info));
         Render::Swapchain* swapchain = device->GetSwapchain();

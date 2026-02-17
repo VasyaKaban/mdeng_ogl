@@ -33,8 +33,7 @@ namespace Core
         if(sys_wm_info.subsystem != SDL_SYSWM_WINDOWS)
             throw std::runtime_error("Bad subsystem info");
 
-        surface = Render::SurfaceWin32Info{.window = sys_wm_info.info.win.window,
-                                           .hdc = sys_wm_info.info.win.hdc,
+        surface = Render::Win32SurfaceInfo{.window = sys_wm_info.info.win.window,
                                            .instance = sys_wm_info.info.win.hinstance};
 #endif
 

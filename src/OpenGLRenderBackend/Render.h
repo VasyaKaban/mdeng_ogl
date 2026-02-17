@@ -20,15 +20,24 @@ namespace OpenGL
     class Image;
     class ImageView;
     class Instance;
-    class PhysicalDevice;
     class Pipeline;
     class Queue;
     class RenderPass;
     class Sampler;
     class Semaphore;
     class Shader;
-    class Surface;
     class Swapchain;
+
+#ifdef _WIN32
+
+    class WGLPhysicalDevice;
+    using PhysicalDevice = WGLPhysicalDevice;
+
+    class WGLSurface;
+    using Surface = WGLSurface;
+#else
+#    error "Only WIN32 is supported"
+#endif
 
     using GLHandle = GLuint;
 
@@ -83,7 +92,7 @@ namespace OpenGL
     struct SurfaceConnectInfo
     {
         PhysicalDevice* physical_device;
-        std::uint32_t format_index;
+        Render::Format format;
         bool robust_buffer_access_enabled;
     };
 
@@ -220,16 +229,32 @@ namespace OpenGL
     void EnableDebugMessenger(const GladGLContext& loader);
     void SetDebugMessenger(const GladGLContext& loader, const Render::DebugMessengerInfo& info);
 
-    std::optional<Render::Format> DecodePixelFormat(const GladGLContext& loader,
-                                                    std::uint8_t red_bits,
-                                                    std::uint8_t red_shift,
-                                                    std::uint8_t green_bits,
-                                                    std::uint8_t green_shift,
-                                                    std::uint8_t blue_bits,
-                                                    std::uint8_t blue_shift,
-                                                    std::uint8_t alpha_bits,
-                                                    std::uint8_t alpha_shift,
-                                                    std::uint8_t color_bits,
-                                                    bool is_srgb,
-                                                    bool is_float);
+    struct SurfaceConfig
+    {
+        std::uint8_t red_bits;
+        std::uint8_t red_shift;
+        std::uint8_t green_bits;
+        std::uint8_t green_shift;
+        std::uint8_t blue_bits;
+        std::uint8_t blue_shift;
+        std::uint8_t alpha_bits;
+        std::uint8_t alpha_shift;
+        std::uint8_t color_bits;
+        bool is_srgb: 1;
+        bool is_float: 1;
+    };
+
+    std::optional<Render::Format> DecodeSurfaceFormat(const GladGLContext& loader,
+                                                      const SurfaceConfig& config);
+
+    Render::PhysicalDeviceProperties GetPhysicalDeviceProperties(const GladGLContext& loader,
+                                                                 bool robust_buffer_access);
+
+    std::optional<Render::BufferFormatProperties>
+    GetPhysicalDeviceBufferFormatProperties(const GladGLContext& loader,
+                                            const Render::BufferFormatInfo& info) noexcept;
+
+    std::optional<Render::ImageFormatProperties>
+    GetPhysicalDeviceImageFormatProperties(const GladGLContext& loader,
+                                           const Render::ImageFormatInfo& info) noexcept;
 };

@@ -24,7 +24,7 @@ namespace Core
 
     using WindowSurface = std::variant<
 #ifdef _WIN32
-        Render::SurfaceWin32Info
+        Render::Win32SurfaceInfo
 #endif
         >;
 

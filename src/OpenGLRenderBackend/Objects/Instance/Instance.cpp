@@ -90,7 +90,7 @@ namespace OpenGL
     }
 
 #ifdef _WIN32
-    Render::Surface* Instance::CreateSurface(const Render::SurfaceWin32Info& info)
+    Render::Surface* Instance::CreateSurface(const Render::Win32SurfaceInfo& info)
     {
         return new Surface(this, info);
     }
