@@ -1,69 +1,48 @@
-SPEC: https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf
+INFO:
+    SPEC: https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf
 
-hrs::forward_pool -> for what???
-map<ClassID, list<Handler>> and map<ClassID, map<EvntObject*, Handler>> for events -> reudce memory usage
-Add limits and features
-Add queries
-Add transform feedback
-FreeBlockList: Split begin and after iterators in free block! In for loop -> after always be the next of before
-"SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???" -> in Engine???
-glTextureStorage3D -> should we mul by 6 array layers???
-OpenGL/ES and D3D compatibily for Vulkan as features
-explicit dllimport/dllexport + INTERFACE targets
-VK_EXT_primitive_topology_list_restart for lists in VK as feature
-VK_EXT_border_color_swizzle???
-Pipeline state based on enabled features for OpenGL
-Check all PipelineInfo* structs and compare them with Vulkan spec
-Check throw in commands and creation functions -> OGL only
-Change descriptor set binding -> instead of set and linear model use union of models + API type
-delete default statements in switch for formats -> populate cases via clangd quick fix
-check all static vectors and merge them into one common vector for temp info
-https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf page: 222
-Descriptor descriptions:
-     struct DescriptorDescription
-    {
-        std::uint32_t set;
-        std::uint32_t opengl_binding;
-        std::uint32_t vulkan_binding;
-        std::uint32_t directx_binding;
-    };
-
-    //select binding(DescriptorDescription) -> if context.backend == OpenGL return opengl_binding...
-#nonCoherentAtomSize -> use in VK as inner parameter for mappings(maybe allocate buffers with alignment corrected to this size + size also align)
-remove #include winapi from Render -> change to forward declaration
-remove multi-jump in pipeline state(maybe add caching with pointers to functions?)
-
-Change plain pointer to unique_ptr due to the exceptions in constructor(see Device ctor!)
-Add enabled features check for every object like aniso in sampler and in pipeline state
-Make physical device current on device delete notify + think abound make current and reset previous current context
-
-move hrs to Core
-Common naming for FlagBits
-pipeline binary retrieve -> format as pipelineCacheUUID(fill with zeroes in VK) + API flag -> use VkPipelineCache for VK?
-
-More dynamic states? -> to be added...
-debug_utils -> add object labels? Is VAO represent the same concept like VkPipelineLayout in Vulkan?
- 
-Should we use UnknownQueueSpec? AFAIK other flags like video encode/decode only appear on video encode/decode extension provided? -> but it will be listed anyway because we enable extensions on device creation while queue properties we get from physical device
-In vulkan:
-    if we map buffers each map call wil increment map counter in inner memory handle
-    each unmap also will decrement inner map counter
-Maybe add methods for device that will get info about:
-    two passed in buffers are bound to the same inner memory handle
-    FlushMappedRanges that will receive array of memory ranges to flush and buffers and create common arrays for VK? + same for invalidate -> do we really need to map a lot of buffers to use them within the same frame?
-
-buffer align: common(bufferImageGranularity, nonCoherentAtomSize, req.alignment)
-image align: common(bufferImageGranularity,req.alignment)
-
-dllexport/dllimport for linux(mostly for templates) -> use extern template?
-WinAPI -> can receive at any time
-Xlib -> can receive at any time
-Wayland -> sends configure only on init...(that's why currentExtent in VkSurfaceKHR is always 0xFF...)
-
-in SurfaceInfo:
-	Extent2D min_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
-	Extent2D max_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
-	Extent2D current_extent; -> WinAPI/X11(current_extent), Wayland(0xFF...)
-	
-change enum to enum class + use template operator|
-final spec in all virtual classes
+* hrs::forward_pool: for what?
+* Add queries fo render: investigate
+* Add transform feedback: investigate
+* FreeBlockList: Split begin and after iterators in free block! In for loop -> after always be the next of before: IDK?
+* SHOULD WE SET BARRIER FOR COPY AFTER FRAGMENT SHADER???: in Engine???
+* glTextureStorage3D: should we mul by 6 array layers???
+* OpenGL/ES and D3D compatibily for Vulkan as features: just check VK spec
+* Vulkan formats from VK_EXT_4444_formats and VK_KHR_maintenance5: we should use feature for them to explicitly enable either extension or core version
+* VK_EXT_primitive_topology_list_restart for lists in VK as feature
+* VK_EXT_border_color_swizzle: ???
+* Check all PipelineInfo* structs and compare them with Vulkan spec
+* Check throw in commands and creation functions: OGL only
+* Change descriptor set binding: instead of set and linear model use union of models + API type(just for high-level descriptor infos in Engine...). Maybe as virtual function to return descriptor infos
+* nonCoherentAtomSize: use in VK as inner parameter for mappings(maybe allocate buffers with alignment corrected to this size + size also align)
+* Change plain pointer to unique_ptr due to the exceptions in constructor(see Device ctor!)
+* Add enabled features check for every object like aniso in sampler and in pipeline state
+* Only one active Instance and legacy device for OpenGL backend
+* move hrs to Core
+* Common naming for FlagBits
+* pipeline binary retrieve: format as pipelineCacheUUID(fill with zeroes in VK) + API flag -> use VkPipelineCache for VK?
+* OGL-only formats like R3G3B2
+* More dynamic states: TBA???
+* debug_utils: add object labels? Is VAO represent the same concept like VkPipelineLayout in Vulkan?
+* Memory:
+    In vulkan:
+        if we map buffers each map call wil increment map counter in inner memory handle
+        each unmap also will decrement inner map counter
+    Maybe add methods for device that will get info about:
+        two passed in buffers are bound to the same inner memory handle
+        FlushMappedRanges that will receive array of memory ranges to flush and buffers and create common arrays for VK? + same for invalidate -> do we really need to map a lot of buffers to use them within the same frame?
+    buffer align: common(bufferImageGranularity, nonCoherentAtomSize, req.alignment)
+    image align: common(bufferImageGranularity,req.alignment)
+* dllexport/dllimport for linux(mostly for templates): use extern template?
+* max_image_array_layers for surface capabilities and swapchain
+* change enum to enum class + use template operator|
+* final specifier in all virtual classes
+* Split render into two concepts:
+    Legacy device:
+        Instance, Device(owner of PhysicalDevice, Surface and Swapchain)
+        In instance properties create field that will have LegacyDeviceFlagBit that signals this inplementation support only legacy device creation
+        Surface, PhysicalDevice[both as ptr to OGL state] = Instance.CreateLegacyState(Window, LegacyPhysicalDeviceInfo{.version = ...})
+        Device[as ptr to OGL state] = Instance.CreateDevice(DeviceInfo{...})      
+    Common device:
+        Instance, PhysicalDevice, Surface, Device(owner of Surface(until delete) and Swapchain)
+* add getters for Device: get PhysicalDevice, Instance(via PhysicalDevice), Surface for legacy mode
