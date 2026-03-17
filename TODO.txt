@@ -41,8 +41,7 @@ INFO:
     Legacy device:
         Instance, Device(owner of PhysicalDevice, Surface and Swapchain)
         In instance properties create field that will have LegacyDeviceFlagBit that signals this inplementation support only legacy device creation
-        Surface, PhysicalDevice[both as ptr to OGL state] = Instance.CreateLegacyState(Window, LegacyPhysicalDeviceInfo{.version = ...})
-        Device[as ptr to OGL state] = Instance.CreateDevice(DeviceInfo{...})      
+        Device = Instance.CreateLegacyDevice(Window, LegacyPhysicalDeviceInfo{.version = ..., .robust_buffer_access = true/false(via dedicated method for legacy device features query)}) will create legacy device with inner surface and physical device with all enabled features    
     Common device:
         Instance, PhysicalDevice, Surface, Device(owner of Surface(until delete) and Swapchain)
 * add getters for Device: get PhysicalDevice, Instance(via PhysicalDevice), Surface for legacy mode
