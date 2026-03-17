@@ -6,7 +6,7 @@
 #include "../Buffer/Buffer.h"
 #include <stdexcept>
 #include <format>
-#include "hrs/scoped_call.hpp"
+#include "Core/Utils/ScopedCall.hpp"
 
 namespace OpenGL
 {
@@ -490,7 +490,7 @@ namespace OpenGL
         std::optional<GraphicsPipelineRasterizationState> _rasterization_state;
         std::optional<GraphicsPipelineViewportState> _viewport_state;
 
-        hrs::scoped_call cleanup(
+        Core::ScopedCall cleanup(
             [&]()
             {
                 if(_viewport_state)
@@ -559,7 +559,7 @@ namespace OpenGL
                                                         dynamic_viewport,
                                                         dynamic_scissors);
 
-        cleanup.drop();
+        cleanup.Drop();
 
         vertex_input_state = std::move(*_vertex_input_state);
         input_assembly_state = std::move(*_input_assembly_state);

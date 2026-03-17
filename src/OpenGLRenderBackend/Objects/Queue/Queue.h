@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/Queue.h"
 
 namespace OpenGL
 {
-    class Queue : public Render::Queue, hrs::non_copyable, hrs::non_movable
+    class Queue : public Render::Queue, Core::NonCopyable, Core::NonMovable
     {
     public:
         Queue(Device* _parent) noexcept;

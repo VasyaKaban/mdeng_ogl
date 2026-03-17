@@ -1,12 +1,12 @@
 #include "Events.h"
-#include "hrs/scoped_call.hpp"
+#include "Core/Utils/ScopedCall.hpp"
 
 namespace Core
 {
     class EventHandler : public EmitterNode,
                          public ListenerNode,
-                         hrs::non_copyable,
-                         hrs::non_movable
+                         Core::NonCopyable,
+                         Core::NonMovable
     {
     public:
         EventHandler(EventHandlerCallerWrapperType _caller,
@@ -291,7 +291,7 @@ namespace Core
                                               EventListener* listener,
                                               EventHandlerState state)
     {
-        hrs::scoped_call cleanup(
+        Core::ScopedCall cleanup(
             [handler_memory, deleter]()
             {
                 deleter(handler_memory);
@@ -311,7 +311,7 @@ namespace Core
         EventHandler* handler =
             new EventHandler(caller, deleter, handler_memory, &it->second, llist, state);
 
-        cleanup.drop();
+        cleanup.Drop();
 
         return EventHandlerRef(handler);
     }

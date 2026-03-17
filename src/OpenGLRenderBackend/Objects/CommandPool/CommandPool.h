@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/CommandPool.h"
 
 namespace OpenGL
 {
-    class CommandPool : public Render::CommandPool, hrs::non_copyable, hrs::non_movable
+    class CommandPool : public Render::CommandPool, Core::NonCopyable, Core::NonMovable
     {
     public:
         CommandPool(Device* _parent, const Render::CommandPoolInfo& info) noexcept;

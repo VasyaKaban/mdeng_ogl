@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/BufferView.h"
 
 namespace OpenGL
 {
-    class BufferView : public Render::BufferView, hrs::non_copyable, hrs::non_movable
+    class BufferView : public Render::BufferView, Core::NonCopyable, Core::NonMovable
     {
     public:
         BufferView(Device* _parent, const Render::BufferViewInfo& info);

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/Sampler.h"
 
 namespace OpenGL
 {
-    class Sampler : public Render::Sampler, hrs::non_copyable, hrs::non_movable
+    class Sampler : public Render::Sampler, Core::NonCopyable, Core::NonMovable
     {
     public:
         Sampler(Device* _parent, const Render::SamplerInfo& info);

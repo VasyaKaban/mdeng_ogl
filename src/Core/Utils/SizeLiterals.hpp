@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-namespace hrs
+namespace Core
 {
-    namespace size_literals
+    namespace SizeLiterals
     {
         constexpr std::uint64_t operator""_B(unsigned long long bytes) noexcept
         {

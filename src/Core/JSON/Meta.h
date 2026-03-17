@@ -5,67 +5,70 @@
 #include "Doc.h"
 #include "Core/API.h"
 
-namespace JSON
+namespace Core
 {
-    template<typename T>
-    T Parse(const Doc& doc);
-
-    template<typename I>
-    I Parse(const Doc& doc)
-    requires std::signed_integral<I>
+    namespace JSON
     {
-        if(!doc.is_number_integer())
-            throw std::runtime_error("Failed to parse integer");
+        template<typename T>
+        T Parse(const Doc& doc);
 
-        Doc::number_integer_t i = doc.get<Doc::number_integer_t>();
-        if(!(std::numeric_limits<I>::min() <= i && i <= std::numeric_limits<I>::max()))
-            throw std::runtime_error("Failed to parse integer: out of range");
+        template<typename I>
+        I Parse(const Doc& doc)
+        requires std::signed_integral<I>
+        {
+            if(!doc.is_number_integer())
+                throw std::runtime_error("Failed to parse integer");
 
-        return i;
-    }
+            Doc::number_integer_t i = doc.get<Doc::number_integer_t>();
+            if(!(std::numeric_limits<I>::min() <= i && i <= std::numeric_limits<I>::max()))
+                throw std::runtime_error("Failed to parse integer: out of range");
 
-    template<typename I>
-    I Parse(const Doc& doc)
-    requires std::unsigned_integral<I>
-    {
-        if(!doc.is_number_unsigned())
-            throw std::runtime_error("Failed to parse unsigned integer");
+            return i;
+        }
 
-        Doc::number_unsigned_t i = doc.get<Doc::number_unsigned_t>();
-        if(!(std::numeric_limits<I>::min() <= i && i <= std::numeric_limits<I>::max()))
-            throw std::runtime_error("Failed to parse unsigned integer: out of range");
+        template<typename I>
+        I Parse(const Doc& doc)
+        requires std::unsigned_integral<I>
+        {
+            if(!doc.is_number_unsigned())
+                throw std::runtime_error("Failed to parse unsigned integer");
 
-        return i;
-    }
+            Doc::number_unsigned_t i = doc.get<Doc::number_unsigned_t>();
+            if(!(std::numeric_limits<I>::min() <= i && i <= std::numeric_limits<I>::max()))
+                throw std::runtime_error("Failed to parse unsigned integer: out of range");
 
-    template<typename F>
-    F Parse(const Doc& doc)
-    requires std::floating_point<F>
-    {
-        if(!doc.is_number())
-            throw std::runtime_error("Failed to parse floating");
+            return i;
+        }
 
-        Doc::number_float_t i = doc.get<Doc::number_float_t>();
-        return i;
-    }
+        template<typename F>
+        F Parse(const Doc& doc)
+        requires std::floating_point<F>
+        {
+            if(!doc.is_number())
+                throw std::runtime_error("Failed to parse floating");
 
-    template<>
-    CORE_API bool Parse(const Doc& doc);
+            Doc::number_float_t i = doc.get<Doc::number_float_t>();
+            return i;
+        }
 
-    template<typename T>
-    T ParseKey(const Doc& doc, std::string_view key)
-    {
-        auto value = doc[key];
-        return Parse<T>(value);
-    }
+        template<>
+        CORE_API bool Parse(const Doc& doc);
 
-    template<typename T>
-    std::optional<T> ParseOptionalKey(const Doc& doc, std::string_view key)
-    {
-        auto value = doc[key];
-        if(value.is_null())
-            return std::nullopt;
+        template<typename T>
+        T ParseKey(const Doc& doc, std::string_view key)
+        {
+            auto value = doc[key];
+            return Parse<T>(value);
+        }
 
-        return Parse<T>(value);
-    }
+        template<typename T>
+        std::optional<T> ParseOptionalKey(const Doc& doc, std::string_view key)
+        {
+            auto value = doc[key];
+            if(value.is_null())
+                return std::nullopt;
+
+            return Parse<T>(value);
+        }
+    };
 };

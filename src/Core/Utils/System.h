@@ -1,15 +1,36 @@
 #pragma once
 
 #ifdef _WIN32
-#    include "WinAPI/SystemBase.h"
+#    define UNICODE
+#    define _UNICODE
+#    define _CRT_SECURE_NO_WARNINGS
+#    define NOMINMAX
+#    include <Windows.h>
+
+#    undef CreateWindow
+#    undef CreateSemaphore
+#    undef MemoryBarrier
+#    undef GetMessage
+
+#    include <filesystem>
+#    include "Core/API.h"
 #elif defined(linux)
-#    include "Linux/SystemBase.h"
+#    include <dlfcn.h>
 #else
-#    error "Not implemented yet.."
+#    error "Not supported yet"
 #endif
 
 namespace Core
 {
-    class CORE_API System : public SystemBase
-    {};
+    class CORE_API System
+    {
+    public:
+        static const std::filesystem::path& GetExecutablePath();
+
+        static std::string DecorateDynamicLibraryName(std::string_view name);
+
+#ifdef _WIN32
+        static std::runtime_error GetLastError();
+#endif
+    };
 };

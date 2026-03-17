@@ -60,10 +60,10 @@ namespace OpenGL
 
         auto glrc_exp =
             CreateContext(dc, debug_messenger_enabled, connect_info.robust_buffer_access_enabled);
-        if(!glrc_exp.has_value())
-            throw glrc_exp.error();
+        if(!glrc_exp.HasValue())
+            throw glrc_exp.Error();
 
-        glrc = glrc_exp.value();
+        glrc = glrc_exp.Value();
 
         wglMakeCurrent(dc, glrc);
 

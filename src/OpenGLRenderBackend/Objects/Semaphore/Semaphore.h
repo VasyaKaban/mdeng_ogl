@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/Semaphore.h"
 
@@ -8,7 +8,7 @@
 
 namespace OpenGL
 {
-    class Semaphore : public Render::Semaphore, hrs::non_copyable, hrs::non_movable
+    class Semaphore : public Render::Semaphore, Core::NonCopyable, Core::NonMovable
     {
         friend class Swapchain;
         friend class Queue;

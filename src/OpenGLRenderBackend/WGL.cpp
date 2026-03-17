@@ -43,7 +43,7 @@ namespace OpenGL
         return std::nullopt;
     }
 
-    hrs::expected<HGLRC, std::runtime_error>
+    Core::Expected<HGLRC, std::runtime_error>
     CreateContext(HDC dc, bool debug_messenger_enabled, bool robust_buffer_access_enabled) noexcept
     {
         int profile_attributes[] = {

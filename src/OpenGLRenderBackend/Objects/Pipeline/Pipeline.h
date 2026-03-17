@@ -1,13 +1,13 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "GraphicsPipelineState.h"
 #include "Core/Render/Objects/Pipeline.h"
 
 namespace OpenGL
 {
-    class Pipeline : public Render::Pipeline, hrs::non_copyable, hrs::non_movable
+    class Pipeline : public Render::Pipeline, Core::NonCopyable, Core::NonMovable
     {
     public:
         Pipeline(Device* _parent, const Render::GraphicsPipelineInfo& info);

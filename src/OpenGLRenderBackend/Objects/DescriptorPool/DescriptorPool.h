@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/DescriptorPool.h"
 
 namespace OpenGL
 {
-    class DescriptorPool : public Render::DescriptorPool, hrs::non_copyable, hrs::non_movable
+    class DescriptorPool : public Render::DescriptorPool, Core::NonCopyable, Core::NonMovable
     {
     public:
         DescriptorPool(Device* _parent, const Render::DescriptorPoolInfo& info);

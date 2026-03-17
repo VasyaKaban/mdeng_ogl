@@ -1,8 +1,8 @@
 #include "WGLPhysicalDevice.h"
 #include <stdexcept>
 #include <map>
-#include "hrs/expected.hpp"
-#include "hrs/scoped_call.hpp"
+#include "Core/Utils/Expected.hpp"
+#include "Core/Utils/ScopedCall.hpp"
 #include "../../Instance/Instance.h"
 #include "../../Surface/Surface.h"
 #include "../../Device/Device.h"
@@ -48,13 +48,13 @@ namespace OpenGL
         {
             case WM_CREATE:
             {
-                hrs::expected<WindowParams, std::runtime_error>* window_params_exp =
-                    reinterpret_cast<hrs::expected<WindowParams, std::runtime_error>*>(
+                Core::Expected<WindowParams, std::runtime_error>* window_params_exp =
+                    reinterpret_cast<Core::Expected<WindowParams, std::runtime_error>*>(
                         reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
 
                 HDC _dc = nullptr;
                 HGLRC _glrc = nullptr;
-                hrs::scoped_call cleanup = [&_dc, &_glrc, handle]()
+                Core::ScopedCall cleanup = [&_dc, &_glrc, handle]()
                 {
                     if(_glrc)
                         wglDeleteContext(_glrc);
@@ -88,19 +88,19 @@ namespace OpenGL
                 */
 
                 bool debug_messenger_enabled =
-                    window_params_exp->value()
+                    window_params_exp->Value()
                         .input_instance->GetEnabledFeatures()
                         .validation_layer ||
-                    window_params_exp->value().input_instance->GetEnabledFeatures().debug_messenger;
+                    window_params_exp->Value().input_instance->GetEnabledFeatures().debug_messenger;
 
                 auto glrc_exp = CreateContext(_dc, debug_messenger_enabled, false);
-                if(!glrc_exp.has_value())
+                if(!glrc_exp.HasValue())
                 {
-                    *window_params_exp = std::move(glrc_exp.error());
+                    *window_params_exp = std::move(glrc_exp.Error());
                     return -1;
                 }
 
-                _glrc = glrc_exp.value();
+                _glrc = glrc_exp.Value();
 
                 wglMakeCurrent(_dc, _glrc);
 
@@ -247,7 +247,7 @@ namespace OpenGL
                                  .pixelformat_indices = std::move(pixelformat_indices),
                                  .loader = loader};
 
-                cleanup.drop();
+                cleanup.Drop();
                 break;
             }
             default:
@@ -280,7 +280,7 @@ namespace OpenGL
         if(register_res == 0)
             throw std::runtime_error("Failed to create dummy OpenGL window");
 
-        hrs::expected<WindowParams, std::runtime_error> window_param_exp =
+        Core::Expected<WindowParams, std::runtime_error> window_param_exp =
             WindowParams{.input_instance = parent};
 
         HWND _window = CreateWindowExW(0,
@@ -296,14 +296,14 @@ namespace OpenGL
                                        _instance,
                                        &window_param_exp);
 
-        if(!window_param_exp.has_value())
+        if(!window_param_exp.HasValue())
         {
             if(_window)
                 DestroyWindow(_window);
 
             UnregisterClassW(WGL_PHYSICAL_DEVICE_DUMMY_WINDOW_CLASS_NAME, _instance);
 
-            throw window_param_exp.error();
+            throw window_param_exp.Error();
         }
 
         hinstance = _instance;

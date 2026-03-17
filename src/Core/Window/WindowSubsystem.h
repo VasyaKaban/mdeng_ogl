@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <map>
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include <SDL2/SDL_messagebox.h>
 #include "Core/API.h"
 
@@ -18,7 +18,7 @@ namespace Core
         Info = SDL_MESSAGEBOX_INFORMATION
     };
 
-    class CORE_API WindowSubsystem : hrs::non_copyable, hrs::non_movable
+    class CORE_API WindowSubsystem : Core::NonCopyable, Core::NonMovable
     {
         WindowSubsystem();
     public:

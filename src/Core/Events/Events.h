@@ -3,7 +3,7 @@
 #include <map>
 #include <cassert>
 #include <memory>
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "Core/Utils/ClassID.hpp"
 #include "Core/API.h"
 
@@ -165,7 +165,7 @@ namespace Core
     using EmitterList = NodeList<EmitterNode>;
     using ListenerList = NodeList<ListenerNode>;
 
-    class CORE_API EventListener : hrs::non_copyable
+    class CORE_API EventListener : Core::NonCopyable
     {
         friend class EventEmitter;
     public:
@@ -178,7 +178,7 @@ namespace Core
         std::unique_ptr<ListenerList> list;
     };
 
-    class CORE_API EventEmitter : hrs::non_copyable
+    class CORE_API EventEmitter : Core::NonCopyable
     {
     public:
         EventEmitter() = default;

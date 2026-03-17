@@ -1,27 +1,37 @@
 #pragma once
 
-#ifdef _WIN32
-#    include "WinAPI/DynamicLibraryBase.h"
-#elif defined(linux)
-#    include "Linux/DynamicLibraryBase.h"
-#else
-#    error "Not implemented yet.."
-#endif
+#include <optional>
+#include <stdexcept>
+#include <filesystem>
+#include "../API.h"
+#include "NonCreatable.hpp"
+#include "System.h"
 
 namespace Core
 {
-    class CORE_API DynamicLibrary : public DynamicLibraryBase
+    class CORE_API DynamicLibrary : Core::NonCopyable
     {
     public:
-        using DynamicLibraryBase::GetProcAddress;
+        using VoidPFN = void (*)();
 
         DynamicLibrary() noexcept;
-        ~DynamicLibrary() noexcept;
+        ~DynamicLibrary();
+        DynamicLibrary(DynamicLibrary&& lib) noexcept;
+        DynamicLibrary& operator=(DynamicLibrary&& lib) noexcept;
 
-        template<typename T>
-        T* GetProcAddress(const char* name) const noexcept
-        {
-            return reinterpret_cast<T*>(this->DynamicLibraryBase::GetProcAddress(name));
-        }
+        std::optional<std::runtime_error> Open(const std::filesystem::path& path);
+
+        bool IsOpen() const noexcept;
+        void Close() noexcept;
+
+        VoidPFN GetProcAddress(const char* name) const noexcept;
+    private:
+        void Destroy() noexcept;
+    private:
+#ifdef _WIN32
+        HMODULE handle;
+#elif defined(linux)
+        void* handle;
+#endif
     };
 };

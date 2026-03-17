@@ -2,7 +2,10 @@
 
 #include <nlohmann/json.hpp>
 
-namespace JSON
+namespace Core
 {
-    using Doc = nlohmann::json;
+    namespace JSON
+    {
+        using Doc = nlohmann::json;
+    };
 };

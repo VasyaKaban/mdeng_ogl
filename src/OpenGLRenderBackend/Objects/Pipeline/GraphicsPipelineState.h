@@ -1,12 +1,12 @@
 #pragma once
 
 #include <unordered_map>
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 
 namespace OpenGL
 {
-    class GraphicsPipelineVertexInputState : hrs::non_copyable
+    class GraphicsPipelineVertexInputState : Core::NonCopyable
     {
     public:
         GraphicsPipelineVertexInputState(const Pipeline& parent,
@@ -27,7 +27,7 @@ namespace OpenGL
         BindingStridesMap binding_strides_map;
     };
 
-    class GraphicsPipelineInputAssemblyState : hrs::non_copyable
+    class GraphicsPipelineInputAssemblyState : Core::NonCopyable
     {
     public:
         GraphicsPipelineInputAssemblyState(
@@ -47,7 +47,7 @@ namespace OpenGL
         bool primitive_restart_enabled;
     };
 
-    class GraphicsPipelineTessellationState : hrs::non_copyable
+    class GraphicsPipelineTessellationState : Core::NonCopyable
     {
     public:
         GraphicsPipelineTessellationState(const Render::GraphicsPipelineTessellationStateInfo& info,
@@ -76,7 +76,7 @@ namespace OpenGL
         Render::ColorComponentFlags color_write_mask;
     };
 
-    class GraphicsPipelineColorBlendState : hrs::non_copyable
+    class GraphicsPipelineColorBlendState : Core::NonCopyable
     {
     public:
         GraphicsPipelineColorBlendState(const Render::GraphicsPipelineColorBlendStateInfo& info);
@@ -105,7 +105,7 @@ namespace OpenGL
         std::uint32_t write_mask;
     };
 
-    class GraphicsPipelineDepthStencilState : hrs::non_copyable
+    class GraphicsPipelineDepthStencilState : Core::NonCopyable
     {
     public:
         GraphicsPipelineDepthStencilState(
@@ -130,7 +130,7 @@ namespace OpenGL
         float max_depth_bounds;
     };
 
-    class GraphicsPipelineMultisampleState : hrs::non_copyable
+    class GraphicsPipelineMultisampleState : Core::NonCopyable
     {
     public:
         GraphicsPipelineMultisampleState(const Render::GraphicsPipelineMultisampleStateInfo& info);
@@ -153,7 +153,7 @@ namespace OpenGL
         bool alpha_to_one_enabled;
     };
 
-    class GraphicsPipelineRasterizationState : hrs::non_copyable
+    class GraphicsPipelineRasterizationState : Core::NonCopyable
     {
     public:
         GraphicsPipelineRasterizationState(
@@ -180,7 +180,7 @@ namespace OpenGL
         GLfloat line_width;
     };
 
-    class GraphicsPipelineViewportState : hrs::non_copyable
+    class GraphicsPipelineViewportState : Core::NonCopyable
     {
     public:
         GraphicsPipelineViewportState(const Render::GraphicsPipelineViewportStateInfo& info,
@@ -201,14 +201,14 @@ namespace OpenGL
         std::vector<Render::Rect2D> scissors;
     };
 
-    struct GraphicsPipelineDrawState : hrs::non_copyable
+    struct GraphicsPipelineDrawState : Core::NonCopyable
     {
         int index_size;
         GLenum index_type;
         std::uintptr_t index_buffer_offset;
     };
 
-    class GraphicsPipelineState : hrs::non_copyable
+    class GraphicsPipelineState : Core::NonCopyable
     {
     public:
         GraphicsPipelineState() noexcept;

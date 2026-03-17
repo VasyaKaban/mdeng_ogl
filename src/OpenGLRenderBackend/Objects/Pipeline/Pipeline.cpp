@@ -1,7 +1,7 @@
 #include "Pipeline.h"
 #include "../Device/Device.h"
 #include <stdexcept>
-#include "hrs/scoped_call.hpp"
+#include "Core/Utils/ScopedCall.hpp"
 #include "../Shader/Shader.h"
 #include "../Buffer/Buffer.h"
 #include <cassert>
@@ -15,7 +15,7 @@ namespace OpenGL
         if(_handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Failed to create pipeline");
 
-        hrs::scoped_call cleanup(
+        Core::ScopedCall cleanup(
             [&_handle, _parent]()
             {
                 _parent->GetLoader().DeleteProgram(_handle);
@@ -45,7 +45,7 @@ namespace OpenGL
 
         state = new GraphicsPipelineState(*this, info);
 
-        cleanup.drop();
+        cleanup.Drop();
 
         handle = _handle;
     }
@@ -57,7 +57,7 @@ namespace OpenGL
         if(_handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Failed to create pipeline");
 
-        hrs::scoped_call cleanup(
+        Core::ScopedCall cleanup(
             [&_handle, _parent]()
             {
                 _parent->GetLoader().DeleteProgram(_handle);
@@ -83,7 +83,7 @@ namespace OpenGL
             throw std::runtime_error(std::move(log));
         }
 
-        cleanup.drop();
+        cleanup.Drop();
 
         handle = _handle;
         state = nullptr;

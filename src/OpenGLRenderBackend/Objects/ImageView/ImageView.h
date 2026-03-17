@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/ImageView.h"
 
 namespace OpenGL
 {
-    class ImageView : public Render::ImageView, hrs::non_copyable, hrs::non_movable
+    class ImageView : public Render::ImageView, Core::NonCopyable, Core::NonMovable
     {
     public:
         ImageView(Device* _parent, const Render::ImageViewInfo& info);

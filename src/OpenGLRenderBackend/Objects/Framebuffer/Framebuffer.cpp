@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include "../Image/Image.h"
 #include "../ImageView/ImageView.h"
-#include "hrs/scoped_call.hpp"
+#include "Core/Utils/ScopedCall.hpp"
 
 namespace OpenGL
 {
@@ -19,7 +19,7 @@ namespace OpenGL
         if(_handle == OGL_NULL_HANDLE)
             throw std::runtime_error("Failed to create framebuffer");
 
-        hrs::scoped_call cleanup(
+        Core::ScopedCall cleanup(
             [&_handle, _parent]()
             {
                 _parent->GetLoader().DeleteFramebuffers(1, &_handle);
@@ -49,7 +49,7 @@ namespace OpenGL
             throw std::runtime_error("Failed to create framebuffer. Bad attachments");
         }
 
-        cleanup.drop();
+        cleanup.Drop();
 
         handle = _handle;
     }

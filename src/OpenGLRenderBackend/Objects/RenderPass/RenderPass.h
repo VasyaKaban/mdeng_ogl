@@ -2,13 +2,13 @@
 
 #include <vector>
 #include <optional>
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/RenderPass.h"
 
 namespace OpenGL
 {
-    class RenderPass : public Render::RenderPass, hrs::non_copyable, hrs::non_movable
+    class RenderPass : public Render::RenderPass, Core::NonCopyable, Core::NonMovable
     {
     public:
         RenderPass(Device* _parent, const Render::RenderPassInfo& info);

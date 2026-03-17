@@ -1,13 +1,13 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/CommandBuffer.h"
 
 namespace OpenGL
 {
     //imitation only!
-    class CommandBuffer : public Render::CommandBuffer, hrs::non_copyable, hrs::non_movable
+    class CommandBuffer : public Render::CommandBuffer, Core::NonCopyable, Core::NonMovable
     {
     public:
         CommandBuffer(Device* _parent, CommandPool* _pool) noexcept;

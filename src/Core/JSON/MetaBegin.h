@@ -31,12 +31,14 @@
         ;
 #elif defined JSON_DEF
 #    define JSON_BEGIN(NAME) \
-        namespace JSON \
+        namespace Core \
         { \
-            template<> \
-            NAME Parse(const Doc& doc) \
+            namespace JSON \
             { \
-                NAME out;
+                template<> \
+                NAME Parse(const Doc& doc) \
+                { \
+                    NAME out;
 
 #    define JSON_VALUE(NAME, TYPE, ...) \
         out.NAME = ParseKey<TYPE>(doc, #NAME); \
@@ -125,6 +127,8 @@
 #    define JSON_END(NAME) \
         return out; \
         } \
+        } \
+        ; \
         } \
         ;
 #else

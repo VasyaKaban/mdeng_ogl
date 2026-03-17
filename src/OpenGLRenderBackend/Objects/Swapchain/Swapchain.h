@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/Swapchain.h"
 
 namespace OpenGL
 {
-    class Swapchain : public Render::Swapchain, hrs::non_copyable, hrs::non_movable
+    class Swapchain : public Render::Swapchain, Core::NonCopyable, Core::NonMovable
     {
     public:
         Swapchain(Device* _parent, Surface* _surface, const Render::SwapchainInfo& info);

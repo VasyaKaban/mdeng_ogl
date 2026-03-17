@@ -1,7 +1,8 @@
-#include "SystemBase.h"
+#include "System.h"
 
 namespace Core
 {
+#ifdef _WIN32
     static std::string WideToUTF8(std::wstring_view wstr)
     {
         if(wstr.empty())
@@ -27,28 +28,44 @@ namespace Core
 
         return str;
     }
+#endif
 
     static const std::filesystem::path EXECUTABLE_PATH = []()
     {
+#ifdef _WIN32
         wchar_t module_filename[MAX_PATH];
         auto size = GetModuleFileNameW(nullptr, module_filename, MAX_PATH);
         if(size == 0)
             throw GetLastError();
 
         return std::filesystem::path(module_filename, module_filename + size);
+#elif defined(linux)
+        char exe_path[PATH_MAX];
+        auto exe_path_length = readlink("/proc/self/exe", exe_path, PATH_MAX);
+        if(exe_path_length == -1)
+            throw std::runtime_error(
+                std::format("Failed to retrieve executable path. {}", strerror(errno)));
+
+        return std::filesystem::path(exe_path, exe_path + exe_path_length);
+#endif
     }();
 
-    const std::filesystem::path& SystemBase::GetExecutablePath()
+    const std::filesystem::path& System::GetExecutablePath()
     {
         return EXECUTABLE_PATH;
     }
 
-    std::string SystemBase::DecorateDynamicLibraryName(std::string_view name)
+    std::string System::DecorateDynamicLibraryName(std::string_view name)
     {
+#ifdef _WIN32
         return std::format("{}.dll", name);
+#elif defined(linux)
+        return std::format("lib{}.so", name);
+#endif
     }
 
-    std::runtime_error SystemBase::GetLastError()
+#ifdef _WIN32
+    std::runtime_error System::GetLastError()
     {
         DWORD error = ::GetLastError();
         wchar_t* buffer = nullptr;
@@ -70,4 +87,5 @@ namespace Core
 
         return std::runtime_error(message);
     }
+#endif
 };

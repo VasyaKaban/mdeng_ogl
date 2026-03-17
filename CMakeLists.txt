@@ -28,8 +28,6 @@ add_compile_definitions(USERDATA_SUBDIR=\"../../userdata\")
 set(CONFIG_NAME config.json)
 add_compile_definitions(CONFIG_NAME=\"${CONFIG_NAME}\")
 
-#add_subdirectory(deps/glad)
-add_subdirectory("src/hrs")
 add_subdirectory("src/Core")
 add_subdirectory("src/Engine")
 add_subdirectory("src/Game")
@@ -45,7 +43,7 @@ add_custom_target(
 	COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/${CONFIG_NAME} ${OUTPUT_DIRECTORY})
 
 #deps/glad as static
-#Core + hrs as static
+#Core 
 #Engine -> exe
 #Game -> dll(plugin)
 #OpenGLRenderBackend -> dll

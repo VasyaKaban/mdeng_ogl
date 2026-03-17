@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Core/Render/Objects/Instance.h"
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 
 namespace OpenGL
 {
-    class Instance : public Render::Instance, hrs::non_copyable, hrs::non_movable
+    class Instance : public Render::Instance, Core::NonCopyable, Core::NonMovable
     {
     public:
         Instance(const Render::InstanceInfo& info);

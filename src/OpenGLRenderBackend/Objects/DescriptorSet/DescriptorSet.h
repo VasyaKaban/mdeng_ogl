@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/DescriptorSet.h"
 
 namespace OpenGL
 {
-    class DescriptorSet : public Render::DescriptorSet, hrs::non_copyable, hrs::non_movable
+    class DescriptorSet : public Render::DescriptorSet, Core::NonCopyable, Core::NonMovable
     {
     public:
         DescriptorSet(Device* _parent,

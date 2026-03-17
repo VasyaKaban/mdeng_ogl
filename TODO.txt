@@ -46,3 +46,4 @@ INFO:
     Common device:
         Instance, PhysicalDevice, Surface, Device(owner of Surface(until delete) and Swapchain)
 * add getters for Device: get PhysicalDevice, Instance(via PhysicalDevice), Surface for legacy mode
+* remove '_' prefix from methods and constructors and use explicit this! 

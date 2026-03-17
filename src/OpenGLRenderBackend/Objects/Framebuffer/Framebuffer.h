@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/Framebuffer.h"
 
 namespace OpenGL
 {
-    class Framebuffer : public Render::Framebuffer, hrs::non_copyable, hrs::non_movable
+    class Framebuffer : public Render::Framebuffer, Core::NonCopyable, Core::NonMovable
     {
     public:
         Framebuffer(Device* _parent);

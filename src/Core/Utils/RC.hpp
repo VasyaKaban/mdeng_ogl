@@ -2,38 +2,38 @@
 
 #include <concepts>
 #include <cassert>
-#include "non_creatable.hpp"
+#include "NonCreatable.hpp"
 
-namespace hrs
+namespace Core
 {
-    class rc;
+    class RC;
 
     template<typename T>
-    class rc_ptr;
+    class RCPointer;
 
-    class rc : hrs::non_copyable, hrs::non_movable
+    class RC : NonCopyable, NonMovable
     {
         template<typename T>
-        friend class rc_ptr;
+        friend class RCPointer;
     public:
-        constexpr rc() noexcept
+        constexpr RC() noexcept
             : refs(0)
         {}
 
-        ~rc() = default;
+        ~RC() = default;
     private:
-        constexpr void inc_refs() noexcept
+        constexpr void IncrementRefs() noexcept
         {
             refs++;
         }
 
-        constexpr void dec_refs() noexcept
+        constexpr void DecrementRefs() noexcept
         {
             assert(refs != 0);
             refs--;
         }
 
-        constexpr bool is_alive() const noexcept
+        constexpr bool IsAlive() const noexcept
         {
             return refs != 0;
         }
@@ -42,74 +42,76 @@ namespace hrs
     };
 
     template<typename T>
-    class rc_ptr
+    class RCPointer
     {
         template<typename U>
-        friend class rc_ptr;
+        friend class RCPointer;
     public:
-        constexpr rc_ptr() noexcept
-        requires std::is_base_of_v<rc, T>
+        constexpr RCPointer() noexcept
+        requires std::is_base_of_v<RC, T>
             : ptr(nullptr)
         {}
 
-        constexpr rc_ptr(T* p) noexcept
-        requires std::is_base_of_v<rc, T>
+        constexpr RCPointer(T* p) noexcept
+        requires std::is_base_of_v<RC, T>
             : ptr(p)
         {
             if(ptr)
-                ptr->rc::inc_refs();
+                ptr->RC::IncrementRefs();
         }
 
-        constexpr ~rc_ptr()
+        constexpr ~RCPointer()
         {
-            drop();
+            Drop();
         }
 
-        constexpr rc_ptr(const rc_ptr& p) noexcept
+        constexpr RCPointer(const RCPointer& p) noexcept
             : ptr(p.ptr)
         {
             if(ptr)
-                ptr->rc::inc_refs();
+                ptr->rc::IncrementRefs();
         }
 
-        constexpr rc_ptr& operator=(const rc_ptr& p) noexcept
+        constexpr RCPointer& operator=(const RCPointer& p) noexcept
         {
-            drop();
+            Drop();
+
             ptr = p.ptr;
             if(ptr)
-                ptr->rc::inc_refs();
+                ptr->rc::IncrementRefs();
 
             return *this;
         }
 
         template<typename U>
         requires std::convertible_to<U*, T*>
-        constexpr rc_ptr(const rc_ptr<U>& p) noexcept
+        constexpr RCPointer(const RCPointer<U>& p) noexcept
             : ptr(p.ptr)
         {
             if(ptr)
-                ptr->rc::inc_refs();
+                ptr->rc::IncrementRefs();
         }
 
         template<typename U>
         requires std::convertible_to<U*, T*>
-        constexpr rc_ptr& operator=(const rc_ptr<U>& p) noexcept
+        constexpr RCPointer& operator=(const RCPointer<U>& p) noexcept
         {
-            drop();
+            Drop();
+
             ptr = p.ptr;
             if(ptr)
-                ptr->rc::inc_refs();
+                ptr->rc::IncrementRefs();
 
             return *this;
         }
 
-        constexpr rc_ptr(rc_ptr&& p) noexcept
+        constexpr RCPointer(RCPointer&& p) noexcept
             : ptr(std::exchange(p.ptr, nullptr))
         {}
 
-        constexpr rc_ptr& operator=(rc_ptr&& p) noexcept
+        constexpr RCPointer& operator=(RCPointer&& p) noexcept
         {
-            drop();
+            Drop();
 
             ptr = std::exchange(p.ptr, nullptr);
 
@@ -118,38 +120,39 @@ namespace hrs
 
         template<typename U>
         requires std::convertible_to<U*, T*>
-        constexpr rc_ptr(rc_ptr<U>&& p) noexcept
+        constexpr RCPointer(RCPointer<U>&& p) noexcept
             : ptr(std::exchange(p.ptr, nullptr))
         {}
 
         template<typename U>
         requires std::convertible_to<U*, T*>
-        constexpr rc_ptr& operator=(rc_ptr<U>&& p) noexcept
+        constexpr RCPointer& operator=(RCPointer<U>&& p) noexcept
         {
-            drop();
+            Drop();
 
             ptr = std::exchange(p.ptr, nullptr);
 
             return *this;
         }
 
-        constexpr void reset(T* new_ptr = nullptr) noexcept
+        constexpr void Reset(T* new_ptr = nullptr) noexcept
         {
-            drop();
+            Drop();
+
             ptr = new_ptr;
             if(ptr)
-                ptr->rc::inc_refs();
+                ptr->rc::IncrementRefs();
         }
 
-        constexpr std::size_t get_refs() const noexcept
+        constexpr std::size_t GetRefCount() const noexcept
         {
-            if(!*this)
+            if(ptr == nullptr)
                 return 0;
 
             return ptr->rc::refs;
         }
 
-        constexpr T* get() const noexcept
+        constexpr T* Get() const noexcept
         {
             return ptr;
         }
@@ -169,12 +172,12 @@ namespace hrs
             return ptr;
         }
     private:
-        constexpr void drop() noexcept
+        constexpr void Drop() noexcept
         {
-            if(*this)
+            if(ptr != nullptr)
             {
-                ptr->rc::dec_refs();
-                if(!ptr->rc::is_alive())
+                ptr->rc::DecrementRefs();
+                if(!ptr->rc::IsAlive())
                     delete ptr;
             }
         }

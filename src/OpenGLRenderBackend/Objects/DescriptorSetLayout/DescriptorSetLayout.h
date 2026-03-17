@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/DescriptorSetLayout.h"
 
@@ -14,8 +14,8 @@ namespace OpenGL
     };
 
     class DescriptorSetLayout : public Render::DescriptorSetLayout,
-                                hrs::non_copyable,
-                                hrs::non_movable
+                                Core::NonCopyable,
+                                Core::NonMovable
     {
     public:
         DescriptorSetLayout(Device* _parent, const Render::DescriptorSetLayoutInfo& info);

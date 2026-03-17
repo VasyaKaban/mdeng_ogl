@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/Fence.h"
 
 namespace OpenGL
 {
-    class Fence : public Render::Fence, hrs::non_copyable, hrs::non_movable
+    class Fence : public Render::Fence, Core::NonCopyable, Core::NonMovable
     {
     public:
         Fence(Device* _parent) noexcept;

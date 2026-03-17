@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "Core/Render/Objects/Device.h"
 #include "../../Render.h"
 
 namespace OpenGL
 {
-    class Device : public Render::Device, hrs::non_copyable, hrs::non_movable
+    class Device : public Render::Device, Core::NonCopyable, Core::NonMovable
     {
     public:
         Device(PhysicalDevice* _parent, const Render::DeviceInfo& info);

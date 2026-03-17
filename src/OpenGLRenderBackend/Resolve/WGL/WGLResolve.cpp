@@ -1,6 +1,6 @@
 #include "WGLResolve.h"
 #include "glad/wgl.h"
-#include "hrs/scoped_call.hpp"
+#include "Core/Utils/ScopedCall.hpp"
 #include <stdexcept>
 #include "../../Objects/Instance/Instance.h"
 #include "../../WGL.h"
@@ -25,7 +25,7 @@ namespace OpenGL
 
                 HDC _dc = nullptr;
                 HGLRC _glrc = nullptr;
-                hrs::scoped_call cleanup = [&_dc, &_glrc, handle]()
+                Core::ScopedCall cleanup = [&_dc, &_glrc, handle]()
                 {
                     if(_glrc)
                         wglDeleteContext(_glrc);

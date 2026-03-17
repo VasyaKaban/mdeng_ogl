@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hrs/non_creatable.hpp"
+#include "Core/Utils/NonCreatable.hpp"
 #include "../../Render.h"
 #include "Core/Render/Objects/Buffer.h"
 
 namespace OpenGL
 {
-    class Buffer : public Render::Buffer, hrs::non_copyable, hrs::non_movable
+    class Buffer : public Render::Buffer, Core::NonCopyable, Core::NonMovable
     {
     public:
         Buffer(Device* _parent,

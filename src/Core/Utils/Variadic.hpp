@@ -1,12 +1,11 @@
 #pragma once
 
 #include <cstddef>
-#include <type_traits>
 #include <utility>
 
-namespace hrs
+namespace Core
 {
-    namespace detail
+    namespace Detail
     {
         template<std::size_t N, typename T, typename... Args>
         requires(N < sizeof...(Args) + 1)
@@ -27,28 +26,21 @@ namespace hrs
     };
 
     template<typename... Args>
-    struct variadic
+    struct Variadic
     {
         constexpr static std::size_t COUNT = sizeof...(Args);
 
         template<std::size_t Index>
         requires(Index < COUNT)
-        struct nth
-        {
-            using type = detail::nth<Index, Args...>::type;
-        };
-
-        template<std::size_t Index>
-        requires(Index < COUNT)
-        using nth_t = nth<Index>::type;
+        using Nth = Detail::nth<Index, Args...>::type;
     };
 
     template<std::size_t Index, typename A, typename... Args>
-    constexpr auto& nth_argument(A&& arg, Args&&... args) noexcept
+    constexpr auto& NthArgument(A&& arg, Args&&... args) noexcept
     {
         if constexpr(Index == 0)
             return arg;
         else
-            return nth_argument<Index - 1>(std::forward<Args>(args)...);
+            return NthArgument<Index - 1>(std::forward<Args>(args)...);
     }
 };

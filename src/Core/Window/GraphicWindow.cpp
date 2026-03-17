@@ -1,6 +1,6 @@
 #include "GraphicWindow.h"
 #include <stdexcept>
-#include "hrs/scoped_call.hpp"
+#include "Core/Utils/ScopedCall.hpp"
 #include <SDL2/SDL_syswm.h>
 
 namespace Core
@@ -17,7 +17,7 @@ namespace Core
         if(!_handle)
             throw std::runtime_error(SDL_GetError());
 
-        hrs::scoped_call cleanup = [_handle]()
+        Core::ScopedCall cleanup = [_handle]()
         {
             SDL_DestroyWindow(_handle);
         };
@@ -37,7 +37,7 @@ namespace Core
                                            .instance = sys_wm_info.info.win.hinstance};
 #endif
 
-        cleanup.drop();
+        cleanup.Drop();
 
         handle = _handle;
         id = SDL_GetWindowID(_handle);
