@@ -25,6 +25,7 @@ namespace OpenGL
 
         virtual void Recreate(const Render::SwapchainInfo& info) override;
 
+        virtual Render::Surface* GetSurface() const noexcept override;
         virtual Render::Device* GetParent() const noexcept override;
     private:
         Device* parent;

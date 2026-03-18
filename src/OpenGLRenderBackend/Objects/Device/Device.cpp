@@ -20,28 +20,21 @@
 
 namespace OpenGL
 {
-    Device::Device(PhysicalDevice* _parent, const Render::DeviceInfo& info)
-        : parent(_parent),
-          surface(static_cast<Surface*>(info.surface)),
-          swapchain(new Swapchain(this, surface, info.swapchain_info)),
-          enabled_features(info.enabled_features),
-          default_queue(new Queue(this))
+    Device::Device(const Render::LegacyDeviceInfo& info)
+        : surface(static_cast<Surface*>(info.surface))
     {
         Surface* impl_surface = static_cast<Surface*>(info.surface);
 
-        const SurfaceConnectInfo connection_info = {
-            .physical_device = parent,
-            .format = info.swapchain_info.format,
-            .robust_buffer_access_enabled = info.enabled_features.robust_buffer_access,
-        };
-
-        impl_surface->Connect(connection_info); //we need to make current context
-
-        swapchain->Recreate(info.swapchain_info);
-
-        int glad_ver = gladLoadGLContext(&loader, parent->GetProcAddressResolver());
+        int glad_ver = gladLoadGLContext(&loader, impl_surface->GetProcAddressResolver());
         if(glad_ver == 0)
             throw std::runtime_error("Failed to load GLAD");
+
+        physical_device.reset(
+            new PhysicalDevice(static_cast<Instance*>(info.surface->GetParent()), this));
+        swapchain.reset(new Swapchain(this, surface, info.swapchain_info));
+        default_queue.reset(new Queue(this));
+
+        swapchain->Recreate(info.swapchain_info);
 
         loader.Enable(GL_TEXTURE_CUBE_MAP_SEAMLESS); //use only seamless cubemaps
         loader.ClipControl(/*GL_UPPER_LEFT*/ GL_LOWER_LEFT,
@@ -51,23 +44,18 @@ namespace OpenGL
         loader.Enable(GL_FRAMEBUFFER_SRGB);
         loader.Enable(GL_LINE_SMOOTH);
 
-        Instance* impl_instance = static_cast<Instance*>(parent->GetParent());
+        Instance* impl_instance = static_cast<Instance*>(impl_surface->GetParent());
         if(impl_instance->GetEnabledFeatures().validation_layer ||
            impl_instance->GetEnabledFeatures().debug_messenger)
         {
             EnableDebugMessenger(loader);
-            SetDebugMessenger(impl_instance->GetDebugMessengerInfo());
+            OpenGL::SetDebugMessenger(loader, impl_instance->GetDebugMessengerInfo());
         }
     }
 
     Device::~Device()
     {
         WaitIdle();
-
-        delete swapchain;
-        delete default_queue;
-
-        parent->DeleteDeviceNotify();
     }
 
     Render::Queue* Device::GetQueue(const Render::QueueInfo& info)
@@ -76,7 +64,7 @@ namespace OpenGL
             throw std::runtime_error("Bad queue family index or queue index");
 
         //just return 'empty' queue -> we don't have a 'Queue' concept in opengl! Only implicit queue exists
-        return default_queue;
+        return default_queue.get();
     }
 
     void Device::WaitIdle() noexcept
@@ -86,7 +74,7 @@ namespace OpenGL
 
     Render::Swapchain* Device::GetSwapchain() const noexcept
     {
-        return swapchain;
+        return swapchain.get();
     }
 
     Render::Buffer* Device::CreateBuffer(const Render::BufferInfo& info,
@@ -204,18 +192,11 @@ namespace OpenGL
 
     Render::PhysicalDevice* Device::GetParent() const noexcept
     {
-        return parent;
+        return physical_device.get();
     }
 
     const GladGLContext& Device::GetLoader() const noexcept
     {
         return loader;
-    }
-
-    void Device::SetDebugMessenger(const Render::DebugMessengerInfo& info)
-    {
-        surface->MakeCurrent();
-
-        OpenGL::SetDebugMessenger(loader, info);
     }
 };

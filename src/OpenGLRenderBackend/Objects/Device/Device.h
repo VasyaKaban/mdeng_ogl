@@ -9,7 +9,7 @@ namespace OpenGL
     class Device : public Render::Device, Core::NonCopyable, Core::NonMovable
     {
     public:
-        Device(PhysicalDevice* _parent, const Render::DeviceInfo& info);
+        Device(const Render::LegacyDeviceInfo& info);
         virtual ~Device() override;
 
         virtual Render::Queue* GetQueue(const Render::QueueInfo& info) override;
@@ -55,15 +55,13 @@ namespace OpenGL
         virtual Render::PhysicalDevice* GetParent() const noexcept override;
 
         const GladGLContext& GetLoader() const noexcept;
-
-        void SetDebugMessenger(const Render::DebugMessengerInfo& info);
     private:
-        PhysicalDevice* parent;
         Surface* surface;
-        Swapchain* swapchain;
+        std::unique_ptr<PhysicalDevice> physical_device;
+        std::unique_ptr<Swapchain> swapchain;
         GladGLContext loader;
         Render::PhysicalDeviceFeatures enabled_features;
 
-        Queue* default_queue;
+        std::unique_ptr<Queue> default_queue;
     };
 };

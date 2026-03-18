@@ -58,6 +58,11 @@ namespace OpenGL
         surface->SetSwapInterval(info.present_mode);
     }
 
+    Render::Surface* Swapchain::GetSurface() const noexcept
+    {
+        return surface;
+    }
+
     Render::Device* Swapchain::GetParent() const noexcept
     {
         return parent;

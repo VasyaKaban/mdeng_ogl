@@ -15,7 +15,7 @@ namespace Render
         virtual bool GetSurfaceSupport(Surface* surface,
                                        std::uint32_t queue_family_index) const noexcept = 0;
 
-        virtual SurfaceCapabilities GetSurfaceCapablities(Surface* surface) const noexcept = 0;
+        virtual SurfaceCapabilities GetSurfaceCapablities(Surface* surface) const = 0;
 
         virtual std::optional<BufferFormatProperties>
         GetBufferFormatProperties(const BufferFormatInfo& info) const = 0;

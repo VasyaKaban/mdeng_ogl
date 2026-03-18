@@ -2199,7 +2199,7 @@ namespace OpenGL
         loader.DebugMessageCallback(debug_messenger_callback, &info.callback);
     }
 
-    std::optional<Render::Format> DecodeSurfaceFormat(const GladGLContext& loader,
+    std::optional<Render::Format> DecodeSurfaceFormat(/*const GladGLContext& loader,*/
                                                       const SurfaceConfig& config)
     {
         std::optional<Render::Format> out;
@@ -2396,7 +2396,7 @@ namespace OpenGL
                 out = Render::Format::R32G32B32A32_SFLOAT;
         }
 
-        if(out.has_value())
+        /*if(out.has_value())
         {
             GLenum inner_type = DecodeImageType(Render::ImageType::Image2D, false, false, {});
             auto native_format_opt = FormatToNative(*out);
@@ -2417,7 +2417,7 @@ namespace OpenGL
                 if(supported == GL_FALSE)
                     out = std::nullopt;
             }
-        }
+        }*/
 
         return out;
 

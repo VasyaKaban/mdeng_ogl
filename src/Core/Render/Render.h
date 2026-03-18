@@ -10,6 +10,11 @@
 #include "Core/API.h"
 #include "Core/Utils/System.h"
 
+#ifdef linux
+#    include <xcb/xcb.h>
+#    include <wayland-client-core.h>
+#endif
+
 namespace Render
 {
     class Buffer;
@@ -1674,6 +1679,11 @@ namespace Render
         bool index_type_uint8;
     };
 
+    struct LegacyPhysicalDeviceFeatures
+    {
+        bool robust_buffer_access;
+    };
+
     enum class PhysicalDeviceType
     {
         Other,
@@ -1724,17 +1734,19 @@ namespace Render
 
     enum class SurfaceBackend
     {
+#ifdef _WIN32
         Win32,
-        XLib,
+#elif defined(linux)
         Wayland,
         XCB
+#endif
     };
 
     enum class SurfaceExtentMode
     {
         DoNotCare, //value of current_extent should not be used for user purposes(OpenGL)
         Current, //value of current_extent should be used for user purposes(WSI: WinAPI, XLib)
-        Undefined, //value of current_extent is should not be used for user purposes but user should set this value in SwapchainInfo(WSI: Wayland)
+        Undefined, //value of current_extent should not be used for user purposes but user should set this value in SwapchainInfo(WSI: Wayland)
     };
 
     struct SurfaceCapabilities
@@ -1798,6 +1810,28 @@ namespace Render
         OpenGL
     };
 
+    /*
+    StrictMode:
+    Instance(VkInstance):
+        Surface(VkSurface)
+        PhysicalDevice(VkPhysicalDevice):
+            Device(VkDevice):
+                Swapchain(VkSwapchain)
+
+    LegacyMode:
+        Instance(dummy WGL):
+            Surface(HWND+ DC + GLRC):
+                Device(Loader):
+                    PhysicalDevice(Loader)
+                    Swapchain(none -> as part of Surface interface)
+    
+    */
+    enum class ContextMode
+    {
+        Strict,
+        Legacy
+    };
+
     struct InstanceFeatures
     {
         bool validation_layer;
@@ -1812,6 +1846,7 @@ namespace Render
         std::uint32_t engine_version;
         InstanceFeatures enabled_features;
         SurfaceBackend surface_backend;
+        DebugMessengerInfo debug_messenger_info;
     };
 
     struct SwapchainInfo
@@ -1831,11 +1866,30 @@ namespace Render
         std::uint64_t memory_allocation_size_hint;
     };
 
+    struct LegacyDeviceInfo
+    {
+        LegacyPhysicalDeviceFeatures enabled_features;
+        Surface* surface;
+        SwapchainInfo swapchain_info;
+    };
+
 #ifdef _WIN32
     struct Win32SurfaceInfo
     {
         HWND window;
         HINSTANCE instance;
+    };
+#elif defined(linux)
+    struct XCBSurfaceInfo
+    {
+        xcb_connection_t* connection;
+        xcb_window_t window;
+    };
+
+    struct WaylandSurfaceInfo
+    {
+        struct wl_display* display;
+        struct wl_surface* surface;
     };
 #endif
 

@@ -20,24 +20,15 @@ namespace OpenGL
     class Image;
     class ImageView;
     class Instance;
+    class PhysicalDevice;
     class Pipeline;
     class Queue;
     class RenderPass;
     class Sampler;
     class Semaphore;
     class Shader;
+    class Surface;
     class Swapchain;
-
-#ifdef _WIN32
-
-    class WGLPhysicalDevice;
-    using PhysicalDevice = WGLPhysicalDevice;
-
-    class WGLSurface;
-    using Surface = WGLSurface;
-#else
-#    error "Only WIN32 is supported"
-#endif
 
     using GLHandle = GLuint;
 
@@ -88,13 +79,6 @@ namespace OpenGL
          Render::MemoryTypePropertyFlagBits::HostVisible |
              Render::MemoryTypePropertyFlagBits::HostCoherent |
              Render::MemoryTypePropertyFlagBits::HostCached}};
-
-    struct SurfaceConnectInfo
-    {
-        PhysicalDevice* physical_device;
-        Render::Format format;
-        bool robust_buffer_access_enabled;
-    };
 
     //shared across all OpenGL implementations
     constexpr inline std::uint32_t SWAPCHAIN_IMAGE_COUNT = 1;
@@ -244,7 +228,7 @@ namespace OpenGL
         bool is_float: 1;
     };
 
-    std::optional<Render::Format> DecodeSurfaceFormat(const GladGLContext& loader,
+    std::optional<Render::Format> DecodeSurfaceFormat(/*const GladGLContext& loader,*/
                                                       const SurfaceConfig& config);
 
     Render::PhysicalDeviceProperties GetPhysicalDeviceProperties(const GladGLContext& loader,

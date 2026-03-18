@@ -1,11 +1,25 @@
 #pragma once
 
-#ifdef _WIN32
-#    include "WGL/WGLResolve.h"
+#include "Core/Render/Resolve.h"
+
 namespace OpenGL
 {
-    using Resolve = WGLResolve;
+    class Resolve : public Render::Resolve
+    {
+    public:
+        Resolve();
+
+        virtual ~Resolve() override;
+
+        virtual void Init() override;
+
+        virtual const Render::InstanceFeatures& GetInstanceFeatures() const noexcept override;
+        virtual Render::Backend GetBackend() const noexcept override;
+        virtual const std::span<const Render::SurfaceBackend>
+        GetAvailableSurfaceBackends() const override;
+
+        virtual Render::Instance* CreateInstance(const Render::InstanceInfo& info) override;
+    private:
+        Render::InstanceFeatures instance_features;
+    };
 };
-#else
-#    error "Only WIN32 is supported"
-#endif

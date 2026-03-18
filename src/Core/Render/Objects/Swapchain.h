@@ -21,6 +21,7 @@ namespace Render
 
         virtual void Recreate(const SwapchainInfo& info) = 0;
 
+        virtual Surface* GetSurface() const noexcept = 0;
         virtual Device* GetParent() const noexcept = 0;
     };
 };

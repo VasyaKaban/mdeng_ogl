@@ -1,7 +1,7 @@
 #include "Instance.h"
 #include "Core/Render/Objects/PhysicalDevice.h"
 #include "../Surface/Surface.h"
-#include "../PhysicalDevice/PhysicalDevice.h"
+#include "../Device/Device.h"
 #include <format>
 #include <iostream>
 
@@ -57,9 +57,13 @@ namespace OpenGL
     Instance::Instance(const Render::InstanceInfo& info)
         : enabled_features(info.enabled_features)
     {
-        physical_devices.push_back(new PhysicalDevice(this)); //in OGL we have only one device
-
-        if(enabled_features.validation_layer)
+        if(enabled_features.debug_messenger)
+        {
+            debug_messenger_info = info.debug_messenger_info;
+            if(!debug_messenger_info.callback)
+                debug_messenger_info.callback = default_debug_messenger;
+        }
+        else if(enabled_features.validation_layer)
         {
             debug_messenger_info = Render::DebugMessengerInfo{
                 .severities = Render::DebugMessengerSeverityFlagBits::Info |
@@ -74,19 +78,24 @@ namespace OpenGL
     }
 
     Instance::~Instance()
+    {}
+
+    Render::ContextMode Instance::GetContextMode() const noexcept
     {
-        for(auto& dev: physical_devices)
-            delete dev;
+        return Render::ContextMode::Legacy;
+    }
+
+    Render::Device* Instance::CreateLegacyDevice(const Render::LegacyDeviceInfo& info)
+    {
+        Surface* impl_surface = static_cast<Surface*>(info.surface);
+        impl_surface->Connect(info);
+
+        return new Device(info);
     }
 
     std::vector<Render::PhysicalDevice*> Instance::GetPhysicalDevices() const
     {
-        std::vector<Render::PhysicalDevice*> out;
-        out.reserve(physical_devices.size());
-        for(auto& dev: physical_devices)
-            out.push_back(dev);
-
-        return out;
+        return {};
     }
 
 #ifdef _WIN32
@@ -94,18 +103,17 @@ namespace OpenGL
     {
         return new Surface(this, info);
     }
-#endif
-
-    void Instance::SetDebugMessenger(const Render::DebugMessengerInfo& info)
+#elif defined(linux)
+    virtual Surface* Instance::CreateSurface(const XCBSurfaceInfo& info)
     {
-        if(!enabled_features.debug_messenger)
-            throw std::runtime_error("Debug messenger is not supported");
-
-        debug_messenger_info = info;
-
-        for(auto& dev: physical_devices)
-            static_cast<PhysicalDevice*>(dev)->SetDebugMessenger(info);
+#    error TODO!
     }
+
+    virtual Surface* Instance::CreateSurface(const WaylandSurfaceInfo& info)
+    {
+#    error TODO!
+    }
+#endif
 
     const Render::InstanceFeatures& Instance::GetEnabledFeatures() const noexcept
     {
