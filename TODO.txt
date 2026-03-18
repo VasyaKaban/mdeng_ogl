@@ -41,3 +41,20 @@ INFO:
     Window as Abs class
     WindowSubsystem as Abs class
     Backends: Win32, X11(maybe XCB + libxkbcommon), Wayland(with libxkbcommon)
+    ------------------
+    WindowSubsystem* CreateWindowSubsystem(Type type);
+    WindowSubsystem.Destroy() -> dtor
+    WindowSubsystem.PollEvents();
+    Type WindowSubsystem.GetType()
+    Window* WindowSubsystem.CreateWindow(WindowInfo);
+    Window.SetTitle(std::string_view title)
+    std::string Window.GetTitle()
+    Window.Reszie(WindowSize size)
+    WindowSize Window.GetSize()
+    float Window.GetScaleFactor()//DPI
+    Window.SetScreenState(ScreenState)
+    ScreenState Window.GetScreenState()
+    Window.Connect(...event)
+    SurfaceInfoVariant = Window.GetSurface()
+    Window.WarpMouse???
+
