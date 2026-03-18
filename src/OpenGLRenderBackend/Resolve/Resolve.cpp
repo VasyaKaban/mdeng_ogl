@@ -4,7 +4,6 @@
 #include "Core/Utils/ScopedCall.hpp"
 #include <stdexcept>
 #include "../Objects/Instance/Instance.h"
-#include "../WGL.h"
 
 namespace OpenGL
 {
@@ -49,10 +48,45 @@ namespace OpenGL
                 };
 
                 _dc = GetDC(handle);
-                auto ex_opt = SetDefaultPixelFormat(_dc);
-                if(ex_opt)
+
+                PIXELFORMATDESCRIPTOR pfd = {.nSize = sizeof(PIXELFORMATDESCRIPTOR),
+                                             .nVersion = 1,
+                                             .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL |
+                                                        PFD_DOUBLEBUFFER,
+                                             .iPixelType = PFD_TYPE_RGBA,
+                                             .cColorBits = 32,
+                                             .cRedBits = 0,
+                                             .cRedShift = 0,
+                                             .cGreenBits = 0,
+                                             .cGreenShift = 0,
+                                             .cBlueBits = 0,
+                                             .cBlueShift = 0,
+                                             .cAlphaBits = 0,
+                                             .cAlphaShift = 0,
+                                             .cAccumBits = 0,
+                                             .cAccumRedBits = 0,
+                                             .cAccumGreenBits = 0,
+                                             .cAccumBlueBits = 0,
+                                             .cAccumAlphaBits = 0,
+                                             .cDepthBits = 0,
+                                             .cStencilBits = 0,
+                                             .cAuxBuffers = 0,
+                                             .iLayerType = PFD_MAIN_PLANE,
+                                             .bReserved = 0,
+                                             .dwLayerMask = 0,
+                                             .dwVisibleMask = 0,
+                                             .dwDamageMask = 0};
+
+                int format_index = ChoosePixelFormat(_dc, &pfd);
+                if(format_index == 0)
                 {
-                    *window_param_opt = std::move(*ex_opt);
+                    *window_param_opt = Core::System::GetLastError();
+                    return -1;
+                }
+
+                if(SetPixelFormat(_dc, format_index, &pfd) == FALSE)
+                {
+                    *window_param_opt = Core::System::GetLastError();
                     return -1;
                 }
 

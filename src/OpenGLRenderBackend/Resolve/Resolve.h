@@ -4,7 +4,7 @@
 
 namespace OpenGL
 {
-    class Resolve : public Render::Resolve
+    class Resolve final : public Render::Resolve
     {
     public:
         Resolve();

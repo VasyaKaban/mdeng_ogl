@@ -5,7 +5,7 @@
 
 namespace OpenGL
 {
-    class Surface : public Render::Surface
+    class Surface final : public Render::Surface
     {
     public:
 #ifdef _WIN32

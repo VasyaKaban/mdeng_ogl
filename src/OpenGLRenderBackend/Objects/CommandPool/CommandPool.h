@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class CommandPool : public Render::CommandPool, Core::NonCopyable, Core::NonMovable
+    class CommandPool final : public Render::CommandPool, Core::NonCopyable, Core::NonMovable
     {
     public:
         CommandPool(Device* _parent, const Render::CommandPoolInfo& info) noexcept;

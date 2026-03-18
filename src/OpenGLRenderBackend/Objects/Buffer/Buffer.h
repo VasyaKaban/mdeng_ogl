@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Buffer : public Render::Buffer, Core::NonCopyable, Core::NonMovable
+    class Buffer final : public Render::Buffer, Core::NonCopyable, Core::NonMovable
     {
     public:
         Buffer(Device* _parent,

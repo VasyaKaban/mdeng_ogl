@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Swapchain : public Render::Swapchain, Core::NonCopyable, Core::NonMovable
+    class Swapchain final : public Render::Swapchain, Core::NonCopyable, Core::NonMovable
     {
     public:
         Swapchain(Device* _parent, Surface* _surface, const Render::SwapchainInfo& info);

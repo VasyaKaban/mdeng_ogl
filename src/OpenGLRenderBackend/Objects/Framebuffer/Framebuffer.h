@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Framebuffer : public Render::Framebuffer, Core::NonCopyable, Core::NonMovable
+    class Framebuffer final : public Render::Framebuffer, Core::NonCopyable, Core::NonMovable
     {
     public:
         Framebuffer(Device* _parent);

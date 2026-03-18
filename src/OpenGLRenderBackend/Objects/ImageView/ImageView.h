@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class ImageView : public Render::ImageView, Core::NonCopyable, Core::NonMovable
+    class ImageView final : public Render::ImageView, Core::NonCopyable, Core::NonMovable
     {
     public:
         ImageView(Device* _parent, const Render::ImageViewInfo& info);

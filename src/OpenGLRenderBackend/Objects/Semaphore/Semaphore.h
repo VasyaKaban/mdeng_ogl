@@ -8,7 +8,7 @@
 
 namespace OpenGL
 {
-    class Semaphore : public Render::Semaphore, Core::NonCopyable, Core::NonMovable
+    class Semaphore final : public Render::Semaphore, Core::NonCopyable, Core::NonMovable
     {
         friend class Swapchain;
         friend class Queue;

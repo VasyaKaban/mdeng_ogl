@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class PhysicalDevice : public Render::PhysicalDevice
+    class PhysicalDevice final : public Render::PhysicalDevice
     {
     public:
         PhysicalDevice(Instance* _parent, Device* _device);

@@ -7,7 +7,7 @@
 
 namespace OpenGL
 {
-    class Pipeline : public Render::Pipeline, Core::NonCopyable, Core::NonMovable
+    class Pipeline final : public Render::Pipeline, Core::NonCopyable, Core::NonMovable
     {
     public:
         Pipeline(Device* _parent, const Render::GraphicsPipelineInfo& info);

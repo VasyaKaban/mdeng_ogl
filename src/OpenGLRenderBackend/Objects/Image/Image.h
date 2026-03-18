@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Image : public Render::Image, Core::NonCopyable, Core::NonMovable
+    class Image final : public Render::Image, Core::NonCopyable, Core::NonMovable
     {
     public:
         Image(Device* _parent, const Render::ImageInfo& info);

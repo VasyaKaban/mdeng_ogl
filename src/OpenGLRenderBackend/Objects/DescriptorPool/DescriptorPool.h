@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class DescriptorPool : public Render::DescriptorPool, Core::NonCopyable, Core::NonMovable
+    class DescriptorPool final : public Render::DescriptorPool, Core::NonCopyable, Core::NonMovable
     {
     public:
         DescriptorPool(Device* _parent, const Render::DescriptorPoolInfo& info);

@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class BufferView : public Render::BufferView, Core::NonCopyable, Core::NonMovable
+    class BufferView final : public Render::BufferView, Core::NonCopyable, Core::NonMovable
     {
     public:
         BufferView(Device* _parent, const Render::BufferViewInfo& info);

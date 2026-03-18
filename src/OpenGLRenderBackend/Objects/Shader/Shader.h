@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Shader : public Render::Shader, Core::NonCopyable, Core::NonMovable
+    class Shader final : public Render::Shader, Core::NonCopyable, Core::NonMovable
     {
     public:
         Shader(Device* _parent, const Render::ShaderInfo& info);

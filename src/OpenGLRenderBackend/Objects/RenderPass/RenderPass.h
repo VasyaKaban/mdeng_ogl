@@ -8,7 +8,7 @@
 
 namespace OpenGL
 {
-    class RenderPass : public Render::RenderPass, Core::NonCopyable, Core::NonMovable
+    class RenderPass final : public Render::RenderPass, Core::NonCopyable, Core::NonMovable
     {
     public:
         RenderPass(Device* _parent, const Render::RenderPassInfo& info);

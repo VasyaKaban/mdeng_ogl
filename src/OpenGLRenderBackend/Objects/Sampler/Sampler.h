@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Sampler : public Render::Sampler, Core::NonCopyable, Core::NonMovable
+    class Sampler final : public Render::Sampler, Core::NonCopyable, Core::NonMovable
     {
     public:
         Sampler(Device* _parent, const Render::SamplerInfo& info);

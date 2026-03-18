@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Queue : public Render::Queue, Core::NonCopyable, Core::NonMovable
+    class Queue final : public Render::Queue, Core::NonCopyable, Core::NonMovable
     {
     public:
         Queue(Device* _parent) noexcept;

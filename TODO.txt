@@ -36,8 +36,6 @@ INFO:
 * dllexport/dllimport for linux(mostly for templates): use extern template?
 * max_image_array_layers for surface capabilities and swapchain
 * change enum to enum class + use template operator|
-* final specifier in all virtual classes
-* add getters for Device: get PhysicalDevice, Instance(via PhysicalDevice), Surface for legacy mode
 * remove '_' prefix from methods and constructors and use explicit this! 
 * WindowSubsystem and Window classes:
     Window as Abs class

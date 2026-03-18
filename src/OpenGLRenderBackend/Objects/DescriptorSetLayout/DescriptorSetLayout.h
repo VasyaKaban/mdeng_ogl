@@ -13,9 +13,9 @@ namespace OpenGL
             allocation_offset; //offset within byte allocation from DescriptorPool(span in DescriptroSet)
     };
 
-    class DescriptorSetLayout : public Render::DescriptorSetLayout,
-                                Core::NonCopyable,
-                                Core::NonMovable
+    class DescriptorSetLayout final : public Render::DescriptorSetLayout,
+                                      Core::NonCopyable,
+                                      Core::NonMovable
     {
     public:
         DescriptorSetLayout(Device* _parent, const Render::DescriptorSetLayoutInfo& info);

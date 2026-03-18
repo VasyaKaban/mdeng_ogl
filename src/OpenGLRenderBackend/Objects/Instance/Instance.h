@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Instance : public Render::Instance, Core::NonCopyable, Core::NonMovable
+    class Instance final : public Render::Instance, Core::NonCopyable, Core::NonMovable
     {
     public:
         Instance(const Render::InstanceInfo& info);

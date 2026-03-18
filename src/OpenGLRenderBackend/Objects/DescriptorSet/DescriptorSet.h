@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class DescriptorSet : public Render::DescriptorSet, Core::NonCopyable, Core::NonMovable
+    class DescriptorSet final : public Render::DescriptorSet, Core::NonCopyable, Core::NonMovable
     {
     public:
         DescriptorSet(Device* _parent,

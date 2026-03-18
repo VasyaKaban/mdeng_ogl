@@ -1,7 +1,6 @@
 #include "Surface.h"
 #include <map>
 #include "glad/wgl.h"
-#include "../../WGL.h"
 #include "Core/Utils/ScopedCall.hpp"
 #include "Core/Render/Format.h"
 
@@ -242,12 +241,38 @@ namespace OpenGL
         bool debug_messenger_enabled = parent->GetEnabledFeatures().validation_layer ||
                                        parent->GetEnabledFeatures().debug_messenger;
 
-        auto glrc_exp =
-            CreateContext(dc, debug_messenger_enabled, info.enabled_features.robust_buffer_access);
-        if(!glrc_exp.HasValue())
-            throw glrc_exp.Error();
+        int profile_attributes[] = {
+            WGL_CONTEXT_MAJOR_VERSION_ARB, //0
+            4, //1
+            WGL_CONTEXT_MINOR_VERSION_ARB, //2
+            5, //3
+            WGL_CONTEXT_FLAGS_ARB, //4
+            WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB |
+                (debug_messenger_enabled ? WGL_CONTEXT_DEBUG_BIT_ARB : 0) |
+                (info.enabled_features.robust_buffer_access ? WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB :
+                                                              0), //5
+            WGL_CONTEXT_PROFILE_MASK_ARB, //6
+            WGL_CONTEXT_CORE_PROFILE_BIT_ARB, //7
+            0, //8
+            0, //9
+            0, //10
+            0, //11
+        };
 
-        glrc = glrc_exp.Value();
+        std::size_t offset = 8;
+
+        if(!debug_messenger_enabled && GLAD_WGL_ARB_create_context_no_error)
+            profile_attributes[offset++] = WGL_CONTEXT_OPENGL_NO_ERROR_ARB;
+
+        if(GLAD_WGL_ARB_context_flush_control)
+        {
+            profile_attributes[offset++] = WGL_CONTEXT_RELEASE_BEHAVIOR_ARB;
+            profile_attributes[offset++] = WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB;
+        }
+
+        glrc = glad_wglCreateContextAttribsARB(dc, nullptr, profile_attributes);
+        if(!glrc)
+            throw Core::System::GetLastError();
 
         wglMakeCurrent(dc, glrc);
 #else

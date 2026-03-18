@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Fence : public Render::Fence, Core::NonCopyable, Core::NonMovable
+    class Fence final : public Render::Fence, Core::NonCopyable, Core::NonMovable
     {
     public:
         Fence(Device* _parent) noexcept;

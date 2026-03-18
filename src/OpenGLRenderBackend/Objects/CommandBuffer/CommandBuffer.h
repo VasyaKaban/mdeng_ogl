@@ -7,7 +7,7 @@
 namespace OpenGL
 {
     //imitation only!
-    class CommandBuffer : public Render::CommandBuffer, Core::NonCopyable, Core::NonMovable
+    class CommandBuffer final : public Render::CommandBuffer, Core::NonCopyable, Core::NonMovable
     {
     public:
         CommandBuffer(Device* _parent, CommandPool* _pool) noexcept;

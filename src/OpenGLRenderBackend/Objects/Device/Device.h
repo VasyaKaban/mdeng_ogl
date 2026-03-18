@@ -6,7 +6,7 @@
 
 namespace OpenGL
 {
-    class Device : public Render::Device, Core::NonCopyable, Core::NonMovable
+    class Device final : public Render::Device, Core::NonCopyable, Core::NonMovable
     {
     public:
         Device(const Render::LegacyDeviceInfo& info);
