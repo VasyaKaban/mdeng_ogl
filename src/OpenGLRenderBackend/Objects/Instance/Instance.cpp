@@ -108,11 +108,6 @@ namespace OpenGL
     {
 #    error TODO!
     }
-
-    virtual Surface* Instance::CreateSurface(const WaylandSurfaceInfo& info)
-    {
-#    error TODO!
-    }
 #endif
 
     const Render::InstanceFeatures& Instance::GetEnabledFeatures() const noexcept

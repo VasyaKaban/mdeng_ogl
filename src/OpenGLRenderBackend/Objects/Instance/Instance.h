@@ -22,7 +22,6 @@ namespace OpenGL
         virtual Render::Surface* CreateSurface(const Render::Win32SurfaceInfo& info) override;
 #elif defined(linux)
         virtual Surface* CreateSurface(const XCBSurfaceInfo& info) override;
-        virtual Surface* CreateSurface(const WaylandSurfaceInfo& info) override;
 #endif
 
         const Render::InstanceFeatures& GetEnabledFeatures() const noexcept;

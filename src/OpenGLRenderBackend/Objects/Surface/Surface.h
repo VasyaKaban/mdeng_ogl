@@ -12,7 +12,6 @@ namespace OpenGL
         Surface(Instance* _parent, const Render::Win32SurfaceInfo& _info);
 #elif defined(linux)
         Surface(Instance* _parent, const Render::XCBSurfaceInfo& _info);
-        Surface(Instance* _parent, const Render::Wayland32SurfaceInfo& _info);
 #endif
         virtual ~Surface() override;
 

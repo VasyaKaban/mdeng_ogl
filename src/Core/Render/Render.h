@@ -12,7 +12,6 @@
 
 #ifdef linux
 #    include <xcb/xcb.h>
-#    include <wayland-client-core.h>
 #endif
 
 namespace Render
@@ -1737,7 +1736,6 @@ namespace Render
 #ifdef _WIN32
         Win32,
 #elif defined(linux)
-        Wayland,
         XCB
 #endif
     };
@@ -1876,20 +1874,14 @@ namespace Render
 #ifdef _WIN32
     struct Win32SurfaceInfo
     {
-        HWND window;
         HINSTANCE instance;
+        HWND window;
     };
 #elif defined(linux)
     struct XCBSurfaceInfo
     {
         xcb_connection_t* connection;
         xcb_window_t window;
-    };
-
-    struct WaylandSurfaceInfo
-    {
-        struct wl_display* display;
-        struct wl_surface* surface;
     };
 #endif
 

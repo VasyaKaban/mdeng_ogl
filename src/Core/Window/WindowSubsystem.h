@@ -1,46 +1,38 @@
 #pragma once
 
-#include <memory>
-#include <map>
-#include "Core/Utils/NonCreatable.hpp"
-#include <SDL2/SDL_messagebox.h>
+#include <vector>
 #include "Core/API.h"
+#include "Window.h"
 
 namespace Core
 {
-    class GraphicWindow;
-    struct GraphicWindowInfo;
-
-    enum class MessageBoxType
+    enum class WindowSubsystemType
     {
-        Error = SDL_MESSAGEBOX_ERROR,
-        Warning = SDL_MESSAGEBOX_WARNING,
-        Info = SDL_MESSAGEBOX_INFORMATION
+#ifdef _WIN32
+        Win32 = 0
+#elif defined(linux)
+        XCB = 1
+#endif
     };
 
-    class CORE_API WindowSubsystem : Core::NonCopyable, Core::NonMovable
+    class CORE_API WindowSubsystem
     {
-        WindowSubsystem();
     public:
-        ~WindowSubsystem() = default;
+        virtual ~WindowSubsystem() = 0;
 
-        static WindowSubsystem* Init();
-        static WindowSubsystem* GetSubsystem() noexcept;
-        static void Close();
+        virtual void PollEvents() = 0;
 
-        void PollEvents();
+        virtual WindowSubsystemType GetType() const noexcept = 0;
 
-        GraphicWindow* CreateGraphicWindow(const GraphicWindowInfo& info);
-
-        GraphicWindow* GetGraphicWindow(std::uint32_t id) const noexcept;
-
-        static bool ShowMessageBox(const GraphicWindow* parent,
-                                   MessageBoxType type,
-                                   const char* title,
-                                   const char* message);
-    private:
-        static inline WindowSubsystem* subsystem = nullptr;
-
-        std::map<std::uint32_t, std::unique_ptr<GraphicWindow>> graphic_windows;
+        virtual Window* CreateWindow(const WindowInfo& info) = 0;
     };
+
+    struct WindowSubsystemInfo
+    {
+        WindowSubsystemType type;
+    };
+
+    CORE_API std::vector<WindowSubsystemType> GetAvailableWindowSubsystemTypes();
+
+    CORE_API WindowSubsystem* CreateWindowSubsystem(const WindowSubsystemInfo& info);
 };

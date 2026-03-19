@@ -1,181 +1,37 @@
 #include "WindowSubsystem.h"
-#include "GraphicWindow.h"
-#include <stdexcept>
+#ifdef _WIN32
+#    include "Win32/WindowSubsystem.h"
+#elif defined(linux)
+#    error TODO!
+#endif
 
 namespace Core
 {
-    WindowSubsystem::WindowSubsystem()
+    WindowSubsystem::~WindowSubsystem()
     {}
 
-    WindowSubsystem* WindowSubsystem::Init()
+    std::vector<WindowSubsystemType> GetAvailableWindowSubsystemTypes()
     {
-        if(subsystem)
-            return subsystem;
-
-        if(SDL_Init(SDL_INIT_EVENTS | SDL_INIT_VIDEO) != 0)
-            throw std::runtime_error(SDL_GetError());
-
-        subsystem = new WindowSubsystem;
-
-        return subsystem;
+#ifdef _WIN32
+        return {WindowSubsystemType::Win32};
+#elif defined(linux)
+        return {WindowSubsystemType::XCB};
+#endif
     }
 
-    WindowSubsystem* WindowSubsystem::GetSubsystem() noexcept
+    WindowSubsystem* CreateWindowSubsystem(const WindowSubsystemInfo& info)
     {
-        return subsystem;
-    }
+#ifdef _WIN32
+        if(info.type != WindowSubsystemType::Win32)
+            throw std::runtime_error("Bad window subsystem type. Only Win32 is supported");
 
-    void WindowSubsystem::Close()
-    {
-        if(subsystem)
-        {
-            delete subsystem;
-            SDL_Quit();
-        }
-    }
+        return new Win32::WindowSubsystem();
 
-    void WindowSubsystem::PollEvents()
-    {
-        SDL_Event event;
-        while(SDL_PollEvent(&event))
-        {
-            switch(event.type)
-            {
-                case SDL_WINDOWEVENT:
-                {
-                    SDL_WindowEvent& window_event = event.window;
-                    switch(window_event.event)
-                    {
-                        case SDL_WINDOWEVENT_CLOSE:
-                        {
-                            GraphicWindow* window = GetGraphicWindow(window_event.windowID);
-                            if(window)
-                            {
-                                const WindowCloseEvent event = {};
-                                window->Emit(event);
-                            }
-                        }
-                        break;
-                        case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        {
-                            GraphicWindow* window = GetGraphicWindow(window_event.windowID);
-                            if(window)
-                            {
-                                const WindowResizedEvent event = {
-                                    .resolution = WindowResolution{.width = window_event.data1,
-                                                                   .height = window_event.data2}};
+#elif defined(linux)
+        if(info.type != WindowSubsystemType::XCB)
+            throw std::runtime_error("Bad window subsystem type. Only Win32 is supported");
 
-                                window->Emit(event);
-                            }
-                        }
-                        break;
-                        case SDL_WINDOWEVENT_EXPOSED:
-                        {
-                            GraphicWindow* window = GetGraphicWindow(window_event.windowID);
-                            if(window)
-                            {
-                                const WindowExposedEvent event = {};
-                                window->Emit(event);
-                            }
-                        }
-                        break;
-                        case SDL_WINDOWEVENT_MOVED:
-                        {
-                            GraphicWindow* window = GetGraphicWindow(window_event.windowID);
-                            if(window)
-                            {
-                                const WindowMovedEvent event = {
-                                    .position = WindowPosition{.x = window_event.data1,
-                                                               .y = window_event.data2}};
-
-                                window->Emit(event);
-                            }
-                        }
-                        break;
-                    }
-                }
-                break;
-                case SDL_MOUSEMOTION:
-                {
-                    SDL_MouseMotionEvent& motion_event = event.motion;
-                    GraphicWindow* window = GetGraphicWindow(motion_event.windowID);
-                    if(window)
-                    {
-                        const MouseMotionEvent event = {.mask = motion_event.state,
-                                                        .x = motion_event.x,
-                                                        .y = motion_event.y,
-                                                        .motion_x = motion_event.xrel,
-                                                        .motion_y = motion_event.yrel};
-
-                        window->Emit(event);
-                    }
-                }
-                break;
-                case SDL_MOUSEBUTTONDOWN:
-                case SDL_MOUSEBUTTONUP:
-                {
-                    SDL_MouseButtonEvent& button_event = event.button;
-                    GraphicWindow* window = GetGraphicWindow(button_event.windowID);
-                    if(window)
-                    {
-                        const MouseButtonEvent event = {
-                            .button = static_cast<MouseButtonBits>(1u << button_event.button),
-                            .state =
-                                (button_event.type == SDL_MOUSEBUTTONDOWN ? ButtonState::Pressed :
-                                                                            ButtonState::Released),
-                            .clicks = button_event.clicks,
-                            .x = button_event.x,
-                            .y = button_event.y};
-
-                        window->Emit(event);
-                    }
-                }
-                break;
-                case SDL_MOUSEWHEEL:
-                {
-                    SDL_MouseWheelEvent& wheel_event = event.wheel;
-                    GraphicWindow* window = GetGraphicWindow(wheel_event.windowID);
-                    if(window)
-                    {
-                        const MouseWheelEvent event = {.scrolled_x = wheel_event.x,
-                                                       .scrolled_y = wheel_event.y,
-                                                       .x = wheel_event.mouseX,
-                                                       .y = wheel_event.mouseY};
-
-                        window->Emit(event);
-                    }
-                }
-                break;
-            }
-        }
-    }
-
-    GraphicWindow* WindowSubsystem::CreateGraphicWindow(const GraphicWindowInfo& info)
-    {
-        std::unique_ptr<GraphicWindow> window(new GraphicWindow(info));
-        auto it = graphic_windows.insert({window->GetID(), std::move(window)});
-        return it.first->second.get();
-    }
-
-    GraphicWindow* WindowSubsystem::GetGraphicWindow(std::uint32_t id) const noexcept
-    {
-        auto it = graphic_windows.find(id);
-        if(it == graphic_windows.end())
-            return nullptr;
-
-        return it->second.get();
-    }
-
-    bool WindowSubsystem::ShowMessageBox(const GraphicWindow* parent,
-                                         MessageBoxType type,
-                                         const char* title,
-                                         const char* message)
-    {
-        int res = SDL_ShowSimpleMessageBox(static_cast<Uint32>(type),
-                                           title,
-                                           message,
-                                           parent ? parent->GetWindowHandle() : nullptr);
-
-        return res == 0;
+#    error TODO!
+#endif
     }
 };

@@ -2,34 +2,6 @@
 
 namespace Core
 {
-#ifdef _WIN32
-    static std::string WideToUTF8(std::wstring_view wstr)
-    {
-        if(wstr.empty())
-            return {};
-
-        auto req_size =
-            WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
-        if(req_size == 0)
-            throw GetLastError();
-
-        std::string str(req_size, '\0');
-        auto res = WideCharToMultiByte(CP_UTF8,
-                                       0,
-                                       wstr.data(),
-                                       wstr.size(),
-                                       str.data(),
-                                       req_size,
-                                       nullptr,
-                                       nullptr);
-
-        if(res == 0)
-            throw GetLastError();
-
-        return str;
-    }
-#endif
-
     static const std::filesystem::path EXECUTABLE_PATH = []()
     {
 #ifdef _WIN32
@@ -68,6 +40,9 @@ namespace Core
     std::runtime_error System::GetLastError()
     {
         DWORD error = ::GetLastError();
+        if(error == 0)
+            return std::runtime_error("");
+
         wchar_t* buffer = nullptr;
         auto size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
                                        FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -81,11 +56,52 @@ namespace Core
         if(size == 0)
             throw std::runtime_error(std::format("WinAPI error. Code: {}", ::GetLastError()));
 
-        auto message = WideToUTF8(std::wstring_view(buffer, size));
+        auto message = System::WideToUTF8(std::wstring_view(buffer, size));
 
         LocalFree(buffer);
 
         return std::runtime_error(message);
+    }
+
+    std::string System::WideToUTF8(std::wstring_view wstr)
+    {
+        if(wstr.empty())
+            return {};
+
+        auto req_size =
+            WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
+        if(req_size == 0)
+            throw GetLastError();
+
+        std::string str(req_size - 1, '\0');
+        auto res = WideCharToMultiByte(CP_UTF8,
+                                       0,
+                                       wstr.data(),
+                                       wstr.size(),
+                                       str.data(),
+                                       req_size,
+                                       nullptr,
+                                       nullptr);
+
+        if(res == 0)
+            throw GetLastError();
+
+        return str;
+    }
+
+    std::wstring System::UTF8ToWide(std::string_view str)
+    {
+        auto req_size = MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), nullptr, 0);
+        if(req_size == 0)
+            throw GetLastError();
+
+        std::wstring wstr(req_size - 1, L'\0');
+        auto res =
+            MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), wstr.data(), wstr.size());
+        if(res == 0)
+            throw GetLastError();
+
+        return wstr;
     }
 #endif
 };

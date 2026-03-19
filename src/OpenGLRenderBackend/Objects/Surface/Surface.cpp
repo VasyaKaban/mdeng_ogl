@@ -170,11 +170,6 @@ namespace OpenGL
     {
 #    error TODO!
     }
-
-    Surface::Surface(Instance* _parent, const Render::Wayland32SurfaceInfo& _info)
-    {
-#    error TODO!
-    }
 #endif
 
     Surface::~Surface()

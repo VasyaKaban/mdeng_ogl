@@ -19,7 +19,6 @@ namespace Render
         virtual Surface* CreateSurface(const Win32SurfaceInfo& info) = 0;
 #elif defined(linux)
         virtual Surface* CreateSurface(const XCBSurfaceInfo& info) = 0;
-        virtual Surface* CreateSurface(const WaylandSurfaceInfo& info) = 0;
 #endif
     };
 };

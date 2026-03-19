@@ -1,0 +1,46 @@
+#pragma once
+
+#include <memory>
+#include <map>
+#include "Core/Utils/NonCreatable.hpp"
+#include <SDL2/SDL_messagebox.h>
+#include "Core/API.h"
+
+namespace Core
+{
+    class GraphicWindow;
+    struct GraphicWindowInfo;
+
+    enum class MessageBoxType
+    {
+        Error = SDL_MESSAGEBOX_ERROR,
+        Warning = SDL_MESSAGEBOX_WARNING,
+        Info = SDL_MESSAGEBOX_INFORMATION
+    };
+
+    class CORE_API WindowSubsystem : Core::NonCopyable, Core::NonMovable
+    {
+        WindowSubsystem();
+    public:
+        ~WindowSubsystem() = default;
+
+        static WindowSubsystem* Init();
+        static WindowSubsystem* GetSubsystem() noexcept;
+        static void Close();
+
+        void PollEvents();
+
+        GraphicWindow* CreateGraphicWindow(const GraphicWindowInfo& info);
+
+        GraphicWindow* GetGraphicWindow(std::uint32_t id) const noexcept;
+
+        static bool ShowMessageBox(const GraphicWindow* parent,
+                                   MessageBoxType type,
+                                   const char* title,
+                                   const char* message);
+    private:
+        static inline WindowSubsystem* subsystem = nullptr;
+
+        std::map<std::uint32_t, std::unique_ptr<GraphicWindow>> graphic_windows;
+    };
+};
