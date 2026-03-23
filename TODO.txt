@@ -43,4 +43,7 @@ INFO:
     Backends: Win32, X11(maybe XCB + libxkbcommon), Wayland(with libxkbcommon)
 * Get methods as copy values instead of references
 * dlerror() into System for Linux
-
+* Limits and properties for window subsystem: for example limit max window size
+* WindowPosition as uint and MousePosition as int relative to window we want to capture
+* Errors in window procedures: throw exceptions or just ignore?
+* Add Display(Monitor) class that will be bound to window and will be updated on event
