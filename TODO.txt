@@ -47,3 +47,4 @@ INFO:
 * WindowPosition as uint and MousePosition as int relative to window we want to capture
 * Errors in window procedures: throw exceptions or just ignore?
 * Add Display(Monitor) class that will be bound to window and will be updated on event
+* final spec for WindowSubsystem classes
