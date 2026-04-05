@@ -31,6 +31,7 @@ namespace Core
         >;
 
     class WindowSubsystem;
+    class Display;
 
     class CORE_API Window : protected EventEmitter
     {
@@ -46,17 +47,15 @@ namespace Core
         virtual WindowResolution GetResolution() const = 0;
         virtual WindowResolution GetScaledResolution() const = 0;
 
-        virtual float GetScaleFactor() const = 0; // return dpi / default_dpi;
-        virtual float GetSurfaceScaleFactor() const = 0; // return scaled_resolution / resolution;
-
         virtual void SetState(WindowState state) = 0;
         virtual WindowState GetState() const = 0;
 
-        virtual void SetMouseCursorPosition(const WindowPosition& pos) = 0;
-        virtual WindowPosition GetMouseCursorPosition() const = 0;
+        virtual void SetMouseCursorPosition(const WindowPosition& pos) = 0; //relative to window
+        virtual WindowPosition GetMouseCursorPosition() const = 0; //relative to window
 
         virtual WindowSurfaceInfo GetWindowSurfaceInfo() const noexcept = 0;
 
+        virtual Display* GetDisplay() const noexcept = 0;
         virtual WindowSubsystem* GetParent() const noexcept = 0;
     };
 };

@@ -8,10 +8,10 @@ namespace Core
     {
         WindowSubsystem::WindowSubsystem()
             : instance(nullptr),
-              SetProcessDpiAwarenessContext(nullptr),
               SetProcessDpiAwareness(nullptr),
               SetProcessDPIAware(nullptr),
-              dpi_awareness(DPI_AWARENESS_CONTEXT_UNAWARE)
+              dpi_awareness(PROCESS_DPI_AWARENESS::PROCESS_DPI_UNAWARE),
+              GetDpiForMonitor(nullptr)
         {
             instance = GetModuleHandleW(nullptr);
             if(instance == nullptr)
@@ -22,10 +22,6 @@ namespace Core
 
             if(!user32_res.has_value())
             {
-                SetProcessDpiAwarenessContext =
-                    reinterpret_cast<decltype(SetProcessDpiAwarenessContext)>(
-                        user32.GetProcAddress("SetProcessDpiAwarenessContext"));
-
                 SetProcessDPIAware = reinterpret_cast<decltype(SetProcessDPIAware)>(
                     user32.GetProcAddress("SetProcessDPIAware"));
             }
@@ -34,44 +30,32 @@ namespace Core
             {
                 SetProcessDpiAwareness = reinterpret_cast<decltype(SetProcessDpiAwareness)>(
                     shcore.GetProcAddress("SetProcessDpiAwareness"));
+
+                GetDpiForMonitor = reinterpret_cast<decltype(GetDpiForMonitor)>(
+                    shcore.GetProcAddress("GetDpiForMonitor"));
             }
 
-            if(SetProcessDpiAwarenessContext)
-            {
-                BOOL res =
-                    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-                if(res == TRUE)
-                    dpi_awareness = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2;
-                else if(::GetLastError() == ERROR_INVALID_PARAMETER) //unsupported
-                {
-                    res = SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-                    if(res == TRUE)
-                        dpi_awareness = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE;
-                }
-            }
-
-            if(SetProcessDpiAwareness && dpi_awareness == DPI_AWARENESS_CONTEXT_UNAWARE)
+            if(SetProcessDpiAwareness)
             {
                 if(SetProcessDpiAwareness(PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE) !=
                    S_OK)
                 {
                     throw std::runtime_error("Failed to set DPI awareness");
-                    dpi_awareness = DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE;
+                    dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE;
                 }
             }
-
-            if(SetProcessDPIAware && dpi_awareness == DPI_AWARENESS_CONTEXT_UNAWARE)
+            else if(SetProcessDPIAware)
             {
                 if(SetProcessDPIAware() == FALSE)
                     throw std::runtime_error("Failed to set DPI awareness");
 
-                dpi_awareness = DPI_AWARENESS_CONTEXT_SYSTEM_AWARE;
+                dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_SYSTEM_DPI_AWARE;
             }
 
             WNDCLASSEXW wnd_class = {.cbSize = sizeof(WNDCLASSEXW),
                                      .style = CS_DBLCLKS | CS_DROPSHADOW | CS_HREDRAW | CS_OWNDC |
                                               CS_VREDRAW,
-                                     .lpfnWndProc = Win32WindowProc,
+                                     .lpfnWndProc = Window::Win32WindowProc,
                                      .cbClsExtra = 0,
                                      .cbWndExtra = 0,
                                      .hInstance = instance,
@@ -79,7 +63,7 @@ namespace Core
                                      .hCursor = nullptr,
                                      .hbrBackground = nullptr,
                                      .lpszMenuName = nullptr,
-                                     .lpszClassName = WIN32_WINDOW_CLASS_NAME,
+                                     .lpszClassName = Window::WIN32_WINDOW_CLASS_NAME,
                                      .hIconSm = nullptr};
 
             if(RegisterClassExW(&wnd_class) == 0)
@@ -88,7 +72,7 @@ namespace Core
 
         WindowSubsystem::~WindowSubsystem()
         {
-            UnregisterClassW(WIN32_WINDOW_CLASS_NAME, instance);
+            UnregisterClassW(Window::WIN32_WINDOW_CLASS_NAME, instance);
         }
 
         void WindowSubsystem::PollEvents()
@@ -115,6 +99,24 @@ namespace Core
         Core::Window* WindowSubsystem::CreateWindow(const WindowInfo& info)
         {
             return new Window(this, info);
+        }
+
+        CursorState WindowSubsystem::GetCursorState() const
+        {
+            CURSORINFO info = {.cbSize = sizeof(CURSORINFO)};
+            if(GetCursorInfo(&info) == 0)
+                throw Core::System::GetLastError();
+
+            if(info.flags == 0) //disabled
+                return CursorState::Disbaled;
+
+            return CursorState::Enabled;
+        }
+
+        void WindowSubsystem::SetCursorState(CursorState state)
+        {
+            BOOL win_state = (state == CursorState::Enabled ? TRUE : FALSE);
+            ShowCursor(win_state);
         }
 
         HINSTANCE WindowSubsystem::GetInstance() const noexcept

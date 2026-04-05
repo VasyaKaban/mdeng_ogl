@@ -15,6 +15,12 @@ namespace Core
 #endif
     };
 
+    enum class CursorState
+    {
+        Enabled,
+        Disbaled
+    };
+
     class CORE_API WindowSubsystem
     {
     public:
@@ -25,6 +31,9 @@ namespace Core
         virtual WindowSubsystemType GetType() const noexcept = 0;
 
         virtual Window* CreateWindow(const WindowInfo& info) = 0;
+
+        virtual CursorState GetCursorState() const = 0;
+        virtual void SetCursorState(CursorState state) = 0;
     };
 
     struct WindowSubsystemInfo

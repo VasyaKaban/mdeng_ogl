@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Window.h"
+#include "Display.h"
 
 namespace Core
 {
@@ -8,16 +9,16 @@ namespace Core
     {
         class WindowSubsystem;
 
-        constexpr inline wchar_t WIN32_WINDOW_CLASS_NAME[] = L"WIN32_WINDOW_CLASS";
-
-        LRESULT CALLBACK CORE_API Win32WindowProc(HWND handle,
-                                                  UINT message,
-                                                  WPARAM w_param,
-                                                  LPARAM l_param);
-
-        class CORE_API Window : public Core::Window, Core::NonMovable
+        class CORE_API Window final : public Core::Window, Core::NonMovable
         {
         public:
+            constexpr static wchar_t WIN32_WINDOW_CLASS_NAME[] = L"WIN32_WINDOW_CLASS";
+
+            static LRESULT CALLBACK Win32WindowProc(HWND handle,
+                                                    UINT message,
+                                                    WPARAM w_param,
+                                                    LPARAM l_param);
+
             Window(WindowSubsystem* _parent, const WindowInfo& info);
 
             virtual ~Window() override;
@@ -29,10 +30,6 @@ namespace Core
             virtual WindowResolution GetResolution() const override;
             virtual WindowResolution GetScaledResolution() const override;
 
-            virtual float GetScaleFactor() const override; // return dpi / default_dpi;
-            virtual float
-            GetSurfaceScaleFactor() const override; // return scaled_resolution / resolution;
-
             virtual void SetState(WindowState state) override;
             virtual WindowState GetState() const override;
 
@@ -41,10 +38,12 @@ namespace Core
 
             virtual WindowSurfaceInfo GetWindowSurfaceInfo() const noexcept override;
 
+            virtual Display* GetDisplay() const noexcept override;
             virtual Core::WindowSubsystem* GetParent() const noexcept override;
         private:
             WindowSubsystem* parent;
             HWND handle;
+            std::unique_ptr<Display> display;
         };
     };
 };
