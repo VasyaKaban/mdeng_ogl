@@ -6,6 +6,16 @@ namespace Core
 {
     namespace Win32
     {
+        struct DevModeKey
+        {
+            std::uint32_t width;
+            std::uint32_t height;
+            std::uint32_t refresh_rate;
+            std::uint32_t bits_per_pixel;
+
+            constexpr auto operator<=>(const DevModeKey&) const noexcept = default;
+        };
+
         Display::Display(Window* _parent, HMONITOR _handle)
             : parent(_parent),
               handle(_handle)
@@ -16,12 +26,38 @@ namespace Core
 
             std::copy(info.szDevice, info.szDevice + CCHDEVICENAME, this->name.data());
 
-            dev_modes.reserve(64);
+            std::map<DevModeKey, DEVMODEW> dev_modes_map;
             DEVMODEW dev_mode = {.dmSize = sizeof(DEVMODEW), .dmDriverExtra = 0};
-            while(EnumDisplaySettingsExW(name.data(), ENUM_CURRENT_SETTINGS, &dev_mode, 0) != 0)
+            DWORD dev_mode_count = 0;
+            while(EnumDisplaySettingsExW(name.data(), dev_mode_count, &dev_mode, 0) != 0)
             {
-                dev_modes.push_back(dev_mode);
+                dev_mode_count++;
+
+                if(!((dev_mode.dmFields & DM_PELSWIDTH) && (dev_mode.dmFields & DM_PELSHEIGHT) &&
+                     (dev_mode.dmFields & DM_DISPLAYFREQUENCY) &&
+                     (dev_mode.dmFields & DM_BITSPERPEL)))
+                    continue;
+
+                auto [it, inserted] =
+                    dev_modes_map.insert({DevModeKey{.width = dev_mode.dmPelsWidth,
+                                                     .height = dev_mode.dmPelsHeight,
+                                                     .refresh_rate = dev_mode.dmDisplayFrequency,
+                                                     .bits_per_pixel = dev_mode.dmBitsPerPel},
+                                          dev_mode});
+
+                if(!inserted)
+                {
+                    auto prev_bit_count = std::popcount(it->second.dmFields);
+                    auto current_bit_count = std::popcount(dev_mode.dmFields);
+
+                    if(current_bit_count < prev_bit_count)
+                        it->second = dev_mode;
+                }
             }
+
+            dev_modes.reserve(dev_modes_map.size());
+            for(const auto& [_, dev_mode]: dev_modes_map)
+                dev_modes.push_back(dev_mode);
         }
 
         Display::~Display()
@@ -140,6 +176,15 @@ namespace Core
                     throw std::runtime_error("SetVideoMode error: Unknown");
                     break;
             }
+        }
+
+        WindowPosition Display::GetPosition() const
+        {
+            MONITORINFOEXW info = {MONITORINFO{.cbSize = sizeof(MONITORINFOEXW)}};
+            if(GetMonitorInfoW(handle, &info) == 0)
+                throw Core::System::GetLastError();
+
+            return WindowPosition{.x = info.rcMonitor.left, .y = info.rcMonitor.top};
         }
 
         Core::Window* Display::GetParent() const noexcept

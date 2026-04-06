@@ -29,6 +29,8 @@ namespace Core
 
             virtual void SetVideoMode(std::uint32_t index) override;
 
+            virtual WindowPosition GetPosition() const override;
+
             virtual Core::Window* GetParent() const noexcept override;
         private:
             Window* parent;

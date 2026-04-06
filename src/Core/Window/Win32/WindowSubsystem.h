@@ -35,15 +35,15 @@ namespace Core
             DynamicLibrary user32;
             DynamicLibrary shcore;
 
-            HRESULT (*SetProcessDpiAwareness)([in] PROCESS_DPI_AWARENESS value);
+            HRESULT (*SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS value);
             BOOL (*SetProcessDPIAware)();
             PROCESS_DPI_AWARENESS dpi_awareness;
         public:
             //let's make it public
-            const HRESULT (*GetDpiForMonitor)([in] HMONITOR hmonitor,
-                                              [in] MONITOR_DPI_TYPE dpiType,
-                                              [out] UINT* dpiX,
-                                              [out] UINT* dpiY);
+            const HRESULT (*GetDpiForMonitor)(HMONITOR hmonitor,
+                                              MONITOR_DPI_TYPE dpiType,
+                                              UINT* dpiX,
+                                              UINT* dpiY);
         };
     };
 };

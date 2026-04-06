@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "Core/API.h"
+#include "WindowEvents.h"
 
 namespace Core
 {
@@ -29,6 +30,8 @@ namespace Core
         virtual float GetDisplayScaleFactor() const = 0; // return scaled_resolution / resolution;
 
         virtual void SetVideoMode(std::uint32_t index) = 0;
+
+        virtual WindowPosition GetPosition() const = 0;
 
         virtual Window* GetParent() const noexcept = 0;
     };

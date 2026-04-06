@@ -10,9 +10,13 @@
 #include <Core/Render/Objects/Semaphore.h>
 #include <Core/Render/Objects/Fence.h>
 #include "Core/Render/Format.h"
-#include "Core/Window/GraphicWindow.h"
+#include "Core/Window/Window.h"
 #include "Core/Window/WindowSubsystem.h"
+#include "Core/Window/Display.h"
 #include "Core/Utils/DynamicLibrary.h"
+#include <cassert>
+#include <chrono>
+#include <thread>
 
 void PrintInstance(const Render::Resolve* resolve, const Render::Instance* instance)
 {
@@ -392,19 +396,73 @@ int main(int argc, char** argv)
 {
     try
     {
-        auto win_sys = Core::WindowSubsystem::Init();
+        auto win_sys_types = Core::GetAvailableWindowSubsystemTypes();
+        assert(std::find(win_sys_types.begin(),
+                         win_sys_types.end(),
+                         Core::WindowSubsystemType::Win32) != win_sys_types.end());
 
-        const Core::GraphicWindowInfo win_info = {
-            .resolution = Core::WindowResolution{.width = 800, .height = 600},
-            .title = "app"};
-        auto win = win_sys->CreateGraphicWindow(win_info);
-        auto window_resolution = win->GetResolution();
+        Core::WindowSubsystemInfo win_sys_info = {.type = Core::WindowSubsystemType::Win32};
+        std::unique_ptr<Core::WindowSubsystem> win_sys(Core::CreateWindowSubsystem(win_sys_info));
+
+        Core::WindowInfo win_info = {.resolution =
+                                         Core::WindowResolution{.width = 800, .height = 600},
+                                     .state = Core::WindowState::Windowed,
+                                     .title = "test"};
+        std::unique_ptr<Core::Window> window(win_sys->CreateWindow(win_info));
+
+        Core::Display* display = window->GetDisplay();
+        std::cerr << std::format("Display: {}\n", display->GetName());
+        std::cerr << std::format("Display scale factor: {}\n", display->GetDisplayScaleFactor());
+        std::cerr << std::format("Scale factor: {}\n", display->GetScaleFactor());
+
+        auto video_mode = display->GetCurrentVideoMode();
+        std::cerr << std::format("Display video mode: width = {}, height = {}, bpp = {}, hz = {}\n",
+                                 video_mode.width,
+                                 video_mode.height,
+                                 video_mode.bits_per_pixel,
+                                 video_mode.refresh_rate);
+
+        auto video_modes = display->GetVideoModes();
+        for(std::size_t i = 0; i < video_modes.size(); i++)
+        {
+            std::cerr << std::format(
+                "Display video mode #{}: width = {}, height = {}, bpp = {}, hz = {}\n",
+                i,
+                video_modes[i].width,
+                video_modes[i].height,
+                video_modes[i].bits_per_pixel,
+                video_modes[i].refresh_rate);
+        }
+
+        auto title = window->GetTitle();
+        window->SetTitle("amogus");
+
+        auto mouse_pos = window->GetMouseCursorPosition();
+        window->SetMouseCursorPosition(Core::WindowPosition{.x = 0, .y = 0});
+
+        auto reso = window->GetResolution();
+        auto scaled_reso = window->GetScaledResolution();
+
+        window->Resize(Core::WindowResolution{.width = 1440, .height = 900});
+        auto after_reso = window->GetResolution();
+
+        window->GetDisplay()->SetVideoMode(59);
+        reso = window->GetResolution();
+
+        auto pre_reso = window->GetResolution();
+        window->SetState(Core::WindowState::FullScreen);
+        auto full_reso = window->GetResolution();
+        //std::this_thread::sleep_for(std::chrono::seconds(3));
+        window->SetState(Core::WindowState::Windowed);
+        auto win_reso = window->GetResolution();
+
+        auto window_resolution = window->GetResolution();
         Render::Extent2D swapchain_extent = {
             .width = static_cast<std::uint32_t>(window_resolution.width),
             .height = static_cast<std::uint32_t>(window_resolution.height)};
 
         bool is_run = true;
-        win->Connect<Core::WindowCloseEvent>(
+        window->Connect<Core::WindowCloseEvent>(
             [&is_run](const Core::WindowCloseEvent&)
             {
                 is_run = false;
@@ -447,7 +505,7 @@ int main(int argc, char** argv)
         std::unique_ptr<Render::Instance> instance(resolve->CreateInstance(instance_info));
 
 #ifdef _WIN32
-        const auto& sur_info = std::get<Render::Win32SurfaceInfo>(win->GetSurface());
+        const auto sur_info = std::get<Render::Win32SurfaceInfo>(window->GetWindowSurfaceInfo());
 #endif
 
         std::unique_ptr<Render::Surface> surface(instance->CreateSurface(sur_info));

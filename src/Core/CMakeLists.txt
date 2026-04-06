@@ -25,7 +25,5 @@ target_include_directories(Core
 target_compile_definitions(Core PRIVATE CORE_API_EXPORT)
 
 target_link_libraries(Core
-						PUBLIC SDL2::SDL2main
-						PUBLIC SDL2::SDL2
 						PUBLIC nlohmann_json::nlohmann_json
 					)

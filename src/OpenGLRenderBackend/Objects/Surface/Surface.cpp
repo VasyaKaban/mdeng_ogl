@@ -33,7 +33,7 @@ namespace OpenGL
                     ReleaseDC(window, _dc);
             });
 
-        _dc = GetWindowDC(_info.window);
+        _dc = GetDC(_info.window);
         if(_dc == nullptr)
             throw Core::System::GetLastError();
 

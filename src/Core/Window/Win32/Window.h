@@ -41,9 +41,14 @@ namespace Core
             virtual Display* GetDisplay() const noexcept override;
             virtual Core::WindowSubsystem* GetParent() const noexcept override;
         private:
+            void UpdatePrevWindowedState();
+        private:
             WindowSubsystem* parent;
             HWND handle;
             std::unique_ptr<Display> display;
+            WindowState current_state;
+            WindowPosition windowed_prev_position;
+            WindowResolution windowed_prev_resolution;
         };
     };
 };

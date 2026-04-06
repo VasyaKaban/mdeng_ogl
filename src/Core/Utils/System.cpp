@@ -95,7 +95,7 @@ namespace Core
         if(req_size == 0)
             throw GetLastError();
 
-        std::wstring wstr(req_size - 1, L'\0');
+        std::wstring wstr(req_size, L'\0');
         auto res =
             MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), wstr.data(), wstr.size());
         if(res == 0)

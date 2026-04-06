@@ -41,8 +41,9 @@ namespace Core
                    S_OK)
                 {
                     throw std::runtime_error("Failed to set DPI awareness");
-                    dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE;
                 }
+
+                dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE;
             }
             else if(SetProcessDPIAware)
             {
@@ -53,8 +54,8 @@ namespace Core
             }
 
             WNDCLASSEXW wnd_class = {.cbSize = sizeof(WNDCLASSEXW),
-                                     .style = CS_DBLCLKS | CS_DROPSHADOW | CS_HREDRAW | CS_OWNDC |
-                                              CS_VREDRAW,
+                                     .style = CS_DBLCLKS /*| CS_DROPSHADOW*/ | CS_HREDRAW |
+                                              CS_OWNDC | CS_VREDRAW,
                                      .lpfnWndProc = Window::Win32WindowProc,
                                      .cbClsExtra = 0,
                                      .cbWndExtra = 0,
@@ -122,6 +123,11 @@ namespace Core
         HINSTANCE WindowSubsystem::GetInstance() const noexcept
         {
             return instance;
+        }
+
+        PROCESS_DPI_AWARENESS WindowSubsystem::GetDPIAwrenessType() const noexcept
+        {
+            return dpi_awareness;
         }
     };
 };
