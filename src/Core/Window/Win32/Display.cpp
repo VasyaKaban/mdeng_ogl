@@ -22,7 +22,7 @@ namespace Core
         {
             MONITORINFOEXW info = {MONITORINFO{.cbSize = sizeof(MONITORINFOEXW)}};
             if(GetMonitorInfoW(handle, &info) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             std::copy(info.szDevice, info.szDevice + CCHDEVICENAME, this->name.data());
 
@@ -89,7 +89,7 @@ namespace Core
         {
             DEVMODEW dev_mode = {.dmSize = sizeof(DEVMODEW), .dmDriverExtra = 0};
             if(EnumDisplaySettingsExW(name.data(), ENUM_CURRENT_SETTINGS, &dev_mode, 0) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             return VideoMode{.width = dev_mode.dmPelsWidth,
                              .height = dev_mode.dmPelsHeight,
@@ -182,7 +182,7 @@ namespace Core
         {
             MONITORINFOEXW info = {MONITORINFO{.cbSize = sizeof(MONITORINFOEXW)}};
             if(GetMonitorInfoW(handle, &info) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             return WindowPosition{.x = info.rcMonitor.left, .y = info.rcMonitor.top};
         }

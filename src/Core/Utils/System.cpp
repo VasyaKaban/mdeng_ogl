@@ -37,11 +37,16 @@ namespace Core
     }
 
 #ifdef _WIN32
-    std::runtime_error System::GetLastError()
+    static thread_local std::exception_ptr USER_LAST_ERROR_EXCEPTION;
+
+    std::exception_ptr System::GetLastError()
     {
         DWORD error = ::GetLastError();
         if(error == 0)
-            return std::runtime_error("");
+            return std::make_exception_ptr(std::bad_exception{});
+
+        if(error & (0b1 << 29)) //user code
+            return USER_LAST_ERROR_EXCEPTION;
 
         wchar_t* buffer = nullptr;
         auto size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
@@ -60,7 +65,13 @@ namespace Core
 
         LocalFree(buffer);
 
-        return std::runtime_error(message);
+        return std::make_exception_ptr(std::runtime_error(message));
+    }
+
+    void System::SetLastError(DWORD code, std::exception_ptr ptr)
+    {
+        ::SetLastError(code);
+        USER_LAST_ERROR_EXCEPTION = ptr;
     }
 
     std::string System::WideToUTF8(std::wstring_view wstr)

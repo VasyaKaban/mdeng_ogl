@@ -28,7 +28,7 @@ namespace Core
     {};
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowCloseEvent>;
 
-    struct WindowResizedEvent
+    /*struct WindowResizedEvent
     {
         WindowResolution resolution;
         WindowResolution scaled_resolution;
@@ -45,5 +45,5 @@ namespace Core
     {
         Display* display;
     };
-    CORE_API_TEMPLATE template class CORE_API ClassID<WindowDisplayChangedEvent>;
+    CORE_API_TEMPLATE template class CORE_API ClassID<WindowDisplayChangedEvent>;*/
 };

@@ -25,7 +25,7 @@ namespace Core
         return *this;
     }
 
-    std::optional<std::runtime_error> DynamicLibrary::Open(const std::filesystem::path& path)
+    std::exception_ptr DynamicLibrary::Open(const std::filesystem::path& path)
     {
         if(IsOpen())
             Close();
@@ -38,7 +38,7 @@ namespace Core
         handle = dlopen(native.c_str(), RTLD_NOW | RTLD_GLOBAL);
 #endif
         if(handle != nullptr)
-            return std::nullopt;
+            return nullptr;
 
 #ifdef _WIN32
         return System::GetLastError();

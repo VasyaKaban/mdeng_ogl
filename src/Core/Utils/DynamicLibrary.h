@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include <stdexcept>
 #include <filesystem>
 #include "../API.h"
@@ -19,7 +18,7 @@ namespace Core
         DynamicLibrary(DynamicLibrary&& lib) noexcept;
         DynamicLibrary& operator=(DynamicLibrary&& lib) noexcept;
 
-        std::optional<std::runtime_error> Open(const std::filesystem::path& path);
+        std::exception_ptr Open(const std::filesystem::path& path);
 
         bool IsOpen() const noexcept;
         void Close() noexcept;

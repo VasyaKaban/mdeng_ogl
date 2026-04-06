@@ -437,6 +437,10 @@ int main(int argc, char** argv)
         auto title = window->GetTitle();
         window->SetTitle("amogus");
 
+        win_sys->SetCursorState(Core::CursorState::Disbaled);
+        win_sys->GetCursorState();
+        win_sys->SetCursorState(Core::CursorState::Enabled);
+
         auto mouse_pos = window->GetMouseCursorPosition();
         window->SetMouseCursorPosition(Core::WindowPosition{.x = 0, .y = 0});
 
@@ -446,7 +450,7 @@ int main(int argc, char** argv)
         window->Resize(Core::WindowResolution{.width = 1440, .height = 900});
         auto after_reso = window->GetResolution();
 
-        window->GetDisplay()->SetVideoMode(59);
+        //window->GetDisplay()->SetVideoMode(59);
         reso = window->GetResolution();
 
         auto pre_reso = window->GetResolution();
@@ -475,8 +479,8 @@ int main(int argc, char** argv)
         Core::DynamicLibrary lib;
         auto lib_path = Core::System::GetExecutablePath().parent_path() /
                         Core::System::DecorateDynamicLibraryName("OpenGLRenderBackend");
-        if(auto err = lib.Open(lib_path); err.has_value())
-            throw err.value();
+        if(auto err = lib.Open(lib_path); err)
+            std::rethrow_exception(err);
 
         Render::PFN_RenderResolve render_resolve = reinterpret_cast<Render::PFN_RenderResolve>(
             lib.GetProcAddress(Render::RENDER_RESOLVE_FUNCTION_NAME));

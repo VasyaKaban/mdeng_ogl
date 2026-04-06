@@ -32,9 +32,8 @@ namespace OpenGL
         {
             case WM_CREATE:
             {
-                std::optional<std::runtime_error>* window_param_opt =
-                    reinterpret_cast<std::optional<std::runtime_error>*>(
-                        reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
+                std::exception_ptr* window_param = reinterpret_cast<std::exception_ptr*>(
+                    reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
 
                 HDC _dc = nullptr;
                 HGLRC _glrc = nullptr;
@@ -80,20 +79,20 @@ namespace OpenGL
                 int format_index = ChoosePixelFormat(_dc, &pfd);
                 if(format_index == 0)
                 {
-                    *window_param_opt = Core::System::GetLastError();
+                    *window_param = Core::System::GetLastError();
                     return -1;
                 }
 
                 if(SetPixelFormat(_dc, format_index, &pfd) == FALSE)
                 {
-                    *window_param_opt = Core::System::GetLastError();
+                    *window_param = Core::System::GetLastError();
                     return -1;
                 }
 
                 _glrc = wglCreateContext(_dc);
                 if(_glrc == nullptr)
                 {
-                    *window_param_opt = Core::System::GetLastError();
+                    *window_param = Core::System::GetLastError();
                     return -1;
                 }
 
@@ -103,7 +102,8 @@ namespace OpenGL
                     gladLoadWGL(_dc, reinterpret_cast<GLADloadfunc>(wglGetProcAddress));
                 if(wgl_version == 0)
                 {
-                    *window_param_opt = std::runtime_error("Failed to load WGL context");
+                    *window_param =
+                        std::make_exception_ptr(std::runtime_error("Failed to load WGL context"));
                     return -1;
                 }
 
@@ -128,8 +128,8 @@ namespace OpenGL
                 if(!(GLAD_WGL_ARB_create_context && GLAD_WGL_ARB_create_context_profile &&
                      GLAD_WGL_ARB_pixel_format))
                 {
-                    *window_param_opt = std::runtime_error(
-                        "WGL core context or pixel format selection is not available");
+                    *window_param = std::make_exception_ptr(std::runtime_error(
+                        "WGL core context or pixel format selection is not available"));
                     return -1;
                 }
                 break;
@@ -168,7 +168,7 @@ namespace OpenGL
         if(register_res == 0)
             throw std::runtime_error("Failed to create dummy OpenGL window");
 
-        std::optional<std::runtime_error> window_param_opt;
+        std::exception_ptr window_param;
 
         HWND _window = CreateWindowExW(0,
                                        WGL_DUMMY_WINDOW_CLASS_NAME,
@@ -181,15 +181,15 @@ namespace OpenGL
                                        nullptr,
                                        nullptr,
                                        _instance,
-                                       &window_param_opt);
+                                       &window_param);
 
         if(_window)
             DestroyWindow(_window);
 
         UnregisterClassW(WGL_DUMMY_WINDOW_CLASS_NAME, _instance);
 
-        if(window_param_opt.has_value())
-            throw window_param_opt.value();
+        if(window_param)
+            std::rethrow_exception(window_param);
 #else
 #    error TODO!
 #endif

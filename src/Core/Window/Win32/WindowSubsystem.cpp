@@ -20,13 +20,13 @@ namespace Core
             auto user32_res = user32.Open("User32.dll");
             auto shcore_res = shcore.Open("Shcore.dll");
 
-            if(!user32_res.has_value())
+            if(!user32_res)
             {
                 SetProcessDPIAware = reinterpret_cast<decltype(SetProcessDPIAware)>(
                     user32.GetProcAddress("SetProcessDPIAware"));
             }
 
-            if(!shcore_res.has_value())
+            if(!shcore_res)
             {
                 SetProcessDpiAwareness = reinterpret_cast<decltype(SetProcessDpiAwareness)>(
                     shcore.GetProcAddress("SetProcessDpiAwareness"));
@@ -68,7 +68,7 @@ namespace Core
                                      .hIconSm = nullptr};
 
             if(RegisterClassExW(&wnd_class) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
         }
 
         WindowSubsystem::~WindowSubsystem()
@@ -78,17 +78,19 @@ namespace Core
 
         void WindowSubsystem::PollEvents()
         {
-            while(true)
+            BOOL res = FALSE;
+            MSG msg;
+            while((res = PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) != 0) //not WM_QUIT
             {
-                MSG msg;
-                auto res = GetMessageW(&msg, nullptr, 0, 0);
-                if(res >= 0) //dispatch
+                if(res > 0) //dispatch
                 {
                     TranslateMessage(&msg);
-                    DispatchMessageW(&msg);
+                    res = DispatchMessageW(&msg);
+                    if(res < 0)
+                        std::rethrow_exception(Core::System::GetLastError());
                 }
                 else //error
-                    throw Core::System::GetLastError();
+                    std::rethrow_exception(Core::System::GetLastError());
             }
         }
 
@@ -106,7 +108,7 @@ namespace Core
         {
             CURSORINFO info = {.cbSize = sizeof(CURSORINFO)};
             if(GetCursorInfo(&info) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             if(info.flags == 0) //disabled
                 return CursorState::Disbaled;

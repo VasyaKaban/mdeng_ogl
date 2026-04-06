@@ -12,6 +12,7 @@ namespace Core
         class CORE_API Window final : public Core::Window, Core::NonMovable
         {
         public:
+            constexpr static DWORD LAST_ERROR_CODE = (0b1 << 29) + 0b1;
             constexpr static wchar_t WIN32_WINDOW_CLASS_NAME[] = L"WIN32_WINDOW_CLASS";
 
             static LRESULT CALLBACK Win32WindowProc(HWND handle,

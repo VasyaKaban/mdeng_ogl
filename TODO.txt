@@ -48,3 +48,4 @@ INFO:
 * Errors in window procedures: throw exceptions or just ignore?
 * Add Display(Monitor) class that will be bound to window and will be updated on event
 * final spec for WindowSubsystem classes
+* "SHOULD WE SEND EVENTS WHEN WE CHANGE SIZES, STATES, ETC...(ALSO FOR MOUSE, WINDOW, DISPLAY, ...). Check all events and functions

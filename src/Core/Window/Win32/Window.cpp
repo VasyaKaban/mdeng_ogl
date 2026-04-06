@@ -4,9 +4,6 @@
 
 #include <iostream>
 
-#pragma message( \
-    "SHOULD WE SEND EVENTS WHEN WE CHANGE SIZES, STATES, ETC...(ALSO FOR MOUSE, WINDOW, DISPLAY, ...)")
-
 namespace Core
 {
     namespace Win32
@@ -15,8 +12,6 @@ namespace Core
         {
             Window* obj;
         };
-
-        thread_local std::runtime_error WND_PROC_LAST_ERROR("");
 
         LRESULT CALLBACK Window::Win32WindowProc(HWND handle,
                                                  UINT message,
@@ -800,25 +795,47 @@ namespace Core
                     break;
             }
 
-            switch(message)
+            bool result = true;
+            if(message == WM_CREATE)
             {
-                case WM_CREATE:
-                {
-                    WindowCreateData* data = static_cast<WindowCreateData*>(
-                        reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
+                WindowCreateData* data = static_cast<WindowCreateData*>(
+                    reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
 
-                    SetLastError(0);
-                    auto res = SetWindowLongPtrW(handle,
-                                                 GWLP_USERDATA,
-                                                 reinterpret_cast<LONG_PTR>(data->obj));
-                    if(res == 0) //possible error
+                SetLastError(0);
+                auto res =
+                    SetWindowLongPtrW(handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data->obj));
+                if(res == 0) //possible error
+                {
+                    if(::GetLastError() != 0) //error
+                        result = false;
+                }
+            }
+            else
+            {
+                Window* window =
+                    reinterpret_cast<Window*>(GetWindowLongPtrW(handle, GWLP_USERDATA));
+
+                try
+                {
+                    switch(message)
                     {
-                        if(::GetLastError() != 0) //error
-                            return -1;
+                        case WM_QUIT:
+                            window->Emit(WindowSubsystemQuitEvent{});
+                            break;
+                        case WM_CLOSE:
+                            window->Emit(WindowCloseEvent{});
+                            break;
                     }
                 }
-                break;
+                catch(...)
+                {
+                    Core::System::SetLastError(Window::LAST_ERROR_CODE, std::current_exception());
+                    result = false;
+                }
             }
+
+            if(result == false)
+                return -1;
 
             return DefWindowProcW(handle, message, w_param, l_param);
         }
@@ -837,7 +854,7 @@ namespace Core
                          .right = static_cast<LONG>(info.resolution.width),
                          .bottom = static_cast<LONG>(info.resolution.height)};
             if(AdjustWindowRectEx(&rect, style & ~WS_OVERLAPPED, style & WS_SYSMENU, ex_style) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             auto title = Core::System::UTF8ToWide(info.title);
             HWND _handle = CreateWindowExW(ex_style,
@@ -854,7 +871,7 @@ namespace Core
                                            &data);
 
             if(_handle == nullptr)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             this->handle = _handle;
 
@@ -882,7 +899,7 @@ namespace Core
             auto wstr = Core::System::UTF8ToWide(title);
 
             if(SetWindowTextW(handle, wstr.data()) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
         }
 
         std::string Window::GetTitle() const
@@ -895,12 +912,12 @@ namespace Core
                 if(last_error == 0) //empty title
                     return "";
 
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
             }
 
             std::wstring wstr(length, L'\0');
             if(GetWindowTextW(handle, wstr.data(), length + 1) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             return Core::System::WideToUTF8(wstr);
         }
@@ -920,20 +937,19 @@ namespace Core
             if(style == 0)
             {
                 if(::GetLastError() != 0)
-                    throw Core::System::GetLastError();
+                    std::rethrow_exception(Core::System::GetLastError());
             }
 
             auto ex_style = GetWindowLongPtrW(handle, GWL_EXSTYLE);
             if(ex_style == 0)
             {
                 if(::GetLastError() != 0)
-                    throw Core::System::GetLastError();
+                    std::rethrow_exception(Core::System::GetLastError());
             }
 
             if(AdjustWindowRectEx(&rect, style & ~WS_OVERLAPPED, style & WS_SYSMENU, ex_style) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
-#pragma messsage("SWP_NOSENDCHANGING should we use it???")
             //ignore X and Y
             if(SetWindowPos(handle,
                             nullptr,
@@ -943,7 +959,7 @@ namespace Core
                             rect.bottom - rect.top,
                             SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOREDRAW | SWP_NOZORDER) == 0)
             {
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
             }
 
             UpdatePrevWindowedState();
@@ -953,7 +969,7 @@ namespace Core
         {
             RECT rect;
             if(GetClientRect(handle, &rect) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             return WindowResolution{.width = static_cast<std::uint32_t>(rect.right),
                                     .height = static_cast<std::uint32_t>(rect.bottom)};
@@ -981,52 +997,51 @@ namespace Core
                 if(style == 0)
                 {
                     if(::GetLastError() != 0)
-                        throw Core::System::GetLastError();
+                        std::rethrow_exception(Core::System::GetLastError());
                 }
 
                 if(SetWindowLongPtrW(handle, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW) == 0)
                 {
                     if(::GetLastError() != 0)
-                        throw Core::System::GetLastError();
+                        std::rethrow_exception(Core::System::GetLastError());
                 }
 
                 //apply rect + make topmost
                 if(SetWindowPos(handle,
-                                HWND_TOPMOST,
+                                HWND_BOTTOM,
                                 display_positon.x,
                                 display_positon.y,
                                 video_mode.width,
                                 video_mode.height,
                                 SWP_NOREDRAW) == 0)
-                    throw Core::System::GetLastError();
+                    std::rethrow_exception(Core::System::GetLastError());
             }
             else
             {
-#error BAD RESOLUTION RESTORE!
                 //restore style
                 ::SetLastError(0);
                 auto style = GetWindowLongPtrW(handle, GWL_STYLE);
                 if(style == 0)
                 {
                     if(::GetLastError() != 0)
-                        throw Core::System::GetLastError();
+                        std::rethrow_exception(Core::System::GetLastError());
                 }
 
                 if(SetWindowLongPtrW(handle, GWL_STYLE, style | WS_OVERLAPPEDWINDOW) == 0)
                 {
                     if(::GetLastError() != 0)
-                        throw Core::System::GetLastError();
+                        std::rethrow_exception(Core::System::GetLastError());
                 }
 
                 //restore to prev windowed position and resolution
                 if(SetWindowPos(handle,
-                                HWND_TOPMOST,
+                                HWND_TOP,
                                 windowed_prev_position.x,
                                 windowed_prev_position.y,
                                 windowed_prev_resolution.width,
                                 windowed_prev_resolution.height,
                                 SWP_NOREDRAW) == 0)
-                    throw Core::System::GetLastError();
+                    std::rethrow_exception(Core::System::GetLastError());
             }
 
             current_state = state;
@@ -1041,20 +1056,20 @@ namespace Core
         {
             POINT point = {.x = pos.x, .y = pos.y};
             if(ClientToScreen(handle, &point) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             if(SetCursorPos(point.x, point.y) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
         }
 
         WindowPosition Window::GetMouseCursorPosition() const
         {
             POINT point = {};
             if(GetCursorPos(&point) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             if(ScreenToClient(handle, &point) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             return WindowPosition{.x = point.x, .y = point.y};
         }
@@ -1078,11 +1093,12 @@ namespace Core
         {
             RECT rect;
             if(GetWindowRect(handle, &rect) == 0)
-                throw Core::System::GetLastError();
+                std::rethrow_exception(Core::System::GetLastError());
 
             windowed_prev_position = {.x = rect.left, .y = rect.top};
-            windowed_prev_resolution = {.width = static_cast<std::uint32_t>(rect.right),
-                                        .height = static_cast<std::uint32_t>(rect.bottom)};
+            windowed_prev_resolution = {.width = static_cast<std::uint32_t>(rect.right - rect.left),
+                                        .height =
+                                            static_cast<std::uint32_t>(rect.bottom - rect.top)};
         }
     };
 };
