@@ -81,7 +81,7 @@ namespace Core
                                      .hIconSm = nullptr};
 
             if(RegisterClassExW(&wnd_class) == 0)
-                std::rethrow_exception(Core::System::GetLastError());
+                Core::System::ThrowLastError();
         }
 
         WindowSubsystem::~WindowSubsystem()
@@ -98,22 +98,17 @@ namespace Core
                 if(res > 0) //dispatch
                 {
                     TranslateMessage(&msg);
-                    res = DispatchMessageW(&msg);
-                    if(res < 0)
-                    {
-                        if(WND_PROC_EXCEPTION)
-                            std::rethrow_exception(WND_PROC_EXCEPTION);
-                        else
-                            std::rethrow_exception(Core::System::GetLastError());
-                    }
+                    DispatchMessageW(&msg);
                 }
                 else //error
-                {
-                    if(WND_PROC_EXCEPTION)
-                        std::rethrow_exception(WND_PROC_EXCEPTION);
-                    else
-                        std::rethrow_exception(Core::System::GetLastError());
-                }
+                    Core::System::ThrowLastError();
+            }
+
+            while(!events.empty())
+            {
+                const auto event = events.front();
+                events.pop();
+                (event.window->*event.emitter)(event.id, static_cast<const void*>(&event.data));
             }
         }
 
@@ -131,7 +126,7 @@ namespace Core
         {
             CURSORINFO info = {.cbSize = sizeof(CURSORINFO)};
             if(GetCursorInfo(&info) == 0)
-                std::rethrow_exception(Core::System::GetLastError());
+                Core::System::ThrowLastError();
 
             if(info.flags == 0) //disabled
                 return CursorState::Disbaled;
@@ -153,6 +148,11 @@ namespace Core
         PROCESS_DPI_AWARENESS WindowSubsystem::GetDPIAwrenessType() const noexcept
         {
             return dpi_awareness;
+        }
+
+        void WindowSubsystem::PushEvent(QueueEvent&& event)
+        {
+            events.push(std::move(event));
         }
     };
 };

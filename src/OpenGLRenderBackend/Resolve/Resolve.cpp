@@ -32,7 +32,7 @@ namespace OpenGL
         {
             case WM_CREATE:
             {
-                std::exception_ptr* window_param = reinterpret_cast<std::exception_ptr*>(
+                std::exception_ptr* wnd_proc_exception = reinterpret_cast<std::exception_ptr*>(
                     reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
 
                 HDC _dc = nullptr;
@@ -78,23 +78,14 @@ namespace OpenGL
 
                 int format_index = ChoosePixelFormat(_dc, &pfd);
                 if(format_index == 0)
-                {
-                    *window_param = Core::System::GetLastError();
                     return -1;
-                }
 
                 if(SetPixelFormat(_dc, format_index, &pfd) == FALSE)
-                {
-                    *window_param = Core::System::GetLastError();
                     return -1;
-                }
 
                 _glrc = wglCreateContext(_dc);
                 if(_glrc == nullptr)
-                {
-                    *window_param = Core::System::GetLastError();
                     return -1;
-                }
 
                 wglMakeCurrent(_dc, _glrc);
 
@@ -102,7 +93,7 @@ namespace OpenGL
                     gladLoadWGL(_dc, reinterpret_cast<GLADloadfunc>(wglGetProcAddress));
                 if(wgl_version == 0)
                 {
-                    *window_param =
+                    *wnd_proc_exception =
                         std::make_exception_ptr(std::runtime_error("Failed to load WGL context"));
                     return -1;
                 }
@@ -128,7 +119,7 @@ namespace OpenGL
                 if(!(GLAD_WGL_ARB_create_context && GLAD_WGL_ARB_create_context_profile &&
                      GLAD_WGL_ARB_pixel_format))
                 {
-                    *window_param = std::make_exception_ptr(std::runtime_error(
+                    *wnd_proc_exception = std::make_exception_ptr(std::runtime_error(
                         "WGL core context or pixel format selection is not available"));
                     return -1;
                 }
@@ -150,6 +141,9 @@ namespace OpenGL
     void Resolve::Init()
     {
 #ifdef _WIN32
+        //clear last errors
+        Core::System::SetLastError(ERROR_SUCCESS);
+
         HINSTANCE _instance = GetModuleHandleW(nullptr);
 
         WNDCLASSEXW window_class = {.cbSize = sizeof(WNDCLASSEXW),
@@ -168,8 +162,7 @@ namespace OpenGL
         if(register_res == 0)
             throw std::runtime_error("Failed to create dummy OpenGL window");
 
-        std::exception_ptr window_param;
-
+        std::exception_ptr wnd_proc_exception;
         HWND _window = CreateWindowExW(0,
                                        WGL_DUMMY_WINDOW_CLASS_NAME,
                                        WGL_DUMMY_WINDOW_TITLE,
@@ -181,15 +174,17 @@ namespace OpenGL
                                        nullptr,
                                        nullptr,
                                        _instance,
-                                       &window_param);
+                                       &wnd_proc_exception);
 
         if(_window)
             DestroyWindow(_window);
 
         UnregisterClassW(WGL_DUMMY_WINDOW_CLASS_NAME, _instance);
 
-        if(window_param)
-            std::rethrow_exception(window_param);
+        if(wnd_proc_exception)
+            std::rethrow_exception(wnd_proc_exception);
+        else if(Core::System::GetLastError() != ERROR_SUCCESS)
+            Core::System::ThrowLastError();
 #else
 #    error TODO!
 #endif

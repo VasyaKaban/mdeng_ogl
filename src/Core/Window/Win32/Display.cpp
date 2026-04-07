@@ -22,7 +22,7 @@ namespace Core
         {
             MONITORINFOEXW info = {MONITORINFO{.cbSize = sizeof(MONITORINFOEXW)}};
             if(GetMonitorInfoW(handle, &info) == 0)
-                std::rethrow_exception(Core::System::GetLastError());
+                Core::System::ThrowLastError();
 
             std::copy(info.szDevice, info.szDevice + CCHDEVICENAME, this->device_name.data());
 
@@ -42,10 +42,7 @@ namespace Core
                                                                   &active_mode_count);
 
                     if(result != ERROR_SUCCESS)
-                    {
-                        ::SetLastError(result);
-                        std::rethrow_exception(Core::System::GetLastError());
-                    }
+                        throw Win32Exception(result);
 
                     active_path_infos.resize(active_path_count);
                     active_mode_infos.resize(active_mode_count);
@@ -63,10 +60,7 @@ namespace Core
                 while(result == ERROR_INSUFFICIENT_BUFFER);
 
                 if(result != ERROR_SUCCESS)
-                {
-                    ::SetLastError(result);
-                    std::rethrow_exception(Core::System::GetLastError());
-                }
+                    throw Win32Exception(result);
 
                 for(const auto& path: active_path_infos)
                 {
@@ -79,10 +73,7 @@ namespace Core
 
                     result = win_sys->DisplayConfigGetDeviceInfo(&target_device_name_info.header);
                     if(result != ERROR_SUCCESS)
-                    {
-                        ::SetLastError(result);
-                        std::rethrow_exception(Core::System::GetLastError());
-                    }
+                        throw Win32Exception(result);
 
                     DISPLAYCONFIG_SOURCE_DEVICE_NAME source_device_name_info = {
                         DISPLAYCONFIG_DEVICE_INFO_HEADER{
@@ -93,10 +84,7 @@ namespace Core
 
                     result = win_sys->DisplayConfigGetDeviceInfo(&source_device_name_info.header);
                     if(result != ERROR_SUCCESS)
-                    {
-                        ::SetLastError(result);
-                        std::rethrow_exception(Core::System::GetLastError());
-                    }
+                        throw Win32Exception(result);
 
                     if(std::wcscmp(source_device_name_info.viewGdiDeviceName, device_name.data()) ==
                        0)
@@ -181,7 +169,7 @@ namespace Core
         {
             DEVMODEW dev_mode = {.dmSize = sizeof(DEVMODEW), .dmDriverExtra = 0};
             if(EnumDisplaySettingsExW(device_name.data(), ENUM_CURRENT_SETTINGS, &dev_mode, 0) == 0)
-                std::rethrow_exception(Core::System::GetLastError());
+                Core::System::ThrowLastError();
 
             return VideoMode{.width = dev_mode.dmPelsWidth,
                              .height = dev_mode.dmPelsHeight,
@@ -274,7 +262,7 @@ namespace Core
         {
             MONITORINFOEXW info = {MONITORINFO{.cbSize = sizeof(MONITORINFOEXW)}};
             if(GetMonitorInfoW(handle, &info) == 0)
-                std::rethrow_exception(Core::System::GetLastError());
+                Core::System::ThrowLastError();
 
             return WindowPosition{.x = info.rcMonitor.left, .y = info.rcMonitor.top};
         }

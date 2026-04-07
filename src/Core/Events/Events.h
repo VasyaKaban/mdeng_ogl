@@ -192,7 +192,7 @@ namespace Core
         template<Event E>
         void Emit(const E& event)
         {
-            EmitImpl(Core::ClassID<E>::ID, &event);
+            EmitRaw(Core::ClassID<E>::ID, &event);
         }
 
         template<Event E, EventHandlerFunc<E> F>
@@ -210,8 +210,8 @@ namespace Core
                                listener,
                                state);
         }
+        void EmitRaw(ClassIDBase::ClassIDType id, const void* event);
     private:
-        void EmitImpl(ClassIDBase::ClassIDType id, const void* event);
         EventHandlerRef ConnectImpl(ClassIDBase::ClassIDType id,
                                     EventHandlerCallerWrapperType caller,
                                     EventHandlerDeleterWrapperType deleter,

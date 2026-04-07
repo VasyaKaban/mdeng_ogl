@@ -48,3 +48,4 @@ INFO:
 * Send events on all functions
 * Functions for programm-way settings(explicit events)
 * Save windowed states in event handler
+* Check Win32 Window class(WndProc) and WindowSubsystem queue

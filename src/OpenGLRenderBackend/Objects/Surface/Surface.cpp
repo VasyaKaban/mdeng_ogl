@@ -35,7 +35,7 @@ namespace OpenGL
 
         _dc = GetDC(_info.window);
         if(_dc == nullptr)
-            throw Core::System::GetLastError();
+            Core::System::ThrowLastError();
 
         //fill legacy_physical_device_features
         legacy_physical_device_features = Render::LegacyPhysicalDeviceFeatures{
@@ -228,10 +228,10 @@ namespace OpenGL
             DescribePixelFormat(dc, descibe_pixelformat_index, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
 
         if(res == 0)
-            throw Core::System::GetLastError();
+            Core::System::ThrowLastError();
 
         if(SetPixelFormat(dc, descibe_pixelformat_index, &pfd) == FALSE)
-            throw Core::System::GetLastError();
+            Core::System::ThrowLastError();
 
         bool debug_messenger_enabled = parent->GetEnabledFeatures().validation_layer ||
                                        parent->GetEnabledFeatures().debug_messenger;
@@ -267,7 +267,7 @@ namespace OpenGL
 
         glrc = glad_wglCreateContextAttribsARB(dc, nullptr, profile_attributes);
         if(!glrc)
-            throw Core::System::GetLastError();
+            Core::System::ThrowLastError();
 
         wglMakeCurrent(dc, glrc);
 #else

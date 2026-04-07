@@ -246,7 +246,7 @@ namespace Core
         return *this;
     }
 
-    void EventEmitter::EmitImpl(ClassIDBase::ClassIDType id, const void* event)
+    void EventEmitter::EmitRaw(ClassIDBase::ClassIDType id, const void* event)
     {
         auto it = mapping.find(id);
         if(it == mapping.end())

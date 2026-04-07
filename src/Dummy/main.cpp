@@ -419,6 +419,9 @@ std::string ConcatMouseButtons(Core::MouseButtonFlags buttons)
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
     try
     {
         auto win_sys_types = Core::GetAvailableWindowSubsystemTypes();
@@ -451,8 +454,8 @@ int main(int argc, char** argv)
             nullptr,
             Core::EventHandlerState::Enabled);
 
-        window->Connect<Core::WindowCloseEvent>(
-            [&is_run](const Core::WindowCloseEvent& event)
+        window->Connect<Core::WindowClosedEvent>(
+            [&is_run](const Core::WindowClosedEvent& event)
             {
                 std::cout << std::format(
                     "WindowCloseEvent:\n"
@@ -467,9 +470,10 @@ int main(int argc, char** argv)
             Core::EventHandlerState::Enabled);
 
         window->Connect<Core::WindowDisplayChangedEvent>(
-            [](const Core::WindowDisplayChangedEvent& event)
+            [window = window.get()](const Core::WindowDisplayChangedEvent& event)
             {
-                auto video_mode = event.display->GetCurrentVideoMode();
+                Core::Display* display = window->GetDisplay();
+                auto video_mode = display->GetCurrentVideoMode();
 
                 std::cout << std::format(
                     "WindowDisplayChangedEvent:\n"
@@ -484,9 +488,9 @@ int main(int argc, char** argv)
                     "\t\t\tBPP: {}\n"
                     "\t\t\tFrequency: {}\n",
                     event.timestamp_ms,
-                    event.display->GetName(),
-                    event.display->GetScaleFactor(),
-                    event.display->GetDisplayScaleFactor(),
+                    display->GetName(),
+                    display->GetScaleFactor(),
+                    display->GetDisplayScaleFactor(),
                     video_mode.width,
                     video_mode.height,
                     video_mode.bits_per_pixel,
@@ -541,6 +545,8 @@ int main(int argc, char** argv)
         window->Connect<Core::WindowMinimizedEvent>(
             [](const Core::WindowMinimizedEvent& event)
             {
+                throw std::runtime_error("TEST");
+
                 std::cout << std::format(
                     "WindowMinimizedEvent:\n"
                     "\tTimestamp: {}\n"
@@ -961,7 +967,7 @@ int main(int argc, char** argv)
             device.reset(selected_dev->CreateDevice(device_info));
         }
 
-        Render::Swapchain* swapchain = device->GetSwapchain();
+        /*Render::Swapchain* swapchain = device->GetSwapchain();
         Render::Queue* queue =
             device->GetQueue(Render::QueueInfo{.family_index = present_queue_family, .index = 0});
 
@@ -977,12 +983,12 @@ int main(int argc, char** argv)
             acquire_fences_statuses[i] = false;
         }
 
-        std::size_t frame_index = 0;
+        std::size_t frame_index = 0;*/
         while(is_run)
         {
             win_sys->PollEvents();
 
-            if(acquire_fences_statuses[frame_index] == true) //do wait
+            /*if(acquire_fences_statuses[frame_index] == true) //do wait
             {
                 auto wait_fence = acquire_fences[frame_index].get();
                 if(!wait_fence->Wait(std::numeric_limits<std::uint64_t>::max()))
@@ -1005,7 +1011,7 @@ int main(int argc, char** argv)
             bool present_res = swapchain->PresentSwapchainImage(present_info);
             assert(present_res);
 
-            frame_index = (frame_index + 1) % FRAMES_COUNT;
+            frame_index = (frame_index + 1) % FRAMES_COUNT;*/
         }
     }
     catch(const std::exception& ex)

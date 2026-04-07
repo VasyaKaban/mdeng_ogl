@@ -37,16 +37,15 @@ namespace Core
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowSubsystemQuitEvent>;
 
-    struct WindowCloseEvent
+    struct WindowClosedEvent
     {
         std::uint64_t timestamp_ms;
     };
-    CORE_API_TEMPLATE template class CORE_API ClassID<WindowCloseEvent>;
+    CORE_API_TEMPLATE template class CORE_API ClassID<WindowClosedEvent>;
 
     struct WindowDisplayChangedEvent
     {
         std::uint64_t timestamp_ms;
-        Display* display;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowDisplayChangedEvent>;
 

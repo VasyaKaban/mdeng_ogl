@@ -9,8 +9,6 @@ namespace Core
     {
         class WindowSubsystem;
 
-        static thread_local std::exception_ptr WND_PROC_EXCEPTION = {};
-
         class CORE_API Window final : public Core::Window, Core::NonMovable
         {
         public:

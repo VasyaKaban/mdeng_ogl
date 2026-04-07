@@ -2,6 +2,46 @@
 
 namespace Core
 {
+#ifdef _WIN32
+    Win32Exception::Win32Exception(DWORD _code) noexcept
+        : code(_code)
+    {}
+
+    Win32Exception::~Win32Exception()
+    {}
+
+    const char* Win32Exception::what() const noexcept
+    {
+        if(description.empty())
+        {
+            if(code == 0)
+                description = "Success";
+            else
+            {
+                wchar_t* buffer = nullptr;
+                auto size =
+                    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                                       FORMAT_MESSAGE_IGNORE_INSERTS,
+                                   nullptr,
+                                   code,
+                                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                                   reinterpret_cast<LPWSTR>(&buffer),
+                                   0,
+                                   nullptr);
+
+                if(size == 0)
+                    description = "Failed to allocate buffer for error message";
+
+                description = System::WideToUTF8(std::wstring_view(buffer, size));
+
+                LocalFree(buffer);
+            }
+        }
+
+        return description.c_str();
+    }
+#endif
+
     static const std::filesystem::path EXECUTABLE_PATH = []()
     {
 #ifdef _WIN32
@@ -37,30 +77,19 @@ namespace Core
     }
 
 #ifdef _WIN32
-    std::exception_ptr System::GetLastError()
+    DWORD System::GetLastError() noexcept
     {
-        DWORD error = ::GetLastError();
-        if(error == 0)
-            return std::make_exception_ptr(std::bad_exception{});
+        return ::GetLastError();
+    }
 
-        wchar_t* buffer = nullptr;
-        auto size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                                       FORMAT_MESSAGE_IGNORE_INSERTS,
-                                   nullptr,
-                                   error,
-                                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                   reinterpret_cast<LPWSTR>(&buffer),
-                                   0,
-                                   nullptr);
+    void System::SetLastError(DWORD code) noexcept
+    {
+        ::SetLastError(code);
+    }
 
-        if(size == 0)
-            throw std::runtime_error(std::format("WinAPI error. Code: {}", ::GetLastError()));
-
-        auto message = System::WideToUTF8(std::wstring_view(buffer, size));
-
-        LocalFree(buffer);
-
-        return std::make_exception_ptr(std::runtime_error(message));
+    [[noreturn]] void System::ThrowLastError()
+    {
+        throw Win32Exception(System::GetLastError());
     }
 
     std::string System::WideToUTF8(std::wstring_view wstr)
