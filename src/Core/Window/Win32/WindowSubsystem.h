@@ -40,10 +40,26 @@ namespace Core
             PROCESS_DPI_AWARENESS dpi_awareness;
         public:
             //let's make it public
+            //Windows 8.1+
             const HRESULT (*GetDpiForMonitor)(HMONITOR hmonitor,
                                               MONITOR_DPI_TYPE dpiType,
                                               UINT* dpiX,
                                               UINT* dpiY);
+
+            //Window 7+
+            LONG (*GetDisplayConfigBufferSizes)(
+                UINT32 flags,
+                UINT32* numPathArrayElements,
+                UINT32* numModeInfoArrayElements); //also in Vista but do not care
+
+            LONG (*QueryDisplayConfig)(UINT32 flags,
+                                       UINT32* numPathArrayElements,
+                                       DISPLAYCONFIG_PATH_INFO* pathArray,
+                                       UINT32* numModeInfoArrayElements,
+                                       DISPLAYCONFIG_MODE_INFO* modeInfoArray,
+                                       DISPLAYCONFIG_TOPOLOGY_ID* currentTopologyId);
+
+            LONG (*DisplayConfigGetDeviceInfo)(DISPLAYCONFIG_DEVICE_INFO_HEADER* requestPacket);
         };
     };
 };

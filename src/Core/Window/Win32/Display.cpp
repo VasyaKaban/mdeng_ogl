@@ -26,11 +26,96 @@ namespace Core
 
             std::copy(info.szDevice, info.szDevice + CCHDEVICENAME, this->device_name.data());
 
-            DISPLAY_DEVICEW display_device = {.cb = sizeof(DISPLAY_DEVICEW)};
-            if(EnumDisplayDevicesW(info.szDevice, 0, &display_device, 0) != 0)
+            WindowSubsystem* win_sys = static_cast<WindowSubsystem*>(parent->GetParent());
+            if(win_sys->QueryDisplayConfig)
             {
-                device_description = Core::System::WideToUTF8(
-                    {display_device.DeviceString, std::wcslen(display_device.DeviceString)});
+                UINT32 flags = QDC_ONLY_ACTIVE_PATHS;
+                LONG result = ERROR_SUCCESS;
+                std::vector<DISPLAYCONFIG_PATH_INFO> active_path_infos;
+                std::vector<DISPLAYCONFIG_MODE_INFO> active_mode_infos;
+                do
+                {
+                    UINT32 active_path_count;
+                    UINT32 active_mode_count;
+                    result = win_sys->GetDisplayConfigBufferSizes(flags,
+                                                                  &active_path_count,
+                                                                  &active_mode_count);
+
+                    if(result != ERROR_SUCCESS)
+                    {
+                        ::SetLastError(result);
+                        std::rethrow_exception(Core::System::GetLastError());
+                    }
+
+                    active_path_infos.resize(active_path_count);
+                    active_mode_infos.resize(active_mode_count);
+
+                    result = win_sys->QueryDisplayConfig(flags,
+                                                         &active_path_count,
+                                                         active_path_infos.data(),
+                                                         &active_mode_count,
+                                                         active_mode_infos.data(),
+                                                         nullptr);
+
+                    active_path_infos.resize(active_path_count);
+                    active_mode_infos.resize(active_mode_count);
+                }
+                while(result == ERROR_INSUFFICIENT_BUFFER);
+
+                if(result != ERROR_SUCCESS)
+                {
+                    ::SetLastError(result);
+                    std::rethrow_exception(Core::System::GetLastError());
+                }
+
+                for(const auto& path: active_path_infos)
+                {
+                    DISPLAYCONFIG_TARGET_DEVICE_NAME target_device_name_info = {
+                        DISPLAYCONFIG_DEVICE_INFO_HEADER{
+                            .type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME,
+                            .size = sizeof(DISPLAYCONFIG_TARGET_DEVICE_NAME),
+                            .adapterId = path.targetInfo.adapterId,
+                            .id = path.targetInfo.id}};
+
+                    result = win_sys->DisplayConfigGetDeviceInfo(&target_device_name_info.header);
+                    if(result != ERROR_SUCCESS)
+                    {
+                        ::SetLastError(result);
+                        std::rethrow_exception(Core::System::GetLastError());
+                    }
+
+                    DISPLAYCONFIG_SOURCE_DEVICE_NAME source_device_name_info = {
+                        DISPLAYCONFIG_DEVICE_INFO_HEADER{
+                            .type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME,
+                            .size = sizeof(DISPLAYCONFIG_SOURCE_DEVICE_NAME),
+                            .adapterId = path.sourceInfo.adapterId,
+                            .id = path.sourceInfo.id}};
+
+                    result = win_sys->DisplayConfigGetDeviceInfo(&source_device_name_info.header);
+                    if(result != ERROR_SUCCESS)
+                    {
+                        ::SetLastError(result);
+                        std::rethrow_exception(Core::System::GetLastError());
+                    }
+
+                    if(std::wcscmp(source_device_name_info.viewGdiDeviceName, device_name.data()) ==
+                       0)
+                    {
+                        device_description = Core::System::WideToUTF8(
+                            {target_device_name_info.monitorFriendlyDeviceName,
+                             std::wcslen(target_device_name_info.monitorFriendlyDeviceName)});
+                        break;
+                    }
+                }
+            }
+            else //fallback
+            {
+                DISPLAY_DEVICEW display_device = {.cb = sizeof(DISPLAY_DEVICEW)};
+                if(EnumDisplayDevicesW(info.szDevice, 0, &display_device, 0) != 0)
+                {
+                    device_description = Core::System::WideToUTF8(
+                        {display_device.DeviceString, std::wcslen(display_device.DeviceString)});
+                }
             }
 
             std::map<DevModeKey, DEVMODEW> dev_modes_map;

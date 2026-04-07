@@ -11,22 +11,35 @@ namespace Core
               SetProcessDpiAwareness(nullptr),
               SetProcessDPIAware(nullptr),
               dpi_awareness(PROCESS_DPI_AWARENESS::PROCESS_DPI_UNAWARE),
-              GetDpiForMonitor(nullptr)
+              GetDpiForMonitor(nullptr),
+              GetDisplayConfigBufferSizes(nullptr),
+              QueryDisplayConfig(nullptr),
+              DisplayConfigGetDeviceInfo(nullptr)
         {
             instance = GetModuleHandleW(nullptr);
             if(instance == nullptr)
                 throw std::runtime_error("Failed to get process instance");
 
-            auto user32_res = user32.Open("User32.dll");
-            auto shcore_res = shcore.Open("Shcore.dll");
+            auto user32_ex = user32.Open("User32.dll");
+            auto shcore_ex = shcore.Open("Shcore.dll");
 
-            if(!user32_res)
+            if(!user32_ex)
             {
                 SetProcessDPIAware = reinterpret_cast<decltype(SetProcessDPIAware)>(
                     user32.GetProcAddress("SetProcessDPIAware"));
+
+                GetDisplayConfigBufferSizes =
+                    reinterpret_cast<decltype(GetDisplayConfigBufferSizes)>(
+                        user32.GetProcAddress("GetDisplayConfigBufferSizes"));
+
+                QueryDisplayConfig = reinterpret_cast<decltype(QueryDisplayConfig)>(
+                    user32.GetProcAddress("QueryDisplayConfig"));
+
+                DisplayConfigGetDeviceInfo = reinterpret_cast<decltype(DisplayConfigGetDeviceInfo)>(
+                    user32.GetProcAddress("DisplayConfigGetDeviceInfo"));
             }
 
-            if(!shcore_res)
+            if(!shcore_ex)
             {
                 SetProcessDpiAwareness = reinterpret_cast<decltype(SetProcessDpiAwareness)>(
                     shcore.GetProcAddress("SetProcessDpiAwareness"));

@@ -45,8 +45,6 @@ INFO:
 * dlerror() into System for Linux
 * Limits and properties for window subsystem: for example limit max window size
 
-* final spec for WindowSubsystem classes
 * Send events on all functions
 * Functions for programm-way settings(explicit events)
 * Save windowed states in event handler
-* Friendly name for Display 
