@@ -392,6 +392,31 @@ void PrintSurfaceCaps(const Render::SurfaceCapabilities& surface_caps,
     }
 }
 
+std::string ConcatMouseButtons(Core::MouseButtonFlags buttons)
+{
+    constexpr static std::pair<Core::MouseButtonFlagBits, std::string_view> BUTTON_NAMES[] = {
+        {Core::MouseButtonFlagBits::LeftButton, "Left"},
+        {Core::MouseButtonFlagBits::MiddleButton, "Middle"},
+        {Core::MouseButtonFlagBits::RightButton, "Right"},
+        {Core::MouseButtonFlagBits::X1Button, "X1"},
+        {Core::MouseButtonFlagBits::X2Button, "X2"},
+    };
+
+    std::string out;
+    for(const auto& [id, name]: BUTTON_NAMES)
+    {
+        if(buttons & id)
+        {
+            if(!out.empty())
+                out += " | ";
+
+            out += name;
+        }
+    }
+
+    return out;
+}
+
 int main(int argc, char** argv)
 {
     try
@@ -409,6 +434,326 @@ int main(int argc, char** argv)
                                      .state = Core::WindowState::Windowed,
                                      .title = "test"};
         std::unique_ptr<Core::Window> window(win_sys->CreateWindow(win_info));
+
+        bool is_run = true;
+        window->Connect<Core::WindowSubsystemQuitEvent>(
+            [&is_run](const Core::WindowSubsystemQuitEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowSubsystemQuitEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                is_run = false;
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowCloseEvent>(
+            [&is_run](const Core::WindowCloseEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowCloseEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                is_run = false;
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowDisplayChangedEvent>(
+            [](const Core::WindowDisplayChangedEvent& event)
+            {
+                auto video_mode = event.display->GetCurrentVideoMode();
+
+                std::cout << std::format(
+                    "WindowDisplayChangedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tDisplay:\n"
+                    "\t\tName: {}\n"
+                    "\t\tScale factor: {}\n"
+                    "\t\tDispaly Scale factor: {}\n"
+                    "\t\tVideo mode:\n"
+                    "\t\t\tWidth: {}\n"
+                    "\t\t\tHeight: {}\n"
+                    "\t\t\tBPP: {}\n"
+                    "\t\t\tFrequency: {}\n",
+                    event.timestamp_ms,
+                    event.display->GetName(),
+                    event.display->GetScaleFactor(),
+                    event.display->GetDisplayScaleFactor(),
+                    video_mode.width,
+                    video_mode.height,
+                    video_mode.bits_per_pixel,
+                    video_mode.refresh_rate);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowMovedEvent>(
+            [](const Core::WindowMovedEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowMovedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tPosition:\n"
+                    "\t\tX: {}\n"
+                    "\t\tY: {}\n",
+                    event.timestamp_ms,
+                    event.position.x,
+                    event.position.y);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowResizedEvent>(
+            [](const Core::WindowResizedEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowResizedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tResolution:\n"
+                    "\t\tWidth: {}\n"
+                    "\t\tHeight: {}\n"
+                    "\tScaled Resolution:\n"
+                    "\t\tWidth: {}\n"
+                    "\t\tHeight: {}\n",
+                    event.timestamp_ms,
+                    event.resolution.width,
+                    event.resolution.height,
+                    event.scaled_resolution.width,
+                    event.scaled_resolution.height);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowMinimizedEvent>(
+            [](const Core::WindowMinimizedEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowMinimizedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tResolution:\n"
+                    "\t\tWidth: {}\n"
+                    "\t\tHeight: {}\n"
+                    "\tScaled Resolution:\n"
+                    "\t\tWidth: {}\n"
+                    "\t\tHeight: {}\n",
+                    event.timestamp_ms,
+                    event.resolution.width,
+                    event.resolution.height,
+                    event.scaled_resolution.width,
+                    event.scaled_resolution.height);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowMaximizedEvent>(
+            [](const Core::WindowMaximizedEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowMaximizedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tResolution:\n"
+                    "\t\tWidth: {}\n"
+                    "\t\tHeight: {}\n"
+                    "\tScaled Resolution:\n"
+                    "\t\tWidth: {}\n"
+                    "\t\tHeight: {}\n",
+                    event.timestamp_ms,
+                    event.resolution.width,
+                    event.resolution.height,
+                    event.scaled_resolution.width,
+                    event.scaled_resolution.height);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowHiddenEvent>(
+            [](const Core::WindowHiddenEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowHiddenEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowShownEvent>(
+            [](const Core::WindowShownEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowShownEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowCursorFocusGainEvent>(
+            [](const Core::WindowCursorFocusGainEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowCursorFocusGainEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tButtons: {}\n"
+                    "\tCursor position:\n"
+                    "\t\tX: {}\n"
+                    "\t\tY: {}\n",
+                    event.timestamp_ms,
+                    ConcatMouseButtons(event.buttons),
+                    event.cursor_position.x,
+                    event.cursor_position.y);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowCursorFocusLeaveEvent>(
+            [](const Core::WindowCursorFocusLeaveEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowCursorFocusLeaveEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowKeyboardFocusGainEvent>(
+            [](const Core::WindowKeyboardFocusGainEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowKeyboardFocusGainEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::WindowKeyboardFocusLeaveEvent>(
+            [](const Core::WindowKeyboardFocusLeaveEvent& event)
+            {
+                std::cout << std::format(
+                    "WindowKeyboardFocusLeaveEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::MouseButtonPressedEvent>(
+            [](const Core::MouseButtonPressedEvent& event)
+            {
+                std::cout << std::format(
+                    "MouseButtonPressedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tButton: {}\n"
+                    "\tClicks: {}\n"
+                    "\tCursor position:\n"
+                    "\t\tX: {}\n"
+                    "\t\tY: {}\n",
+                    event.timestamp_ms,
+                    ConcatMouseButtons(event.button),
+                    event.clicks,
+                    event.cursor_position.x,
+                    event.cursor_position.y);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::MouseButtonReleasedEvent>(
+            [](const Core::MouseButtonReleasedEvent& event)
+            {
+                std::cout << std::format(
+                    "MouseButtonReleasedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tButton: {}\n"
+                    "\tCursor position:\n"
+                    "\t\tX: {}\n"
+                    "\t\tY: {}\n",
+                    event.timestamp_ms,
+                    ConcatMouseButtons(event.button),
+                    event.cursor_position.x,
+                    event.cursor_position.y);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::MouseCursorMoveEvent>(
+            [](const Core::MouseCursorMoveEvent& event)
+            {
+                std::cout << std::format(
+                    "MouseCursorMoveEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tButtons: {}\n"
+                    "\tCursor position:\n"
+                    "\t\tX: {}\n"
+                    "\t\tY: {}\n",
+                    event.timestamp_ms,
+                    ConcatMouseButtons(event.buttons),
+                    event.cursor_position.x,
+                    event.cursor_position.y);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::MouseWheelEvent>(
+            [](const Core::MouseWheelEvent& event)
+            {
+                std::cout << std::format(
+                    "MouseWheelEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tButtons: {}\n"
+                    "\tCursor position:\n"
+                    "\t\tX: {}\n"
+                    "\t\tY: {}\n"
+                    "\tXScroll: {}\n"
+                    "\tYScroll: {}\n",
+                    event.timestamp_ms,
+                    ConcatMouseButtons(event.buttons),
+                    event.cursor_position.x,
+                    event.cursor_position.y,
+                    event.x_scroll,
+                    event.y_scroll);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
 
         Core::Display* display = window->GetDisplay();
         std::cerr << std::format("Display: {}\n", display->GetName());
@@ -456,7 +801,6 @@ int main(int argc, char** argv)
         auto pre_reso = window->GetResolution();
         window->SetState(Core::WindowState::FullScreen);
         auto full_reso = window->GetResolution();
-        //std::this_thread::sleep_for(std::chrono::seconds(3));
         window->SetState(Core::WindowState::Windowed);
         auto win_reso = window->GetResolution();
 
@@ -464,17 +808,6 @@ int main(int argc, char** argv)
         Render::Extent2D swapchain_extent = {
             .width = static_cast<std::uint32_t>(window_resolution.width),
             .height = static_cast<std::uint32_t>(window_resolution.height)};
-
-        bool is_run = true;
-        window->Connect<Core::WindowCloseEvent>(
-            [&is_run](const Core::WindowCloseEvent&)
-            {
-                is_run = false;
-
-                return Core::EventHandlerResult::None;
-            },
-            nullptr,
-            Core::EventHandlerState::Enabled);
 
         Core::DynamicLibrary lib;
         auto lib_path = Core::System::GetExecutablePath().parent_path() /

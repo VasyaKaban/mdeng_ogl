@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "WindowSubsystem.h"
 #include "Core/Utils/ScopedCall.hpp"
+#include <windowsx.h>
 
 #include <iostream>
 
@@ -8,15 +9,7 @@ namespace Core
 {
     namespace Win32
     {
-        struct WindowCreateData
-        {
-            Window* obj;
-        };
-
-        LRESULT CALLBACK Window::Win32WindowProc(HWND handle,
-                                                 UINT message,
-                                                 WPARAM w_param,
-                                                 LPARAM l_param)
+        void PrintEventMessage(UINT message)
         {
             switch(message)
             {
@@ -791,58 +784,322 @@ namespace Core
                     std::cerr << "WM_TOOLTIPDISMISS: " << WM_TOOLTIPDISMISS << std::endl;
                     break;
                 default:
-                    std::cerr << "Unknown message: " << message << std::endl;
+                    std::cerr << std::format("Unknown message: {:#0x}", message) << std::endl;
                     break;
             }
+        }
 
-            bool result = true;
-            if(message == WM_CREATE)
+        struct WindowCreateData
+        {
+            Window* obj;
+        };
+
+        enum class WindowProcResult
+        {
+            Success, //return 0
+            Failure, //return -1
+            Default //return DefWindowProcW
+        };
+
+        static MouseButtonFlags GetMouseButtonsFlags(WPARAM w_param) noexcept
+        {
+            MouseButtonFlags buttons = 0;
+            if(w_param & MK_LBUTTON)
+                buttons |= MouseButtonFlagBits::LeftButton;
+            if(w_param & MK_MBUTTON)
+                buttons |= MouseButtonFlagBits::MiddleButton;
+            if(w_param & MK_RBUTTON)
+                buttons |= MouseButtonFlagBits::RightButton;
+            if(w_param & MK_XBUTTON1)
+                buttons |= MouseButtonFlagBits::X1Button;
+            if(w_param & MK_XBUTTON2)
+                buttons |= MouseButtonFlagBits::X2Button;
+
+            return buttons;
+        }
+
+        static WindowPosition GetRelativeCursorPosition(LPARAM l_param) noexcept
+        {
+            return WindowPosition{.x = GET_X_LPARAM(l_param), .y = GET_Y_LPARAM(l_param)};
+        }
+
+        static WindowPosition GetRelativeTranslatedCursorPosition(HWND handle, LPARAM l_param)
+        {
+            POINT point = {.x = GET_X_LPARAM(l_param), .y = GET_Y_LPARAM(l_param)};
+            if(ScreenToClient(handle, &point) == 0)
+                std::rethrow_exception(Core::System::GetLastError());
+
+            return WindowPosition{.x = point.x, .y = point.y};
+        }
+
+        LRESULT CALLBACK Window::Win32WindowProc(HWND handle,
+                                                 UINT message,
+                                                 WPARAM w_param,
+                                                 LPARAM l_param)
+        {
+            //PrintEventMessage(message);
+
+            WindowProcResult result = WindowProcResult::Success;
+
+            try
             {
-                WindowCreateData* data = static_cast<WindowCreateData*>(
-                    reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
-
-                SetLastError(0);
-                auto res =
-                    SetWindowLongPtrW(handle, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data->obj));
-                if(res == 0) //possible error
+                if(handle == nullptr) //skip NULL window
                 {
-                    if(::GetLastError() != 0) //error
-                        result = false;
+                    result = WindowProcResult::Default;
                 }
-            }
-            else
-            {
-                Window* window =
-                    reinterpret_cast<Window*>(GetWindowLongPtrW(handle, GWLP_USERDATA));
-
-                try
+                else if(message == WM_CREATE) //handle create message
                 {
+                    WindowCreateData* data = static_cast<WindowCreateData*>(
+                        reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
+
+                    SetLastError(0);
+                    auto res = SetWindowLongPtrW(handle,
+                                                 GWLP_USERDATA,
+                                                 reinterpret_cast<LONG_PTR>(data->obj));
+                    if(res == 0) //possible error
+                    {
+                        if(::GetLastError() != 0) //error
+                            result = WindowProcResult::Failure;
+                    }
+                }
+                else //handle other messages
+                {
+                    Window* window =
+                        reinterpret_cast<Window*>(GetWindowLongPtrW(handle, GWLP_USERDATA));
+
+                    if(!window) //not our window
+                        result = WindowProcResult::Default;
+
+                    std::uint64_t message_time_ms = GetMessageTime();
                     switch(message)
                     {
                         case WM_QUIT:
-                            window->Emit(WindowSubsystemQuitEvent{});
+
+                            window->Emit(WindowSubsystemQuitEvent{.timestamp_ms = message_time_ms});
                             break;
                         case WM_CLOSE:
-                            window->Emit(WindowCloseEvent{});
+                            window->Emit(WindowCloseEvent{.timestamp_ms = message_time_ms});
                             break;
+                        case WM_DISPLAYCHANGE:
+                            window->display.reset(new Display(
+                                window,
+                                MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST)));
+                            window->Emit(
+                                WindowDisplayChangedEvent{.timestamp_ms = message_time_ms,
+                                                          .display = window->display.get()});
+                            break;
+                        case WM_DPICHANGED:
+                            if(static_cast<WindowSubsystem*>(window->GetParent())
+                                   ->GetDPIAwrenessType() == PROCESS_PER_MONITOR_DPI_AWARE)
+                            {
+                                window->display.reset(new Display(
+                                    window,
+                                    MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST)));
+                                window->Emit(
+                                    WindowDisplayChangedEvent{.timestamp_ms = message_time_ms,
+                                                              .display = window->display.get()});
+                            }
+                            break;
+                        case WM_MOVE:
+                            window->Emit(
+                                WindowMovedEvent{.timestamp_ms = message_time_ms,
+                                                 .position = WindowPosition{.x = LOWORD(l_param),
+                                                                            .y = HIWORD(l_param)}});
+                            break;
+                        case WM_SIZE:
+                        {
+                            WindowResolution resolution = {.width = LOWORD(l_param),
+                                                           .height = HIWORD(l_param)};
+
+                            if(w_param == SIZE_MAXIMIZED)
+                            {
+                                window->Emit(WindowMaximizedEvent{.timestamp_ms = message_time_ms,
+                                                                  .resolution = resolution,
+                                                                  .scaled_resolution = resolution});
+                            }
+                            else if(w_param == SIZE_MINIMIZED)
+                            {
+                                window->Emit(WindowMinimizedEvent{.timestamp_ms = message_time_ms,
+                                                                  .resolution = resolution,
+                                                                  .scaled_resolution = resolution});
+                            }
+                            else
+                            {
+                                window->Emit(WindowResizedEvent{.timestamp_ms = message_time_ms,
+                                                                .resolution = resolution,
+                                                                .scaled_resolution = resolution});
+                            }
+                        }
+                        break;
+                        case WM_SHOWWINDOW:
+                        {
+                            if(w_param == TRUE)
+                                window->Emit(WindowShownEvent{.timestamp_ms = message_time_ms});
+                            else if(w_param == FALSE)
+                                window->Emit(WindowHiddenEvent{.timestamp_ms = message_time_ms});
+                        }
+                        break;
+                        case WM_NCMOUSEMOVE:
+                        case WM_MOUSEMOVE:
+                        {
+                            MouseButtonFlags buttons =
+                                GetMouseButtonsFlags(GET_KEYSTATE_WPARAM(w_param));
+
+                            if(window->mouse_focused == false /*&& w_param != 0*/) //enter
+                            {
+                                TRACKMOUSEEVENT track_info = {.cbSize = sizeof(TRACKMOUSEEVENT),
+                                                              .dwFlags = TME_LEAVE,
+                                                              .hwndTrack = handle,
+                                                              .dwHoverTime = 0};
+                                if(TrackMouseEvent(&track_info) == 0)
+                                    std::rethrow_exception(Core::System::GetLastError());
+
+                                window->mouse_focused = true;
+
+                                window->Emit(WindowCursorFocusGainEvent{
+                                    .timestamp_ms = message_time_ms,
+                                    .buttons = buttons,
+                                    .cursor_position = GetRelativeCursorPosition(l_param)});
+                            }
+                            else if(message == WM_MOUSEMOVE) //common move
+                            {
+                                window->Emit(MouseCursorMoveEvent{
+                                    .timestamp_ms = message_time_ms,
+                                    .buttons = buttons,
+                                    .cursor_position = GetRelativeCursorPosition(l_param)});
+                            }
+                        }
+                        break;
+                        case WM_MOUSELEAVE:
+                        {
+                            window->mouse_focused = false;
+                            window->Emit(
+                                WindowCursorFocusLeaveEvent{.timestamp_ms = message_time_ms});
+                        }
+                        break;
+                        case WM_SETFOCUS:
+                            window->Emit(
+                                WindowKeyboardFocusGainEvent{.timestamp_ms = message_time_ms});
+                            break;
+                        case WM_KILLFOCUS:
+                            window->Emit(
+                                WindowKeyboardFocusLeaveEvent{.timestamp_ms = message_time_ms});
+                            break;
+                        case WM_LBUTTONDOWN:
+                        case WM_LBUTTONDBLCLK:
+                        case WM_MBUTTONDOWN:
+                        case WM_MBUTTONDBLCLK:
+                        case WM_RBUTTONDOWN:
+                        case WM_RBUTTONDBLCLK:
+                        case WM_XBUTTONDOWN:
+                        case WM_XBUTTONDBLCLK:
+                        {
+                            MouseButtonFlagBits button;
+                            std::uint32_t clicks = 1;
+                            switch(message)
+                            {
+                                case WM_LBUTTONDBLCLK:
+                                    clicks = 2;
+                                case WM_LBUTTONDOWN:
+                                    button = MouseButtonFlagBits::LeftButton;
+                                    break;
+                                case WM_MBUTTONDBLCLK:
+                                    clicks = 2;
+                                case WM_MBUTTONDOWN:
+                                    button = MouseButtonFlagBits::MiddleButton;
+                                    break;
+                                case WM_RBUTTONDBLCLK:
+                                    clicks = 2;
+                                case WM_RBUTTONDOWN:
+                                    button = MouseButtonFlagBits::RightButton;
+                                    break;
+                                case WM_XBUTTONDBLCLK:
+                                    clicks = 2;
+                                case WM_XBUTTONDOWN:
+                                    if(GET_XBUTTON_WPARAM(w_param) == XBUTTON1)
+                                        button = MouseButtonFlagBits::X1Button;
+                                    else
+                                        button = MouseButtonFlagBits::X2Button;
+                                    break;
+                            }
+                            window->Emit(MouseButtonPressedEvent{
+                                .timestamp_ms = message_time_ms,
+                                .button = button,
+                                .clicks = clicks,
+                                .cursor_position = GetRelativeCursorPosition(l_param)});
+                        }
+                        break;
+                        case WM_LBUTTONUP:
+                        case WM_MBUTTONUP:
+                        case WM_RBUTTONUP:
+                        case WM_XBUTTONUP:
+                        {
+                            MouseButtonFlagBits button;
+                            switch(message)
+                            {
+                                case WM_LBUTTONUP:
+                                    button = MouseButtonFlagBits::LeftButton;
+                                    break;
+                                case WM_MBUTTONUP:
+                                    button = MouseButtonFlagBits::MiddleButton;
+                                    break;
+                                case WM_RBUTTONUP:
+                                    button = MouseButtonFlagBits::RightButton;
+                                    break;
+                                case WM_XBUTTONUP:
+                                    if(GET_XBUTTON_WPARAM(w_param) == XBUTTON1)
+                                        button = MouseButtonFlagBits::X1Button;
+                                    else
+                                        button = MouseButtonFlagBits::X2Button;
+                                    break;
+                            }
+
+                            window->Emit(MouseButtonReleasedEvent{
+                                .timestamp_ms = message_time_ms,
+                                .button = button,
+                                .cursor_position = WindowPosition{.x = GET_X_LPARAM(l_param),
+                                                                  .y = GET_Y_LPARAM(l_param)}});
+                        }
+                        break;
+                        case WM_MOUSEWHEEL:
+                        case WM_MOUSEHWHEEL:
+                        {
+                            float delta =
+                                static_cast<float>(GET_WHEEL_DELTA_WPARAM(w_param)) / WHEEL_DELTA;
+
+                            MouseButtonFlags buttons =
+                                GetMouseButtonsFlags(GET_KEYSTATE_WPARAM(w_param));
+
+                            window->Emit(MouseWheelEvent{
+                                .timestamp_ms = message_time_ms,
+                                .buttons = buttons,
+                                .cursor_position =
+                                    GetRelativeTranslatedCursorPosition(handle, l_param),
+                                .x_scroll = (message == WM_MOUSEHWHEEL ? delta : 0),
+                                .y_scroll = (message == WM_MOUSEWHEEL ? delta : 0)});
+                        }
+                        break;
+                        default:
+                            result = WindowProcResult::Default;
                     }
                 }
-                catch(...)
-                {
-                    Core::System::SetLastError(Window::LAST_ERROR_CODE, std::current_exception());
-                    result = false;
-                }
+            }
+            catch(...)
+            {
+                WND_PROC_EXCEPTION = std::current_exception();
+                result = WindowProcResult::Failure;
             }
 
-            if(result == false)
-                return -1;
+            if(result == WindowProcResult::Default)
+                return DefWindowProcW(handle, message, w_param, l_param);
 
-            return DefWindowProcW(handle, message, w_param, l_param);
+            return (result == WindowProcResult::Success ? 0 : -1);
         }
 
         Window::Window(WindowSubsystem* _parent, const WindowInfo& info)
             : parent(_parent),
-              current_state(info.state)
+              current_state(info.state),
+              mouse_focused(false)
         {
             WindowCreateData data = {.obj = this};
 

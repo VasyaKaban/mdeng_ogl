@@ -87,10 +87,20 @@ namespace Core
                     TranslateMessage(&msg);
                     res = DispatchMessageW(&msg);
                     if(res < 0)
-                        std::rethrow_exception(Core::System::GetLastError());
+                    {
+                        if(WND_PROC_EXCEPTION)
+                            std::rethrow_exception(WND_PROC_EXCEPTION);
+                        else
+                            std::rethrow_exception(Core::System::GetLastError());
+                    }
                 }
                 else //error
-                    std::rethrow_exception(Core::System::GetLastError());
+                {
+                    if(WND_PROC_EXCEPTION)
+                        std::rethrow_exception(WND_PROC_EXCEPTION);
+                    else
+                        std::rethrow_exception(Core::System::GetLastError());
+                }
             }
         }
 

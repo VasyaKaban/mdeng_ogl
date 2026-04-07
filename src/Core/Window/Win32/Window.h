@@ -9,10 +9,11 @@ namespace Core
     {
         class WindowSubsystem;
 
+        static thread_local std::exception_ptr WND_PROC_EXCEPTION = {};
+
         class CORE_API Window final : public Core::Window, Core::NonMovable
         {
         public:
-            constexpr static DWORD LAST_ERROR_CODE = (0b1 << 29) + 0b1;
             constexpr static wchar_t WIN32_WINDOW_CLASS_NAME[] = L"WIN32_WINDOW_CLASS";
 
             static LRESULT CALLBACK Win32WindowProc(HWND handle,
@@ -50,6 +51,7 @@ namespace Core
             WindowState current_state;
             WindowPosition windowed_prev_position;
             WindowResolution windowed_prev_resolution;
+            bool mouse_focused;
         };
     };
 };

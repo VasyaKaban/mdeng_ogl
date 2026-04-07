@@ -31,7 +31,6 @@ namespace Core
 
 #ifdef _WIN32
         static std::exception_ptr GetLastError();
-        static void SetLastError(DWORD code, std::exception_ptr ptr);
         static std::string WideToUTF8(std::wstring_view wstr);
         static std::wstring UTF8ToWide(std::string_view str);
 #endif

@@ -24,12 +24,19 @@ namespace Core
             if(GetMonitorInfoW(handle, &info) == 0)
                 std::rethrow_exception(Core::System::GetLastError());
 
-            std::copy(info.szDevice, info.szDevice + CCHDEVICENAME, this->name.data());
+            std::copy(info.szDevice, info.szDevice + CCHDEVICENAME, this->device_name.data());
+
+            DISPLAY_DEVICEW display_device = {.cb = sizeof(DISPLAY_DEVICEW)};
+            if(EnumDisplayDevicesW(info.szDevice, 0, &display_device, 0) != 0)
+            {
+                device_description = Core::System::WideToUTF8(
+                    {display_device.DeviceString, std::wcslen(display_device.DeviceString)});
+            }
 
             std::map<DevModeKey, DEVMODEW> dev_modes_map;
             DEVMODEW dev_mode = {.dmSize = sizeof(DEVMODEW), .dmDriverExtra = 0};
             DWORD dev_mode_count = 0;
-            while(EnumDisplaySettingsExW(name.data(), dev_mode_count, &dev_mode, 0) != 0)
+            while(EnumDisplaySettingsExW(device_name.data(), dev_mode_count, &dev_mode, 0) != 0)
             {
                 dev_mode_count++;
 
@@ -65,7 +72,7 @@ namespace Core
 
         std::string Display::GetName() const
         {
-            return Core::System::WideToUTF8({name.data(), name.size()});
+            return device_description;
         }
 
         std::vector<VideoMode> Display::GetVideoModes() const
@@ -88,7 +95,7 @@ namespace Core
         VideoMode Display::GetCurrentVideoMode() const
         {
             DEVMODEW dev_mode = {.dmSize = sizeof(DEVMODEW), .dmDriverExtra = 0};
-            if(EnumDisplaySettingsExW(name.data(), ENUM_CURRENT_SETTINGS, &dev_mode, 0) == 0)
+            if(EnumDisplaySettingsExW(device_name.data(), ENUM_CURRENT_SETTINGS, &dev_mode, 0) == 0)
                 std::rethrow_exception(Core::System::GetLastError());
 
             return VideoMode{.width = dev_mode.dmPelsWidth,
@@ -142,7 +149,7 @@ namespace Core
 
         void Display::SetVideoMode(std::uint32_t index)
         {
-            auto res = ChangeDisplaySettingsExW(name.data(),
+            auto res = ChangeDisplaySettingsExW(device_name.data(),
                                                 &dev_modes[index],
                                                 nullptr,
                                                 CDS_FULLSCREEN,

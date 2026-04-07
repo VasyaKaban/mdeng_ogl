@@ -37,7 +37,8 @@ namespace Core
             HMONITOR handle;
 
             std::vector<DEVMODEW> dev_modes;
-            std::array<wchar_t, CCHDEVICENAME> name;
+            std::array<wchar_t, CCHDEVICENAME> device_name;
+            std::string device_description;
         };
     };
 };
