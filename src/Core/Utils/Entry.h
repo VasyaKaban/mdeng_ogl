@@ -15,6 +15,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
     int argc = 0;
     auto args = CommandLineToArgvW(cmd_line, &argc);
 
+    if(args == nullptr)
+        std::terminate();
+
     std::vector<std::string> string_arguments;
     string_arguments.reserve(1 + argc);
 
