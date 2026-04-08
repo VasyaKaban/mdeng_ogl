@@ -34,6 +34,18 @@ namespace Core
         DWORD code;
         mutable std::string description; //make it mutable for lazy what() method
     };
+
+    class CORE_API DisplayException : public std::exception
+    {
+    public:
+        DisplayException(LONG _code) noexcept;
+        virtual ~DisplayException() override;
+
+        virtual const char* what() const noexcept override;
+    protected:
+        LONG code;
+        mutable std::string description; //make it mutable for lazy what() method
+    };
 #endif
 
     class CORE_API System

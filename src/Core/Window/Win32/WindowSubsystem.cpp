@@ -18,7 +18,7 @@ namespace Core
         {
             instance = GetModuleHandleW(nullptr);
             if(instance == nullptr)
-                throw std::runtime_error("Failed to get process instance");
+                Core::System::ThrowLastError();
 
             auto user32_ex = user32.Open("User32.dll");
             auto shcore_ex = shcore.Open("Shcore.dll");
@@ -50,18 +50,21 @@ namespace Core
 
             if(SetProcessDpiAwareness)
             {
-                if(SetProcessDpiAwareness(PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE) !=
-                   S_OK)
+                if(auto res =
+                       SetProcessDpiAwareness(PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE);
+                   res != S_OK)
                 {
-                    throw std::runtime_error("Failed to set DPI awareness");
+                    throw Core::Win32Exception(HRESULT_CODE(res));
                 }
 
                 dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE;
             }
             else if(SetProcessDPIAware)
             {
-                if(SetProcessDPIAware() == FALSE)
-                    throw std::runtime_error("Failed to set DPI awareness");
+                if(SetProcessDPIAware() ==
+                   FALSE) //there is noinfo about GetLastError so we throw common exception
+                    throw std::runtime_error(
+                        "Failed to set DPI awareness. Function: SetProcessDPIAware");
 
                 dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_SYSTEM_DPI_AWARE;
             }
@@ -106,9 +109,17 @@ namespace Core
 
             while(!events.empty())
             {
-                const auto event = events.front();
-                events.pop();
-                (event.window->*event.emitter)(event.id, static_cast<const void*>(&event.data));
+                const auto& event = events.front();
+                try
+                {
+                    event.window->EmitRaw(event.id, static_cast<const void*>(&event.data));
+                    events.pop();
+                }
+                catch(...)
+                {
+                    events.pop();
+                    throw;
+                }
             }
         }
 
@@ -150,7 +161,7 @@ namespace Core
             return dpi_awareness;
         }
 
-        void WindowSubsystem::PushEvent(QueueEvent&& event)
+        void WindowSubsystem::PushEvent(Event&& event)
         {
             events.push(std::move(event));
         }

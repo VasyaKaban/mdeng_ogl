@@ -47,5 +47,6 @@ INFO:
 
 * Send events on all functions
 * Functions for programm-way settings(explicit events)
-* Save windowed states in event handler
-* Check Win32 Window class(WndProc) and WindowSubsystem queue
+* Check Win32 windowed_state updates
+* GetKeyboardState
+* Not top(most) on fullscreen -> windowed. Only set when we come from another window

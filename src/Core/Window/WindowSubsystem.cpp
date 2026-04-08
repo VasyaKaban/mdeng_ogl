@@ -29,7 +29,7 @@ namespace Core
 
 #elif defined(linux)
         if(info.type != WindowSubsystemType::XCB)
-            throw std::runtime_error("Bad window subsystem type. Only Win32 is supported");
+            throw std::runtime_error("Bad window subsystem type. Only XCB is supported");
 
 #    error TODO!
 #endif

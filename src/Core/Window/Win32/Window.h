@@ -12,6 +12,8 @@ namespace Core
         class CORE_API Window final : public Core::Window, Core::NonMovable
         {
         public:
+            using EventEmitter::EmitRaw;
+
             constexpr static wchar_t WIN32_WINDOW_CLASS_NAME[] = L"WIN32_WINDOW_CLASS";
 
             static LRESULT CALLBACK Win32WindowProc(HWND handle,
@@ -46,9 +48,9 @@ namespace Core
             WindowSubsystem* parent;
             HWND handle;
             std::unique_ptr<Display> display;
+
             WindowState current_state;
-            WindowPosition windowed_prev_position;
-            WindowResolution windowed_prev_resolution;
+            RECT prev_windowed_rect;
             bool mouse_focused;
         };
     };

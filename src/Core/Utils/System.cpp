@@ -40,6 +40,51 @@ namespace Core
 
         return description.c_str();
     }
+
+    DisplayException::DisplayException(LONG _code) noexcept
+        : code(_code)
+    {}
+    DisplayException::~DisplayException()
+    {}
+
+    const char* DisplayException::what() const noexcept
+    {
+        if(description.empty())
+        {
+            switch(code)
+            {
+                case DISP_CHANGE_SUCCESSFUL:
+                    description = "DISP_CHANGE_SUCCESSFUL";
+                    break;
+                case DISP_CHANGE_BADDUALVIEW:
+                    description = "DISP_CHANGE_BADDUALVIEW";
+                    break;
+                case DISP_CHANGE_BADFLAGS:
+                    description = "DISP_CHANGE_BADFLAGS";
+                    break;
+                case DISP_CHANGE_BADMODE:
+                    description = "DISP_CHANGE_BADMODE";
+                    break;
+                case DISP_CHANGE_BADPARAM:
+                    description = "DISP_CHANGE_BADPARAM";
+                    break;
+                case DISP_CHANGE_FAILED:
+                    description = "DISP_CHANGE_FAILED";
+                    break;
+                case DISP_CHANGE_NOTUPDATED:
+                    description = "DISP_CHANGE_NOTUPDATED";
+                    break;
+                case DISP_CHANGE_RESTART:
+                    description = "DISP_CHANGE_RESTART";
+                    break;
+                default:
+                    description = std::format("DISP_CHANGE_UNKNOWN({})", code);
+                    break;
+            }
+        }
+
+        return description.c_str();
+    }
 #endif
 
     static const std::filesystem::path EXECUTABLE_PATH = []()

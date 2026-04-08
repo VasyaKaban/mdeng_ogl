@@ -153,6 +153,28 @@ namespace Core
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<MouseWheelEvent>;
 
+    //helper for inner subsystem event queue
+    union QueueEvent
+    {
+        WindowSubsystemQuitEvent window_subsystem_quit;
+        WindowClosedEvent window_closed;
+        WindowDisplayChangedEvent window_display_changed;
+        WindowMovedEvent window_moved;
+        WindowResizedEvent window_resized;
+        WindowMinimizedEvent window_minimized;
+        WindowMaximizedEvent window_maximized;
+        WindowHiddenEvent window_hidden;
+        WindowShownEvent window_shown;
+        WindowCursorFocusGainEvent window_cursor_focus_gain;
+        WindowCursorFocusLeaveEvent window_cursor_focus_leave;
+        WindowKeyboardFocusGainEvent window_keyboard_focus_gain;
+        WindowKeyboardFocusLeaveEvent window_keyboard_focus_leave;
+        MouseButtonPressedEvent mouse_button_pressed;
+        MouseButtonReleasedEvent mouse_buttton_released;
+        MouseCursorMoveEvent mouse_cursor_move;
+        MouseWheelEvent mouse_wheel;
+    };
+
     //Quit
     //Close
     //DisplayChanged

@@ -504,7 +504,7 @@ int main(int argc, char** argv)
         window->Connect<Core::WindowMovedEvent>(
             [](const Core::WindowMovedEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowMovedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tPosition:\n"
@@ -512,7 +512,7 @@ int main(int argc, char** argv)
                     "\t\tY: {}\n",
                     event.timestamp_ms,
                     event.position.x,
-                    event.position.y);
+                    event.position.y);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -619,7 +619,7 @@ int main(int argc, char** argv)
         window->Connect<Core::WindowCursorFocusGainEvent>(
             [](const Core::WindowCursorFocusGainEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowCursorFocusGainEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tButtons: {}\n"
@@ -630,7 +630,7 @@ int main(int argc, char** argv)
                     ConcatMouseButtons(event.buttons),
                     event.cursor_position.x,
                     event.cursor_position.y);
-
+                */
                 return Core::EventHandlerResult::None;
             },
             nullptr,
@@ -639,11 +639,11 @@ int main(int argc, char** argv)
         window->Connect<Core::WindowCursorFocusLeaveEvent>(
             [](const Core::WindowCursorFocusLeaveEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowCursorFocusLeaveEvent:\n"
                     "\tTimestamp: {}\n",
                     event.timestamp_ms);
-
+                */
                 return Core::EventHandlerResult::None;
             },
             nullptr,
@@ -676,7 +676,7 @@ int main(int argc, char** argv)
             Core::EventHandlerState::Enabled);
 
         window->Connect<Core::MouseButtonPressedEvent>(
-            [](const Core::MouseButtonPressedEvent& event)
+            [window = window.get()](const Core::MouseButtonPressedEvent& event)
             {
                 std::cout << std::format(
                     "MouseButtonPressedEvent:\n"
@@ -691,6 +691,11 @@ int main(int argc, char** argv)
                     event.clicks,
                     event.cursor_position.x,
                     event.cursor_position.y);
+
+                if(event.button == Core::MouseButtonFlagBits::LeftButton)
+                    window->SetState(Core::WindowState::FullScreen);
+                else if(event.button == Core::MouseButtonFlagBits::RightButton)
+                    window->SetState(Core::WindowState::Windowed);
 
                 return Core::EventHandlerResult::None;
             },
@@ -720,7 +725,7 @@ int main(int argc, char** argv)
         window->Connect<Core::MouseCursorMoveEvent>(
             [](const Core::MouseCursorMoveEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "MouseCursorMoveEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tButtons: {}\n"
@@ -731,7 +736,7 @@ int main(int argc, char** argv)
                     ConcatMouseButtons(event.buttons),
                     event.cursor_position.x,
                     event.cursor_position.y);
-
+                */
                 return Core::EventHandlerResult::None;
             },
             nullptr,

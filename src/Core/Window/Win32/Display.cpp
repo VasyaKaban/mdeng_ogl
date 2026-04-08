@@ -191,17 +191,9 @@ namespace Core
                                                        MONITOR_DPI_TYPE::MDT_EFFECTIVE_DPI,
                                                        &dpi_x,
                                                        &dpi_y);
-                switch(res)
-                {
-                    case S_OK:
-                        break;
-                    case E_INVALIDARG:
-                        throw std::runtime_error("GetScaleFactor error: E_INVALIDARG");
-                        break;
-                    default:
-                        throw std::runtime_error("GetScaleFactor error: Unknown");
-                        break;
-                }
+
+                if(res != S_OK)
+                    throw Core::Win32Exception(HRESULT_CODE(res));
 
                 dpi = dpi_x;
             }
@@ -227,35 +219,9 @@ namespace Core
                                                 nullptr,
                                                 CDS_FULLSCREEN,
                                                 nullptr);
-            switch(res)
-            {
-                case DISP_CHANGE_SUCCESSFUL:
-                    break;
-                case DISP_CHANGE_BADDUALVIEW:
-                    throw std::runtime_error("SetVideoMode error: DISP_CHANGE_BADDUALVIEW");
-                    break;
-                case DISP_CHANGE_BADFLAGS:
-                    throw std::runtime_error("SetVideoMode error: DISP_CHANGE_BADFLAGS");
-                    break;
-                case DISP_CHANGE_BADMODE:
-                    throw std::runtime_error("SetVideoMode error: DISP_CHANGE_BADMODE");
-                    break;
-                case DISP_CHANGE_BADPARAM:
-                    throw std::runtime_error("SetVideoMode error: DISP_CHANGE_BADPARAM");
-                    break;
-                case DISP_CHANGE_FAILED:
-                    throw std::runtime_error("SetVideoMode error: DISP_CHANGE_FAILED");
-                    break;
-                case DISP_CHANGE_NOTUPDATED:
-                    throw std::runtime_error("SetVideoMode error: DISP_CHANGE_NOTUPDATED");
-                    break;
-                case DISP_CHANGE_RESTART:
-                    throw std::runtime_error("SetVideoMode error: DISP_CHANGE_RESTART");
-                    break;
-                default:
-                    throw std::runtime_error("SetVideoMode error: Unknown");
-                    break;
-            }
+
+            if(res != DISP_CHANGE_SUCCESSFUL)
+                throw Core::DisplayException(res);
         }
 
         WindowPosition Display::GetPosition() const
