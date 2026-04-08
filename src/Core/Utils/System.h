@@ -56,6 +56,9 @@ namespace Core
         static std::string DecorateDynamicLibraryName(std::string_view name);
 
 #ifdef _WIN32
+        static void SetCmdShow(int cmd_show) noexcept; //works only once
+        static int GetCmdShow() noexcept;
+
         static DWORD GetLastError() noexcept;
         static void SetLastError(DWORD code) noexcept;
         [[noreturn]] static void ThrowLastError();

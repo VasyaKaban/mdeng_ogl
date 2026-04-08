@@ -191,6 +191,8 @@ namespace Core
                     {
                         if(w_param == TRUE)
                         {
+                            window->current_visibility = WindowVisibility::Shown;
+
                             win_sys->PushEvent(Event{
                                 .data = {.window_shown =
                                              WindowShownEvent{.timestamp_ms = message_time_ms}},
@@ -199,6 +201,8 @@ namespace Core
                         }
                         else if(w_param == FALSE)
                         {
+                            window->current_visibility = WindowVisibility::Hidden;
+
                             win_sys->PushEvent(Event{
                                 .data = {.window_hidden =
                                              WindowHiddenEvent{.timestamp_ms = message_time_ms}},
@@ -398,6 +402,7 @@ namespace Core
             : parent(_parent),
               handle(nullptr),
               current_state(info.state),
+              current_visibility(WindowVisibility::Hidden),
               mouse_focused(false)
         {
             WindowCreateData data = {.obj = this};
@@ -595,7 +600,7 @@ namespace Core
 
                 //restore to prev windowed position and resolution
                 if(SetWindowPos(handle,
-                                HWND_BOTTOM,
+                                HWND_NOTOPMOST,
                                 prev_windowed_rect.left,
                                 prev_windowed_rect.top,
                                 prev_windowed_rect.right - prev_windowed_rect.left,
@@ -632,6 +637,33 @@ namespace Core
                 Core::System::ThrowLastError();
 
             return WindowPosition{.x = point.x, .y = point.y};
+        }
+
+        void Window::SetVisibility(WindowVisibility visibility)
+        {
+            /*Controls how the window is to be shown.This parameter is ignored the first time an
+                application calls ShowWindow,
+                if the program that launched the application provides a STARTUPINFO
+                    structure.Otherwise,
+                the first time ShowWindow is called,
+                the value should be the value obtained by the WinMain function in its nCmdShow
+                    parameter.In subsequent calls,
+                this parameter can be one of the following values.*/
+
+            static bool is_first_call = true;
+            if(is_first_call)
+            {
+                ShowWindow(handle, Core::System::GetCmdShow());
+                is_first_call = false;
+            }
+
+            int cmd = (visibility == WindowVisibility::Hidden ? SW_HIDE : SW_SHOW);
+            ShowWindow(handle, cmd);
+        }
+
+        WindowVisibility Window::GetVisibility() const
+        {
+            return current_visibility;
         }
 
         WindowSurfaceInfo Window::GetWindowSurfaceInfo() const noexcept

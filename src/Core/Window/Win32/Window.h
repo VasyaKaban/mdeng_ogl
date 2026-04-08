@@ -38,6 +38,9 @@ namespace Core
             virtual void SetMouseCursorPosition(const WindowPosition& pos) override;
             virtual WindowPosition GetMouseCursorPosition() const override;
 
+            virtual void SetVisibility(WindowVisibility visibility) override;
+            virtual WindowVisibility GetVisibility() const override;
+
             virtual WindowSurfaceInfo GetWindowSurfaceInfo() const noexcept override;
 
             virtual Display* GetDisplay() const noexcept override;
@@ -50,6 +53,7 @@ namespace Core
             std::unique_ptr<Display> display;
 
             WindowState current_state;
+            WindowVisibility current_visibility;
             RECT prev_windowed_rect;
             bool mouse_focused;
         };

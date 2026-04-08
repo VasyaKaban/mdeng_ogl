@@ -122,6 +122,24 @@ namespace Core
     }
 
 #ifdef _WIN32
+    static int CMD_SHOW = SW_SHOWDEFAULT;
+
+    //do not care about thrad-safety -> we will call it only in wWinMain
+    void System::SetCmdShow(int cmd_show) noexcept
+    {
+        static bool called = false;
+        if(!called)
+        {
+            CMD_SHOW = cmd_show;
+            called = true;
+        }
+    }
+
+    int System::GetCmdShow() noexcept
+    {
+        return CMD_SHOW;
+    }
+
     DWORD System::GetLastError() noexcept
     {
         return ::GetLastError();

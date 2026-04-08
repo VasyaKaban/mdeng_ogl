@@ -45,8 +45,6 @@ INFO:
 * dlerror() into System for Linux
 * Limits and properties for window subsystem: for example limit max window size
 
-* Send events on all functions
-* Functions for programm-way settings(explicit events)
 * Check Win32 windowed_state updates
-* GetKeyboardState
-* Not top(most) on fullscreen -> windowed. Only set when we come from another window
+* Window Hidden/Shown as state + functions
+* Keyboard input

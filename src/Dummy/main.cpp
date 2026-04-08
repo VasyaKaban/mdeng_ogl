@@ -1,3 +1,5 @@
+#include "Core/Utils/Entry.h"
+
 #include <iostream>
 #include <vector>
 #include <format>
@@ -417,7 +419,7 @@ std::string ConcatMouseButtons(Core::MouseButtonFlags buttons)
     return out;
 }
 
-int main(int argc, char** argv)
+int EntryPoint(std::span<const std::string_view> arguments)
 {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
@@ -808,6 +810,9 @@ int main(int argc, char** argv)
 
         //window->GetDisplay()->SetVideoMode(59);
         reso = window->GetResolution();
+
+        window->SetVisibility(Core::WindowVisibility::Hidden);
+        window->SetVisibility(Core::WindowVisibility::Shown);
 
         auto pre_reso = window->GetResolution();
         window->SetState(Core::WindowState::FullScreen);

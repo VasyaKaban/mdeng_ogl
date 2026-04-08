@@ -17,11 +17,7 @@
                 "CMAKE_C_COMPILER": "cl",
                 "CMAKE_CXX_COMPILER": "cl",
                 "CMAKE_CXX_FLAGS": "/EHsc /utf-8 /Zi /Zc:preprocessor /std:c++20",
-                "SDL_OPENGL": "OFF",
-                "SDL_OPENGLES": "OFF",
-                "SDL_DIRECTX": "OFF",
-                "SDL_VULKAN": "OFF",
-                "SDL_TEST": "OFF"
+                "CMAKE_EXE_LINKER_FLAGS": "/ENTRY:wWinMainCRTStartup"
             },
             "architecture": {
                 "value": "x64",

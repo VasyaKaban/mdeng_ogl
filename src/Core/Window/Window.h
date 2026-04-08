@@ -15,6 +15,12 @@ namespace Core
         FullScreen = 1
     };
 
+    enum class WindowVisibility
+    {
+        Hidden = 0,
+        Shown = 1
+    };
+
     struct WindowInfo
     {
         WindowResolution resolution;
@@ -52,6 +58,9 @@ namespace Core
 
         virtual void SetMouseCursorPosition(const WindowPosition& pos) = 0; //relative to window
         virtual WindowPosition GetMouseCursorPosition() const = 0; //relative to window
+
+        virtual void SetVisibility(WindowVisibility visibility) = 0;
+        virtual WindowVisibility GetVisibility() const = 0;
 
         virtual WindowSurfaceInfo GetWindowSurfaceInfo() const noexcept = 0;
 
