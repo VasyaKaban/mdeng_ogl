@@ -43,7 +43,7 @@ namespace Core
 #ifdef _WIN32
 
         return std::make_exception_ptr(Win32Exception(Core::System::GetLastError()));
-#elif defined(linuxe)
+#elif defined(linux)
         return std::runtime_error(dlerror());
 #endif
     }
