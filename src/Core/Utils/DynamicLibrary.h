@@ -11,7 +11,7 @@ namespace Core
     class CORE_API DynamicLibrary : Core::NonCopyable
     {
     public:
-        using VoidPFN = void (*)();
+        using PFN_VoidFunction = void (*)();
 
         DynamicLibrary() noexcept;
         ~DynamicLibrary();
@@ -23,7 +23,7 @@ namespace Core
         bool IsOpen() const noexcept;
         void Close() noexcept;
 
-        VoidPFN GetProcAddress(const char* name) const noexcept;
+        PFN_VoidFunction GetProcAddress(const char* name) const noexcept;
     private:
         void Destroy() noexcept;
     private:

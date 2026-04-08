@@ -59,14 +59,14 @@ namespace Core
         handle = nullptr;
     }
 
-    DynamicLibrary::VoidPFN DynamicLibrary::GetProcAddress(const char* name) const noexcept
+    DynamicLibrary::PFN_VoidFunction DynamicLibrary::GetProcAddress(const char* name) const noexcept
     {
         assert(handle != nullptr);
 
 #ifdef _WIN32
-        return reinterpret_cast<VoidPFN>(::GetProcAddress(handle, name));
+        return reinterpret_cast<PFN_VoidFunction>(::GetProcAddress(handle, name));
 #elif defined(linux)
-        return reinterpret_cast<VoidPFN>(dlsym(handle, name));
+        return reinterpret_cast<PFN_VoidFunction>(dlsym(handle, name));
 #endif
     }
 
