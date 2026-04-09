@@ -153,6 +153,95 @@ namespace Core
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<MouseWheelEvent>;
 
+    using ScanCode = std::uint16_t;
+    constexpr inline std::size_t SCANCODES_COUNT = 512;
+
+    enum class SpecialKey : std::uint32_t
+    {
+        //TODO
+        Unknown = 0,
+        Escape,
+        F1,
+        F2,
+        F3,
+        F4,
+        F5,
+        F6,
+        F7,
+        F8,
+        F9,
+        F10,
+        F11,
+        F12,
+        PrintScreen,
+        ScrollLock,
+        Pause,
+        BackSpace,
+        Tab,
+        CapsLock,
+        Enter,
+        LeftShift,
+        RightShift,
+        LeftControl,
+        Meta, //Win
+        LeftAlt,
+        RightAlt,
+        Menu, //VK_APPS???
+        RightControl,
+        Insert,
+        Home,
+        PageUp,
+        Delete,
+        End,
+        PageDown,
+        ArrowLeft,
+        ArrowUp,
+        ArrowRight,
+        ArrowDown
+    };
+
+    enum ModifierKeyFlagBits : std::uint32_t
+    {
+        //TODO
+        LeftShift = 1 << 0,
+        RightShift = 1 << 1,
+        LeftControl = 1 << 2,
+        RightControl = 1 << 3,
+        LeftAlt = 1 << 4,
+        RightAlt = 1 << 5
+    };
+
+    using ModifierKeyFlags = std::underlying_type_t<ModifierKeyFlagBits>;
+
+    struct KeyboardKeyPressedEvent
+    {
+        std::uint64_t timestamp_ms;
+        ScanCode scancode;
+        ModifierKeyFlags modifiers;
+        std::uint16_t repeat_count;
+        SpecialKey key;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardKeyPressedEvent>;
+
+    struct KeyboardCharacterPressedEvent
+    {
+        std::uint64_t timestamp_ms;
+        ScanCode scancode;
+        ModifierKeyFlags modifiers;
+        std::uint16_t repeat_count;
+        std::uint32_t utf32_char;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardCharacterPressedEvent>;
+
+    struct KeyboardKeyReleasedEvent
+    {
+        std::uint64_t timestamp_ms;
+        ScanCode scancode;
+        ModifierKeyFlags modifiers;
+        SpecialKey key;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardKeyReleasedEvent>;
+
     //helper for inner subsystem event queue
     union QueueEvent
     {
@@ -173,6 +262,9 @@ namespace Core
         MouseButtonReleasedEvent mouse_buttton_released;
         MouseCursorMoveEvent mouse_cursor_move;
         MouseWheelEvent mouse_wheel;
+        KeyboardKeyPressedEvent keyboard_key_pressed;
+        KeyboardCharacterPressedEvent keyboard_character_pressed;
+        KeyboardKeyReleasedEvent keyboard_key_released;
     };
 
     //Quit
@@ -192,7 +284,7 @@ namespace Core
     //MouseButtonReleasedEvent
     //MouseCursorMoveEvent
     //MouseWheelEvent
-    //TODO:
-    //KeyPressedEvent: scancode + special key(enum)/char
-    //KeyReleasedEvent: scancode
+    //KeyboardKeyPressedEvent
+    //KeyboardCharacterPressedEvent
+    //KeyboardKeyReleasedEvent
 };

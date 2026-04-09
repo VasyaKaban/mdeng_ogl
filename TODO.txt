@@ -47,4 +47,9 @@ INFO:
 
 * Check Win32 windowed_state updates
 * Window Hidden/Shown as state + functions
-* Keyboard input
+* Keyboard input. Let's handle in the following way:
+    Win32:
+        WM_KEYDOWN: handle only non-character virtual keys
+        WM_CHAR: handle all 
+    XkbCommon:
+        KEYSYM: check if keysym is non-character or character and send

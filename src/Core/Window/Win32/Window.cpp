@@ -389,6 +389,19 @@ namespace Core
                             .window = window});
                     }
                     break;
+#error TODO!
+                    case WM_SYSKEYDOWN:
+                        break;
+                    case WM_SYSKEYUP:
+                        break;
+                    case WM_KEYDOWN:
+                        break;
+                    case WM_KEYUP:
+                        break;
+                    case WM_CHAR:
+                        break;
+                    case WM_SYSCHAR:
+                        break;
                     default:
                         return DefWindowProcW(handle, message, w_param, l_param);
                         break;
