@@ -53,3 +53,5 @@ INFO:
         WM_CHAR: handle all 
     XkbCommon:
         KEYSYM: check if keysym is non-character or character and send
+* Window decorations switch
+* More preciese window create info
