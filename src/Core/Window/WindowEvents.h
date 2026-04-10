@@ -171,10 +171,13 @@ namespace Core
 
     using ModifierKeyFlags = std::underlying_type_t<ModifierKeyFlagBits>;
 
+    using RawKeyCode = std::uint32_t; //raw key code(Virtual key on Win32 and KeySym on XKB)
+
     struct KeyboardKeyPressedEvent
     {
         std::uint64_t timestamp_ms;
         ScanCode scancode;
+        RawKeyCode raw_key;
         ModifierKeyFlags modifiers;
         std::uint16_t repeat_count;
     };
@@ -186,7 +189,7 @@ namespace Core
         ScanCode scancode;
         ModifierKeyFlags modifiers;
         std::uint16_t repeat_count;
-        std::uint32_t utf32_char;
+        char32_t utf32_char;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardCharacterPressedEvent>;
 
@@ -194,6 +197,7 @@ namespace Core
     {
         std::uint64_t timestamp_ms;
         ScanCode scancode;
+        RawKeyCode raw_key;
         ModifierKeyFlags modifiers;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardKeyReleasedEvent>;

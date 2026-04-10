@@ -468,6 +468,7 @@ namespace Core
                     case WM_SYSKEYDOWN:
                     case WM_KEYDOWN:
                     {
+#error VK_SHIFT and other mods to LEFT/RIGHT!~!!!
                         WORD key_flags = HIWORD(l_param);
 
                         ScanCode scancode = LOBYTE(key_flags);
@@ -478,14 +479,16 @@ namespace Core
                         if(key_flags & KF_REPEAT)
                             repeat_count = LOWORD(l_param);
 
-                        win_sys->PushEvent(Event{
-                            .data = {.keyboard_key_pressed =
-                                         KeyboardKeyPressedEvent{.timestamp_ms = message_time_ms,
-                                                                 .scancode = scancode,
-                                                                 .modifiers = GetModifierFlags(),
-                                                                 .repeat_count = repeat_count}},
-                            .id = ClassID<KeyboardKeyPressedEvent>::ID,
-                            .window = window});
+                        win_sys->PushEvent(
+                            Event{.data = {.keyboard_key_pressed =
+                                               KeyboardKeyPressedEvent{
+                                                   .timestamp_ms = message_time_ms,
+                                                   .scancode = scancode,
+                                                   .raw_key = static_cast<RawKeyCode>(w_param),
+                                                   .modifiers = GetModifierFlags(),
+                                                   .repeat_count = repeat_count}},
+                                  .id = ClassID<KeyboardKeyPressedEvent>::ID,
+                                  .window = window});
                     };
                     break;
                     case WM_KEYUP:
@@ -497,13 +500,15 @@ namespace Core
                         if(key_flags & KF_EXTENDED)
                             scancode |= (0b1 << 8); //set 9-bit
 
-                        win_sys->PushEvent(Event{
-                            .data = {.keyboard_key_released =
-                                         KeyboardKeyReleasedEvent{.timestamp_ms = message_time_ms,
-                                                                  .scancode = scancode,
-                                                                  .modifiers = GetModifierFlags()}},
-                            .id = ClassID<KeyboardKeyReleasedEvent>::ID,
-                            .window = window});
+                        win_sys->PushEvent(
+                            Event{.data = {.keyboard_key_released =
+                                               KeyboardKeyReleasedEvent{
+                                                   .timestamp_ms = message_time_ms,
+                                                   .scancode = scancode,
+                                                   .raw_key = static_cast<RawKeyCode>(w_param),
+                                                   .modifiers = GetModifierFlags()}},
+                                  .id = ClassID<KeyboardKeyReleasedEvent>::ID,
+                                  .window = window});
                     };
                     break;
                     default:

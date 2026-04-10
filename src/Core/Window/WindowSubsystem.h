@@ -21,6 +21,12 @@ namespace Core
         Disbaled
     };
 
+    struct KeyCodeDesc
+    {
+        char32_t utf32_char; //0 - unknown. also C0-C1 chars will be 0
+        std::string_view name;
+    };
+
     class CORE_API WindowSubsystem
     {
     public:
@@ -34,6 +40,8 @@ namespace Core
 
         virtual CursorState GetCursorState() const = 0;
         virtual void SetCursorState(CursorState state) = 0;
+
+        virtual KeyCodeDesc GetKeyCodeDesc(RawKeyCode code) const noexcept = 0;
     };
 
     struct WindowSubsystemInfo

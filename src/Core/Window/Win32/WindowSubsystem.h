@@ -36,6 +36,8 @@ namespace Core
             virtual CursorState GetCursorState() const override;
             virtual void SetCursorState(CursorState state) override;
 
+            virtual KeyCodeDesc GetKeyCodeDesc(RawKeyCode code) const noexcept override;
+
             HINSTANCE GetInstance() const noexcept;
 
             PROCESS_DPI_AWARENESS GetDPIAwrenessType() const noexcept;

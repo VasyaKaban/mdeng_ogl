@@ -121,7 +121,7 @@ namespace Core
 #endif
     }
 
-    UTF8Result System::UTF32ToUTF8(std::uint32_t utf32) noexcept
+    UTF8Result System::UTF32ToUTF8(char32_t utf32) noexcept
     {
         UTF8Result result = {};
 
