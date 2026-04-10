@@ -48,12 +48,20 @@ namespace Core
     };
 #endif
 
+    struct UTF8Result
+    {
+        char data[4];
+        std::uint8_t length;
+    };
+
     class CORE_API System
     {
     public:
         static const std::filesystem::path& GetExecutablePath();
 
         static std::string DecorateDynamicLibraryName(std::string_view name);
+
+        static UTF8Result UTF32ToUTF8(std::uint32_t utf32) noexcept;
 
 #ifdef _WIN32
         static void SetCmdShow(int cmd_show) noexcept; //works only once

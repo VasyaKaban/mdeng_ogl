@@ -29,6 +29,36 @@ namespace Core
             return buttons;
         }
 
+        static ModifierKeyFlags GetModifierFlags() noexcept
+        {
+            ModifierKeyFlags flags = 0;
+            if(GetAsyncKeyState(VK_LSHIFT) < 0)
+                flags |= ModifierKeyFlagBits::LeftShift;
+
+            if(GetAsyncKeyState(VK_RSHIFT) < 0)
+                flags |= ModifierKeyFlagBits::RightShift;
+
+            if(GetAsyncKeyState(VK_LCONTROL) < 0)
+                flags |= ModifierKeyFlagBits::LeftControl;
+
+            if(GetAsyncKeyState(VK_RCONTROL) < 0)
+                flags |= ModifierKeyFlagBits::RightControl;
+
+            if(GetAsyncKeyState(VK_LMENU) < 0)
+                flags |= ModifierKeyFlagBits::LeftAlt;
+
+            if(GetAsyncKeyState(VK_RMENU) < 0)
+                flags |= ModifierKeyFlagBits::RightAlt;
+
+            if(GetAsyncKeyState(VK_LWIN) < 0)
+                flags |= ModifierKeyFlagBits::LeftMeta;
+
+            if(GetAsyncKeyState(VK_RWIN) < 0)
+                flags |= ModifierKeyFlagBits::RightMeta;
+
+            return flags;
+        }
+
         static WindowPosition GetRelativeCursorPosition(LPARAM l_param) noexcept
         {
             return WindowPosition{.x = GET_X_LPARAM(l_param), .y = GET_Y_LPARAM(l_param)};
@@ -389,19 +419,93 @@ namespace Core
                             .window = window});
                     }
                     break;
-#error TODO!
-                    case WM_SYSKEYDOWN:
-                        break;
-                    case WM_SYSKEYUP:
-                        break;
-                    case WM_KEYDOWN:
-                        break;
-                    case WM_KEYUP:
-                        break;
                     case WM_CHAR:
-                        break;
                     case WM_SYSCHAR:
-                        break;
+                    {
+                        if(IS_HIGH_SURROGATE(w_param)) //save surrogate
+                        {
+                            window->high_surrogate = w_param;
+                        }
+                        else
+                        {
+                            std::uint32_t utf32;
+
+                            if(window->high_surrogate) //surrogate pair
+                            {
+                                utf32 = ((window->high_surrogate - 0xD8'00) << 10) +
+                                        (w_param - 0xDC'00) + 0x1'00'00;
+
+                                window->high_surrogate = L'\0';
+                            }
+                            else //single char
+                            {
+                                utf32 = w_param;
+                            }
+
+                            WORD key_flags = HIWORD(l_param);
+
+                            ScanCode scancode = LOBYTE(key_flags);
+                            if(key_flags & KF_EXTENDED)
+                                scancode |= (0b1 << 8); //set 9-bit
+
+                            std::uint16_t repeat_count = 1;
+                            if(key_flags & KF_REPEAT)
+                                repeat_count = LOWORD(l_param);
+
+                            win_sys->PushEvent(
+                                Event{.data = {.keyboard_character_pressed =
+                                                   KeyboardCharacterPressedEvent{
+                                                       .timestamp_ms = message_time_ms,
+                                                       .scancode = scancode,
+                                                       .modifiers = GetModifierFlags(),
+                                                       .repeat_count = repeat_count,
+                                                       .utf32_char = utf32}},
+                                      .id = ClassID<KeyboardCharacterPressedEvent>::ID,
+                                      .window = window});
+                        }
+                    }
+                    break;
+                    case WM_SYSKEYDOWN:
+                    case WM_KEYDOWN:
+                    {
+                        WORD key_flags = HIWORD(l_param);
+
+                        ScanCode scancode = LOBYTE(key_flags);
+                        if(key_flags & KF_EXTENDED)
+                            scancode |= (0b1 << 8); //set 9-bit
+
+                        std::uint16_t repeat_count = 1;
+                        if(key_flags & KF_REPEAT)
+                            repeat_count = LOWORD(l_param);
+
+                        win_sys->PushEvent(Event{
+                            .data = {.keyboard_key_pressed =
+                                         KeyboardKeyPressedEvent{.timestamp_ms = message_time_ms,
+                                                                 .scancode = scancode,
+                                                                 .modifiers = GetModifierFlags(),
+                                                                 .repeat_count = repeat_count}},
+                            .id = ClassID<KeyboardKeyPressedEvent>::ID,
+                            .window = window});
+                    };
+                    break;
+                    case WM_KEYUP:
+                    case WM_SYSKEYUP:
+                    {
+                        WORD key_flags = HIWORD(l_param);
+
+                        ScanCode scancode = LOBYTE(key_flags);
+                        if(key_flags & KF_EXTENDED)
+                            scancode |= (0b1 << 8); //set 9-bit
+
+                        win_sys->PushEvent(Event{
+                            .data = {.keyboard_key_released =
+                                         KeyboardKeyReleasedEvent{.timestamp_ms = message_time_ms,
+                                                                  .scancode = scancode,
+                                                                  .modifiers = GetModifierFlags()}},
+                            .id = ClassID<KeyboardKeyReleasedEvent>::ID,
+                            .window = window});
+                    };
+                    break;
                     default:
                         return DefWindowProcW(handle, message, w_param, l_param);
                         break;
@@ -416,7 +520,8 @@ namespace Core
               handle(nullptr),
               current_state(info.state),
               current_visibility(WindowVisibility::Hidden),
-              mouse_focused(false)
+              mouse_focused(false),
+              high_surrogate(L'\0')
         {
             WindowCreateData data = {.obj = this};
 

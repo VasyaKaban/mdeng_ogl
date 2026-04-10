@@ -56,6 +56,8 @@ namespace Core
             WindowVisibility current_visibility;
             RECT prev_windowed_rect;
             bool mouse_focused;
+
+            wchar_t high_surrogate;
         };
     };
 };

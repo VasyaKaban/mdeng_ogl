@@ -419,6 +419,34 @@ std::string ConcatMouseButtons(Core::MouseButtonFlags buttons)
     return out;
 }
 
+std::string ConcatModifiers(Core::ModifierKeyFlags mods)
+{
+    constexpr static std::pair<Core::ModifierKeyFlagBits, std::string_view> MOD_NAMES[] = {
+        {Core::ModifierKeyFlagBits::LeftShift, "LeftShift"},
+        {Core::ModifierKeyFlagBits::RightShift, "RightShift"},
+        {Core::ModifierKeyFlagBits::LeftControl, "LeftControl"},
+        {Core::ModifierKeyFlagBits::RightControl, "RightControl"},
+        {Core::ModifierKeyFlagBits::LeftAlt, "LeftAlt"},
+        {Core::ModifierKeyFlagBits::RightAlt, "RightAlt"},
+        {Core::ModifierKeyFlagBits::LeftMeta, "LeftMeta"},
+        {Core::ModifierKeyFlagBits::RightMeta, "RightMeta"},
+    };
+
+    std::string out;
+    for(const auto& [id, name]: MOD_NAMES)
+    {
+        if(mods & id)
+        {
+            if(!out.empty())
+                out += " | ";
+
+            out += name;
+        }
+    }
+
+    return out;
+}
+
 int EntryPoint(std::span<const std::string_view> arguments)
 {
 #ifdef _WIN32
@@ -762,6 +790,73 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.cursor_position.y,
                     event.x_scroll,
                     event.y_scroll);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::KeyboardCharacterPressedEvent>(
+            [](const Core::KeyboardCharacterPressedEvent& event)
+            {
+                auto res = Core::System::UTF32ToUTF8(event.utf32_char);
+                std::string_view str{res.data, res.length};
+
+                std::cout << std::format(
+                    "KeyboardCharacterPressedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tScancode: {}\n"
+                    "\tCModifiers: {}\n"
+                    "\tRepeat count: {}\n"
+                    "\tUTF32: {:#x}\n"
+                    "\tUTF8: {:#x} {:#x} {:#x} {:#x}\n"
+                    "\tChar: {}\n",
+                    event.timestamp_ms,
+                    event.scancode,
+                    ConcatModifiers(event.modifiers),
+                    event.repeat_count,
+                    event.utf32_char,
+                    res.data[0],
+                    res.data[1],
+                    res.data[2],
+                    res.data[3],
+                    str);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::KeyboardKeyPressedEvent>(
+            [](const Core::KeyboardKeyPressedEvent& event)
+            {
+                std::cout << std::format(
+                    "KeyboardKeyPressedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tScancode: {}\n"
+                    "\tModifiers: {}\n"
+                    "\tRepeat count: {}\n",
+                    event.timestamp_ms,
+                    event.scancode,
+                    ConcatModifiers(event.modifiers),
+                    event.repeat_count);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
+        window->Connect<Core::KeyboardKeyReleasedEvent>(
+            [](const Core::KeyboardKeyReleasedEvent& event)
+            {
+                std::cout << std::format(
+                    "KeyboardKeyReleasedEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tScancode: {}\n"
+                    "\tModifiers: {}\n",
+                    event.timestamp_ms,
+                    event.scancode,
+                    ConcatModifiers(event.modifiers));
 
                 return Core::EventHandlerResult::None;
             },

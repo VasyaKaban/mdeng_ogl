@@ -121,6 +121,40 @@ namespace Core
 #endif
     }
 
+    UTF8Result System::UTF32ToUTF8(std::uint32_t utf32) noexcept
+    {
+        UTF8Result result = {};
+
+        if(utf32 <= 0x00'7F)
+        {
+            result.data[0] = utf32;
+            result.length = 1;
+        }
+        else if(utf32 <= 0x07'FF)
+        {
+            result.data[0] = 0b1100'0000 | ((utf32 >> 6) & 0b1'1111);
+            result.data[1] = 0b1000'0000 | (utf32 & (0b11'1111));
+            result.length = 2;
+        }
+        else if(utf32 <= 0xFF'FF)
+        {
+            result.data[0] = 0b1110'0000 | ((utf32 >> 12) & 0b1111);
+            result.data[1] = 0b1000'0000 | ((utf32 >> 6) & 0b11'1111);
+            result.data[2] = 0b1000'0000 | (utf32 & (0b11'1111));
+            result.length = 3;
+        }
+        else if(utf32 <= 0x10'FF'FF)
+        {
+            result.data[0] = 0b1111'0000 | ((utf32 >> 18) & 0b111);
+            result.data[1] = 0b1000'0000 | ((utf32 >> 12) & 0b11'1111);
+            result.data[2] = 0b1000'0000 | ((utf32 >> 6) & 0b11'1111);
+            result.data[3] = 0b1000'0000 | (utf32 & (0b11'1111));
+            result.length = 4;
+        }
+
+        return result;
+    }
+
 #ifdef _WIN32
     static int CMD_SHOW = SW_SHOWDEFAULT;
 
