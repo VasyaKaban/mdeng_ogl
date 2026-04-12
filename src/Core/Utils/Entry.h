@@ -11,6 +11,7 @@ int EntryPoint(std::span<const std::string_view> arguments);
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line, int cmd_show)
 {
     Core::System::SetCmdShow(cmd_show);
+    Core::System::SetMainThreadID();
 
     int argc = 0;
     auto args = CommandLineToArgvW(cmd_line, &argc);

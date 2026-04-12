@@ -55,4 +55,9 @@ INFO:
         KEYSYM: check if keysym is non-character or character and send
 * Window decorations switch
 * More preciese window create info
-* Char/VirtualKey to scancode
+* Char/VirtualKey to scancode:
+    Get all layouts
+    create mapping from virtual key to it's name or symbol(based on lowest keyboard layout)
+    set hook when shell changes layout
+    update layouts and recreate mapping
+* Per monitor DPI scaling v2 enable by default. But we can also enable EnableNonClientDpiScaling in WM_NCCREATE for v1

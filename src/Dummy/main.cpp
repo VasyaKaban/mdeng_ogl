@@ -451,6 +451,31 @@ int EntryPoint(std::span<const std::string_view> arguments)
 {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
+    /*std::setlocale(LC_ALL, "ru");
+    auto vk = VK_SPACE;
+    auto scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC_EX, GetKeyboardLayout(0));
+    BYTE state[256] = {};
+    GetKeyboardState(state);
+    std::wstring wstr(64, L'\0');
+    auto res = ToUnicodeEx(vk, scancode, state, wstr.data(), 64, 0, GetKeyboardLayout(0));
+    if(res < 0)
+        std::cerr << "DEAD\n";
+    else if(res == 0)
+        std::cerr << "None\n";
+    else
+        std::cerr << std::format("{}\n", Core::System::WideToUTF8(wstr));
+    LPARAM l_param = 0;
+    l_param |= (scancode & 0xff) << 16;
+    if((scancode >> 8) & 0xE0 || (scancode >> 8) & 0xE1)
+        l_param |= 0b1 << 23;
+
+    wstr.resize(64, L'\0');
+    int count = GetKeyNameTextW(l_param, wstr.data(), 64);
+    if(count == 0)
+        std::cerr << "ERROR\n";
+    else
+        std::cerr << std::format("{}\n", Core::System::WideToUTF8(wstr));*/
+
 #endif
     try
     {
@@ -469,21 +494,6 @@ int EntryPoint(std::span<const std::string_view> arguments)
         std::unique_ptr<Core::Window> window(win_sys->CreateWindow(win_info));
 
         bool is_run = true;
-        window->Connect<Core::WindowSubsystemQuitEvent>(
-            [&is_run](const Core::WindowSubsystemQuitEvent& event)
-            {
-                std::cout << std::format(
-                    "WindowSubsystemQuitEvent:\n"
-                    "\tTimestamp: {}\n",
-                    event.timestamp_ms);
-
-                is_run = false;
-
-                return Core::EventHandlerResult::None;
-            },
-            nullptr,
-            Core::EventHandlerState::Enabled);
-
         window->Connect<Core::WindowClosedEvent>(
             [&is_run](const Core::WindowClosedEvent& event)
             {
@@ -805,17 +815,15 @@ int EntryPoint(std::span<const std::string_view> arguments)
                 std::cout << std::format(
                     "KeyboardCharacterPressedEvent:\n"
                     "\tTimestamp: {}\n"
-                    "\tScancode: {}\n"
                     "\tCModifiers: {}\n"
                     "\tRepeat count: {}\n"
                     "\tUTF32: {:#x}\n"
                     "\tUTF8: {:#x} {:#x} {:#x} {:#x}\n"
                     "\tChar: {}\n",
                     event.timestamp_ms,
-                    event.scancode,
                     ConcatModifiers(event.modifiers),
                     event.repeat_count,
-                    event.utf32_char,
+                    static_cast<std::uint32_t>(event.utf32_char),
                     res.data[0],
                     res.data[1],
                     res.data[2],
@@ -828,18 +836,20 @@ int EntryPoint(std::span<const std::string_view> arguments)
             Core::EventHandlerState::Enabled);
 
         window->Connect<Core::KeyboardKeyPressedEvent>(
-            [](const Core::KeyboardKeyPressedEvent& event)
+            [window = window.get()](const Core::KeyboardKeyPressedEvent& event)
             {
                 std::cout << std::format(
                     "KeyboardKeyPressedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tScancode: {}\n"
                     "\tModifiers: {}\n"
-                    "\tRepeat count: {}\n",
+                    "\tRepeat count: {}\n"
+                    "\tName: {}\n",
                     event.timestamp_ms,
                     event.scancode,
                     ConcatModifiers(event.modifiers),
-                    event.repeat_count);
+                    event.repeat_count,
+                    window->GetParent()->GetKeyNameByScancode(event.scancode));
 
                 return Core::EventHandlerResult::None;
             },

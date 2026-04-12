@@ -64,8 +64,16 @@ namespace Core
         static UTF8Result UTF32ToUTF8(char32_t utf32) noexcept;
 
 #ifdef _WIN32
-        static void SetCmdShow(int cmd_show) noexcept; //works only once
+    private:
+        friend int WINAPI ::wWinMain(HINSTANCE instance,
+                                     HINSTANCE prev_instance,
+                                     PWSTR cmd_line,
+                                     int cmd_show);
+        static void SetCmdShow(int cmd_show) noexcept;
+        static void SetMainThreadID() noexcept;
+    public:
         static int GetCmdShow() noexcept;
+        static DWORD GetMainThreadID() noexcept;
 
         static DWORD GetLastError() noexcept;
         static void SetLastError(DWORD code) noexcept;

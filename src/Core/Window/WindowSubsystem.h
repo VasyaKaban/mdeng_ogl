@@ -27,9 +27,11 @@ namespace Core
         std::string_view name;
     };
 
-    class CORE_API WindowSubsystem
+    class CORE_API WindowSubsystem : protected EventEmitter
     {
     public:
+        using EventEmitter::Connect;
+
         virtual ~WindowSubsystem() = 0;
 
         virtual void PollEvents() = 0;
@@ -41,7 +43,8 @@ namespace Core
         virtual CursorState GetCursorState() const = 0;
         virtual void SetCursorState(CursorState state) = 0;
 
-        virtual KeyCodeDesc GetKeyCodeDesc(RawKeyCode code) const noexcept = 0;
+        virtual std::string GetKeyNameByScancode(ScanCode scancode) = 0;
+        virtual std::optional<ScanCode> GetScanCodeFromKeyName(std::string_view name) = 0;
     };
 
     struct WindowSubsystemInfo

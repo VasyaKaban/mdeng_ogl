@@ -106,22 +106,14 @@ namespace Core
 
                 WindowSubsystem* win_sys = static_cast<WindowSubsystem*>(window->GetParent());
 
-                std::uint64_t message_time_ms = GetMessageTime();
                 switch(message)
                 {
-                    case WM_QUIT:
-                        win_sys->PushEvent(Event{
-                            .data = {.window_subsystem_quit =
-                                         WindowSubsystemQuitEvent{.timestamp_ms = message_time_ms}},
-                            .id = ClassID<WindowSubsystemQuitEvent>::ID,
-                            .window = window});
-                        break;
                     case WM_CLOSE:
-                        win_sys->PushEvent(
-                            Event{.data = {.window_closed =
-                                               WindowClosedEvent{.timestamp_ms = message_time_ms}},
-                                  .id = ClassID<WindowClosedEvent>::ID,
-                                  .window = window});
+                        win_sys->PushEvent(Event{
+                            .data = {.window_closed =
+                                         WindowClosedEvent{.timestamp_ms = GetEventTimestamp()}},
+                            .id = ClassID<WindowClosedEvent>::ID,
+                            .window = window});
                         break;
                     case WM_DISPLAYCHANGE:
                         if(window->handle) //prevent WM_CREATE
@@ -131,11 +123,12 @@ namespace Core
                             window,
                             MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST)));
 
-                        win_sys->PushEvent(Event{.data = {.window_display_changed =
-                                                              WindowDisplayChangedEvent{
-                                                                  .timestamp_ms = message_time_ms}},
-                                                 .id = ClassID<WindowDisplayChangedEvent>::ID,
-                                                 .window = window});
+                        win_sys->PushEvent(
+                            Event{.data = {.window_display_changed =
+                                               WindowDisplayChangedEvent{.timestamp_ms =
+                                                                             GetEventTimestamp()}},
+                                  .id = ClassID<WindowDisplayChangedEvent>::ID,
+                                  .window = window});
                         break;
                     case WM_DPICHANGED:
                         //if(window->handle) //prevent WM_CREATE
@@ -150,8 +143,8 @@ namespace Core
 
                             win_sys->PushEvent(
                                 Event{.data = {.window_display_changed =
-                                                   WindowDisplayChangedEvent{.timestamp_ms =
-                                                                                 message_time_ms}},
+                                                   WindowDisplayChangedEvent{
+                                                       .timestamp_ms = GetEventTimestamp()}},
                                       .id = ClassID<WindowDisplayChangedEvent>::ID,
                                       .window = window});
 
@@ -173,7 +166,7 @@ namespace Core
                         win_sys->PushEvent(Event{
                             .data = {.window_moved =
                                          WindowMovedEvent{
-                                             .timestamp_ms = message_time_ms,
+                                             .timestamp_ms = GetEventTimestamp(),
                                              .position = WindowPosition{.x = LOWORD(l_param),
                                                                         .y = HIWORD(l_param)}}},
                             .id = ClassID<WindowMovedEvent>::ID,
@@ -187,29 +180,31 @@ namespace Core
 
                         if(w_param == SIZE_MAXIMIZED)
                         {
-                            win_sys->PushEvent(Event{
-                                .data = {.window_maximized =
-                                             WindowMaximizedEvent{.timestamp_ms = message_time_ms,
-                                                                  .resolution = resolution,
-                                                                  .scaled_resolution = resolution}},
-                                .id = ClassID<WindowMaximizedEvent>::ID,
-                                .window = window});
+                            win_sys->PushEvent(
+                                Event{.data = {.window_maximized =
+                                                   WindowMaximizedEvent{
+                                                       .timestamp_ms = GetEventTimestamp(),
+                                                       .resolution = resolution,
+                                                       .scaled_resolution = resolution}},
+                                      .id = ClassID<WindowMaximizedEvent>::ID,
+                                      .window = window});
                         }
                         else if(w_param == SIZE_MINIMIZED)
                         {
-                            win_sys->PushEvent(Event{
-                                .data = {.window_minimized =
-                                             WindowMinimizedEvent{.timestamp_ms = message_time_ms,
-                                                                  .resolution = resolution,
-                                                                  .scaled_resolution = resolution}},
-                                .id = ClassID<WindowMinimizedEvent>::ID,
-                                .window = window});
+                            win_sys->PushEvent(
+                                Event{.data = {.window_minimized =
+                                                   WindowMinimizedEvent{
+                                                       .timestamp_ms = GetEventTimestamp(),
+                                                       .resolution = resolution,
+                                                       .scaled_resolution = resolution}},
+                                      .id = ClassID<WindowMinimizedEvent>::ID,
+                                      .window = window});
                         }
                         else
                         {
                             win_sys->PushEvent(Event{
                                 .data = {.window_resized =
-                                             WindowResizedEvent{.timestamp_ms = message_time_ms,
+                                             WindowResizedEvent{.timestamp_ms = GetEventTimestamp(),
                                                                 .resolution = resolution,
                                                                 .scaled_resolution = resolution}},
                                 .id = ClassID<WindowResizedEvent>::ID,
@@ -225,7 +220,7 @@ namespace Core
 
                             win_sys->PushEvent(Event{
                                 .data = {.window_shown =
-                                             WindowShownEvent{.timestamp_ms = message_time_ms}},
+                                             WindowShownEvent{.timestamp_ms = GetEventTimestamp()}},
                                 .id = ClassID<WindowShownEvent>::ID,
                                 .window = window});
                         }
@@ -233,11 +228,12 @@ namespace Core
                         {
                             window->current_visibility = WindowVisibility::Hidden;
 
-                            win_sys->PushEvent(Event{
-                                .data = {.window_hidden =
-                                             WindowHiddenEvent{.timestamp_ms = message_time_ms}},
-                                .id = ClassID<WindowHiddenEvent>::ID,
-                                .window = window});
+                            win_sys->PushEvent(
+                                Event{.data = {.window_hidden =
+                                                   WindowHiddenEvent{.timestamp_ms =
+                                                                         GetEventTimestamp()}},
+                                      .id = ClassID<WindowHiddenEvent>::ID,
+                                      .window = window});
                         }
                     }
                     break;
@@ -260,7 +256,7 @@ namespace Core
                             win_sys->PushEvent(
                                 Event{.data = {.window_cursor_focus_gain =
                                                    WindowCursorFocusGainEvent{
-                                                       .timestamp_ms = message_time_ms,
+                                                       .timestamp_ms = GetEventTimestamp(),
                                                        .buttons = buttons,
                                                        .cursor_position =
                                                            GetRelativeCursorPosition(l_param)}},
@@ -272,7 +268,7 @@ namespace Core
                             win_sys->PushEvent(
                                 Event{.data = {.mouse_cursor_move =
                                                    MouseCursorMoveEvent{
-                                                       .timestamp_ms = message_time_ms,
+                                                       .timestamp_ms = GetEventTimestamp(),
                                                        .buttons = buttons,
                                                        .cursor_position =
                                                            GetRelativeCursorPosition(l_param)}},
@@ -285,29 +281,32 @@ namespace Core
                     {
                         window->mouse_focused = false;
 
-                        win_sys->PushEvent(Event{.data = {.window_cursor_focus_leave =
-                                                              WindowCursorFocusLeaveEvent{
-                                                                  .timestamp_ms = message_time_ms}},
-                                                 .id = ClassID<WindowCursorFocusLeaveEvent>::ID,
-                                                 .window = window});
+                        win_sys->PushEvent(
+                            Event{.data = {.window_cursor_focus_leave =
+                                               WindowCursorFocusLeaveEvent{
+                                                   .timestamp_ms = GetEventTimestamp()}},
+                                  .id = ClassID<WindowCursorFocusLeaveEvent>::ID,
+                                  .window = window});
                     }
                     break;
                     case WM_SETFOCUS:
                     {
-                        win_sys->PushEvent(Event{.data = {.window_keyboard_focus_gain =
-                                                              WindowKeyboardFocusGainEvent{
-                                                                  .timestamp_ms = message_time_ms}},
-                                                 .id = ClassID<WindowKeyboardFocusGainEvent>::ID,
-                                                 .window = window});
+                        win_sys->PushEvent(
+                            Event{.data = {.window_keyboard_focus_gain =
+                                               WindowKeyboardFocusGainEvent{
+                                                   .timestamp_ms = GetEventTimestamp()}},
+                                  .id = ClassID<WindowKeyboardFocusGainEvent>::ID,
+                                  .window = window});
                     }
                     break;
                     case WM_KILLFOCUS:
                     {
-                        win_sys->PushEvent(Event{.data = {.window_keyboard_focus_leave =
-                                                              WindowKeyboardFocusLeaveEvent{
-                                                                  .timestamp_ms = message_time_ms}},
-                                                 .id = ClassID<WindowKeyboardFocusLeaveEvent>::ID,
-                                                 .window = window});
+                        win_sys->PushEvent(
+                            Event{.data = {.window_keyboard_focus_leave =
+                                               WindowKeyboardFocusLeaveEvent{
+                                                   .timestamp_ms = GetEventTimestamp()}},
+                                  .id = ClassID<WindowKeyboardFocusLeaveEvent>::ID,
+                                  .window = window});
                     }
                     break;
                     case WM_LBUTTONDOWN:
@@ -351,7 +350,7 @@ namespace Core
                         win_sys->PushEvent(
                             Event{.data = {.mouse_button_pressed =
                                                MouseButtonPressedEvent{
-                                                   .timestamp_ms = message_time_ms,
+                                                   .timestamp_ms = GetEventTimestamp(),
                                                    .button = button,
                                                    .clicks = clicks,
                                                    .cursor_position =
@@ -388,7 +387,7 @@ namespace Core
                         win_sys->PushEvent(
                             Event{.data = {.mouse_buttton_released =
                                                MouseButtonReleasedEvent{
-                                                   .timestamp_ms = message_time_ms,
+                                                   .timestamp_ms = GetEventTimestamp(),
                                                    .button = button,
                                                    .cursor_position =
                                                        GetRelativeCursorPosition(l_param)}},
@@ -408,7 +407,7 @@ namespace Core
                         win_sys->PushEvent(Event{
                             .data = {.mouse_wheel =
                                          MouseWheelEvent{
-                                             .timestamp_ms = message_time_ms,
+                                             .timestamp_ms = GetEventTimestamp(),
                                              .buttons = buttons,
                                              .cursor_position =
                                                  GetRelativeTranslatedCursorPosition(handle,
@@ -444,10 +443,6 @@ namespace Core
 
                             WORD key_flags = HIWORD(l_param);
 
-                            ScanCode scancode = LOBYTE(key_flags);
-                            if(key_flags & KF_EXTENDED)
-                                scancode |= (0b1 << 8); //set 9-bit
-
                             std::uint16_t repeat_count = 1;
                             if(key_flags & KF_REPEAT)
                                 repeat_count = LOWORD(l_param);
@@ -455,8 +450,7 @@ namespace Core
                             win_sys->PushEvent(
                                 Event{.data = {.keyboard_character_pressed =
                                                    KeyboardCharacterPressedEvent{
-                                                       .timestamp_ms = message_time_ms,
-                                                       .scancode = scancode,
+                                                       .timestamp_ms = GetEventTimestamp(),
                                                        .modifiers = GetModifierFlags(),
                                                        .repeat_count = repeat_count,
                                                        .utf32_char = utf32}},
@@ -467,48 +461,68 @@ namespace Core
                     break;
                     case WM_SYSKEYDOWN:
                     case WM_KEYDOWN:
+                    case WM_KEYUP:
+                    case WM_SYSKEYUP:
                     {
-#error VK_SHIFT and other mods to LEFT/RIGHT!~!!!
+#error USE RAWINPUT!!!
                         WORD key_flags = HIWORD(l_param);
 
                         ScanCode scancode = LOBYTE(key_flags);
                         if(key_flags & KF_EXTENDED)
-                            scancode |= (0b1 << 8); //set 9-bit
+                            scancode |= 0xE0'00;
 
                         std::uint16_t repeat_count = 1;
                         if(key_flags & KF_REPEAT)
                             repeat_count = LOWORD(l_param);
 
-                        win_sys->PushEvent(
-                            Event{.data = {.keyboard_key_pressed =
-                                               KeyboardKeyPressedEvent{
-                                                   .timestamp_ms = message_time_ms,
-                                                   .scancode = scancode,
-                                                   .raw_key = static_cast<RawKeyCode>(w_param),
-                                                   .modifiers = GetModifierFlags(),
-                                                   .repeat_count = repeat_count}},
-                                  .id = ClassID<KeyboardKeyPressedEvent>::ID,
-                                  .window = window});
-                    };
-                    break;
-                    case WM_KEYUP:
-                    case WM_SYSKEYUP:
-                    {
-                        WORD key_flags = HIWORD(l_param);
+                        RawKeyCode raw_key = w_param;
+                        switch(raw_key)
+                        {
+                            case VK_SHIFT:
+                                if(GetAsyncKeyState(VK_RSHIFT) < 0)
+                                    raw_key = VK_RSHIFT;
+                                else
+                                    raw_key = VK_LSHIFT;
+                                break;
+                            case VK_MENU:
+                                if(GetAsyncKeyState(VK_RMENU) < 0)
+                                    raw_key = VK_RMENU;
+                                else
+                                    raw_key = VK_LMENU;
+                                break;
+                            case VK_CONTROL:
+                                if(GetAsyncKeyState(VK_RCONTROL) < 0)
+                                    raw_key = VK_RCONTROL;
+                                else
+                                    raw_key = VK_LCONTROL;
+                                break;
+                        }
 
-                        ScanCode scancode = LOBYTE(key_flags);
-                        if(key_flags & KF_EXTENDED)
-                            scancode |= (0b1 << 8); //set 9-bit
-
-                        win_sys->PushEvent(
-                            Event{.data = {.keyboard_key_released =
-                                               KeyboardKeyReleasedEvent{
-                                                   .timestamp_ms = message_time_ms,
-                                                   .scancode = scancode,
-                                                   .raw_key = static_cast<RawKeyCode>(w_param),
-                                                   .modifiers = GetModifierFlags()}},
-                                  .id = ClassID<KeyboardKeyReleasedEvent>::ID,
-                                  .window = window});
+                        if(message == WM_SYSKEYDOWN || WM_KEYDOWN)
+                        {
+                            win_sys->PushEvent(
+                                Event{.data = {.keyboard_key_pressed =
+                                                   KeyboardKeyPressedEvent{
+                                                       .timestamp_ms = GetEventTimestamp(),
+                                                       .scancode = scancode,
+                                                       .raw_key = static_cast<RawKeyCode>(w_param),
+                                                       .modifiers = GetModifierFlags(),
+                                                       .repeat_count = repeat_count}},
+                                      .id = ClassID<KeyboardKeyPressedEvent>::ID,
+                                      .window = window});
+                        }
+                        else
+                        {
+                            win_sys->PushEvent(
+                                Event{.data = {.keyboard_key_released =
+                                                   KeyboardKeyReleasedEvent{
+                                                       .timestamp_ms = GetEventTimestamp(),
+                                                       .scancode = scancode,
+                                                       .raw_key = static_cast<RawKeyCode>(w_param),
+                                                       .modifiers = GetModifierFlags()}},
+                                      .id = ClassID<KeyboardKeyReleasedEvent>::ID,
+                                      .window = window});
+                        }
                     };
                     break;
                     default:

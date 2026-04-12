@@ -157,6 +157,7 @@ namespace Core
 
 #ifdef _WIN32
     static int CMD_SHOW = SW_SHOWDEFAULT;
+    static DWORD MAIN_THREAD_ID = 0;
 
     //do not care about thrad-safety -> we will call it only in wWinMain
     void System::SetCmdShow(int cmd_show) noexcept
@@ -169,9 +170,24 @@ namespace Core
         }
     }
 
+    void System::SetMainThreadID() noexcept
+    {
+        static bool called = false;
+        if(!called)
+        {
+            MAIN_THREAD_ID = GetCurrentThreadId();
+            called = true;
+        }
+    }
+
     int System::GetCmdShow() noexcept
     {
         return CMD_SHOW;
+    }
+
+    DWORD System::GetMainThreadID() noexcept
+    {
+        return MAIN_THREAD_ID;
     }
 
     DWORD System::GetLastError() noexcept

@@ -31,11 +31,11 @@ namespace Core
 
     using MouseButtonFlags = std::underlying_type_t<MouseButtonFlagBits>;
 
-    struct WindowSubsystemQuitEvent
+    struct WindowSybsystemKeyboardLayoutChangedEvent
     {
         std::uint64_t timestamp_ms;
     };
-    CORE_API_TEMPLATE template class CORE_API ClassID<WindowSubsystemQuitEvent>;
+    CORE_API_TEMPLATE template class CORE_API ClassID<WindowSybsystemKeyboardLayoutChangedEvent>;
 
     struct WindowClosedEvent
     {
@@ -154,7 +154,6 @@ namespace Core
     CORE_API_TEMPLATE template class CORE_API ClassID<MouseWheelEvent>;
 
     using ScanCode = std::uint16_t;
-    constexpr inline std::size_t SCANCODES_COUNT = 512;
 
     enum ModifierKeyFlagBits : std::uint32_t
     {
@@ -186,7 +185,6 @@ namespace Core
     struct KeyboardCharacterPressedEvent
     {
         std::uint64_t timestamp_ms;
-        ScanCode scancode;
         ModifierKeyFlags modifiers;
         std::uint16_t repeat_count;
         char32_t utf32_char;
@@ -205,7 +203,7 @@ namespace Core
     //helper for inner subsystem event queue
     union QueueEvent
     {
-        WindowSubsystemQuitEvent window_subsystem_quit;
+        WindowSybsystemKeyboardLayoutChangedEvent window_sybsystem_keyboard_layout_changed;
         WindowClosedEvent window_closed;
         WindowDisplayChangedEvent window_display_changed;
         WindowMovedEvent window_moved;
@@ -247,4 +245,6 @@ namespace Core
     //KeyboardKeyPressedEvent
     //KeyboardCharacterPressedEvent
     //KeyboardKeyReleasedEvent
+
+    std::uint64_t GetEventTimestamp() noexcept;
 };
