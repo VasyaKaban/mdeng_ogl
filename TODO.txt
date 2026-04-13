@@ -50,5 +50,5 @@ INFO:
 * Per monitor DPI scaling v2 enable by default. But we can also enable EnableNonClientDpiScaling in WM_NCCREATE for v1
 * Window decorations switch
 * Window Hidden/Shown as state + functions
-* Add repeat count(how to NumLock??? + toggled keys):
+* Add repeat count(how to NumLock??? + toggled keys): -> !!!WARNING!!! THIS CAN LEAD ZERO-SIZE STRING NAMES IN KEYBOARD STATE!!!
     DO NOT CARE ABOUT MULTI-KEYBOARD SETUPS. WHO WILL DO THINGS LIKE THIS??? :)
