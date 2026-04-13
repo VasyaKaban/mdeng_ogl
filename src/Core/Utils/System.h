@@ -63,6 +63,12 @@ namespace Core
 
         static UTF8Result UTF32ToUTF8(char32_t utf32) noexcept;
 
+        //alphanumeric comparator -> same as operator< result
+        static bool CompareUTF8(std::string_view str1, std::string_view str2) noexcept;
+
+        static bool IsUnicodeC0ControlCode(char value) noexcept; //with Delete
+        static bool IsUnicodeC0ControlCodeOrSpace(char value) noexcept;
+
 #ifdef _WIN32
     private:
         friend int WINAPI ::wWinMain(HINSTANCE instance,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <queue>
+#include <set>
 #include <ShellScalingApi.h>
 #include "Core/Utils/DynamicLibrary.h"
 #include "../WindowSubsystem.h"
@@ -89,11 +90,11 @@ namespace Core
             Window* window;
         };
 
-        struct KeyboardLayoutDesc
+        struct KeyboardState
         {
-            HKL layout;
-            std::unordered_map<ScanCode, std::string>
-                scancode_to_string_mapping; //We can create table to map PS/2 Set 1 into the ours inner scancodes, but I don't want to do this...
+            HKL current_layout;
+            std::set<HKL> layouts;
+            std::unordered_map<ScanCode, std::string> scancode_to_string_mapping;
             std::unordered_map<std::string_view /*reference to scancode_to_string_mapping*/,
                                ScanCode>
                 string_to_scancode_mapping;
@@ -152,7 +153,7 @@ namespace Core
             PrecededScanCode preceded_scancode;
 
             HHOOK shell_hook;
-            std::vector<KeyboardLayoutDesc> keyboard_layouts;
+            KeyboardState keyboard_state;
 
             std::queue<Event> events;
         public:

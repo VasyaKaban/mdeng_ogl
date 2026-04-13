@@ -50,20 +50,5 @@ INFO:
 * Per monitor DPI scaling v2 enable by default. But we can also enable EnableNonClientDpiScaling in WM_NCCREATE for v1
 * Window decorations switch
 * Window Hidden/Shown as state + functions
-* Char events via ToUnicodeEx
-* Save keyboard state for Win32 (for WM_CHAR emulation)
 * Add repeat count(how to NumLock??? + toggled keys):
-    
-    if(pressed):
-        state.key.pressed = true;
-        state.key.repeat++;
-    else:
-        state.key.pressed = false;
-        state.key.repeat = 0
-    
-    if(toggable):
-    //repeat++ only when toggled but not unpressed
-        if(pressed):
-            state.key
-
     DO NOT CARE ABOUT MULTI-KEYBOARD SETUPS. WHO WILL DO THINGS LIKE THIS??? :)

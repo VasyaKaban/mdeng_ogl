@@ -178,7 +178,7 @@ namespace Core
         ScanCode scancode;
         RawKeyCode raw_key;
         ModifierKeyFlags modifiers;
-        std::uint16_t repeat_count;
+        std::uint32_t repeat_count;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardKeyPressedEvent>;
 
@@ -186,7 +186,7 @@ namespace Core
     {
         std::uint64_t timestamp_ms;
         ModifierKeyFlags modifiers;
-        std::uint16_t repeat_count;
+        std::uint32_t repeat_count;
         char32_t utf32_char;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardCharacterPressedEvent>;

@@ -810,7 +810,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                 auto res = Core::System::UTF32ToUTF8(event.utf32_char);
                 std::string_view str{res.data, res.length};
 
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "KeyboardCharacterPressedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tCModifiers: {}\n"
@@ -826,7 +826,12 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     res.data[1],
                     res.data[2],
                     res.data[3],
-                    str);
+                    str);*/
+
+                //if(event.utf32_char == U'\r')
+                //    str = "\n";
+
+                //std::cerr << str;
 
                 return Core::EventHandlerResult::None;
             },

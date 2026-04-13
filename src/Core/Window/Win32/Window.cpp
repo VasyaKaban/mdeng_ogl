@@ -387,49 +387,6 @@ namespace Core
                             .id = ClassID<MouseWheelEvent>::ID,
                             .window = window});
                     }
-                    break;
-                    case WM_CHAR:
-                    case WM_SYSCHAR:
-                    {
-#pragma message("TODO AS PART OF RAW INPUT!")
-                        /*if(IS_HIGH_SURROGATE(w_param)) //save surrogate
-                        {
-                            window->high_surrogate = w_param;
-                        }
-                        else
-                        {
-                            std::uint32_t utf32;
-
-                            if(window->high_surrogate) //surrogate pair
-                            {
-                                utf32 = ((window->high_surrogate - 0xD8'00) << 10) +
-                                        (w_param - 0xDC'00) + 0x1'00'00;
-
-                                window->high_surrogate = L'\0';
-                            }
-                            else //single char
-                            {
-                                utf32 = w_param;
-                            }
-
-                            WORD key_flags = HIWORD(l_param);
-
-                            std::uint16_t repeat_count = 1;
-                            if(key_flags & KF_REPEAT)
-                                repeat_count = LOWORD(l_param);
-
-                            win_sys->PushEvent(
-                                Event{.data = {.keyboard_character_pressed =
-                                                   KeyboardCharacterPressedEvent{
-                                                       .timestamp_ms = GetEventTimestamp(),
-                                                       .modifiers = GetModifierFlags(),
-                                                       .repeat_count = repeat_count,
-                                                       .utf32_char = utf32}},
-                                      .id = ClassID<KeyboardCharacterPressedEvent>::ID,
-                                      .window = window});
-                        }*/
-                    }
-                    break;
                     default:
                         return DefWindowProcW(handle, message, w_param, l_param);
                         break;

@@ -4,11 +4,85 @@
 #include "hidusage.h"
 #include "Core/Utils/ScopedCall.hpp"
 #include <set>
+#include <format>
 
 namespace Core
 {
     namespace Win32
     {
+        constexpr static std::size_t SCANCODES_COUNT =
+            256; //approximate count. There is still around ~126 keys on keyboard, so we have a reserve
+
+        constexpr static std::pair<StableScanCode, std::string_view> STABLE_SCANCODE_PAIRS[] = {
+            std::pair{StableScanCode::BackSpace, "BackSpace"},
+            std::pair{StableScanCode::Tab, "Tab"},
+            std::pair{StableScanCode::CapsLock, "CapsLock"},
+            std::pair{StableScanCode::Enter, "Enter"},
+            std::pair{StableScanCode::LeftShift, "LeftShift"},
+            std::pair{StableScanCode::ABTN_C1, "ABTN_C1"},
+            std::pair{StableScanCode::RightShift, "RightShift"},
+            std::pair{StableScanCode::LeftControl, "LeftControl"},
+            std::pair{StableScanCode::LeftAlt, "LeftAlt"},
+            std::pair{StableScanCode::Space, "Space"},
+            std::pair{StableScanCode::RightAlt, "RightAlt"},
+            std::pair{StableScanCode::RightControl, "RightControl"},
+            std::pair{StableScanCode::Insert, "Insert"},
+            std::pair{StableScanCode::Delete, "Delete"},
+            std::pair{StableScanCode::LeftArrow, "LeftArrow"},
+            std::pair{StableScanCode::Home, "Home"},
+            std::pair{StableScanCode::End, "End"},
+            std::pair{StableScanCode::UpArrow, "UpArrow"},
+            std::pair{StableScanCode::DownArrow, "DownArrow"},
+            std::pair{StableScanCode::PageUp, "PageUp"},
+            std::pair{StableScanCode::PageDown, "PageDown"},
+            std::pair{StableScanCode::RightArrow, "RightArrow"},
+            std::pair{StableScanCode::NumLock, "NumLock"},
+            std::pair{StableScanCode::Num7, "Num7"},
+            std::pair{StableScanCode::Num4, "Num4"},
+            std::pair{StableScanCode::Num1, "Num1"},
+            std::pair{StableScanCode::NumDiv, "NumDiv"},
+            std::pair{StableScanCode::Num8, "Num8"},
+            std::pair{StableScanCode::Num5, "Num5"},
+            std::pair{StableScanCode::Num2, "Num2"},
+            std::pair{StableScanCode::Num0, "Num0"},
+            std::pair{StableScanCode::NumMul, "NumMul"},
+            std::pair{StableScanCode::Num9, "Num9"},
+            std::pair{StableScanCode::Num6, "Num6"},
+            std::pair{StableScanCode::Num3, "Num3"},
+            std::pair{StableScanCode::NumPeriod, "NumPeriod"},
+            std::pair{StableScanCode::NumMin, "NumMin"},
+            std::pair{StableScanCode::NumAdd, "NumAdd"},
+            std::pair{StableScanCode::ABTN_C2, "ABTN_C2"},
+            std::pair{StableScanCode::NumEnter, "NumEnter"},
+            std::pair{StableScanCode::Esc, "Esc"},
+            std::pair{StableScanCode::F1, "F1"},
+            std::pair{StableScanCode::F2, "F2"},
+            std::pair{StableScanCode::F3, "F3"},
+            std::pair{StableScanCode::F4, "F4"},
+            std::pair{StableScanCode::F5, "F5"},
+            std::pair{StableScanCode::F6, "F6"},
+            std::pair{StableScanCode::F7, "F7"},
+            std::pair{StableScanCode::F8, "F8"},
+            std::pair{StableScanCode::F9, "F9"},
+            std::pair{StableScanCode::F10, "F10"},
+            std::pair{StableScanCode::F11, "F11"},
+            std::pair{StableScanCode::F12, "F12"},
+            std::pair{StableScanCode::PrintScreen, "PrintScreen"},
+            std::pair{StableScanCode::ScrollLock, "ScrollLock"},
+            std::pair{StableScanCode::Pause, "Pause"},
+            std::pair{StableScanCode::LeftMeta, "LeftMeta"},
+            std::pair{StableScanCode::RightMeta, "RightMeta"},
+            std::pair{StableScanCode::Menu, "Menu"},
+            std::pair{StableScanCode::Power, "Power"},
+            std::pair{StableScanCode::Sleep, "Sleep"},
+            std::pair{StableScanCode::Wake, "Wake"},
+            std::pair{StableScanCode::Kana, "Kana"},
+            std::pair{StableScanCode::SBCSCHAR, "SBCSCHAR"},
+            std::pair{StableScanCode::Convert, "Convert"},
+            std::pair{StableScanCode::NonConvert, "NonConvert"},
+#pragma message("TODO!")
+        };
+
         constexpr static wchar_t WIN32_RAW_INPUT_WINDOW_CLASS_NAME[] =
             L"WIN32_RAW_INPUT_WINDOW_CLASS_NAME";
 
@@ -82,9 +156,8 @@ namespace Core
                         {
                             const RAWKEYBOARD& data = raw_input.data.keyboard;
 
+#pragma message("Handle hotkeys")
 #pragma message("UPDATE REPEAT COUNT!")
-#pragma message("UPDATE KEYBOARD STATE!")
-#pragma message("ToUnicodeEx!!!")
 
                             //ignore out of bounds
                             //if(data.MakeCode == KEYBOARD_OVERRUN_MAKE_CODE ||
@@ -169,37 +242,119 @@ namespace Core
                                             << 8;
                             }
 
-                            HWND current_focus = GetFocus();
-                            if(current_focus)
+                            //Update keyboard state
+                            //Update pressed/released state
+
+                            constexpr static int PRESSED_BIT = 0b1000'0000;
+                            constexpr static int TOGGLED_BIT = 0b0000'0001;
+                            if(data.VKey <= 255)
                             {
-                                Window* window = reinterpret_cast<Window*>(
-                                    GetWindowLongPtrW(current_focus, GWLP_USERDATA));
-                                if(window)
+#pragma message("Also add repeat count here!")
+                                if(is_pressed)
+                                    HOOK_WIN_SYS->raw_input_keyboard_state[data.VKey] |=
+                                        PRESSED_BIT;
+                                else
+                                    HOOK_WIN_SYS->raw_input_keyboard_state[data.VKey] &=
+                                        ~PRESSED_BIT;
+
+                                //Update toggle state
+                                constexpr static ScanCode TOGGABLE_SCANCODES[] = {
+                                    static_cast<ScanCode>(StableScanCode::CapsLock),
+                                    static_cast<ScanCode>(StableScanCode::NumLock),
+                                    static_cast<ScanCode>(StableScanCode::ScrollLock)};
+
+                                auto it = std::ranges::find(TOGGABLE_SCANCODES, scancode);
+                                if(it != std::end(TOGGABLE_SCANCODES))
                                 {
-                                    if(is_pressed)
+                                    if(is_pressed) //toggled again
                                     {
+                                        if(!(HOOK_WIN_SYS->raw_input_keyboard_state[data.VKey] &
+                                             TOGGLED_BIT)) //toggle
+                                        {
+                                            HOOK_WIN_SYS->raw_input_keyboard_state[data.VKey] |=
+                                                TOGGLED_BIT;
+                                        }
+                                        else //untoggle
+                                        {
+                                            HOOK_WIN_SYS->raw_input_keyboard_state[data.VKey] &=
+                                                ~TOGGLED_BIT;
+                                        }
+                                    }
+                                }
+                            }
+
+                            HWND current_focus = GetFocus();
+                            Window* window = nullptr;
+                            if(current_focus)
+                                window = reinterpret_cast<Window*>(
+                                    GetWindowLongPtrW(current_focus, GWLP_USERDATA));
+
+                            if(window)
+                            {
+                                if(is_pressed)
+                                {
 #pragma message("UPDATE REPEAT COUNT!")
-                                        HOOK_WIN_SYS->PushEvent(Event{
-                                            .data = {.keyboard_key_pressed =
-                                                         KeyboardKeyPressedEvent{
-                                                             .timestamp_ms = GetEventTimestamp(),
-                                                             .scancode = scancode,
-                                                             .raw_key = data.VKey,
-                                                             .modifiers = GetModifierFlags(),
-                                                             .repeat_count = 0}},
-                                            .id = ClassID<KeyboardKeyPressedEvent>::ID,
-                                            .window = window});
+                                    HOOK_WIN_SYS->PushEvent(
+                                        Event{.data = {.keyboard_key_pressed =
+                                                           KeyboardKeyPressedEvent{
+                                                               .timestamp_ms = GetEventTimestamp(),
+                                                               .scancode = scancode,
+                                                               .raw_key = data.VKey,
+                                                               .modifiers = GetModifierFlags(),
+                                                               .repeat_count = 0}},
+                                              .id = ClassID<KeyboardKeyPressedEvent>::ID,
+                                              .window = window});
+                                }
+                                else
+                                {
+                                    HOOK_WIN_SYS->PushEvent(
+                                        Event{.data = {.keyboard_key_released =
+                                                           KeyboardKeyReleasedEvent{
+                                                               .timestamp_ms = GetEventTimestamp(),
+                                                               .scancode = scancode,
+                                                               .raw_key = data.VKey,
+                                                               .modifiers = GetModifierFlags()}},
+                                              .id = ClassID<KeyboardKeyReleasedEvent>::ID,
+                                              .window = window});
+                                }
+                            }
+
+                            if(data.VKey < 0xFF && is_pressed)
+                            {
+                                wchar_t wbuffer[2] = {};
+
+                                int res = ToUnicodeEx(data.VKey,
+                                                      scancode,
+                                                      HOOK_WIN_SYS->raw_input_keyboard_state,
+                                                      wbuffer,
+                                                      std::size(wbuffer),
+                                                      0,
+                                                      HOOK_WIN_SYS->keyboard_state.current_layout);
+
+                                if(res > 0) //neither dead key nor invalid combination
+                                {
+                                    char32_t utf32;
+                                    if(res == 2) //surrogate pairs
+                                    {
+                                        utf32 = ((wbuffer[0] - 0xD8'00) << 10) +
+                                                (wbuffer[1] - 0xDC'00) + 0x1'00'00;
                                     }
                                     else
                                     {
+                                        utf32 = wbuffer[0];
+                                    }
+
+                                    if(window)
+                                    {
+#pragma message("UPDATE REPEAT COUNT!")
                                         HOOK_WIN_SYS->PushEvent(Event{
-                                            .data = {.keyboard_key_released =
-                                                         KeyboardKeyReleasedEvent{
+                                            .data = {.keyboard_character_pressed =
+                                                         KeyboardCharacterPressedEvent{
                                                              .timestamp_ms = GetEventTimestamp(),
-                                                             .scancode = scancode,
-                                                             .raw_key = data.VKey,
-                                                             .modifiers = GetModifierFlags()}},
-                                            .id = ClassID<KeyboardKeyReleasedEvent>::ID,
+                                                             .modifiers = GetModifierFlags(),
+                                                             .repeat_count = 0,
+                                                             .utf32_char = utf32}},
+                                            .id = ClassID<KeyboardCharacterPressedEvent>::ID,
                                             .window = window});
                                     }
                                 }
@@ -379,9 +534,22 @@ namespace Core
             if(_raw_input_hwnd == nullptr)
                 Core::System::ThrowLastError();
 
-            //create shell hook
+            //update keyboard state
+            keyboard_state.scancode_to_string_mapping.reserve(SCANCODES_COUNT);
+            keyboard_state.string_to_scancode_mapping.reserve(SCANCODES_COUNT);
+            for(const auto& [sc, name]: STABLE_SCANCODE_PAIRS)
+            {
+                ScanCode scancode = static_cast<ScanCode>(sc);
+                auto [it, inserted] =
+                    keyboard_state.scancode_to_string_mapping.insert(std::pair{scancode, name});
+
+                if(inserted)
+                    keyboard_state.string_to_scancode_mapping.insert({it->second, scancode});
+            }
+
             this->UpdateKeyboardLayouts();
 
+            //create shell hook
             _shell_hook = SetWindowsHookExW(WH_SHELL,
                                             WindowSubsystem::ShellProc,
                                             nullptr,
@@ -489,36 +657,20 @@ namespace Core
 
         std::string WindowSubsystem::GetKeyNameByScancode(ScanCode scancode)
         {
-            std::string res;
+            auto it = keyboard_state.scancode_to_string_mapping.find(scancode);
+            if(it == keyboard_state.scancode_to_string_mapping.end())
+                return {};
 
-            for(const auto& desc: keyboard_layouts)
-            {
-                auto it = desc.scancode_to_string_mapping.find(scancode);
-                if(it != desc.scancode_to_string_mapping.end())
-                {
-                    res = it->second;
-                    break;
-                }
-            }
-
-            return res;
+            return it->second;
         }
 
         std::optional<ScanCode> WindowSubsystem::GetScanCodeFromKeyName(std::string_view name)
         {
-            std::optional<ScanCode> res;
+            auto it = keyboard_state.string_to_scancode_mapping.find(name);
+            if(it == keyboard_state.string_to_scancode_mapping.end())
+                return std::nullopt;
 
-            for(const auto& desc: keyboard_layouts)
-            {
-                auto it = desc.string_to_scancode_mapping.find(name);
-                if(it != desc.string_to_scancode_mapping.end())
-                {
-                    res = it->second;
-                    break;
-                }
-            }
-
-            return res;
+            return it->second;
         }
 
         HINSTANCE WindowSubsystem::GetInstance() const noexcept
@@ -538,164 +690,69 @@ namespace Core
 
         bool WindowSubsystem::UpdateKeyboardLayouts()
         {
-            constexpr static std::size_t SCANCODES_COUNT =
-                256; //approximate count. There is still arounf ~126 keys on keyboard, so we have a reserve
-
-            wchar_t wstr[65] = {};
+            keyboard_state.current_layout =
+                GetKeyboardLayout(Core::System::GetMainThreadID()); //update current layout
 
             auto size = GetKeyboardLayoutList(0, nullptr);
             std::vector<HKL> layouts(size);
             GetKeyboardLayoutList(size, layouts.data());
 
-            std::set<HKL> unique_layouts(layouts.begin(), layouts.end());
+            std::ranges::sort(layouts);
 
-            //check that it's only language change
-            std::size_t found_count = 0;
-            for(const auto& desc: keyboard_layouts)
-            {
-                if(unique_layouts.find(desc.layout) != unique_layouts.end())
-                    found_count++;
-            }
-
-            if(found_count == unique_layouts.size()) //it's only language change
-                return false;
-
-            for(const auto& desc: keyboard_layouts)
-                unique_layouts.insert(desc.layout);
-
-            std::vector<KeyboardLayoutDesc> new_keyboard_layouts;
-            new_keyboard_layouts.reserve(unique_layouts.size());
-            for(const auto& l: layouts)
-            {
-                auto it = unique_layouts.find(l);
-                if(it != unique_layouts.end())
-                {
-                    new_keyboard_layouts.push_back(
-                        KeyboardLayoutDesc{.layout = l,
-                                           .scancode_to_string_mapping = {},
-                                           .string_to_scancode_mapping = {}});
-
-                    new_keyboard_layouts.back().scancode_to_string_mapping.reserve(SCANCODES_COUNT);
-                    new_keyboard_layouts.back().string_to_scancode_mapping.reserve(SCANCODES_COUNT);
-
-                    unique_layouts.erase(it);
-                }
-            }
-
-            for(const auto& desc: keyboard_layouts)
-            {
-                auto it = unique_layouts.find(desc.layout);
-                if(it != unique_layouts.end())
-                {
-                    new_keyboard_layouts.push_back(
-                        KeyboardLayoutDesc{.layout = desc.layout,
-                                           .scancode_to_string_mapping = {},
-                                           .string_to_scancode_mapping = {}});
-
-                    new_keyboard_layouts.back().scancode_to_string_mapping.reserve(SCANCODES_COUNT);
-                    new_keyboard_layouts.back().string_to_scancode_mapping.reserve(SCANCODES_COUNT);
-
-                    unique_layouts.erase(it);
-                }
-            }
-
-            constexpr static std::pair<StableScanCode, std::string_view> STABLE_SCANCODE_PAIRS[] = {
-                std::pair{StableScanCode::BackSpace, "BackSpace"},
-                std::pair{StableScanCode::Tab, "Tab"},
-                std::pair{StableScanCode::CapsLock, "CapsLock"},
-                std::pair{StableScanCode::Enter, "Enter"},
-                std::pair{StableScanCode::LeftShift, "LeftShift"},
-                std::pair{StableScanCode::ABTN_C1, "ABTN_C1"},
-                std::pair{StableScanCode::RightShift, "RightShift"},
-                std::pair{StableScanCode::LeftControl, "LeftControl"},
-                std::pair{StableScanCode::LeftAlt, "LeftAlt"},
-                std::pair{StableScanCode::Space, "Space"},
-                std::pair{StableScanCode::RightAlt, "RightAlt"},
-                std::pair{StableScanCode::RightControl, "RightControl"},
-                std::pair{StableScanCode::Insert, "Insert"},
-                std::pair{StableScanCode::Delete, "Delete"},
-                std::pair{StableScanCode::LeftArrow, "LeftArrow"},
-                std::pair{StableScanCode::Home, "Home"},
-                std::pair{StableScanCode::End, "End"},
-                std::pair{StableScanCode::UpArrow, "UpArrow"},
-                std::pair{StableScanCode::DownArrow, "DownArrow"},
-                std::pair{StableScanCode::PageUp, "PageUp"},
-                std::pair{StableScanCode::PageDown, "PageDown"},
-                std::pair{StableScanCode::RightArrow, "RightArrow"},
-                std::pair{StableScanCode::NumLock, "NumLock"},
-                std::pair{StableScanCode::Num7, "Num7"},
-                std::pair{StableScanCode::Num4, "Num4"},
-                std::pair{StableScanCode::Num1, "Num1"},
-                std::pair{StableScanCode::NumDiv, "NumDiv"},
-                std::pair{StableScanCode::Num8, "Num8"},
-                std::pair{StableScanCode::Num5, "Num5"},
-                std::pair{StableScanCode::Num2, "Num2"},
-                std::pair{StableScanCode::Num0, "Num0"},
-                std::pair{StableScanCode::NumMul, "NumMul"},
-                std::pair{StableScanCode::Num9, "Num9"},
-                std::pair{StableScanCode::Num6, "Num6"},
-                std::pair{StableScanCode::Num3, "Num3"},
-                std::pair{StableScanCode::NumPeriod, "NumPeriod"},
-                std::pair{StableScanCode::NumMin, "NumMin"},
-                std::pair{StableScanCode::NumAdd, "NumAdd"},
-                std::pair{StableScanCode::ABTN_C2, "ABTN_C2"},
-                std::pair{StableScanCode::NumEnter, "NumEnter"},
-                std::pair{StableScanCode::Esc, "Esc"},
-                std::pair{StableScanCode::F1, "F1"},
-                std::pair{StableScanCode::F2, "F2"},
-                std::pair{StableScanCode::F3, "F3"},
-                std::pair{StableScanCode::F4, "F4"},
-                std::pair{StableScanCode::F5, "F5"},
-                std::pair{StableScanCode::F6, "F6"},
-                std::pair{StableScanCode::F7, "F7"},
-                std::pair{StableScanCode::F8, "F8"},
-                std::pair{StableScanCode::F9, "F9"},
-                std::pair{StableScanCode::F10, "F10"},
-                std::pair{StableScanCode::F11, "F11"},
-                std::pair{StableScanCode::F12, "F12"},
-                std::pair{StableScanCode::PrintScreen, "PrintScreen"},
-                std::pair{StableScanCode::ScrollLock, "ScrollLock"},
-                std::pair{StableScanCode::Pause, "Pause"},
-                std::pair{StableScanCode::LeftMeta, "LeftMeta"},
-                std::pair{StableScanCode::RightMeta, "RightMeta"},
-                std::pair{StableScanCode::Menu, "Menu"},
-                std::pair{StableScanCode::Power, "Power"},
-                std::pair{StableScanCode::Sleep, "Sleep"},
-                std::pair{StableScanCode::Wake, "Wake"},
-                std::pair{StableScanCode::Kana, "Kana"},
-                std::pair{StableScanCode::SBCSCHAR, "SBCSCHAR"},
-                std::pair{StableScanCode::Convert, "Convert"},
-                std::pair{StableScanCode::NonConvert, "NonConvert"},
-            };
+            bool is_language_change = true;
 
             auto prev_keyboard_layout = GetKeyboardLayout(Core::System::GetMainThreadID());
-            for(auto& desc: new_keyboard_layouts)
+            for(HKL l: layouts)
             {
-                ActivateKeyboardLayout(desc.layout, 0);
+                if(auto [it, inserted] = keyboard_state.layouts.insert(l); !inserted)
+                    continue;
+                else
+                    is_language_change = false;
 
-                for(const auto& [sc, name]: STABLE_SCANCODE_PAIRS)
-                {
-                    ScanCode scancode = static_cast<ScanCode>(sc);
-                    auto [it, _] =
-                        desc.scancode_to_string_mapping.insert(std::pair{scancode, name});
-                    desc.string_to_scancode_mapping.insert({it->second, scancode});
-                }
+                ActivateKeyboardLayout(l, 0);
 
                 for(int vk = 1; vk < 256; vk++)
                 {
-                    auto scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, desc.layout);
+                    auto scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, l);
                     if(scancode != 0)
                     {
-                        wchar_t character = MapVirtualKeyExW(vk, MAPVK_VK_TO_CHAR, desc.layout);
+                        auto [it, inserted] = keyboard_state.scancode_to_string_mapping.insert(
+                            std::pair{scancode, ""});
+
+                        if(!inserted)
+                        {
+                            if(!it->second.empty())
+                                continue;
+                        }
+
+                        wchar_t character = MapVirtualKeyExW(vk, MAPVK_VK_TO_CHAR, l);
                         if(character != 0)
                         {
                             auto name = Core::System::WideToUTF8({&character, 1});
+                            if(name.empty())
+                                continue;
 
-                            auto [it, inserted] =
-                                desc.scancode_to_string_mapping.insert(std::pair{scancode, name});
+                            if(name.size() == 1)
+                            {
+                                if(Core::System::IsUnicodeC0ControlCodeOrSpace(name[0]))
+                                    continue;
+                            }
 
-                            if(inserted)
-                                desc.string_to_scancode_mapping.insert({it->second, scancode});
+                            it->second = name;
+
+                            auto [s_it, s_inserted] =
+                                keyboard_state.string_to_scancode_mapping.insert(std::pair{
+                                    std::string_view(name),
+                                    scancode}); //there can be duplication of name(very very rare event but let's handle it)
+
+                            if(!s_inserted)
+                            {
+                                it->second =
+                                    std::format("Additional_{}", name); //make some fictive name
+
+                                keyboard_state.string_to_scancode_mapping.insert(
+                                    std::pair{std::string_view(it->second), scancode});
+                            }
                         }
                     }
                 }
@@ -703,9 +760,7 @@ namespace Core
 
             ActivateKeyboardLayout(prev_keyboard_layout, 0);
 
-            this->keyboard_layouts = std::move(new_keyboard_layouts);
-
-            return true;
+            return !is_language_change;
         }
     };
 };

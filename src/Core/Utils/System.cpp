@@ -155,6 +155,111 @@ namespace Core
         return result;
     }
 
+    static bool IsValidNonPrefixUTF8Byte(char value) noexcept
+    {
+        return (value & 0b1100'0000) == 0b1000'0000;
+    }
+
+    static char32_t GetNextUTF8Codepoint(std::string_view str, std::size_t& offset) noexcept
+    {
+        if(offset == str.size())
+            return 0;
+
+        char32_t res = 0;
+        if((str[offset] & 0b1000'0000) == 0b0000'0000) //1
+        {
+            res = str[offset];
+            offset++;
+        }
+        else if((str[offset] & 0b1110'0000) == 0b1100'0000) //2
+        {
+            if(str.size() - offset >= 2)
+            {
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]))
+                {
+                    res = (static_cast<char32_t>(str[offset] & 0b1101'1111) << 8) |
+                          (str[offset + 1] & 0b1011'1111);
+
+                    offset += 2;
+                }
+            }
+        }
+        else if((str[offset] & 0b1111'0000) == 0b1110'0000) //3
+        {
+            if(str.size() - offset >= 3)
+            {
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) &&
+                   IsValidNonPrefixUTF8Byte(str[offset + 2]))
+                {
+                    res = (static_cast<char32_t>(str[offset] & 0b1110'1111) << 16) |
+                          (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 8) |
+                          (str[offset + 2] & 0b1011'1111);
+
+                    offset += 3;
+                }
+            }
+        }
+        else if((str[offset] & 0b1111'1000) == 0b1111'0000) //4
+        {
+            if(str.size() - offset >= 4)
+            {
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) &&
+                   IsValidNonPrefixUTF8Byte(str[offset + 2]) &&
+                   IsValidNonPrefixUTF8Byte(str[offset + 3]))
+                {
+                    res = (static_cast<char32_t>(str[offset] & 0b1111'0111) << 24) |
+                          (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 16) |
+                          (static_cast<char32_t>(str[offset + 2] & 0b1011'1111) << 8) |
+                          (str[offset + 3] & 0b1011'1111);
+
+                    offset += 4;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    bool System::CompareUTF8(std::string_view str1, std::string_view str2) noexcept
+    {
+        //for each string get str1_codepoint and str2_codepoint
+        //if str1_codepoint < str2_codepoint -> true
+        //else if str1_codepoint > str2_codepoint -> false
+        //else continue
+        //after all return false
+
+        std::size_t str1_offset = 0;
+        std::size_t str2_offset = 0;
+
+        while(str1_offset != str1.size() && str2_offset != str2.size())
+        {
+            char32_t str1_code = GetNextUTF8Codepoint(str1, str1_offset);
+            if(str1_code == 0)
+                return false;
+
+            char32_t str2_code = GetNextUTF8Codepoint(str2, str2_offset);
+            if(str2_code == 0)
+                return false;
+
+            if(str1_code < str2_code)
+                return true;
+            else if(str1_code > str2_code)
+                return false;
+        }
+
+        return false;
+    }
+
+    bool System::IsUnicodeC0ControlCode(char value) noexcept
+    {
+        return (value >= 0 && value <= 31) || value == 127;
+    }
+
+    bool System::IsUnicodeC0ControlCodeOrSpace(char value) noexcept
+    {
+        return IsUnicodeC0ControlCode(value) || value == 32;
+    }
+
 #ifdef _WIN32
     static int CMD_SHOW = SW_SHOWDEFAULT;
     static DWORD MAIN_THREAD_ID = 0;
