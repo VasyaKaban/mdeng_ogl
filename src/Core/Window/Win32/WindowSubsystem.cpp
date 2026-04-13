@@ -1,6 +1,7 @@
 #include "WindowSubsystem.h"
 #include "Window.h"
 #include <winuser.h>
+#include "hidusage.h"
 #include "Core/Utils/ScopedCall.hpp"
 #include <set>
 
@@ -8,18 +9,236 @@ namespace Core
 {
     namespace Win32
     {
+        constexpr static wchar_t WIN32_RAW_INPUT_WINDOW_CLASS_NAME[] =
+            L"WIN32_RAW_INPUT_WINDOW_CLASS_NAME";
+
         static WindowSubsystem* HOOK_WIN_SYS = nullptr;
+
+        static ModifierKeyFlags GetModifierFlags() noexcept
+        {
+            ModifierKeyFlags flags = 0;
+            if(GetAsyncKeyState(VK_LSHIFT) < 0)
+                flags |= ModifierKeyFlagBits::LeftShift;
+
+            if(GetAsyncKeyState(VK_RSHIFT) < 0)
+                flags |= ModifierKeyFlagBits::RightShift;
+
+            if(GetAsyncKeyState(VK_LCONTROL) < 0)
+                flags |= ModifierKeyFlagBits::LeftControl;
+
+            if(GetAsyncKeyState(VK_RCONTROL) < 0)
+                flags |= ModifierKeyFlagBits::RightControl;
+
+            if(GetAsyncKeyState(VK_LMENU) < 0)
+                flags |= ModifierKeyFlagBits::LeftAlt;
+
+            if(GetAsyncKeyState(VK_RMENU) < 0)
+                flags |= ModifierKeyFlagBits::RightAlt;
+
+            if(GetAsyncKeyState(VK_LWIN) < 0)
+                flags |= ModifierKeyFlagBits::LeftMeta;
+
+            if(GetAsyncKeyState(VK_RWIN) < 0)
+                flags |= ModifierKeyFlagBits::RightMeta;
+
+            return flags;
+        }
+
+        LRESULT CALLBACK WindowSubsystem::RawInputWindowProc(HWND handle,
+                                                             UINT message,
+                                                             WPARAM w_param,
+                                                             LPARAM l_param)
+        {
+            switch(message)
+            {
+                case WM_CREATE:
+                {
+                    HOOK_WIN_SYS->preceded_scancode = PrecededScanCode::None;
+                    if(GetKeyboardState(HOOK_WIN_SYS->raw_input_keyboard_state) == 0)
+                        return -1;
+
+                    RAWINPUTDEVICE raw_keyboard_desc = {.usUsagePage = HID_USAGE_PAGE_GENERIC,
+                                                        .usUsage = HID_USAGE_GENERIC_KEYBOARD,
+                                                        .dwFlags = RIDEV_NOLEGACY |
+                                                                   RIDEV_INPUTSINK |
+                                                                   RIDEV_NOHOTKEYS | RIDEV_APPKEYS,
+                                                        .hwndTarget = handle};
+                    if(RegisterRawInputDevices(&raw_keyboard_desc, 1, sizeof(RAWINPUTDEVICE)) !=
+                       TRUE)
+                        return -1;
+                }
+                break;
+                case WM_INPUT:
+                {
+                    RAWINPUT raw_input;
+                    UINT raw_input_size = sizeof(raw_input);
+                    if(GetRawInputData(reinterpret_cast<HRAWINPUT>(l_param),
+                                       RID_INPUT,
+                                       &raw_input,
+                                       &raw_input_size,
+                                       sizeof(raw_input.header)) != (UINT)-1)
+                    {
+                        if(raw_input.header.dwType == RIM_TYPEKEYBOARD)
+                        {
+                            const RAWKEYBOARD& data = raw_input.data.keyboard;
+
+#pragma message("UPDATE REPEAT COUNT!")
+#pragma message("UPDATE KEYBOARD STATE!")
+#pragma message("ToUnicodeEx!!!")
+
+                            //ignore out of bounds
+                            //if(data.MakeCode == KEYBOARD_OVERRUN_MAKE_CODE ||
+                            //   data.VKey >= UCHAR_MAX)
+                            //    return 0;
+
+                            //get scancode properties
+                            bool is_pressed = !(data.Flags & RI_KEY_BREAK);
+                            ScanCode scancode = data.MakeCode & 0x7F;
+                            if(data.Flags & RI_KEY_E0)
+                                scancode |= 0xE0'00;
+                            else if(data.Flags & RI_KEY_E1)
+                                scancode |= 0xE1'00;
+
+#pragma message("CHECK Numeric /!")
+                            //PS/2 Set 1 check shit...
+                            /*
+                            1. Insert, Delete, LeftArrow, Home, End, UpArrow, DownArrow, PageUp, PageDown, RightArrow
+                            have format: any precede follow scancodes: 0xE0'2A, 0xE0'AA, 0xE0'B6, 0xE0'36
+                            + make code. -> Just ignore precede or followe scancodes
+                            
+                            2. Numeric /:
+                                Make: E0'35
+                                (LShift) + Make: (E0'AA E0'35) E0'35
+                                (RShift) + Make: (E0'B6 E0'35) E0'35
+                                (RShift + RShift) + Make: (E0'AA E0'B6 ) E0'35
+
+                            3. Key 124(PrintScreen on US): 
+                                Make: E0'2A E0'37
+                                (LCtrl or RCtrl + LShift or RShift) + Make: (E0 37) E0'2A E0'37
+                                (LAlt or Ralt) + Make: (54) E0'2A E0'37:
+                                -> 
+
+                                if(scancode == 0x54 || (scancode == 0xE0'37 && preceded_e02a == false))
+                                    return 0;
+
+                                if(scancode == 0xE0'2A)
+                                {
+                                    preceded_e02a = true;
+                                    return 0;
+                                }
+                                else if(scancode == 0xE0'37)//our scancode
+                                {
+                                    ...
+                                }
+                                
+                                preceded_e02a = false;
+
+                            4. Ley 126(Pause/Break on US):
+                                Make: E1'1D 45 [(E1'9D C5) -> we can ignore this?]
+                                LCtrl or RCtrl + Make: (E0'46 E0'C6) E1'1D 45 [(E1'9D C5) -> we can ignore this?]
+                            */
+
+                            //skip PrintScreen prefixes
+                            //if(scancode == 0x54 ||
+                            //   (scancode == 0xE0'37 &&
+                            //    HOOK_WIN_SYS->preceded_scancode != PrecededScanCode::E02A))
+                            //    return 0;
+
+                            //set preceded 0xE0'2A
+                            if(scancode == 0xE0'2A)
+                            {
+                                HOOK_WIN_SYS->preceded_scancode = PrecededScanCode::E02A;
+                                return 0;
+                            }
+                            else if(scancode == 0xE1'1D)
+                            {
+                                HOOK_WIN_SYS->preceded_scancode = PrecededScanCode::E11D;
+                                return 0;
+                            }
+
+                            if(scancode == 0xE0'37 && HOOK_WIN_SYS->preceded_scancode ==
+                                                          PrecededScanCode::E02A) //PrintScreen
+                            {
+                                scancode |= static_cast<ScanCode>(HOOK_WIN_SYS->preceded_scancode)
+                                            << 16;
+                            }
+                            else if(scancode == 0x45 && HOOK_WIN_SYS->preceded_scancode ==
+                                                            PrecededScanCode::E11D) //Pause/Break
+                            {
+                                scancode |= static_cast<ScanCode>(HOOK_WIN_SYS->preceded_scancode)
+                                            << 8;
+                            }
+
+                            HWND current_focus = GetFocus();
+                            if(current_focus)
+                            {
+                                Window* window = reinterpret_cast<Window*>(
+                                    GetWindowLongPtrW(current_focus, GWLP_USERDATA));
+                                if(window)
+                                {
+                                    if(is_pressed)
+                                    {
+#pragma message("UPDATE REPEAT COUNT!")
+                                        HOOK_WIN_SYS->PushEvent(Event{
+                                            .data = {.keyboard_key_pressed =
+                                                         KeyboardKeyPressedEvent{
+                                                             .timestamp_ms = GetEventTimestamp(),
+                                                             .scancode = scancode,
+                                                             .raw_key = data.VKey,
+                                                             .modifiers = GetModifierFlags(),
+                                                             .repeat_count = 0}},
+                                            .id = ClassID<KeyboardKeyPressedEvent>::ID,
+                                            .window = window});
+                                    }
+                                    else
+                                    {
+                                        HOOK_WIN_SYS->PushEvent(Event{
+                                            .data = {.keyboard_key_released =
+                                                         KeyboardKeyReleasedEvent{
+                                                             .timestamp_ms = GetEventTimestamp(),
+                                                             .scancode = scancode,
+                                                             .raw_key = data.VKey,
+                                                             .modifiers = GetModifierFlags()}},
+                                            .id = ClassID<KeyboardKeyReleasedEvent>::ID,
+                                            .window = window});
+                                    }
+                                }
+                            }
+
+                            HOOK_WIN_SYS->preceded_scancode = PrecededScanCode::None;
+
+                            //skip preceded and follow scancodes for Note 1. and 2.
+                            //constexpr static ScanCode PRECEDE_FOLLOW_SCANCODES[] = {0xE0'AA,
+                            //                                                        0xE0'B6,
+                            //                                                        0xE0'36};
+                            //if(auto it = std::find(std::begin(PRECEDE_FOLLOW_SCANCODES),
+                            //                       std::end(PRECEDE_FOLLOW_SCANCODES),
+                            //                       scancode);
+                            //   it == std::end(PRECEDE_FOLLOW_SCANCODES))
+                            //{
+                            //    return 0; //skip these scancodes
+                            //}
+
+                            //Update keyboard state
+
+                            //Send key message to the active window
+
+                            //Send char message to the active window
+
+                            return 0;
+                        }
+                    }
+                }
+                break;
+            }
+
+            return DefWindowProcW(handle, message, w_param, l_param);
+        }
 
         LRESULT CALLBACK WindowSubsystem::ShellProc(int code, WPARAM w_param, LPARAM l_param)
         {
             if(code == HSHELL_LANGUAGE)
             {
-                //#error SHOULD WE EVEN CREATE AN EVENT???
-                //#error THERE IS NO WAY THAT SOMEONE WILL CHANGE LAYOUT IN RUNTIME. SO OK IF USER DELETS ENGLISH LAYOUT THEN HE WILL RECEIVE FOR EXAMPEL CYRILLIC SYMBOLS BUT IT STILL OK. MAYBE CREATR TWO EVENTS: ActiveLayoutChanged and LayoutListChanged
-                //#error ON ActiveLayoutChanged -> WE SHOULD DO NOTHING. ON LayoutListChanged WE SHOULD RECALCULATE ALL VALUES FOR KEYS
-                //#error MAYBE DELETE ActiveLayoutChanged AND LEAVE LayoutListChanged ONLY???
-                //#error ONLY RECREATE MAPPINGS WHEN FOR NEW LAYOUTS. CHECK HKL -> THEIR FIRST 8B'ITS IS A ID. + READ NAME FROM REGISTRY + SHLoad... + SEND EVENT ONLY WHEN CURRENT LAYOUT IS NOT
-                //#error GetKeyNameTextW FOR UNICODE AND NON-CHAR KEYS???
                 if(HOOK_WIN_SYS->UpdateKeyboardLayouts())
                 {
                     HOOK_WIN_SYS->PushEvent(
@@ -97,24 +316,81 @@ namespace Core
                 dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_SYSTEM_DPI_AWARE;
             }
 
-            this->UpdateKeyboardLayouts();
+            const wchar_t* raw_input_window_class = nullptr;
+            HWND _raw_input_hwnd = nullptr;
+            HHOOK _shell_hook = nullptr;
+            const wchar_t* window_class = nullptr;
 
-            shell_hook = SetWindowsHookExW(WH_SHELL,
-                                           WindowSubsystem::ShellProc,
-                                           nullptr,
-                                           Core::System::GetMainThreadID());
+            Core::ScopedCall cleanup(
+                [instance = GetModuleHandleW(nullptr),
+                 &raw_input_window_class,
+                 &_raw_input_hwnd,
+                 &_shell_hook,
+                 &window_class]()
+                {
+                    if(raw_input_window_class)
+                        UnregisterClassW(raw_input_window_class, instance);
 
-            if(shell_hook == nullptr)
-                Core::System::ThrowLastError();
+                    if(_raw_input_hwnd)
+                        DestroyWindow(_raw_input_hwnd);
+
+                    if(_shell_hook)
+                        UnhookWindowsHookEx(_shell_hook);
+
+                    if(window_class)
+                        UnregisterClassW(window_class, instance);
+                });
 
             HOOK_WIN_SYS = this;
 
-            Core::ScopedCall cleanup(
-                [this]()
-                {
-                    UnhookWindowsHookEx(shell_hook);
-                });
+            //register raw input window class
+            WNDCLASSEXW raw_input_wnd_class = {.cbSize = sizeof(WNDCLASSEXW),
+                                               .style = 0,
+                                               .lpfnWndProc = WindowSubsystem::RawInputWindowProc,
+                                               .cbClsExtra = 0,
+                                               .cbWndExtra = 0,
+                                               .hInstance = instance,
+                                               .hIcon = nullptr,
+                                               .hCursor = nullptr,
+                                               .hbrBackground = nullptr,
+                                               .lpszMenuName = nullptr,
+                                               .lpszClassName = WIN32_RAW_INPUT_WINDOW_CLASS_NAME,
+                                               .hIconSm = nullptr};
 
+            if(RegisterClassExW(&raw_input_wnd_class) == 0)
+                Core::System::ThrowLastError();
+
+            raw_input_window_class = WIN32_RAW_INPUT_WINDOW_CLASS_NAME;
+
+            //create raw input window
+            _raw_input_hwnd = CreateWindowExW(0,
+                                              WIN32_RAW_INPUT_WINDOW_CLASS_NAME,
+                                              nullptr,
+                                              0,
+                                              CW_USEDEFAULT,
+                                              CW_USEDEFAULT,
+                                              0,
+                                              0,
+                                              nullptr,
+                                              nullptr,
+                                              instance,
+                                              nullptr);
+
+            if(_raw_input_hwnd == nullptr)
+                Core::System::ThrowLastError();
+
+            //create shell hook
+            this->UpdateKeyboardLayouts();
+
+            _shell_hook = SetWindowsHookExW(WH_SHELL,
+                                            WindowSubsystem::ShellProc,
+                                            nullptr,
+                                            Core::System::GetMainThreadID());
+
+            if(_shell_hook == nullptr)
+                Core::System::ThrowLastError();
+
+            //register window class
             WNDCLASSEXW wnd_class = {.cbSize = sizeof(WNDCLASSEXW),
                                      .style = CS_DBLCLKS /*| CS_DROPSHADOW*/ | CS_HREDRAW |
                                               CS_OWNDC | CS_VREDRAW,
@@ -132,13 +408,20 @@ namespace Core
             if(RegisterClassExW(&wnd_class) == 0)
                 Core::System::ThrowLastError();
 
+            window_class = Window::WIN32_WINDOW_CLASS_NAME;
+
             cleanup.Drop();
+
+            this->raw_input_hwnd = _raw_input_hwnd;
+            this->shell_hook = _shell_hook;
         }
 
         WindowSubsystem::~WindowSubsystem()
         {
             UnregisterClassW(Window::WIN32_WINDOW_CLASS_NAME, instance);
             UnhookWindowsHookEx(shell_hook);
+            DestroyWindow(raw_input_hwnd);
+            UnregisterClassW(WIN32_RAW_INPUT_WINDOW_CLASS_NAME, instance);
         }
 
         void WindowSubsystem::PollEvents()
@@ -316,128 +599,73 @@ namespace Core
                 }
             }
 
-            constexpr static std::pair<int, int> SCANCODE_RANGES[] = {{0x0, 0xFF},
-                                                                      {0xE0'00, 0xE0'FF},
-                                                                      {0xE1'00, 0xE1'FF}};
-
-            constexpr static std::pair<int, std::string_view> NON_OEM_VIRTUAL_KEYS[] = {
-                {VK_CANCEL, "Cancel"},
-                {VK_BACK, "BackSpace"},
-                {VK_TAB, "Tab"},
-                {VK_CLEAR, "Clear"},
-                {VK_RETURN, "Return"},
-                {VK_PAUSE, "Pause"},
-                {VK_CAPITAL, "CapsLock"},
-                {VK_ESCAPE, "Esc"},
-                {VK_SPACE, "space"},
-                {VK_PRIOR, "PageUp"},
-                {VK_NEXT, "PageDown"},
-                {VK_END, "End"},
-                {VK_HOME, "Home"},
-                {VK_LEFT, "Left"},
-                {VK_UP, "Up"},
-                {VK_RIGHT, "Right"},
-                {VK_DOWN, "Down"},
-                {VK_SELECT, "Select"},
-                {VK_PRINT, "Print"},
-                {VK_EXECUTE, "Execute"},
-                {VK_SNAPSHOT, "PrintScreen"},
-                {VK_INSERT, "Insert"},
-                {VK_DELETE, "Delete"},
-                {VK_HELP, "Help"},
-                {1, "1"},
-                {2, "2"},
-                {3, "3"},
-                {4, "4"},
-                {5, "5"},
-                {6, "6"},
-                {7, "7"},
-                {8, "8"},
-                {9, "9"},
-                {'A', "A"},
-                {'B', "B"},
-                {'C', "C"},
-                {'D', "D"},
-                {'E', "E"},
-                {'F', "F"},
-                {'G', "G"},
-                {'H', "H"},
-                {'I', "I"},
-                {'J', "J"},
-                {'K', "K"},
-                {'L', "L"},
-                {'M', "M"},
-                {'N', "N"},
-                {'O', "O"},
-                {'P', "P"},
-                {'Q', "Q"},
-                {'R', "R"},
-                {'S', "S"},
-                {'T', "T"},
-                {'U', "U"},
-                {'V', "V"},
-                {'W', "W"},
-                {'X', "X"},
-                {'Y', "Y"},
-                {'Z', "Z"},
-                {VK_LWIN, "LeftMeta"},
-                {VK_RWIN, "RightMeta"},
-                {VK_APPS, "Menu"},
-                {VK_SLEEP, "Sleep"},
-                {VK_NUMPAD0, "KP_0"},
-                {VK_NUMPAD1, "KP_1"},
-                {VK_NUMPAD2, "KP_2"},
-                {VK_NUMPAD3, "KP_3"},
-                {VK_NUMPAD4, "KP_4"},
-                {VK_NUMPAD5, "KP_5"},
-                {VK_NUMPAD6, "KP_6"},
-                {VK_NUMPAD7, "KP_7"},
-                {VK_NUMPAD8, "KP_8"},
-                {VK_NUMPAD9, "KP_9"},
-                {VK_MULTIPLY, "KP_MULTIPLY"},
-                {VK_ADD, "KP_ADD"},
-                {VK_SUBTRACT, "KP_SUBTRACT"},
-                {VK_DECIMAL, "KP_DECIMAL"},
-                {VK_DIVIDE, "KP_DIVIDE"},
-                {VK_F1, "F1"},
-                {VK_F2, "F2"},
-                {VK_F3, "F3"},
-                {VK_F4, "F4"},
-                {VK_F5, "F5"},
-                {VK_F6, "F6"},
-                {VK_F7, "F7"},
-                {VK_F8, "F8"},
-                {VK_F9, "F9"},
-                {VK_F10, "F10"},
-                {VK_F11, "F11"},
-                {VK_F12, "F12"},
-                {VK_F13, "F13"},
-                {VK_F14, "F14"},
-                {VK_F15, "F15"},
-                {VK_F16, "F16"},
-                {VK_F17, "F17"},
-                {VK_F18, "F18"},
-                {VK_F19, "F19"},
-                {VK_F20, "F20"},
-                {VK_F21, "F21"},
-                {VK_F22, "F22"},
-                {VK_F23, "F23"},
-                {VK_F24, "F24"},
-                {VK_NUMLOCK, "NumLock"},
-                {VK_SCROLL, "ScrollLock"},
-                {VK_LSHIFT, "LeftShift"},
-                {VK_RSHIFT, "RightShift"},
-                {VK_LCONTROL, "LeftControl"},
-                {VK_RCONTROL, "RightControl"},
-                {VK_LMENU, "LeftAlt"},
-                {VK_RMENU, "RightAlt"},
-                {VK_NUMLOCK, "NumLock"},
-                {VK_NUMLOCK, "NumLock"},
-                {VK_NUMLOCK, "NumLock"},
-                {VK_NUMLOCK, "NumLock"},
-                {VK_NUMLOCK, "NumLock"},
-                {VK_NUMLOCK, "NumLock"},
-#pragma messge("TODO -> BROWSER AND OTHER...")
+            constexpr static std::pair<StableScanCode, std::string_view> STABLE_SCANCODE_PAIRS[] = {
+                std::pair{StableScanCode::BackSpace, "BackSpace"},
+                std::pair{StableScanCode::Tab, "Tab"},
+                std::pair{StableScanCode::CapsLock, "CapsLock"},
+                std::pair{StableScanCode::Enter, "Enter"},
+                std::pair{StableScanCode::LeftShift, "LeftShift"},
+                std::pair{StableScanCode::ABTN_C1, "ABTN_C1"},
+                std::pair{StableScanCode::RightShift, "RightShift"},
+                std::pair{StableScanCode::LeftControl, "LeftControl"},
+                std::pair{StableScanCode::LeftAlt, "LeftAlt"},
+                std::pair{StableScanCode::Space, "Space"},
+                std::pair{StableScanCode::RightAlt, "RightAlt"},
+                std::pair{StableScanCode::RightControl, "RightControl"},
+                std::pair{StableScanCode::Insert, "Insert"},
+                std::pair{StableScanCode::Delete, "Delete"},
+                std::pair{StableScanCode::LeftArrow, "LeftArrow"},
+                std::pair{StableScanCode::Home, "Home"},
+                std::pair{StableScanCode::End, "End"},
+                std::pair{StableScanCode::UpArrow, "UpArrow"},
+                std::pair{StableScanCode::DownArrow, "DownArrow"},
+                std::pair{StableScanCode::PageUp, "PageUp"},
+                std::pair{StableScanCode::PageDown, "PageDown"},
+                std::pair{StableScanCode::RightArrow, "RightArrow"},
+                std::pair{StableScanCode::NumLock, "NumLock"},
+                std::pair{StableScanCode::Num7, "Num7"},
+                std::pair{StableScanCode::Num4, "Num4"},
+                std::pair{StableScanCode::Num1, "Num1"},
+                std::pair{StableScanCode::NumDiv, "NumDiv"},
+                std::pair{StableScanCode::Num8, "Num8"},
+                std::pair{StableScanCode::Num5, "Num5"},
+                std::pair{StableScanCode::Num2, "Num2"},
+                std::pair{StableScanCode::Num0, "Num0"},
+                std::pair{StableScanCode::NumMul, "NumMul"},
+                std::pair{StableScanCode::Num9, "Num9"},
+                std::pair{StableScanCode::Num6, "Num6"},
+                std::pair{StableScanCode::Num3, "Num3"},
+                std::pair{StableScanCode::NumPeriod, "NumPeriod"},
+                std::pair{StableScanCode::NumMin, "NumMin"},
+                std::pair{StableScanCode::NumAdd, "NumAdd"},
+                std::pair{StableScanCode::ABTN_C2, "ABTN_C2"},
+                std::pair{StableScanCode::NumEnter, "NumEnter"},
+                std::pair{StableScanCode::Esc, "Esc"},
+                std::pair{StableScanCode::F1, "F1"},
+                std::pair{StableScanCode::F2, "F2"},
+                std::pair{StableScanCode::F3, "F3"},
+                std::pair{StableScanCode::F4, "F4"},
+                std::pair{StableScanCode::F5, "F5"},
+                std::pair{StableScanCode::F6, "F6"},
+                std::pair{StableScanCode::F7, "F7"},
+                std::pair{StableScanCode::F8, "F8"},
+                std::pair{StableScanCode::F9, "F9"},
+                std::pair{StableScanCode::F10, "F10"},
+                std::pair{StableScanCode::F11, "F11"},
+                std::pair{StableScanCode::F12, "F12"},
+                std::pair{StableScanCode::PrintScreen, "PrintScreen"},
+                std::pair{StableScanCode::ScrollLock, "ScrollLock"},
+                std::pair{StableScanCode::Pause, "Pause"},
+                std::pair{StableScanCode::LeftMeta, "LeftMeta"},
+                std::pair{StableScanCode::RightMeta, "RightMeta"},
+                std::pair{StableScanCode::Menu, "Menu"},
+                std::pair{StableScanCode::Power, "Power"},
+                std::pair{StableScanCode::Sleep, "Sleep"},
+                std::pair{StableScanCode::Wake, "Wake"},
+                std::pair{StableScanCode::Kana, "Kana"},
+                std::pair{StableScanCode::SBCSCHAR, "SBCSCHAR"},
+                std::pair{StableScanCode::Convert, "Convert"},
+                std::pair{StableScanCode::NonConvert, "NonConvert"},
             };
 
             auto prev_keyboard_layout = GetKeyboardLayout(Core::System::GetMainThreadID());
@@ -445,52 +673,29 @@ namespace Core
             {
                 ActivateKeyboardLayout(desc.layout, 0);
 
-                auto vk = VK_INSERT;
-                auto sc = MapVirtualKeyExW(VK_INSERT, MAPVK_VK_TO_VSC, desc.layout);
-
-                BYTE state[256];
-                GetKeyboardState(state);
-                auto r = ToUnicodeEx(vk, sc, state, wstr, std::size(wstr) - 1, 0, desc.layout);
-
-                ToUnicodeEx(vk, sc, state, wstr, std::size(wstr) - 1, 0, desc.layout);
-
-                for(const auto& non_oem_rng: NON_OEM_VIRTUAL_KEYS)
+                for(const auto& [sc, name]: STABLE_SCANCODE_PAIRS)
                 {
-                    auto scancode =
-                        MapVirtualKeyExW(non_oem_rng.first, MAPVK_VK_TO_VSC, desc.layout);
-                    if(scancode != 0)
-                    {
-                        auto [it, _] = desc.scancode_to_string_mapping.insert(
-                            std::pair{scancode, non_oem_rng.second});
-
-                        desc.string_to_scancode_mapping.insert({it->second, scancode});
-                    }
+                    ScanCode scancode = static_cast<ScanCode>(sc);
+                    auto [it, _] =
+                        desc.scancode_to_string_mapping.insert(std::pair{scancode, name});
+                    desc.string_to_scancode_mapping.insert({it->second, scancode});
                 }
 
-                for(const auto& scancode_rng: SCANCODE_RANGES)
+                for(int vk = 1; vk < 256; vk++)
                 {
-                    for(int scancode = scancode_rng.first; scancode < scancode_rng.second;
-                        scancode++)
+                    auto scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, desc.layout);
+                    if(scancode != 0)
                     {
-                        bool is_extended =
-                            ((scancode & 0xFF'00) == 0xE0'00) || ((scancode & 0xFF'00) == 0xE1'00);
-
-                        LPARAM l_param = 0;
-                        l_param |= (scancode & 0xff) << 16;
-                        if(is_extended)
-                            l_param |= 0b1 << 23;
-
-                        auto vk = MapVirtualKeyExW(scancode, MAPVK_VSC_TO_VK_EX, desc.layout);
-                        if(vk != 0)
+                        wchar_t character = MapVirtualKeyExW(vk, MAPVK_VK_TO_CHAR, desc.layout);
+                        if(character != 0)
                         {
-                            wchar_t character = MapVirtualKeyExW(vk, MAPVK_VK_TO_CHAR, desc.layout);
-                            if(character != 0)
-                            {
-                                auto [it, _] = desc.scancode_to_string_mapping.insert(
-                                    std::pair{scancode, Core::System::WideToUTF8({&character, 1})});
+                            auto name = Core::System::WideToUTF8({&character, 1});
 
+                            auto [it, inserted] =
+                                desc.scancode_to_string_mapping.insert(std::pair{scancode, name});
+
+                            if(inserted)
                                 desc.string_to_scancode_mapping.insert({it->second, scancode});
-                            }
                         }
                     }
                 }

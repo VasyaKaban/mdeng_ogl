@@ -153,7 +153,7 @@ namespace Core
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<MouseWheelEvent>;
 
-    using ScanCode = std::uint16_t;
+    using ScanCode = std::uint32_t;
 
     enum ModifierKeyFlagBits : std::uint32_t
     {

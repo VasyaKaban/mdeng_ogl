@@ -515,7 +515,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                 Core::Display* display = window->GetDisplay();
                 auto video_mode = display->GetCurrentVideoMode();
 
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowDisplayChangedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tDisplay:\n"
@@ -534,7 +534,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     video_mode.width,
                     video_mode.height,
                     video_mode.bits_per_pixel,
-                    video_mode.refresh_rate);
+                    video_mode.refresh_rate);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -562,7 +562,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowResizedEvent>(
             [](const Core::WindowResizedEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowResizedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tResolution:\n"
@@ -575,7 +575,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.resolution.width,
                     event.resolution.height,
                     event.scaled_resolution.width,
-                    event.scaled_resolution.height);
+                    event.scaled_resolution.height);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -585,9 +585,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowMinimizedEvent>(
             [](const Core::WindowMinimizedEvent& event)
             {
-                throw std::runtime_error("TEST");
-
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowMinimizedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tResolution:\n"
@@ -600,7 +598,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.resolution.width,
                     event.resolution.height,
                     event.scaled_resolution.width,
-                    event.scaled_resolution.height);
+                    event.scaled_resolution.height);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -610,7 +608,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowMaximizedEvent>(
             [](const Core::WindowMaximizedEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowMaximizedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tResolution:\n"
@@ -623,7 +621,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.resolution.width,
                     event.resolution.height,
                     event.scaled_resolution.width,
-                    event.scaled_resolution.height);
+                    event.scaled_resolution.height);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -633,10 +631,10 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowHiddenEvent>(
             [](const Core::WindowHiddenEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowHiddenEvent:\n"
                     "\tTimestamp: {}\n",
-                    event.timestamp_ms);
+                    event.timestamp_ms);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -646,10 +644,10 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowShownEvent>(
             [](const Core::WindowShownEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowShownEvent:\n"
                     "\tTimestamp: {}\n",
-                    event.timestamp_ms);
+                    event.timestamp_ms);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -692,10 +690,10 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowKeyboardFocusGainEvent>(
             [](const Core::WindowKeyboardFocusGainEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowKeyboardFocusGainEvent:\n"
                     "\tTimestamp: {}\n",
-                    event.timestamp_ms);
+                    event.timestamp_ms);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -705,10 +703,10 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowKeyboardFocusLeaveEvent>(
             [](const Core::WindowKeyboardFocusLeaveEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "WindowKeyboardFocusLeaveEvent:\n"
                     "\tTimestamp: {}\n",
-                    event.timestamp_ms);
+                    event.timestamp_ms);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -718,7 +716,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::MouseButtonPressedEvent>(
             [window = window.get()](const Core::MouseButtonPressedEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "MouseButtonPressedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tButton: {}\n"
@@ -735,7 +733,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                 if(event.button == Core::MouseButtonFlagBits::LeftButton)
                     window->SetState(Core::WindowState::FullScreen);
                 else if(event.button == Core::MouseButtonFlagBits::RightButton)
-                    window->SetState(Core::WindowState::Windowed);
+                    window->SetState(Core::WindowState::Windowed);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -745,7 +743,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::MouseButtonReleasedEvent>(
             [](const Core::MouseButtonReleasedEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "MouseButtonReleasedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tButton: {}\n"
@@ -755,7 +753,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.timestamp_ms,
                     ConcatMouseButtons(event.button),
                     event.cursor_position.x,
-                    event.cursor_position.y);
+                    event.cursor_position.y);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -785,7 +783,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::MouseWheelEvent>(
             [](const Core::MouseWheelEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "MouseWheelEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tButtons: {}\n"
@@ -799,7 +797,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.cursor_position.x,
                     event.cursor_position.y,
                     event.x_scroll,
-                    event.y_scroll);
+                    event.y_scroll);*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -859,14 +857,14 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::KeyboardKeyReleasedEvent>(
             [](const Core::KeyboardKeyReleasedEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "KeyboardKeyReleasedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tScancode: {}\n"
                     "\tModifiers: {}\n",
                     event.timestamp_ms,
                     event.scancode,
-                    ConcatModifiers(event.modifiers));
+                    ConcatModifiers(event.modifiers));*/
 
                 return Core::EventHandlerResult::None;
             },

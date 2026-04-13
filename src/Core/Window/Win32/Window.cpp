@@ -29,36 +29,6 @@ namespace Core
             return buttons;
         }
 
-        static ModifierKeyFlags GetModifierFlags() noexcept
-        {
-            ModifierKeyFlags flags = 0;
-            if(GetAsyncKeyState(VK_LSHIFT) < 0)
-                flags |= ModifierKeyFlagBits::LeftShift;
-
-            if(GetAsyncKeyState(VK_RSHIFT) < 0)
-                flags |= ModifierKeyFlagBits::RightShift;
-
-            if(GetAsyncKeyState(VK_LCONTROL) < 0)
-                flags |= ModifierKeyFlagBits::LeftControl;
-
-            if(GetAsyncKeyState(VK_RCONTROL) < 0)
-                flags |= ModifierKeyFlagBits::RightControl;
-
-            if(GetAsyncKeyState(VK_LMENU) < 0)
-                flags |= ModifierKeyFlagBits::LeftAlt;
-
-            if(GetAsyncKeyState(VK_RMENU) < 0)
-                flags |= ModifierKeyFlagBits::RightAlt;
-
-            if(GetAsyncKeyState(VK_LWIN) < 0)
-                flags |= ModifierKeyFlagBits::LeftMeta;
-
-            if(GetAsyncKeyState(VK_RWIN) < 0)
-                flags |= ModifierKeyFlagBits::RightMeta;
-
-            return flags;
-        }
-
         static WindowPosition GetRelativeCursorPosition(LPARAM l_param) noexcept
         {
             return WindowPosition{.x = GET_X_LPARAM(l_param), .y = GET_Y_LPARAM(l_param)};
@@ -421,7 +391,8 @@ namespace Core
                     case WM_CHAR:
                     case WM_SYSCHAR:
                     {
-                        if(IS_HIGH_SURROGATE(w_param)) //save surrogate
+#pragma message("TODO AS PART OF RAW INPUT!")
+                        /*if(IS_HIGH_SURROGATE(w_param)) //save surrogate
                         {
                             window->high_surrogate = w_param;
                         }
@@ -456,74 +427,8 @@ namespace Core
                                                        .utf32_char = utf32}},
                                       .id = ClassID<KeyboardCharacterPressedEvent>::ID,
                                       .window = window});
-                        }
+                        }*/
                     }
-                    break;
-                    case WM_SYSKEYDOWN:
-                    case WM_KEYDOWN:
-                    case WM_KEYUP:
-                    case WM_SYSKEYUP:
-                    {
-#error USE RAWINPUT!!!
-                        WORD key_flags = HIWORD(l_param);
-
-                        ScanCode scancode = LOBYTE(key_flags);
-                        if(key_flags & KF_EXTENDED)
-                            scancode |= 0xE0'00;
-
-                        std::uint16_t repeat_count = 1;
-                        if(key_flags & KF_REPEAT)
-                            repeat_count = LOWORD(l_param);
-
-                        RawKeyCode raw_key = w_param;
-                        switch(raw_key)
-                        {
-                            case VK_SHIFT:
-                                if(GetAsyncKeyState(VK_RSHIFT) < 0)
-                                    raw_key = VK_RSHIFT;
-                                else
-                                    raw_key = VK_LSHIFT;
-                                break;
-                            case VK_MENU:
-                                if(GetAsyncKeyState(VK_RMENU) < 0)
-                                    raw_key = VK_RMENU;
-                                else
-                                    raw_key = VK_LMENU;
-                                break;
-                            case VK_CONTROL:
-                                if(GetAsyncKeyState(VK_RCONTROL) < 0)
-                                    raw_key = VK_RCONTROL;
-                                else
-                                    raw_key = VK_LCONTROL;
-                                break;
-                        }
-
-                        if(message == WM_SYSKEYDOWN || WM_KEYDOWN)
-                        {
-                            win_sys->PushEvent(
-                                Event{.data = {.keyboard_key_pressed =
-                                                   KeyboardKeyPressedEvent{
-                                                       .timestamp_ms = GetEventTimestamp(),
-                                                       .scancode = scancode,
-                                                       .raw_key = static_cast<RawKeyCode>(w_param),
-                                                       .modifiers = GetModifierFlags(),
-                                                       .repeat_count = repeat_count}},
-                                      .id = ClassID<KeyboardKeyPressedEvent>::ID,
-                                      .window = window});
-                        }
-                        else
-                        {
-                            win_sys->PushEvent(
-                                Event{.data = {.keyboard_key_released =
-                                                   KeyboardKeyReleasedEvent{
-                                                       .timestamp_ms = GetEventTimestamp(),
-                                                       .scancode = scancode,
-                                                       .raw_key = static_cast<RawKeyCode>(w_param),
-                                                       .modifiers = GetModifierFlags()}},
-                                      .id = ClassID<KeyboardKeyReleasedEvent>::ID,
-                                      .window = window});
-                        }
-                    };
                     break;
                     default:
                         return DefWindowProcW(handle, message, w_param, l_param);

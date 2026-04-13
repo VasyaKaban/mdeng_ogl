@@ -46,18 +46,24 @@ INFO:
 * Limits and properties for window subsystem: for example limit max window size
 
 * Check Win32 windowed_state updates
-* Window Hidden/Shown as state + functions
-* Keyboard input. Let's handle in the following way:
-    Win32:
-        WM_KEYDOWN: handle only non-character virtual keys
-        WM_CHAR: handle all 
-    XkbCommon:
-        KEYSYM: check if keysym is non-character or character and send
-* Window decorations switch
 * More preciese window create info
-* Char/VirtualKey to scancode:
-    Get all layouts
-    create mapping from virtual key to it's name or symbol(based on lowest keyboard layout)
-    set hook when shell changes layout
-    update layouts and recreate mapping
 * Per monitor DPI scaling v2 enable by default. But we can also enable EnableNonClientDpiScaling in WM_NCCREATE for v1
+* Window decorations switch
+* Window Hidden/Shown as state + functions
+* Char events via ToUnicodeEx
+* Save keyboard state for Win32 (for WM_CHAR emulation)
+* Add repeat count(how to NumLock??? + toggled keys):
+    
+    if(pressed):
+        state.key.pressed = true;
+        state.key.repeat++;
+    else:
+        state.key.pressed = false;
+        state.key.repeat = 0
+    
+    if(toggable):
+    //repeat++ only when toggled but not unpressed
+        if(pressed):
+            state.key
+
+    DO NOT CARE ABOUT MULTI-KEYBOARD SETUPS. WHO WILL DO THINGS LIKE THIS??? :)
