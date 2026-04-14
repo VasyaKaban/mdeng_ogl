@@ -31,6 +31,116 @@ namespace Core
 
     using MouseButtonFlags = std::underlying_type_t<MouseButtonFlagBits>;
 
+    using KeyboardKey = std::uint32_t;
+
+    //Let's take Private Use Area: U+E000..U+F8FF
+    enum class SpecialKey : KeyboardKey
+    {
+        Unknown = 0,
+        Enter = 0xE0'00,
+        Escape,
+        BackSpace,
+        Tab,
+        Space,
+        CapsLock,
+        F1,
+        F2,
+        F3,
+        F4,
+        F5,
+        F6,
+        F7,
+        F8,
+        F9,
+        F10,
+        F11,
+        F12,
+        PrintScreen,
+        ScrollLock,
+        Break,
+        Pause,
+        Insert,
+        Home,
+        PageUp,
+        Delete,
+        End,
+        PageDown,
+        RightArrow,
+        LeftArrow,
+        DownArrow,
+        UpArrow,
+        NumLock,
+        KeypadDivide,
+        KeypadMultiply,
+        KeypadSubtract,
+        KeypadAdd,
+        KeypadEnter,
+        Keypad1,
+        Keypad2,
+        Keypad3,
+        Keypad4,
+        Keypad5,
+        Keypad6,
+        Keypad7,
+        Keypad8,
+        Keypad9,
+        Keypad0,
+        KeypadPeriod,
+        Menu,
+        KeyboardPower,
+        KeypadEqual,
+        F13,
+        F14,
+        F15,
+        F16,
+        F17,
+        F18,
+        F19,
+        F20,
+        F21,
+        F22,
+        F23,
+        F24,
+        BrazilKeypad,
+        Ro, //Keyboard Int'l 1
+        Kana, //Keyboard Intl'2
+        Yen, //Keyboard Int'l 3
+        Henkan, //Keyboard Int'l 4
+        Muhenkan, //Keyboard Int'l 5
+        PC9800KeypadPeriod, //Keyboard Int'l 6
+        Hanguel, //Keyboard Lang 1
+        Hanja, //Keyboard Lang 2
+        Katakana, //Keyboard Lang 3
+        Hiragana, //Keyboard Lang 4
+        ZenkakuHankaku, //Keyboard Lang 5
+        LeftControl,
+        LeftShift,
+        LeftAlt,
+        LeftGUI,
+        RightControl,
+        RightShift,
+        RightAlt,
+        RightGUI,
+        ScanNextTrack,
+        ScanPreviousTrack,
+        Stop,
+        PlayPause,
+        Mute,
+        VolumeUp,
+        VolumeDown,
+        MediaSelect,
+        Mail,
+        Calculator,
+        MyComputer,
+        WWWSearch,
+        WWWHome,
+        WWWBack,
+        WWWForward,
+        WWWStop,
+        WWWRefresh,
+        WWWFavorites
+    };
+
     struct WindowSybsystemKeyboardLayoutChangedEvent
     {
         std::uint64_t timestamp_ms;
@@ -170,13 +280,12 @@ namespace Core
 
     using ModifierKeyFlags = std::underlying_type_t<ModifierKeyFlagBits>;
 
-    using RawKeyCode = std::uint32_t; //raw key code(Virtual key on Win32 and KeySym on XKB)
-
     struct KeyboardKeyPressedEvent
     {
         std::uint64_t timestamp_ms;
         ScanCode scancode;
-        RawKeyCode raw_key;
+        KeyboardKey
+            key; //One of the special keys from SpecialKey or valid UTF32 character or SpecialKey::Unknown instead
         ModifierKeyFlags modifiers;
         std::uint32_t repeat_count;
     };
@@ -195,7 +304,7 @@ namespace Core
     {
         std::uint64_t timestamp_ms;
         ScanCode scancode;
-        RawKeyCode raw_key;
+        KeyboardKey key;
         ModifierKeyFlags modifiers;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardKeyReleasedEvent>;

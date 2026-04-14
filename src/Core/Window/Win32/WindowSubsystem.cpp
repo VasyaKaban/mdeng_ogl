@@ -77,7 +77,6 @@ namespace Core
             std::pair{StableScanCode::Sleep, "Sleep"},
             std::pair{StableScanCode::Wake, "Wake"},
             std::pair{StableScanCode::Kana, "Kana"},
-            std::pair{StableScanCode::SBCSCHAR, "SBCSCHAR"},
             std::pair{StableScanCode::Convert, "Convert"},
             std::pair{StableScanCode::NonConvert, "NonConvert"},
 #pragma message("TODO!")
@@ -217,6 +216,7 @@ namespace Core
                             //    HOOK_WIN_SYS->preceded_scancode != PrecededScanCode::E02A))
                             //    return 0;
 
+#pragma message("Maybe map Break to Puase??? + check additional scancodes for them")
 #pragma message("DO not emit press and release vent for prefix and tail scancodes")
 
                             //set preceded 0xE0'2A
