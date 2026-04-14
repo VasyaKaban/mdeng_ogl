@@ -133,7 +133,7 @@ namespace Core
 
             HINSTANCE GetInstance() const noexcept;
 
-            PROCESS_DPI_AWARENESS GetDPIAwrenessType() const noexcept;
+            DPI_AWARENESS_CONTEXT GetDPIAwrenessType() const noexcept;
 
             void PushEvent(Event&& event);
         private:
@@ -144,9 +144,11 @@ namespace Core
             DynamicLibrary user32;
             DynamicLibrary shcore;
 
+            BOOL (*SetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT value);
+            DPI_AWARENESS_CONTEXT (*SetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT dpiContext);
             HRESULT (*SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS value);
             BOOL (*SetProcessDPIAware)();
-            PROCESS_DPI_AWARENESS dpi_awareness;
+            DPI_AWARENESS_CONTEXT dpi_awareness;
 
             HWND raw_input_hwnd;
             BYTE raw_input_keyboard_state[256];
@@ -178,6 +180,8 @@ namespace Core
                                        DISPLAYCONFIG_TOPOLOGY_ID* currentTopologyId);
 
             LONG (*DisplayConfigGetDeviceInfo)(DISPLAYCONFIG_DEVICE_INFO_HEADER* requestPacket);
+
+            BOOL (*EnableNonClientDpiScaling)(HWND hwnd);
         };
     };
 };

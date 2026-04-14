@@ -183,7 +183,8 @@ namespace Core
 
             auto subsystem = static_cast<Core::Win32::WindowSubsystem*>(parent->GetParent());
             auto awareness = subsystem->GetDPIAwrenessType();
-            if(awareness == PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE)
+            if(awareness == DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE ||
+               awareness == DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
             {
                 UINT dpi_x;
                 UINT dpi_y;
@@ -197,7 +198,7 @@ namespace Core
 
                 dpi = dpi_x;
             }
-            else if(awareness == PROCESS_DPI_AWARENESS::PROCESS_SYSTEM_DPI_AWARE)
+            else if(awareness == DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)
             {
                 HDC dc = GetDC(nullptr);
                 dpi = GetDeviceCaps(dc, LOGPIXELSX);

@@ -728,12 +728,12 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     ConcatMouseButtons(event.button),
                     event.clicks,
                     event.cursor_position.x,
-                    event.cursor_position.y);
+                    event.cursor_position.y);*/
 
-                if(event.button == Core::MouseButtonFlagBits::LeftButton)
-                    window->SetState(Core::WindowState::FullScreen);
-                else if(event.button == Core::MouseButtonFlagBits::RightButton)
-                    window->SetState(Core::WindowState::Windowed);*/
+                //if(event.button == Core::MouseButtonFlagBits::LeftButton)
+                //    window->SetState(Core::WindowState::FullScreen);
+                //else if(event.button == Core::MouseButtonFlagBits::RightButton)
+                //    window->SetState(Core::WindowState::Windowed);
 
                 return Core::EventHandlerResult::None;
             },
@@ -781,7 +781,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
             Core::EventHandlerState::Enabled);
 
         window->Connect<Core::MouseWheelEvent>(
-            [](const Core::MouseWheelEvent& event)
+            [window = window.get()](const Core::MouseWheelEvent& event)
             {
                 /*std::cout << std::format(
                     "MouseWheelEvent:\n"

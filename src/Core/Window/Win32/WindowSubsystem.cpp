@@ -217,6 +217,8 @@ namespace Core
                             //    HOOK_WIN_SYS->preceded_scancode != PrecededScanCode::E02A))
                             //    return 0;
 
+#pragma message("DO not emit press and release vent for prefix and tail scancodes")
+
                             //set preceded 0xE0'2A
                             if(scancode == 0xE0'2A)
                             {
@@ -412,7 +414,7 @@ namespace Core
             : instance(nullptr),
               SetProcessDpiAwareness(nullptr),
               SetProcessDPIAware(nullptr),
-              dpi_awareness(PROCESS_DPI_AWARENESS::PROCESS_DPI_UNAWARE),
+              dpi_awareness(DPI_AWARENESS_CONTEXT_UNAWARE),
               GetDpiForMonitor(nullptr),
               GetDisplayConfigBufferSizes(nullptr),
               QueryDisplayConfig(nullptr),
@@ -430,6 +432,14 @@ namespace Core
                 SetProcessDPIAware = reinterpret_cast<decltype(SetProcessDPIAware)>(
                     user32.GetProcAddress("SetProcessDPIAware"));
 
+                SetProcessDpiAwarenessContext =
+                    reinterpret_cast<decltype(SetProcessDpiAwarenessContext)>(
+                        user32.GetProcAddress("SetProcessDpiAwarenessContext"));
+
+                SetThreadDpiAwarenessContext =
+                    reinterpret_cast<decltype(SetThreadDpiAwarenessContext)>(
+                        user32.GetProcAddress("SetThreadDpiAwarenessContext"));
+
                 GetDisplayConfigBufferSizes =
                     reinterpret_cast<decltype(GetDisplayConfigBufferSizes)>(
                         user32.GetProcAddress("GetDisplayConfigBufferSizes"));
@@ -439,6 +449,9 @@ namespace Core
 
                 DisplayConfigGetDeviceInfo = reinterpret_cast<decltype(DisplayConfigGetDeviceInfo)>(
                     user32.GetProcAddress("DisplayConfigGetDeviceInfo"));
+
+                EnableNonClientDpiScaling = reinterpret_cast<decltype(EnableNonClientDpiScaling)>(
+                    user32.GetProcAddress("EnableNonClientDpiScaling"));
             }
 
             if(!shcore_ex)
@@ -450,26 +463,69 @@ namespace Core
                     shcore.GetProcAddress("GetDpiForMonitor"));
             }
 
-            if(SetProcessDpiAwareness)
+            bool dpi_set = false;
+            if(SetProcessDpiAwarenessContext || SetThreadDpiAwarenessContext)
             {
-                if(auto res =
-                       SetProcessDpiAwareness(PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE);
-                   res != S_OK)
-                {
-                    throw Core::Win32Exception(HRESULT_CODE(res));
-                }
+                DPI_AWARENESS_CONTEXT DPI_AWARENESS_CONTEXT_TYPES[] = {
+                    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+                    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE,
+                    DPI_AWARENESS_CONTEXT_SYSTEM_AWARE,
+                    DPI_AWARENESS_CONTEXT_UNAWARE};
 
-                dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE;
+                for(const auto& type: DPI_AWARENESS_CONTEXT_TYPES)
+                {
+                    if(SetProcessDpiAwarenessContext)
+                    {
+                        auto res = SetProcessDpiAwarenessContext(
+                            DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+                        if(res == TRUE)
+                        {
+                            this->dpi_awareness = type;
+                            dpi_set = true;
+                            break;
+                        }
+                    }
+                    else if(SetThreadDpiAwarenessContext)
+                    {
+                        auto res = SetThreadDpiAwarenessContext(type);
+                        if(res != nullptr)
+                        {
+                            this->dpi_awareness = type;
+                            dpi_set = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if(SetProcessDpiAwareness)
+            {
+                std::pair<PROCESS_DPI_AWARENESS, DPI_AWARENESS_CONTEXT> DPI_AWARENESS_TYPES[] = {
+                    {PROCESS_DPI_AWARENESS::PROCESS_PER_MONITOR_DPI_AWARE,
+                     DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE},
+                    {PROCESS_DPI_AWARENESS::PROCESS_SYSTEM_DPI_AWARE,
+                     DPI_AWARENESS_CONTEXT_SYSTEM_AWARE},
+                    {PROCESS_DPI_AWARENESS::PROCESS_DPI_UNAWARE, DPI_AWARENESS_CONTEXT_UNAWARE}};
+
+                for(const auto& [type, ctx]: DPI_AWARENESS_TYPES)
+                {
+                    if(auto res = SetProcessDpiAwareness(type); res == S_OK)
+                    {
+                        this->dpi_awareness = ctx;
+                        dpi_set = true;
+                        break;
+                    }
+                }
             }
             else if(SetProcessDPIAware)
             {
-                if(SetProcessDPIAware() ==
-                   FALSE) //there is noinfo about GetLastError so we throw common exception
-                    throw std::runtime_error(
-                        "Failed to set DPI awareness. Function: SetProcessDPIAware");
-
-                dpi_awareness = PROCESS_DPI_AWARENESS::PROCESS_SYSTEM_DPI_AWARE;
+                if(SetProcessDPIAware() != FALSE)
+                {
+                    this->dpi_awareness = DPI_AWARENESS_CONTEXT_SYSTEM_AWARE;
+                    dpi_set = true;
+                }
             }
+            else
+                this->dpi_awareness = DPI_AWARENESS_CONTEXT_UNAWARE;
 
             const wchar_t* raw_input_window_class = nullptr;
             HWND _raw_input_hwnd = nullptr;
@@ -678,7 +734,7 @@ namespace Core
             return instance;
         }
 
-        PROCESS_DPI_AWARENESS WindowSubsystem::GetDPIAwrenessType() const noexcept
+        DPI_AWARENESS_CONTEXT WindowSubsystem::GetDPIAwrenessType() const noexcept
         {
             return dpi_awareness;
         }

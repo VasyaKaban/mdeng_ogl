@@ -48,8 +48,19 @@ namespace Core
                                                  WPARAM w_param,
                                                  LPARAM l_param)
         {
-            if(handle == nullptr) //skip NULL window
+            if(message == WM_NCCREATE)
             {
+                WindowCreateData* data = static_cast<WindowCreateData*>(
+                    reinterpret_cast<CREATESTRUCTW*>(l_param)->lpCreateParams);
+
+                if(data->obj->parent->GetDPIAwrenessType() ==
+                       DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE &&
+                   data->obj->parent->EnableNonClientDpiScaling)
+                {
+                    if(data->obj->parent->EnableNonClientDpiScaling(handle) == 0)
+                        return -1;
+                }
+
                 return DefWindowProcW(handle, message, w_param, l_param);
             }
             else if(message == WM_CREATE) //handle create message
@@ -101,11 +112,12 @@ namespace Core
                                   .window = window});
                         break;
                     case WM_DPICHANGED:
-                        //if(window->handle) //prevent WM_CREATE
-                        //    window->UpdatePrevWindowedState();
+                    {
+                        auto awareness_type = static_cast<WindowSubsystem*>(window->GetParent())
+                                                  ->GetDPIAwrenessType();
 
-                        if(static_cast<WindowSubsystem*>(window->GetParent())
-                               ->GetDPIAwrenessType() == PROCESS_PER_MONITOR_DPI_AWARE)
+                        if(awareness_type == DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE ||
+                           awareness_type == DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
                         {
                             window->display.reset(new Display(
                                 window,
@@ -130,7 +142,8 @@ namespace Core
 
                             window->UpdatePrevWindowedState();
                         }
-                        break;
+                    }
+                    break;
                     case WM_MOVE:
                     {
                         win_sys->PushEvent(Event{
@@ -401,8 +414,7 @@ namespace Core
               handle(nullptr),
               current_state(info.state),
               current_visibility(WindowVisibility::Hidden),
-              mouse_focused(false),
-              high_surrogate(L'\0')
+              mouse_focused(false)
         {
             WindowCreateData data = {.obj = this};
 
@@ -564,7 +576,9 @@ namespace Core
                         Core::System::ThrowLastError();
                 }
 
-                if(SetWindowLongPtrW(handle, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW) == 0)
+                if(SetWindowLongPtrW(handle,
+                                     GWL_STYLE,
+                                     (style & ~WS_OVERLAPPEDWINDOW) | WS_POPUP) == 0)
                 {
                     if(Core::System::GetLastError() != ERROR_SUCCESS)
                         Core::System::ThrowLastError();
@@ -591,7 +605,9 @@ namespace Core
                         Core::System::ThrowLastError();
                 }
 
-                if(SetWindowLongPtrW(handle, GWL_STYLE, style | WS_OVERLAPPEDWINDOW) == 0)
+                if(SetWindowLongPtrW(handle,
+                                     GWL_STYLE,
+                                     (style & ~WS_POPUP) | WS_OVERLAPPEDWINDOW) == 0)
                 {
                     if(Core::System::GetLastError() != ERROR_SUCCESS)
                         Core::System::ThrowLastError();
