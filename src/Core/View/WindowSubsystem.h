@@ -1,32 +1,11 @@
 #pragma once
 
-#include <vector>
 #include "Core/API.h"
-#include "Window.h"
+#include "View.h"
+#include "Core/Events/Events.h"
 
 namespace Core
 {
-    enum class WindowSubsystemType
-    {
-#ifdef _WIN32
-        Win32 = 0
-#elif defined(linux)
-        XCB = 1
-#endif
-    };
-
-    enum class CursorState
-    {
-        Enabled,
-        Disbaled
-    };
-
-    struct KeyCodeDesc
-    {
-        char32_t utf32_char; //0 - unknown. also C0-C1 chars will be 0
-        std::string_view name;
-    };
-
     class CORE_API WindowSubsystem : protected EventEmitter
     {
     public:
@@ -46,13 +25,4 @@ namespace Core
         virtual std::string GetKeyNameByScancode(ScanCode scancode) = 0;
         virtual std::optional<ScanCode> GetScanCodeFromKeyName(std::string_view name) = 0;
     };
-
-    struct WindowSubsystemInfo
-    {
-        WindowSubsystemType type;
-    };
-
-    CORE_API std::vector<WindowSubsystemType> GetAvailableWindowSubsystemTypes();
-
-    CORE_API WindowSubsystem* CreateWindowSubsystem(const WindowSubsystemInfo& info);
 };

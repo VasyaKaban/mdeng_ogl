@@ -7,9 +7,6 @@
 
 namespace Core
 {
-    WindowSubsystem::~WindowSubsystem()
-    {}
-
     std::vector<WindowSubsystemType> GetAvailableWindowSubsystemTypes()
     {
 #ifdef _WIN32

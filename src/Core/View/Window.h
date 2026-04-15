@@ -3,42 +3,11 @@
 #include <string_view>
 #include <string>
 #include "Core/API.h"
+#include "View.h"
 #include "Core/Events/Events.h"
-#include "WindowEvents.h"
-#include "Core/Render/Render.h"
 
 namespace Core
 {
-    enum class WindowState
-    {
-        Windowed = 0,
-        FullScreen = 1
-    };
-
-    enum class WindowVisibility
-    {
-        Hidden = 0,
-        Shown = 1
-    };
-
-    struct WindowInfo
-    {
-        WindowResolution resolution;
-        WindowState state;
-        std::string_view title;
-    };
-
-    using WindowSurfaceInfo = std::variant<
-#ifdef _WIN32
-        Render::Win32SurfaceInfo
-#elif defined(linux)
-        Render::XCBSurfaceInfo
-#endif
-        >;
-
-    class WindowSubsystem;
-    class Display;
-
     class CORE_API Window : protected EventEmitter
     {
     public:

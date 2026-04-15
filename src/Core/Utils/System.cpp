@@ -155,6 +155,11 @@ namespace Core
         return result;
     }
 
+    std::optional<char16_t> System::UTF16ToUTF32(char16_t utf16[2]) noexcept
+    {
+#error TODO!
+    }
+
     static bool IsValidNonPrefixUTF8Byte(char value) noexcept
     {
         return (value & 0b1100'0000) == 0b1000'0000;

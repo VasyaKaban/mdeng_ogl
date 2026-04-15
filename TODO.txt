@@ -53,3 +53,4 @@ INFO:
 * Special keys as enum!
 * Add repeat count(how to NumLock??? + toggled keys): -> !!!WARNING!!! THIS CAN LEAD ZERO-SIZE STRING NAMES IN KEYBOARD STATE!!!
     DO NOT CARE ABOUT MULTI-KEYBOARD SETUPS. WHO WILL DO THINGS LIKE THIS??? :)
+* Do not create temporary objects in constructors. Just write directly into fields

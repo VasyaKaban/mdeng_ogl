@@ -3,19 +3,11 @@
 #include <string>
 #include <vector>
 #include "Core/API.h"
-#include "WindowEvents.h"
+#include "View.h"
 
 namespace Core
 {
     class Window;
-
-    struct VideoMode
-    {
-        std::uint32_t width;
-        std::uint32_t height;
-        std::uint32_t refresh_rate;
-        std::uint32_t bits_per_pixel;
-    };
 
     class CORE_API Display
     {
