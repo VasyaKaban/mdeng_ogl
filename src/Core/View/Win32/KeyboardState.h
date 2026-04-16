@@ -34,13 +34,15 @@ namespace Core
             KeyboardKey GetKeyByScancode(ScanCode scancode);
             std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key);
         private:
+            ModifierKeyFlags GetModifierFlags() const noexcept;
+        private:
             WindowSubsystem* parent;
             HWND service_window_handle;
             std::array<BYTE, 256> vk_keyboard_state;
             std::unordered_map<ScanCode, KeyState> scancode_to_key_state_mapping;
             std::unordered_map<KeyboardKey, ScanCode> key_to_scancode_mapping;
 
-            std::uint16_t prev_scancode;
+            std::uint32_t scancode_stream;
         };
     };
 };

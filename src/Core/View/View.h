@@ -155,8 +155,8 @@ namespace Core
         RightControl = 1 << 3,
         LeftAlt = 1 << 4,
         RightAlt = 1 << 5,
-        LeftMeta = 1 << 6, //Win
-        RightMeta = 1 << 7
+        LeftGUI = 1 << 6, //Win
+        RightGUI = 1 << 7
     };
 
     using ModifierKeyFlags = std::underlying_type_t<ModifierKeyFlagBits>;
