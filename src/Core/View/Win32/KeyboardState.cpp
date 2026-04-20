@@ -7,6 +7,27 @@ namespace Core
 {
     namespace Win32
     {
+        static void RegisterRawKeyboardInput(HWND handle, KeyboardAccessState state)
+        {
+            const RAWINPUTDEVICE raw_keyboard_desc = {
+                .usUsagePage = HID_USAGE_PAGE_GENERIC,
+                .usUsage = HID_USAGE_GENERIC_KEYBOARD,
+                .dwFlags = RIDEV_NOLEGACY | RIDEV_INPUTSINK |
+                           (state == KeyboardAccessState::Exclusive ? DWORD(RIDEV_NOHOTKEYS) : 0),
+                .hwndTarget = handle};
+            if(RegisterRawInputDevices(&raw_keyboard_desc, 1, sizeof(RAWINPUTDEVICE)) != TRUE)
+                Core::System::ThrowLastError();
+        }
+
+        static void UnregisterRawKeyboardInput()
+        {
+            const RAWINPUTDEVICE raw_keyboard_desc = {.usUsagePage = HID_USAGE_PAGE_GENERIC,
+                                                      .usUsage = HID_USAGE_GENERIC_KEYBOARD,
+                                                      .dwFlags = RIDEV_REMOVE,
+                                                      .hwndTarget = nullptr};
+            RegisterRawInputDevices(&raw_keyboard_desc, 1, sizeof(RAWINPUTDEVICE));
+        }
+
         const static std::unordered_map<ScanCode, KeyboardKey> STABLE_SCANCODES = {
             std::pair{0x1C, SpecialKey::Enter},
             std::pair{0x01, SpecialKey::Escape},
@@ -119,6 +140,46 @@ namespace Core
         constexpr static int VIRTUAL_KEY_PRESSED_BIT = 0b1000'0000;
         constexpr static int VIRTUAL_KEY_TOGGLED_BIT = 0b0000'0001;
 
+        struct LeftRightVirtualKey
+        {
+            std::uint8_t common;
+            std::uint8_t current;
+            std::uint8_t contra;
+        };
+
+        static std::optional<LeftRightVirtualKey> GetLeftRightVirtualKey(int vk,
+                                                                         int scancode) noexcept
+        {
+            std::optional<LeftRightVirtualKey> out;
+            std::uint8_t current = MapVirtualKeyExW(scancode, MAPVK_VSC_TO_VK_EX, nullptr);
+            switch(vk)
+            {
+                case VK_SHIFT:
+                {
+                    out = LeftRightVirtualKey{.common = VK_SHIFT,
+                                              .current = current,
+                                              .contra = static_cast<std::uint8_t>(
+                                                  (current == VK_LSHIFT ? VK_RSHIFT : VK_LSHIFT))};
+                }
+                break;
+                case VK_MENU:
+                    out = LeftRightVirtualKey{.common = VK_MENU,
+                                              .current = current,
+                                              .contra = static_cast<std::uint8_t>(
+                                                  (current == VK_LMENU ? VK_RMENU : VK_LMENU))};
+                    break;
+                case VK_CONTROL:
+                    out = LeftRightVirtualKey{
+                        .common = VK_CONTROL,
+                        .current = current,
+                        .contra = static_cast<std::uint8_t>(
+                            (current == VK_LCONTROL ? VK_RCONTROL : VK_LCONTROL))};
+                    break;
+            }
+
+            return out;
+        }
+
         LRESULT CALLBACK KeyboardState::RawInputWindowProc(HWND handle,
                                                            UINT message,
                                                            WPARAM w_param,
@@ -139,34 +200,16 @@ namespace Core
                         if(Core::System::GetLastError() != ERROR_SUCCESS) //error
                             return -1;
                     }
-
-                    const RAWINPUTDEVICE raw_keyboard_desc = {.usUsagePage = HID_USAGE_PAGE_GENERIC,
-                                                              .usUsage = HID_USAGE_GENERIC_KEYBOARD,
-                                                              .dwFlags =
-                                                                  RIDEV_NOLEGACY | RIDEV_INPUTSINK |
-                                                                  RIDEV_NOHOTKEYS | RIDEV_APPKEYS,
-                                                              .hwndTarget = handle};
-                    if(RegisterRawInputDevices(&raw_keyboard_desc, 1, sizeof(RAWINPUTDEVICE)) !=
-                       TRUE)
-                        return -1;
                 }
                 break;
                 case WM_DESTROY:
                 {
                     //unregister raw input
-                    const RAWINPUTDEVICE raw_keyboard_desc = {.usUsagePage = HID_USAGE_PAGE_GENERIC,
-                                                              .usUsage = HID_USAGE_GENERIC_KEYBOARD,
-                                                              .dwFlags = RIDEV_REMOVE,
-                                                              .hwndTarget = nullptr};
-                    RegisterRawInputDevices(&raw_keyboard_desc, 1, sizeof(RAWINPUTDEVICE));
+                    UnregisterRawKeyboardInput();
                 }
                 break;
                 case WM_INPUT:
                 {
-#pragma message( \
-    "Pause/Break are non-typematic keys so in WinAPI they do noit have repeat count more than 1. Should we make behaviour like this??? Check XKB!")
-#pragma message( \
-    "Shift, Win, Alt, Control non-left and right versions when we press both left and right untoggles one shift while another shift is toggled!")
                     /*
                     PS/2 Set 1 Make codes:
                     ((), E0'2A, E0'AA, E0'B6, E0'AA E0'B6) + Insert, Delete, LeftArrow, Home, End, UpArrow, DownArrow, PageUp, PageDown, RightArrow
@@ -203,16 +246,6 @@ namespace Core
                             else if(data.Flags & RI_KEY_E1)
                                 scancode |= 0xE1'00;
 
-                            //select right or left version
-                            USHORT non_left_right_vk = 0;
-                            if(data.VKey == VK_SHIFT || data.VKey == VK_CONTROL ||
-                               data.VKey == VK_MENU)
-                            {
-                                non_left_right_vk = data.VKey;
-                                data.VKey =
-                                    MapVirtualKeyExW(data.MakeCode, MAPVK_VSC_TO_VK_EX, nullptr);
-                            }
-
                             std::uint16_t prev_scancode = state->prev_scancode;
                             state->prev_scancode = scancode;
 
@@ -223,6 +256,13 @@ namespace Core
                             //Pause = E1'1D 45
                             if(prev_scancode == 0xE1'1D && scancode == 0x45) //check Pause
                                 scancode = 0xE1'1D'45;
+
+                            //select right or left version
+                            auto lrvk = GetLeftRightVirtualKey(data.VKey, data.MakeCode);
+                            if(lrvk)
+                            {
+                                data.VKey = lrvk->current;
+                            }
 
                             //translate scancode
                             KeyboardKey key = SpecialKey::Unknown;
@@ -236,9 +276,8 @@ namespace Core
                                 key = state->GetKeyByScancode(scancode);
                             }
 
-                            auto [scancode_it, _] = state->scancode_to_key_state_mapping.insert(
-                                std::pair{scancode,
-                                          KeyState{.repeat_count = 0, .key = SpecialKey::Unknown}});
+                            auto [scancode_it, _] = state->scancode_to_key_mapping.insert(
+                                std::pair{scancode, SpecialKey::Unknown});
 
                             //Update keyboard state
                             //Update pressed/released state
@@ -246,21 +285,22 @@ namespace Core
                             if(is_pressed)
                             {
                                 state->vk_keyboard_state[data.VKey] |= VIRTUAL_KEY_PRESSED_BIT;
-                                scancode_it->second.repeat_count++;
-                                if(non_left_right_vk != 0)
+                                if(lrvk)
                                 {
-                                    state->vk_keyboard_state[non_left_right_vk] |=
+                                    state->vk_keyboard_state[lrvk->common] |=
                                         VIRTUAL_KEY_PRESSED_BIT;
                                 }
                             }
                             else
                             {
                                 state->vk_keyboard_state[data.VKey] &= ~VIRTUAL_KEY_PRESSED_BIT;
-                                scancode_it->second.repeat_count = 0;
-                                if(non_left_right_vk != 0)
+                                if(lrvk)
                                 {
-                                    state->vk_keyboard_state[non_left_right_vk] &=
-                                        ~VIRTUAL_KEY_PRESSED_BIT;
+                                    if(!(state->vk_keyboard_state[lrvk->contra] &
+                                         VIRTUAL_KEY_PRESSED_BIT))
+
+                                        state->vk_keyboard_state[lrvk->common] &=
+                                            ~VIRTUAL_KEY_PRESSED_BIT;
                                 }
                             }
 
@@ -281,23 +321,11 @@ namespace Core
                                     {
                                         state->vk_keyboard_state[data.VKey] |=
                                             VIRTUAL_KEY_TOGGLED_BIT;
-
-                                        if(non_left_right_vk != 0)
-                                        {
-                                            state->vk_keyboard_state[non_left_right_vk] |=
-                                                VIRTUAL_KEY_TOGGLED_BIT;
-                                        }
                                     }
                                     else //untoggle
                                     {
                                         state->vk_keyboard_state[data.VKey] &=
                                             ~VIRTUAL_KEY_TOGGLED_BIT;
-
-                                        if(non_left_right_vk != 0)
-                                        {
-                                            state->vk_keyboard_state[non_left_right_vk] &=
-                                                ~VIRTUAL_KEY_TOGGLED_BIT;
-                                        }
                                     }
                                 }
                             }
@@ -318,9 +346,7 @@ namespace Core
                                                          .timestamp_ms = GetEventTimestamp(),
                                                          .scancode = scancode,
                                                          .key = key,
-                                                         .modifiers = state->GetModifierFlags(),
-                                                         .repeat_count =
-                                                             scancode_it->second.repeat_count}},
+                                                         .modifiers = state->GetModifierFlags()}},
                                         .id = ClassID<KeyboardKeyPressedEvent>::ID,
                                         .window = window});
                                 }
@@ -370,8 +396,6 @@ namespace Core
                                                          KeyboardCharacterPressedEvent{
                                                              .timestamp_ms = GetEventTimestamp(),
                                                              .modifiers = state->GetModifierFlags(),
-                                                             .repeat_count =
-                                                                 scancode_it->second.repeat_count,
                                                              .utf32_char = utf32}},
                                             .id = ClassID<KeyboardCharacterPressedEvent>::ID,
                                             .window = window});
@@ -394,6 +418,7 @@ namespace Core
 
         KeyboardState::KeyboardState(WindowSubsystem* _parent)
             : parent(_parent),
+              access_state(KeyboardAccessState::Shared),
               current_layout(GetKeyboardLayout(Core::System::GetMainThreadID())),
               prev_scancode(0)
         {
@@ -445,8 +470,8 @@ namespace Core
             if(service_window_handle == nullptr)
                 Core::System::ThrowLastError();
 
-            if(GetKeyboardState(vk_keyboard_state.data()) == 0)
-                Core::System::ThrowLastError();
+            RegisterRawKeyboardInput(service_window_handle, KeyboardAccessState::Shared);
+            Reset();
 
             Core::System::SetLastError(ERROR_SUCCESS);
             if(SetWindowLongPtrW(service_window_handle,
@@ -458,12 +483,11 @@ namespace Core
             }
 
             //update keyboard state
-            scancode_to_key_state_mapping.reserve(SCANCODES_COUNT);
+            scancode_to_key_mapping.reserve(SCANCODES_COUNT);
             key_to_scancode_mapping.reserve(SCANCODES_COUNT);
             for(const auto& [sc, key]: STABLE_SCANCODES)
             {
-                scancode_to_key_state_mapping.insert(
-                    std::pair{sc, KeyState{.repeat_count = 0, .key = key}});
+                scancode_to_key_mapping.insert(std::pair{sc, key});
                 key_to_scancode_mapping.insert(std::pair{key, sc});
             }
 
@@ -485,12 +509,11 @@ namespace Core
                     auto scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, l);
                     if(scancode != 0)
                     {
-                        auto [it, inserted] = scancode_to_key_state_mapping.insert(
-                            std::pair{scancode,
-                                      KeyState{.repeat_count = 0, .key = SpecialKey::Unknown}});
+                        auto [it, inserted] = scancode_to_key_mapping.insert(
+                            std::pair{scancode, SpecialKey::Unknown});
                         if(!inserted)
                         {
-                            if(it->second.key != SpecialKey::Unknown)
+                            if(it->second != SpecialKey::Unknown)
                                 continue;
                         }
 
@@ -508,37 +531,20 @@ namespace Core
                                     continue;
                             }
 
-                            it->second.key = *utf32;
+                            it->second = *utf32;
 
                             auto [s_it, s_inserted] = key_to_scancode_mapping.insert(std::pair{
                                 *utf32,
                                 scancode}); //there can be duplication of name(very very rare event but let's handle it)
 
                             if(!s_inserted)
-                                scancode_to_key_state_mapping.erase(it); //just remove it
+                                scancode_to_key_mapping.erase(it); //just remove it
                         }
                     }
                 }
             }
 
             ActivateKeyboardLayout(prev_keyboard_layout, 0);
-
-            //set initial repeat count values
-            for(int vk = 1; vk < 256; vk++)
-            {
-                auto scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, prev_keyboard_layout);
-                if(scancode == 0)
-                    continue;
-
-                auto [scancode_it, _] = scancode_to_key_state_mapping.insert(
-                    std::pair{scancode, KeyState{.repeat_count = 0, .key = SpecialKey::Unknown}});
-
-                bool is_pressed = vk_keyboard_state[vk] & VIRTUAL_KEY_PRESSED_BIT;
-                if(is_pressed)
-                    scancode_it->second.repeat_count++;
-                else
-                    scancode_it->second.repeat_count = 0;
-            }
 
             cleanup.Drop();
         }
@@ -552,13 +558,11 @@ namespace Core
             }
         }
 
-        std::unordered_map<ScanCode, KeyState> key_states;
-
         KeyboardState::KeyboardState(KeyboardState&& state) noexcept
             : parent(state.parent),
               service_window_handle(std::exchange(state.service_window_handle, nullptr)),
               vk_keyboard_state(state.vk_keyboard_state),
-              scancode_to_key_state_mapping(std::move(state.scancode_to_key_state_mapping)),
+              scancode_to_key_mapping(std::move(state.scancode_to_key_mapping)),
               key_to_scancode_mapping(std::move(state.key_to_scancode_mapping)),
               current_layout(state.current_layout),
               prev_scancode(state.prev_scancode)
@@ -571,7 +575,7 @@ namespace Core
             parent = state.parent;
             service_window_handle = std::exchange(state.service_window_handle, nullptr);
             vk_keyboard_state = state.vk_keyboard_state;
-            scancode_to_key_state_mapping = std::move(state.scancode_to_key_state_mapping);
+            scancode_to_key_mapping = std::move(state.scancode_to_key_mapping);
             key_to_scancode_mapping = std::move(state.key_to_scancode_mapping);
             current_layout = state.current_layout;
             prev_scancode = state.prev_scancode;
@@ -581,9 +585,9 @@ namespace Core
 
         KeyboardKey KeyboardState::GetKeyByScancode(ScanCode scancode)
         {
-            auto it = scancode_to_key_state_mapping.find(scancode);
-            if(it != scancode_to_key_state_mapping.end())
-                return it->second.key;
+            auto it = scancode_to_key_mapping.find(scancode);
+            if(it != scancode_to_key_mapping.end())
+                return it->second;
 
             return SpecialKey::Unknown;
         }
@@ -597,9 +601,31 @@ namespace Core
             return std::nullopt;
         }
 
+        KeyboardAccessState KeyboardState::GetKeyboardAccessState() const noexcept
+        {
+            return access_state;
+        }
+
+        void KeyboardState::SetKeyboardAccessState(KeyboardAccessState state)
+        {
+            if(access_state == state)
+                return;
+
+            RegisterRawKeyboardInput(service_window_handle, state);
+            Reset();
+
+            access_state = state;
+        }
+
         void KeyboardState::UpdateCurrentLayout(HKL layout) noexcept
         {
             current_layout = layout;
+        }
+
+        void KeyboardState::Reset()
+        {
+            if(GetKeyboardState(vk_keyboard_state.data()) == 0)
+                Core::System::ThrowLastError();
         }
 
         ModifierKeyFlags KeyboardState::GetModifierFlags() const noexcept
@@ -623,6 +649,5 @@ namespace Core
 
             return flags;
         }
-
     };
 };

@@ -24,5 +24,8 @@ namespace Core
 
         virtual KeyboardKey GetKeyByScancode(ScanCode scancode) = 0;
         virtual std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key) = 0;
+
+        virtual KeyboardAccessState GetKeyboardAccessState() = 0;
+        virtual void SetKeyboardAccessState(KeyboardAccessState state) = 0;
     };
 };

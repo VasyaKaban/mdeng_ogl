@@ -732,10 +732,11 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.cursor_position.x,
                     event.cursor_position.y);*/
 
-                //if(event.button == Core::MouseButtonFlagBits::LeftButton)
-                //    window->SetState(Core::WindowState::FullScreen);
-                //else if(event.button == Core::MouseButtonFlagBits::RightButton)
-                //    window->SetState(Core::WindowState::Windowed);
+                if(event.button == Core::MouseButtonFlagBits::LeftButton)
+                    window->GetParent()->SetKeyboardAccessState(
+                        Core::KeyboardAccessState::Exclusive);
+                else if(event.button == Core::MouseButtonFlagBits::RightButton)
+                    window->GetParent()->SetKeyboardAccessState(Core::KeyboardAccessState::Shared);
 
                 return Core::EventHandlerResult::None;
             },
@@ -816,13 +817,11 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     "KeyboardCharacterPressedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tCModifiers: {}\n"
-                    "\tRepeat count: {}\n"
                     "\tUTF32: {:#x}\n"
                     "\tUTF8: {:#x} {:#x} {:#x} {:#x}\n"
                     "\tChar: {}\n",
                     event.timestamp_ms,
                     ConcatModifiers(event.modifiers),
-                    event.repeat_count,
                     static_cast<std::uint32_t>(event.utf32_char),
                     res.data[0],
                     res.data[1],
@@ -843,12 +842,10 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     "\tTimestamp: {}\n"
                     "\tScancode: {}\n"
                     "\tModifiers: {}\n"
-                    "\tRepeat count: {}\n"
                     "\tName: {}\n",
                     event.timestamp_ms,
                     event.scancode,
                     ConcatModifiers(event.modifiers),
-                    event.repeat_count,
                     Core::KeyboardKeyToString(event.key));*/
 
                 return Core::EventHandlerResult::None;

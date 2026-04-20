@@ -65,6 +65,9 @@ namespace Core
             virtual KeyboardKey GetKeyByScancode(ScanCode scancode) override;
             virtual std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key) override;
 
+            virtual KeyboardAccessState GetKeyboardAccessState() override;
+            virtual void SetKeyboardAccessState(KeyboardAccessState state) override;
+
             const Win32PublicDynamicFunctions& GetPublicFunctions() const noexcept;
             KeyboardState* GetKeyboardState() const noexcept;
 

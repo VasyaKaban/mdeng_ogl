@@ -401,6 +401,12 @@ namespace Core
                             .id = ClassID<MouseWheelEvent>::ID,
                             .window = window});
                     }
+                    case WM_ACTIVATEAPP:
+                    {
+                        if(w_param == TRUE) //we should reset keyboard state
+                            window->parent->GetKeyboardState()->Reset();
+                    }
+                    break;
                     case WM_INPUTLANGCHANGE: //yes. we pass it to DefWindowProc
                     {
                         window->parent->GetKeyboardState()->UpdateCurrentLayout(

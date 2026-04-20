@@ -10,12 +10,6 @@ namespace Core
     {
         class WindowSubsystem;
 
-        struct KeyState
-        {
-            std::uint32_t repeat_count;
-            KeyboardKey key;
-        };
-
         class CORE_API KeyboardState : Core::NonCopyable
         {
         private:
@@ -34,14 +28,19 @@ namespace Core
             KeyboardKey GetKeyByScancode(ScanCode scancode);
             std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key);
 
+            KeyboardAccessState GetKeyboardAccessState() const noexcept;
+            void SetKeyboardAccessState(KeyboardAccessState state);
+
             void UpdateCurrentLayout(HKL layout) noexcept;
+            void Reset(); //resets due to the focus gain/loose/init
         private:
             ModifierKeyFlags GetModifierFlags() const noexcept;
         private:
             WindowSubsystem* parent;
+            KeyboardAccessState access_state;
             HWND service_window_handle;
             std::array<BYTE, 256> vk_keyboard_state;
-            std::unordered_map<ScanCode, KeyState> scancode_to_key_state_mapping;
+            std::unordered_map<ScanCode, KeyboardKey> scancode_to_key_mapping;
             std::unordered_map<KeyboardKey, ScanCode> key_to_scancode_mapping;
             HKL current_layout;
 

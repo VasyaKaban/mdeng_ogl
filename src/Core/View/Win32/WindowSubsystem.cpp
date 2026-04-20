@@ -260,6 +260,16 @@ namespace Core
             return keyboard_state->GetScanCodeFromKey(key);
         }
 
+        KeyboardAccessState WindowSubsystem::GetKeyboardAccessState()
+        {
+            return keyboard_state->GetKeyboardAccessState();
+        }
+
+        void WindowSubsystem::SetKeyboardAccessState(KeyboardAccessState state)
+        {
+            keyboard_state->SetKeyboardAccessState(state);
+        }
+
         const Win32PublicDynamicFunctions& WindowSubsystem::GetPublicFunctions() const noexcept
         {
             return public_functions;

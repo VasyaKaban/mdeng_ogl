@@ -191,6 +191,12 @@ namespace Core
         Disbaled
     };
 
+    enum class KeyboardAccessState
+    {
+        Exclusive,
+        Shared
+    };
+
     struct WindowInfo
     {
         WindowResolution resolution;
