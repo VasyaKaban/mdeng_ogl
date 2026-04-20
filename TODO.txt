@@ -51,4 +51,3 @@ INFO:
 * Do not create temporary objects in constructors. Just write directly into fields
 * One-value enums as enum class; Flags as Flags using + non-scoped enum inside namespace with FlagBits postfix
 * When we change video mode of one monitor we receive diplsyachange event. So we must change position and prev window rect for window also in fullscreen mode
-* Use nohotkeys via function. When we go to fullscreen we must disable system hotkeys, but when we in windowed mode we should use them
