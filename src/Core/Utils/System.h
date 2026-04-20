@@ -62,7 +62,9 @@ namespace Core
         static std::string DecorateDynamicLibraryName(std::string_view name);
 
         static UTF8Result UTF32ToUTF8(char32_t utf32) noexcept;
-        static std::optional<char16_t> UTF16ToUTF32(char16_t utf16[2]) noexcept;
+
+        //high surrogate + low surrogate or code point
+        static std::optional<char32_t> UTF16ToUTF32(char16_t utf16[2]) noexcept;
 
         //alphanumeric comparator -> same as operator< result
         static bool CompareUTF8(std::string_view str1, std::string_view str2) noexcept;

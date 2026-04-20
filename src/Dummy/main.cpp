@@ -12,9 +12,11 @@
 #include <Core/Render/Objects/Semaphore.h>
 #include <Core/Render/Objects/Fence.h>
 #include "Core/Render/Format.h"
-#include "Core/Window/Window.h"
-#include "Core/Window/WindowSubsystem.h"
-#include "Core/Window/Display.h"
+#include "Core/View/View.h"
+#include "Core/View/Window.h"
+#include "Core/View/WindowEvents.h"
+#include "Core/View/WindowSubsystem.h"
+#include "Core/View/Display.h"
 #include "Core/Utils/DynamicLibrary.h"
 #include <cassert>
 #include <chrono>
@@ -428,8 +430,8 @@ std::string ConcatModifiers(Core::ModifierKeyFlags mods)
         {Core::ModifierKeyFlagBits::RightControl, "RightControl"},
         {Core::ModifierKeyFlagBits::LeftAlt, "LeftAlt"},
         {Core::ModifierKeyFlagBits::RightAlt, "RightAlt"},
-        {Core::ModifierKeyFlagBits::LeftMeta, "LeftMeta"},
-        {Core::ModifierKeyFlagBits::RightMeta, "RightMeta"},
+        {Core::ModifierKeyFlagBits::LeftGUI, "LeftGUI"},
+        {Core::ModifierKeyFlagBits::RightGUI, "RightGUI"},
     };
 
     std::string out;
@@ -810,7 +812,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                 auto res = Core::System::UTF32ToUTF8(event.utf32_char);
                 std::string_view str{res.data, res.length};
 
-                /*std::cout << std::format(
+                std::cout << std::format(
                     "KeyboardCharacterPressedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tCModifiers: {}\n"
@@ -826,12 +828,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     res.data[1],
                     res.data[2],
                     res.data[3],
-                    str);*/
-
-                //if(event.utf32_char == U'\r')
-                //    str = "\n";
-
-                //std::cerr << str;
+                    str);
 
                 return Core::EventHandlerResult::None;
             },
@@ -841,7 +838,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::KeyboardKeyPressedEvent>(
             [window = window.get()](const Core::KeyboardKeyPressedEvent& event)
             {
-                std::cout << std::format(
+                /*std::cout << std::format(
                     "KeyboardKeyPressedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tScancode: {}\n"
@@ -852,7 +849,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.scancode,
                     ConcatModifiers(event.modifiers),
                     event.repeat_count,
-                    window->GetParent()->GetKeyNameByScancode(event.scancode));
+                    Core::KeyboardKeyToString(event.key));*/
 
                 return Core::EventHandlerResult::None;
             },
@@ -866,10 +863,12 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     "KeyboardKeyReleasedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tScancode: {}\n"
-                    "\tModifiers: {}\n",
+                    "\tModifiers: {}\n"
+                    "\tName: {}\n",
                     event.timestamp_ms,
                     event.scancode,
-                    ConcatModifiers(event.modifiers));*/
+                    ConcatModifiers(event.modifiers),
+                    Core::KeyboardKeyToString(event.key));*/
 
                 return Core::EventHandlerResult::None;
             },

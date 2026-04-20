@@ -45,12 +45,9 @@ INFO:
 * dlerror() into System for Linux
 * Limits and properties for window subsystem: for example limit max window size
 
-* Ref-counted window sybsystem
 * Check Win32 windowed_state updates
 * More preciese window create info
 * Window Hidden/Shown as state + functions
-* Keyboard names(enums and chars): two maps for each layout to prevent app restarts and controls reset because there is no mapping from for example cyrrilic names
-* Special keys as enum!
-* Add repeat count(how to NumLock??? + toggled keys): -> !!!WARNING!!! THIS CAN LEAD ZERO-SIZE STRING NAMES IN KEYBOARD STATE!!!
-    DO NOT CARE ABOUT MULTI-KEYBOARD SETUPS. WHO WILL DO THINGS LIKE THIS??? :)
 * Do not create temporary objects in constructors. Just write directly into fields
+* One-value enums as enum class; Flags as Flags using + non-scoped enum inside namespace with FlagBits postfix
+* When we change video mode of one monitor we receive diplsyachange event. So we must change position and prev window rect for window also in fullscreen mode

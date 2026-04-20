@@ -1,11 +1,11 @@
 #pragma once
 
 #include <queue>
-#include <set>
 #include <ShellScalingApi.h>
 #include "Core/Utils/DynamicLibrary.h"
 #include "../WindowSubsystem.h"
 #include "Core/View/WindowEvents.h"
+#include "KeyboardState.h"
 
 namespace Core
 {
@@ -20,80 +20,8 @@ namespace Core
             Window* window;
         };
 
-        struct KeyboardState
+        struct Win32PublicDynamicFunctions
         {
-            HKL current_layout;
-            std::set<HKL> layouts;
-            std::unordered_map<ScanCode, std::string> scancode_to_string_mapping;
-            std::unordered_map<std::string_view /*reference to scancode_to_string_mapping*/,
-                               ScanCode>
-                string_to_scancode_mapping;
-        };
-
-        class CORE_API WindowSubsystem final : public Core::WindowSubsystem, Core::NonMovable
-        {
-            static LRESULT CALLBACK ShellProc(int code, WPARAM w_param, LPARAM l_param);
-            static LRESULT CALLBACK RawInputWindowProc(HWND handle,
-                                                       UINT message,
-                                                       WPARAM w_param,
-                                                       LPARAM l_param);
-
-            enum class PrecededScanCode
-            {
-                None = 0,
-                E02A = 0xE0'2A,
-                E11D = 0xE1'1D
-            };
-        public:
-            WindowSubsystem();
-
-            virtual ~WindowSubsystem() override;
-
-            virtual void PollEvents() override;
-
-            virtual WindowSubsystemType GetType() const noexcept override;
-
-            virtual Core::Window* CreateWindow(const WindowInfo& info) override;
-
-            virtual CursorState GetCursorState() const override;
-            virtual void SetCursorState(CursorState state) override;
-
-            virtual std::string GetKeyNameByScancode(ScanCode scancode) override;
-            virtual std::optional<ScanCode> GetScanCodeFromKeyName(std::string_view name) override;
-
-            HINSTANCE GetInstance() const noexcept;
-
-            DPI_AWARENESS_CONTEXT GetDPIAwrenessType() const noexcept;
-
-            void PushEvent(Event&& event);
-
-            KeyboardState* GetKeyboardState() const noexcept;
-
-            static WindowSubsystem* GetSubsystem() noexcept;
-        private:
-            bool UpdateKeyboardLayouts(); //returns 'false' if there is only language change
-        private:
-            HINSTANCE instance;
-
-            DynamicLibrary user32;
-            DynamicLibrary shcore;
-
-            BOOL (*SetProcessDpiAwarenessContext)(DPI_AWARENESS_CONTEXT value);
-            DPI_AWARENESS_CONTEXT (*SetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT dpiContext);
-            HRESULT (*SetProcessDpiAwareness)(PROCESS_DPI_AWARENESS value);
-            BOOL (*SetProcessDPIAware)();
-            DPI_AWARENESS_CONTEXT dpi_awareness;
-
-            HWND raw_input_hwnd;
-            BYTE raw_input_keyboard_state[256];
-            PrecededScanCode preceded_scancode;
-
-            HHOOK shell_hook;
-            KeyboardState keyboard_state;
-
-            std::queue<Event> events;
-        public:
-            //let's make it public
             //Windows 8.1+
             const HRESULT (*GetDpiForMonitor)(HMONITOR hmonitor,
                                               MONITOR_DPI_TYPE dpiType,
@@ -116,6 +44,52 @@ namespace Core
             LONG (*DisplayConfigGetDeviceInfo)(DISPLAYCONFIG_DEVICE_INFO_HEADER* requestPacket);
 
             BOOL (*EnableNonClientDpiScaling)(HWND hwnd);
+        };
+
+        class CORE_API WindowSubsystem final : public Core::WindowSubsystem, Core::NonMovable
+        {
+            static LRESULT CALLBACK ShellProc(int code, WPARAM w_param, LPARAM l_param);
+        public:
+            WindowSubsystem();
+
+            virtual ~WindowSubsystem() override;
+
+            virtual void PollEvents() override;
+
+            virtual WindowSubsystemType GetType() const noexcept override;
+
+            virtual Core::Window* CreateWindow(const WindowInfo& info) override;
+
+            virtual CursorState GetCursorState() const override;
+            virtual void SetCursorState(CursorState state) override;
+
+            virtual KeyboardKey GetKeyByScancode(ScanCode scancode) override;
+            virtual std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key) override;
+
+            const Win32PublicDynamicFunctions& GetPublicFunctions() const noexcept;
+
+            HINSTANCE GetInstance() const noexcept;
+
+            DPI_AWARENESS_CONTEXT GetDPIAwrenessType() const noexcept;
+
+            void PushEvent(Event&& event);
+
+            static WindowSubsystem* GetSubsystem() noexcept;
+
+            void operator delete(void* ptr);
+        private:
+            static inline DPI_AWARENESS_CONTEXT DPI_AWARENESS = DPI_AWARENESS_CONTEXT_UNAWARE;
+            static inline WindowSubsystem* SUBSYSTEM = nullptr;
+
+            HINSTANCE instance;
+            DynamicLibrary user32;
+            DynamicLibrary shcore;
+            Win32PublicDynamicFunctions public_functions;
+
+            KeyboardState* keyboard_state;
+            HHOOK shell_hook;
+
+            std::queue<Event> events;
         };
     };
 };

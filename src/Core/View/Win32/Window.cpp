@@ -55,9 +55,10 @@ namespace Core
 
                 if(data->obj->parent->GetDPIAwrenessType() ==
                        DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE &&
-                   data->obj->parent->EnableNonClientDpiScaling)
+                   data->obj->parent->GetPublicFunctions().EnableNonClientDpiScaling)
                 {
-                    if(data->obj->parent->EnableNonClientDpiScaling(handle) == 0)
+                    if(data->obj->parent->GetPublicFunctions().EnableNonClientDpiScaling(handle) ==
+                       0)
                         return -1;
                 }
 

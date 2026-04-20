@@ -155,9 +155,28 @@ namespace Core
         return result;
     }
 
-    std::optional<char16_t> System::UTF16ToUTF32(char16_t utf16[2]) noexcept
+    //high surrogates (0xD800–0xDBFF), low surrogates (0xDC00–0xDFFF),
+    std::optional<char32_t> System::UTF16ToUTF32(char16_t utf16[2]) noexcept
     {
-#error TODO!
+        if(utf16[1] >= 0xDC'00 && utf16[1] <= 0xDF'FF) //low surrogate cannot be represented
+            return std::nullopt;
+
+        std::optional<char16_t> out;
+        if(utf16[0] >= 0xD8'00 && utf16[0] <= 0xDB'FF) //high surrogate
+        {
+            if(utf16[1] >= 0xDC'00 && utf16[1] <= 0xDF'FF) //low surrogate
+            {
+                out = ((utf16[0] - 0xD8'00) << 10) + (utf16[1] - 0xDC'00) + 0x1'00'00;
+            }
+            else
+                out = std::nullopt;
+        }
+        else //code point
+        {
+            out = utf16[0];
+        }
+
+        return out;
     }
 
     static bool IsValidNonPrefixUTF8Byte(char value) noexcept

@@ -22,7 +22,7 @@ namespace Core
         virtual CursorState GetCursorState() const = 0;
         virtual void SetCursorState(CursorState state) = 0;
 
-        virtual std::string GetKeyNameByScancode(ScanCode scancode) = 0;
-        virtual std::optional<ScanCode> GetScanCodeFromKeyName(std::string_view name) = 0;
+        virtual KeyboardKey GetKeyByScancode(ScanCode scancode) = 0;
+        virtual std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key) = 0;
     };
 };

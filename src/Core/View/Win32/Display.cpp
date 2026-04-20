@@ -26,8 +26,9 @@ namespace Core
 
             std::copy(info.szDevice, info.szDevice + CCHDEVICENAME, this->device_name.data());
 
-            WindowSubsystem* win_sys = static_cast<WindowSubsystem*>(parent->GetParent());
-            if(win_sys->QueryDisplayConfig)
+            const Win32PublicDynamicFunctions& public_functions =
+                static_cast<WindowSubsystem*>(parent->GetParent())->GetPublicFunctions();
+            if(public_functions.QueryDisplayConfig)
             {
                 UINT32 flags = QDC_ONLY_ACTIVE_PATHS;
                 LONG result = ERROR_SUCCESS;
@@ -37,9 +38,9 @@ namespace Core
                 {
                     UINT32 active_path_count;
                     UINT32 active_mode_count;
-                    result = win_sys->GetDisplayConfigBufferSizes(flags,
-                                                                  &active_path_count,
-                                                                  &active_mode_count);
+                    result = public_functions.GetDisplayConfigBufferSizes(flags,
+                                                                          &active_path_count,
+                                                                          &active_mode_count);
 
                     if(result != ERROR_SUCCESS)
                         throw Win32Exception(result);
@@ -47,12 +48,12 @@ namespace Core
                     active_path_infos.resize(active_path_count);
                     active_mode_infos.resize(active_mode_count);
 
-                    result = win_sys->QueryDisplayConfig(flags,
-                                                         &active_path_count,
-                                                         active_path_infos.data(),
-                                                         &active_mode_count,
-                                                         active_mode_infos.data(),
-                                                         nullptr);
+                    result = public_functions.QueryDisplayConfig(flags,
+                                                                 &active_path_count,
+                                                                 active_path_infos.data(),
+                                                                 &active_mode_count,
+                                                                 active_mode_infos.data(),
+                                                                 nullptr);
 
                     active_path_infos.resize(active_path_count);
                     active_mode_infos.resize(active_mode_count);
@@ -71,7 +72,8 @@ namespace Core
                             .adapterId = path.targetInfo.adapterId,
                             .id = path.targetInfo.id}};
 
-                    result = win_sys->DisplayConfigGetDeviceInfo(&target_device_name_info.header);
+                    result = public_functions.DisplayConfigGetDeviceInfo(
+                        &target_device_name_info.header);
                     if(result != ERROR_SUCCESS)
                         throw Win32Exception(result);
 
@@ -82,7 +84,8 @@ namespace Core
                             .adapterId = path.sourceInfo.adapterId,
                             .id = path.sourceInfo.id}};
 
-                    result = win_sys->DisplayConfigGetDeviceInfo(&source_device_name_info.header);
+                    result = public_functions.DisplayConfigGetDeviceInfo(
+                        &source_device_name_info.header);
                     if(result != ERROR_SUCCESS)
                         throw Win32Exception(result);
 
@@ -188,10 +191,11 @@ namespace Core
             {
                 UINT dpi_x;
                 UINT dpi_y;
-                auto res = subsystem->GetDpiForMonitor(handle,
-                                                       MONITOR_DPI_TYPE::MDT_EFFECTIVE_DPI,
-                                                       &dpi_x,
-                                                       &dpi_y);
+                auto res = subsystem->GetPublicFunctions().GetDpiForMonitor(
+                    handle,
+                    MONITOR_DPI_TYPE::MDT_EFFECTIVE_DPI,
+                    &dpi_x,
+                    &dpi_y);
 
                 if(res != S_OK)
                     throw Core::Win32Exception(HRESULT_CODE(res));
