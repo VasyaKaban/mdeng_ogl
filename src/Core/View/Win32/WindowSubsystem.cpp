@@ -18,22 +18,10 @@ namespace Core
             BOOL (*SetProcessDPIAware)();
         };
 
-        LRESULT CALLBACK WindowSubsystem::ShellProc(int code, WPARAM w_param, LPARAM l_param)
-        {
-            if(code == HSHELL_LANGUAGE)
-            {
-                WindowSubsystem::GetSubsystem()->keyboard_state->UpdateCurrentLayout(
-                    reinterpret_cast<HKL>(l_param));
-            }
-
-            return CallNextHookEx(nullptr, code, w_param, l_param);
-        }
-
         WindowSubsystem::WindowSubsystem()
             : instance(nullptr),
               public_functions{},
-              keyboard_state(nullptr),
-              shell_hook(nullptr)
+              keyboard_state(nullptr)
         {
             if(SUBSYSTEM)
                 throw std::runtime_error("Win32 subsystem already created");
@@ -167,23 +155,11 @@ namespace Core
                     if(window_class)
                         UnregisterClassW(window_class, instance);
 
-                    if(shell_hook)
-                        UnhookWindowsHookEx(shell_hook);
-
                     if(keyboard_state)
                         delete keyboard_state;
                 });
 
             keyboard_state = new KeyboardState(this);
-
-            //create shell hook
-            shell_hook = SetWindowsHookExW(WH_SHELL,
-                                           WindowSubsystem::ShellProc,
-                                           nullptr,
-                                           Core::System::GetMainThreadID());
-
-            if(shell_hook == nullptr)
-                Core::System::ThrowLastError();
 
             //register window class
             WNDCLASSEXW wnd_class = {.cbSize = sizeof(WNDCLASSEXW),
@@ -212,7 +188,6 @@ namespace Core
         WindowSubsystem::~WindowSubsystem()
         {
             UnregisterClassW(Window::WIN32_WINDOW_CLASS_NAME, instance);
-            UnhookWindowsHookEx(shell_hook);
             delete keyboard_state;
         }
 
@@ -288,6 +263,11 @@ namespace Core
         const Win32PublicDynamicFunctions& WindowSubsystem::GetPublicFunctions() const noexcept
         {
             return public_functions;
+        }
+
+        KeyboardState* WindowSubsystem::GetKeyboardState() const noexcept
+        {
+            return keyboard_state;
         }
 
         HINSTANCE WindowSubsystem::GetInstance() const noexcept

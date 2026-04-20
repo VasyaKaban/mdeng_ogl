@@ -48,7 +48,6 @@ namespace Core
 
         class CORE_API WindowSubsystem final : public Core::WindowSubsystem, Core::NonMovable
         {
-            static LRESULT CALLBACK ShellProc(int code, WPARAM w_param, LPARAM l_param);
         public:
             WindowSubsystem();
 
@@ -67,6 +66,7 @@ namespace Core
             virtual std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key) override;
 
             const Win32PublicDynamicFunctions& GetPublicFunctions() const noexcept;
+            KeyboardState* GetKeyboardState() const noexcept;
 
             HINSTANCE GetInstance() const noexcept;
 
@@ -87,7 +87,6 @@ namespace Core
             Win32PublicDynamicFunctions public_functions;
 
             KeyboardState* keyboard_state;
-            HHOOK shell_hook;
 
             std::queue<Event> events;
         };

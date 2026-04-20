@@ -401,6 +401,11 @@ namespace Core
                             .id = ClassID<MouseWheelEvent>::ID,
                             .window = window});
                     }
+                    case WM_INPUTLANGCHANGE: //yes. we pass it to DefWindowProc
+                    {
+                        window->parent->GetKeyboardState()->UpdateCurrentLayout(
+                            reinterpret_cast<HKL>(l_param));
+                    }
                     default:
                         return DefWindowProcW(handle, message, w_param, l_param);
                         break;
