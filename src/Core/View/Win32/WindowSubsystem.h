@@ -1,7 +1,6 @@
 #pragma once
 
 #include <queue>
-#include <ShellScalingApi.h>
 #include "Core/Utils/DynamicLibrary.h"
 #include "../WindowSubsystem.h"
 #include "Core/View/WindowEvents.h"
@@ -17,7 +16,7 @@ namespace Core
         {
             QueueEvent data;
             ClassIDBase::ClassIDType id;
-            Window* window;
+            void* window; //Display, Window or nullptr(WindowSubsystem)
         };
 
         struct Win32PublicDynamicFunctions
@@ -48,6 +47,14 @@ namespace Core
 
         class CORE_API WindowSubsystem final : public Core::WindowSubsystem, Core::NonMovable
         {
+        private:
+            constexpr static wchar_t WIN32_SERVICE_WINDOW_CLASS_NAME[] =
+                L"WIN32_SERVICE_WINDOW_CLASS";
+
+            static LRESULT CALLBACK Win32ServiceWindowProc(HWND handle,
+                                                           UINT message,
+                                                           WPARAM w_param,
+                                                           LPARAM l_param);
         public:
             WindowSubsystem();
 
@@ -89,7 +96,12 @@ namespace Core
             DynamicLibrary shcore;
             Win32PublicDynamicFunctions public_functions;
 
+            ATOM service_window_class_atom;
+            HWND service_window_handle;
+
             KeyboardState* keyboard_state;
+
+            ATOM window_class_atom;
 
             std::queue<Event> events;
         };

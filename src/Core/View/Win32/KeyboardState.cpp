@@ -445,17 +445,18 @@ namespace Core
                                      .hCursor = nullptr,
                                      .hbrBackground = nullptr,
                                      .lpszMenuName = nullptr,
-                                     .lpszClassName = KeyboardState::CLASS_NAME,
+                                     .lpszClassName =
+                                         KeyboardState::WIN32_KEYBOARD_STATE_CLASS_NAME,
                                      .hIconSm = nullptr};
 
             if(RegisterClassExW(&wnd_class) == 0)
                 Core::System::ThrowLastError();
 
-            window_class = KeyboardState::CLASS_NAME;
+            window_class = KeyboardState::WIN32_KEYBOARD_STATE_CLASS_NAME;
 
             //create raw input window
             service_window_handle = CreateWindowExW(0,
-                                                    KeyboardState::CLASS_NAME,
+                                                    KeyboardState::WIN32_KEYBOARD_STATE_CLASS_NAME,
                                                     nullptr,
                                                     0,
                                                     CW_USEDEFAULT,
@@ -554,7 +555,8 @@ namespace Core
             if(service_window_handle)
             {
                 DestroyWindow(service_window_handle);
-                UnregisterClassW(KeyboardState::CLASS_NAME, parent->GetInstance());
+                UnregisterClassW(KeyboardState::WIN32_KEYBOARD_STATE_CLASS_NAME,
+                                 parent->GetInstance());
             }
         }
 

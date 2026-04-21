@@ -8,6 +8,45 @@ namespace Core
 {
     class Display;
 
+    //WindowSubsystem events
+    struct DisplayAddedEvent
+    {
+        std::uint64_t timestamp_ms;
+        std::shared_ptr<Display>
+            display; //due to the 'flutter' nature of the display object, this event will be connected to WindowSubsystem. Other Display events will belong to the Display object itself
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<DisplayAddedEvent>;
+
+    //Display events
+    struct DisplayRemovedEvent
+    {
+        std::uint64_t timestamp_ms;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<DisplayRemovedEvent>;
+
+    struct DisplayMovedEvent
+    {
+        std::uint64_t timestamp_ms;
+        WindowPosition position;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<DisplayMovedEvent>;
+
+    struct DisplayVideoModeChangedEvent
+    {
+        std::uint64_t timestamp_ms;
+        VideoMode video_mode;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<DisplayVideoModeChangedEvent>;
+
+    struct DisplayScaleChangedEvent
+    {
+        std::uint64_t timestamp_ms;
+        float scale_factor;
+        float display_scale_factor;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<DisplayScaleChangedEvent>;
+
+    //Window events
     struct WindowClosedEvent
     {
         std::uint64_t timestamp_ms;
@@ -17,6 +56,7 @@ namespace Core
     struct WindowDisplayChangedEvent
     {
         std::uint64_t timestamp_ms;
+        std::shared_ptr<Display> display;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowDisplayChangedEvent>;
 
@@ -154,6 +194,11 @@ namespace Core
     //helper for inner subsystem event queue
     union QueueEvent
     {
+        DisplayAddedEvent display_added;
+        DisplayRemovedEvent display_removed;
+        DisplayMovedEvent display_moved;
+        DisplayVideoModeChangedEvent display_video_mode_changed;
+        DisplayScaleChangedEvent display_scale_changed;
         WindowClosedEvent window_closed;
         WindowDisplayChangedEvent window_display_changed;
         WindowMovedEvent window_moved;
@@ -167,34 +212,13 @@ namespace Core
         WindowKeyboardFocusGainEvent window_keyboard_focus_gain;
         WindowKeyboardFocusLeaveEvent window_keyboard_focus_leave;
         MouseButtonPressedEvent mouse_button_pressed;
-        MouseButtonReleasedEvent mouse_buttton_released;
+        MouseButtonReleasedEvent mouse_button_released;
         MouseCursorMoveEvent mouse_cursor_move;
         MouseWheelEvent mouse_wheel;
         KeyboardKeyPressedEvent keyboard_key_pressed;
         KeyboardCharacterPressedEvent keyboard_character_pressed;
         KeyboardKeyReleasedEvent keyboard_key_released;
     };
-
-    //Quit
-    //Close
-    //DisplayChanged
-    //Moved
-    //Resized
-    //Minimized
-    //Maximized
-    //Hide
-    //Show
-    //CursorFocusGain
-    //CursorFocusLeave
-    //KeyboardFocusGain
-    //KeyboardFocusLeave
-    //MouseButtonPressedEvent
-    //MouseButtonReleasedEvent
-    //MouseCursorMoveEvent
-    //MouseWheelEvent
-    //KeyboardKeyPressedEvent
-    //KeyboardCharacterPressedEvent
-    //KeyboardKeyReleasedEvent
 
     std::uint64_t GetEventTimestamp() noexcept;
 };

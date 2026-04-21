@@ -13,7 +13,8 @@ namespace Core
         class CORE_API KeyboardState : Core::NonCopyable
         {
         private:
-            constexpr static wchar_t CLASS_NAME[] = L"WIN32_KEYBOARD_STATE_CLASS";
+            constexpr static wchar_t WIN32_KEYBOARD_STATE_CLASS_NAME[] =
+                L"WIN32_KEYBOARD_STATE_CLASS";
 
             static LRESULT CALLBACK RawInputWindowProc(HWND handle,
                                                        UINT message,

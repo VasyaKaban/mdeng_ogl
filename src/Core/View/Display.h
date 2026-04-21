@@ -4,16 +4,19 @@
 #include <vector>
 #include "Core/API.h"
 #include "View.h"
+#include "Core/Events/Events.h"
 
 namespace Core
 {
     class Window;
 
-    class CORE_API Display
+    class CORE_API Display : protected EventEmitter
     {
-    protected:
-        virtual ~Display() = 0;
     public:
+        using EventEmitter::Connect;
+
+        virtual ~Display() = 0;
+
         virtual std::string GetName() const = 0;
         virtual std::vector<VideoMode> GetVideoModes() const = 0;
         virtual VideoMode GetCurrentVideoMode() const = 0;

@@ -6,6 +6,7 @@
 #    define _CRT_SECURE_NO_WARNINGS
 #    define NOMINMAX
 #    include <Windows.h>
+#    include <ShellScalingApi.h>
 
 #    undef CreateWindow
 #    undef CreateSemaphore
@@ -89,6 +90,8 @@ namespace Core
         [[noreturn]] static void ThrowLastError();
         static std::string WideToUTF8(std::wstring_view wstr);
         static std::wstring UTF8ToWide(std::string_view str);
+
+        static LPCWSTR MakeIntAtomW(ATOM atom) noexcept;
 #endif
     };
 };
