@@ -11,12 +11,18 @@ namespace Core
     namespace Win32
     {
         class Window;
+        class Display;
 
         struct Event
         {
             QueueEvent data;
-            ClassIDBase::ClassIDType id;
-            void* window; //Display, Window or nullptr(WindowSubsystem)
+            std::variant<std::nullptr_t, Window*, std::shared_ptr<Display>> handle;
+        };
+
+        struct DisplayNode
+        {
+            std::shared_ptr<Display> display;
+            bool active; //cached field to mark active and removed displays
         };
 
         struct Win32PublicDynamicFunctions
@@ -47,14 +53,6 @@ namespace Core
 
         class CORE_API WindowSubsystem final : public Core::WindowSubsystem, Core::NonMovable
         {
-        private:
-            constexpr static wchar_t WIN32_SERVICE_WINDOW_CLASS_NAME[] =
-                L"WIN32_SERVICE_WINDOW_CLASS";
-
-            static LRESULT CALLBACK Win32ServiceWindowProc(HWND handle,
-                                                           UINT message,
-                                                           WPARAM w_param,
-                                                           LPARAM l_param);
         public:
             WindowSubsystem();
 
@@ -75,6 +73,8 @@ namespace Core
             virtual KeyboardAccessState GetKeyboardAccessState() override;
             virtual void SetKeyboardAccessState(KeyboardAccessState state) override;
 
+            virtual std::vector<std::shared_ptr<Core::Display>> GetDisplays() override;
+
             const Win32PublicDynamicFunctions& GetPublicFunctions() const noexcept;
             KeyboardState* GetKeyboardState() const noexcept;
 
@@ -83,6 +83,9 @@ namespace Core
             DPI_AWARENESS_CONTEXT GetDPIAwrenessType() const noexcept;
 
             void PushEvent(Event&& event);
+
+            void HandleDisplayChange(bool initial); //initial -> do not emit events
+            std::shared_ptr<Display> GetDisplayByMonitorHandle(HMONITOR handle) const noexcept;
 
             static WindowSubsystem* GetSubsystem() noexcept;
 
@@ -96,12 +99,10 @@ namespace Core
             DynamicLibrary shcore;
             Win32PublicDynamicFunctions public_functions;
 
-            ATOM service_window_class_atom;
-            HWND service_window_handle;
-
             KeyboardState* keyboard_state;
-
             ATOM window_class_atom;
+
+            std::unordered_map<HMONITOR, DisplayNode> displays;
 
             std::queue<Event> events;
         };

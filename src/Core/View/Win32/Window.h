@@ -12,7 +12,7 @@ namespace Core
         class CORE_API Window final : public Core::Window, Core::NonMovable
         {
         public:
-            using EventEmitter::EmitRaw;
+            using EventEmitter::Emit;
 
             constexpr static wchar_t WIN32_WINDOW_CLASS_NAME[] = L"WIN32_WINDOW_CLASS";
 
@@ -43,14 +43,14 @@ namespace Core
 
             virtual WindowSurfaceInfo GetWindowSurfaceInfo() const noexcept override;
 
-            virtual Display* GetDisplay() const noexcept override;
+            virtual std::shared_ptr<Core::Display> GetDisplay() const noexcept override;
             virtual Core::WindowSubsystem* GetParent() const noexcept override;
         private:
             void UpdatePrevWindowedState();
         private:
             WindowSubsystem* parent;
             HWND handle;
-            std::unique_ptr<Display> display;
+            std::shared_ptr<Display> display;
 
             WindowState current_state;
             WindowVisibility current_visibility;

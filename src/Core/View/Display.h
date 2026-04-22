@@ -22,12 +22,21 @@ namespace Core
         virtual VideoMode GetCurrentVideoMode() const = 0;
 
         virtual float GetScaleFactor() const = 0; // return dpi / default_dpi;
-        virtual float GetDisplayScaleFactor() const = 0; // return scaled_resolution / resolution;
+        /*
+        HIDPI handling:
+        100 -> 800x600, 1
+        200 -> 1600x1200, 2
+        150 -> (1600x600 / 2 * 1.5) 1200x900, 1.5
+
+        (window resolution / current window scale factor(inner user)) * scale factor
+        current window scale factor(inner user) = scale factor
+        
+        */
 
         virtual void SetVideoMode(std::uint32_t index) = 0;
 
         virtual WindowPosition GetPosition() const = 0;
 
-        virtual Window* GetParent() const noexcept = 0;
+        virtual WindowSubsystem* GetParent() const noexcept = 0;
     };
 };

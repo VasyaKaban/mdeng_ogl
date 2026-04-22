@@ -91,30 +91,36 @@ namespace Core
                 switch(message)
                 {
                     case WM_CLOSE:
-                        win_sys->PushEvent(Event{
-                            .data = {.window_closed =
-                                         WindowClosedEvent{.timestamp_ms = GetEventTimestamp()}},
-                            .id = ClassID<WindowClosedEvent>::ID,
-                            .window = window});
+
+                        win_sys->PushEvent(
+                            Event{.data = WindowClosedEvent{.timestamp_ms = GetEventTimestamp()},
+                                  .handle = window});
                         break;
                     case WM_DISPLAYCHANGE:
+                    {
                         if(window->handle) //prevent WM_CREATE
                             window->UpdatePrevWindowedState();
 
-                        window->display.reset(new Display(
-                            window,
-                            MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST)));
+                        win_sys->HandleDisplayChange(false);
 
-                        win_sys->PushEvent(
-                            Event{.data = {.window_display_changed =
-                                               WindowDisplayChangedEvent{.timestamp_ms =
-                                                                             GetEventTimestamp()}},
-                                  .id = ClassID<WindowDisplayChangedEvent>::ID,
-                                  .window = window});
-                        break;
+                        HMONITOR new_monitor_handle =
+                            MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST);
+                        if(window->display.get() != nullptr &&
+                           new_monitor_handle !=
+                               window->display.get()->GetHandle()) //update display
+                        {
+                            window->display =
+                                win_sys->GetDisplayByMonitorHandle(new_monitor_handle);
+
+                            win_sys->PushEvent(Event{.data = WindowDisplayChangedEvent{
+                                                         .timestamp_ms = GetEventTimestamp(),
+                                                         .display = window->display}});
+                        }
+                    }
+                    break;
                     case WM_DPICHANGED:
                     {
-                        auto awareness_type = static_cast<WindowSubsystem*>(window->GetParent())
+                        /*auto awareness_type = static_cast<WindowSubsystem*>(window->GetParent())
                                                   ->GetDPIAwrenessType();
 
                         if(awareness_type == DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE ||
@@ -125,11 +131,9 @@ namespace Core
                                 MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST)));
 
                             win_sys->PushEvent(
-                                Event{.data = {.window_display_changed =
-                                                   WindowDisplayChangedEvent{
-                                                       .timestamp_ms = GetEventTimestamp()}},
-                                      .id = ClassID<WindowDisplayChangedEvent>::ID,
-                                      .window = window});
+                                Event{.data = WindowDisplayChangedEvent{.timestamp_ms =
+                                                                            GetEventTimestamp()},
+                                      .handle = window});
 
                             RECT* rect = reinterpret_cast<RECT*>(l_param);
 
@@ -142,19 +146,17 @@ namespace Core
                                          SWP_NOZORDER | SWP_NOACTIVATE);
 
                             window->UpdatePrevWindowedState();
-                        }
+                        }*/
                     }
                     break;
                     case WM_MOVE:
                     {
                         win_sys->PushEvent(Event{
-                            .data = {.window_moved =
-                                         WindowMovedEvent{
-                                             .timestamp_ms = GetEventTimestamp(),
-                                             .position = WindowPosition{.x = LOWORD(l_param),
-                                                                        .y = HIWORD(l_param)}}},
-                            .id = ClassID<WindowMovedEvent>::ID,
-                            .window = window});
+                            .data =
+                                WindowMovedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                 .position = WindowPosition{.x = LOWORD(l_param),
+                                                                            .y = HIWORD(l_param)}},
+                            .handle = window});
                     }
                     break;
                     case WM_SIZE:
@@ -164,35 +166,27 @@ namespace Core
 
                         if(w_param == SIZE_MAXIMIZED)
                         {
-                            win_sys->PushEvent(
-                                Event{.data = {.window_maximized =
-                                                   WindowMaximizedEvent{
-                                                       .timestamp_ms = GetEventTimestamp(),
-                                                       .resolution = resolution,
-                                                       .scaled_resolution = resolution}},
-                                      .id = ClassID<WindowMaximizedEvent>::ID,
-                                      .window = window});
+                            win_sys->PushEvent(Event{
+                                .data = WindowMaximizedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                             .resolution = resolution,
+                                                             .scaled_resolution = resolution},
+                                .handle = window});
                         }
                         else if(w_param == SIZE_MINIMIZED)
                         {
-                            win_sys->PushEvent(
-                                Event{.data = {.window_minimized =
-                                                   WindowMinimizedEvent{
-                                                       .timestamp_ms = GetEventTimestamp(),
-                                                       .resolution = resolution,
-                                                       .scaled_resolution = resolution}},
-                                      .id = ClassID<WindowMinimizedEvent>::ID,
-                                      .window = window});
+                            win_sys->PushEvent(Event{
+                                .data = WindowMinimizedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                             .resolution = resolution,
+                                                             .scaled_resolution = resolution},
+                                .handle = window});
                         }
                         else
                         {
                             win_sys->PushEvent(Event{
-                                .data = {.window_resized =
-                                             WindowResizedEvent{.timestamp_ms = GetEventTimestamp(),
-                                                                .resolution = resolution,
-                                                                .scaled_resolution = resolution}},
-                                .id = ClassID<WindowResizedEvent>::ID,
-                                .window = window});
+                                .data = WindowResizedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                           .resolution = resolution,
+                                                           .scaled_resolution = resolution},
+                                .handle = window});
                         }
                     }
                     break;
@@ -202,22 +196,17 @@ namespace Core
                         {
                             window->current_visibility = WindowVisibility::Shown;
 
-                            win_sys->PushEvent(Event{
-                                .data = {.window_shown =
-                                             WindowShownEvent{.timestamp_ms = GetEventTimestamp()}},
-                                .id = ClassID<WindowShownEvent>::ID,
-                                .window = window});
+                            win_sys->PushEvent(
+                                Event{.data = WindowShownEvent{.timestamp_ms = GetEventTimestamp()},
+                                      .handle = window});
                         }
                         else if(w_param == FALSE)
                         {
                             window->current_visibility = WindowVisibility::Hidden;
 
-                            win_sys->PushEvent(
-                                Event{.data = {.window_hidden =
-                                                   WindowHiddenEvent{.timestamp_ms =
-                                                                         GetEventTimestamp()}},
-                                      .id = ClassID<WindowHiddenEvent>::ID,
-                                      .window = window});
+                            win_sys->PushEvent(Event{
+                                .data = WindowHiddenEvent{.timestamp_ms = GetEventTimestamp()},
+                                .handle = window});
                         }
                     }
                     break;
@@ -237,27 +226,23 @@ namespace Core
 
                             window->mouse_focused = true;
 
-                            win_sys->PushEvent(
-                                Event{.data = {.window_cursor_focus_gain =
-                                                   WindowCursorFocusGainEvent{
-                                                       .timestamp_ms = GetEventTimestamp(),
-                                                       .buttons = buttons,
-                                                       .cursor_position =
-                                                           GetRelativeCursorPosition(l_param)}},
-                                      .id = ClassID<WindowCursorFocusGainEvent>::ID,
-                                      .window = window});
+                            win_sys->PushEvent(Event{
+                                .data =
+                                    WindowCursorFocusGainEvent{
+                                        .timestamp_ms = GetEventTimestamp(),
+                                        .buttons = buttons,
+                                        .cursor_position = GetRelativeCursorPosition(l_param)},
+                                .handle = window});
                         }
                         else if(message == WM_MOUSEMOVE) //common move
                         {
-                            win_sys->PushEvent(
-                                Event{.data = {.mouse_cursor_move =
-                                                   MouseCursorMoveEvent{
-                                                       .timestamp_ms = GetEventTimestamp(),
-                                                       .buttons = buttons,
-                                                       .cursor_position =
-                                                           GetRelativeCursorPosition(l_param)}},
-                                      .id = ClassID<MouseCursorMoveEvent>::ID,
-                                      .window = window});
+                            win_sys->PushEvent(Event{
+                                .data =
+                                    MouseCursorMoveEvent{.timestamp_ms = GetEventTimestamp(),
+                                                         .buttons = buttons,
+                                                         .cursor_position =
+                                                             GetRelativeCursorPosition(l_param)},
+                                .handle = window});
                         }
                     }
                     break;
@@ -266,31 +251,25 @@ namespace Core
                         window->mouse_focused = false;
 
                         win_sys->PushEvent(
-                            Event{.data = {.window_cursor_focus_leave =
-                                               WindowCursorFocusLeaveEvent{
-                                                   .timestamp_ms = GetEventTimestamp()}},
-                                  .id = ClassID<WindowCursorFocusLeaveEvent>::ID,
-                                  .window = window});
+                            Event{.data = WindowCursorFocusLeaveEvent{.timestamp_ms =
+                                                                          GetEventTimestamp()},
+                                  .handle = window});
                     }
                     break;
                     case WM_SETFOCUS:
                     {
                         win_sys->PushEvent(
-                            Event{.data = {.window_keyboard_focus_gain =
-                                               WindowKeyboardFocusGainEvent{
-                                                   .timestamp_ms = GetEventTimestamp()}},
-                                  .id = ClassID<WindowKeyboardFocusGainEvent>::ID,
-                                  .window = window});
+                            Event{.data = WindowKeyboardFocusGainEvent{.timestamp_ms =
+                                                                           GetEventTimestamp()},
+                                  .handle = window});
                     }
                     break;
                     case WM_KILLFOCUS:
                     {
                         win_sys->PushEvent(
-                            Event{.data = {.window_keyboard_focus_leave =
-                                               WindowKeyboardFocusLeaveEvent{
-                                                   .timestamp_ms = GetEventTimestamp()}},
-                                  .id = ClassID<WindowKeyboardFocusLeaveEvent>::ID,
-                                  .window = window});
+                            Event{.data = WindowKeyboardFocusLeaveEvent{.timestamp_ms =
+                                                                            GetEventTimestamp()},
+                                  .handle = window});
                     }
                     break;
                     case WM_LBUTTONDOWN:
@@ -331,16 +310,13 @@ namespace Core
                                 break;
                         }
 
-                        win_sys->PushEvent(
-                            Event{.data = {.mouse_button_pressed =
-                                               MouseButtonPressedEvent{
-                                                   .timestamp_ms = GetEventTimestamp(),
-                                                   .button = button,
-                                                   .clicks = clicks,
-                                                   .cursor_position =
-                                                       GetRelativeCursorPosition(l_param)}},
-                                  .id = ClassID<MouseButtonPressedEvent>::ID,
-                                  .window = window});
+                        win_sys->PushEvent(Event{
+                            .data = MouseButtonPressedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                            .button = button,
+                                                            .clicks = clicks,
+                                                            .cursor_position =
+                                                                GetRelativeCursorPosition(l_param)},
+                            .handle = window});
                     }
                     break;
                     case WM_LBUTTONUP:
@@ -369,14 +345,12 @@ namespace Core
                         }
 
                         win_sys->PushEvent(
-                            Event{.data = {.mouse_buttton_released =
-                                               MouseButtonReleasedEvent{
-                                                   .timestamp_ms = GetEventTimestamp(),
-                                                   .button = button,
-                                                   .cursor_position =
-                                                       GetRelativeCursorPosition(l_param)}},
-                                  .id = ClassID<MouseButtonReleasedEvent>::ID,
-                                  .window = window});
+                            Event{.data =
+                                      MouseButtonReleasedEvent{
+                                          .timestamp_ms = GetEventTimestamp(),
+                                          .button = button,
+                                          .cursor_position = GetRelativeCursorPosition(l_param)},
+                                  .handle = window});
                     }
                     break;
                     case WM_MOUSEWHEEL:
@@ -388,18 +362,16 @@ namespace Core
                         MouseButtonFlags buttons =
                             GetMouseButtonsFlags(GET_KEYSTATE_WPARAM(w_param));
 
-                        win_sys->PushEvent(Event{
-                            .data = {.mouse_wheel =
-                                         MouseWheelEvent{
-                                             .timestamp_ms = GetEventTimestamp(),
-                                             .buttons = buttons,
-                                             .cursor_position =
-                                                 GetRelativeTranslatedCursorPosition(handle,
-                                                                                     l_param),
-                                             .x_scroll = (message == WM_MOUSEHWHEEL ? delta : 0),
-                                             .y_scroll = (message == WM_MOUSEWHEEL ? delta : 0)}},
-                            .id = ClassID<MouseWheelEvent>::ID,
-                            .window = window});
+                        win_sys->PushEvent(
+                            Event{.data =
+                                      MouseWheelEvent{
+                                          .timestamp_ms = GetEventTimestamp(),
+                                          .buttons = buttons,
+                                          .cursor_position =
+                                              GetRelativeTranslatedCursorPosition(handle, l_param),
+                                          .x_scroll = (message == WM_MOUSEHWHEEL ? delta : 0),
+                                          .y_scroll = (message == WM_MOUSEWHEEL ? delta : 0)},
+                                  .handle = window});
                     }
                     case WM_ACTIVATEAPP:
                     {
@@ -441,33 +413,36 @@ namespace Core
                 Core::System::ThrowLastError();
 
             auto title = Core::System::UTF8ToWide(info.title);
-            HWND _handle = CreateWindowExW(ex_style,
-                                           WIN32_WINDOW_CLASS_NAME,
-                                           title.data(),
-                                           style,
-                                           CW_USEDEFAULT,
-                                           CW_USEDEFAULT,
-                                           rect.right - rect.left,
-                                           rect.bottom - rect.top,
-                                           nullptr,
-                                           nullptr,
-                                           parent->GetInstance(),
-                                           &data);
+            handle = CreateWindowExW(ex_style,
+                                     WIN32_WINDOW_CLASS_NAME,
+                                     title.data(),
+                                     style,
+                                     CW_USEDEFAULT,
+                                     CW_USEDEFAULT,
+                                     rect.right - rect.left,
+                                     rect.bottom - rect.top,
+                                     nullptr,
+                                     nullptr,
+                                     parent->GetInstance(),
+                                     &data);
 
-            if(_handle == nullptr)
+            if(handle == nullptr)
                 Core::System::ThrowLastError();
 
-            this->handle = _handle;
-
             Core::ScopedCall cleanup(
-                [&_handle]()
+                [this]()
                 {
-                    DestroyWindow(_handle);
+                    DestroyWindow(handle);
                 });
 
-            display.reset(new Display(this, MonitorFromWindow(_handle, MONITOR_DEFAULTTONEAREST)));
+            display = parent->GetDisplayByMonitorHandle(
+                MonitorFromWindow(handle, MONITOR_DEFAULTTONEAREST));
 
-            this->SetState(info.state);
+            parent->PushEvent(
+                Event{.data = WindowDisplayChangedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                        .display = display}});
+
+            SetState(info.state);
             if(info.state == WindowState::Windowed)
                 UpdatePrevWindowedState();
 
@@ -698,9 +673,9 @@ namespace Core
             return Render::Win32SurfaceInfo{.instance = parent->GetInstance(), .window = handle};
         }
 
-        Display* Window::GetDisplay() const noexcept
+        std::shared_ptr<Core::Display> Window::GetDisplay() const noexcept
         {
-            return display.get();
+            return display;
         }
 
         Core::WindowSubsystem* Window::GetParent() const noexcept

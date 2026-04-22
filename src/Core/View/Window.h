@@ -33,7 +33,7 @@ namespace Core
 
         virtual WindowSurfaceInfo GetWindowSurfaceInfo() const noexcept = 0;
 
-        virtual Display* GetDisplay() const noexcept = 0;
+        virtual std::shared_ptr<Display> GetDisplay() const noexcept = 0;
         virtual WindowSubsystem* GetParent() const noexcept = 0;
     };
 };

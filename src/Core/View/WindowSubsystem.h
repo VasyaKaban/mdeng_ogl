@@ -27,5 +27,7 @@ namespace Core
 
         virtual KeyboardAccessState GetKeyboardAccessState() = 0;
         virtual void SetKeyboardAccessState(KeyboardAccessState state) = 0;
+
+        virtual std::vector<std::shared_ptr<Display>> GetDisplays() = 0;
     };
 };

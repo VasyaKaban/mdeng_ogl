@@ -11,12 +11,25 @@ namespace Core
 {
     namespace Win32
     {
-        class Window;
+        class WindowSubsystem;
 
-        class CORE_API Display final : public Core::Display, Core::NonCopyable, Core::NonMovable
+        using DisplayChangesFlags = std::uint32_t;
+        namespace DisplayChangesFlagBits
+        {
+            enum : DisplayChangesFlags
+            {
+                ScaleFactor = 1 << 0,
+                VideoMode = 1 << 1,
+                Position = 1 << 2
+            };
+        };
+
+        class CORE_API Display final : public Core::Display, Core::NonMovable
         {
         public:
-            Display(Window* _parent, HMONITOR _handle);
+            using EventEmitter::Emit;
+
+            Display(WindowSubsystem* _parent, HMONITOR _handle);
 
             virtual ~Display() override;
 
@@ -25,18 +38,26 @@ namespace Core
             virtual VideoMode GetCurrentVideoMode() const override;
 
             virtual float GetScaleFactor() const override; // return dpi / default_dpi;
-            virtual float GetDisplayScaleFactor() const override; //always 1.0f
 
             virtual void SetVideoMode(std::uint32_t index) override;
 
             virtual WindowPosition GetPosition() const override;
 
-            virtual Core::Window* GetParent() const noexcept override;
+            virtual Core::WindowSubsystem* GetParent() const noexcept override;
+
+            DisplayChangesFlags Update();
+            HMONITOR GetHandle() const noexcept;
+            const wchar_t* GetDeviceName() const noexcept;
         private:
-            Window* parent;
+            WindowSubsystem* parent;
             HMONITOR handle;
 
+            std::uint32_t dpi;
+            VideoMode video_mode;
+            WindowPosition position;
+
             std::vector<DEVMODEW> dev_modes;
+            std::vector<VideoMode> video_modes;
             std::array<wchar_t, CCHDEVICENAME> device_name;
             std::string device_description;
         };

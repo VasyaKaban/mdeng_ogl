@@ -514,7 +514,7 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowDisplayChangedEvent>(
             [window = window.get()](const Core::WindowDisplayChangedEvent& event)
             {
-                Core::Display* display = window->GetDisplay();
+                auto display = event.display;
                 auto video_mode = display->GetCurrentVideoMode();
 
                 /*std::cout << std::format(
@@ -872,9 +872,8 @@ int EntryPoint(std::span<const std::string_view> arguments)
             nullptr,
             Core::EventHandlerState::Enabled);
 
-        Core::Display* display = window->GetDisplay();
+        auto display = window->GetDisplay();
         std::cerr << std::format("Display: {}\n", display->GetName());
-        std::cerr << std::format("Display scale factor: {}\n", display->GetDisplayScaleFactor());
         std::cerr << std::format("Scale factor: {}\n", display->GetScaleFactor());
 
         auto video_mode = display->GetCurrentVideoMode();

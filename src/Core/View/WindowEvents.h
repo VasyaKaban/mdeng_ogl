@@ -42,7 +42,6 @@ namespace Core
     {
         std::uint64_t timestamp_ms;
         float scale_factor;
-        float display_scale_factor;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<DisplayScaleChangedEvent>;
 
@@ -192,33 +191,30 @@ namespace Core
     CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardKeyReleasedEvent>;
 
     //helper for inner subsystem event queue
-    union QueueEvent
-    {
-        DisplayAddedEvent display_added;
-        DisplayRemovedEvent display_removed;
-        DisplayMovedEvent display_moved;
-        DisplayVideoModeChangedEvent display_video_mode_changed;
-        DisplayScaleChangedEvent display_scale_changed;
-        WindowClosedEvent window_closed;
-        WindowDisplayChangedEvent window_display_changed;
-        WindowMovedEvent window_moved;
-        WindowResizedEvent window_resized;
-        WindowMinimizedEvent window_minimized;
-        WindowMaximizedEvent window_maximized;
-        WindowHiddenEvent window_hidden;
-        WindowShownEvent window_shown;
-        WindowCursorFocusGainEvent window_cursor_focus_gain;
-        WindowCursorFocusLeaveEvent window_cursor_focus_leave;
-        WindowKeyboardFocusGainEvent window_keyboard_focus_gain;
-        WindowKeyboardFocusLeaveEvent window_keyboard_focus_leave;
-        MouseButtonPressedEvent mouse_button_pressed;
-        MouseButtonReleasedEvent mouse_button_released;
-        MouseCursorMoveEvent mouse_cursor_move;
-        MouseWheelEvent mouse_wheel;
-        KeyboardKeyPressedEvent keyboard_key_pressed;
-        KeyboardCharacterPressedEvent keyboard_character_pressed;
-        KeyboardKeyReleasedEvent keyboard_key_released;
-    };
+    using QueueEvent = std::variant<DisplayAddedEvent,
+                                    DisplayRemovedEvent,
+                                    DisplayMovedEvent,
+                                    DisplayVideoModeChangedEvent,
+                                    DisplayScaleChangedEvent,
+                                    WindowClosedEvent,
+                                    WindowDisplayChangedEvent,
+                                    WindowMovedEvent,
+                                    WindowResizedEvent,
+                                    WindowMinimizedEvent,
+                                    WindowMaximizedEvent,
+                                    WindowHiddenEvent,
+                                    WindowShownEvent,
+                                    WindowCursorFocusGainEvent,
+                                    WindowCursorFocusLeaveEvent,
+                                    WindowKeyboardFocusGainEvent,
+                                    WindowKeyboardFocusLeaveEvent,
+                                    MouseButtonPressedEvent,
+                                    MouseButtonReleasedEvent,
+                                    MouseCursorMoveEvent,
+                                    MouseWheelEvent,
+                                    KeyboardKeyPressedEvent,
+                                    KeyboardCharacterPressedEvent,
+                                    KeyboardKeyReleasedEvent>;
 
     std::uint64_t GetEventTimestamp() noexcept;
 };

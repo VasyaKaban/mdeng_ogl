@@ -16,75 +16,9 @@ namespace Core
             BOOL (*SetProcessDPIAware)();
         };
 
-        LRESULT CALLBACK WindowSubsystem::Win32ServiceWindowProc(HWND handle,
-                                                                 UINT message,
-                                                                 WPARAM w_param,
-                                                                 LPARAM l_param)
-        {
-            switch(message)
-            {
-                case WM_CREATE:
-                {
-                    WindowSubsystem* win_sys = reinterpret_cast<WindowSubsystem*>(
-                        reinterpret_cast<CREATESTRUCTW*>(l_param));
-
-                    Core::System::SetLastError(ERROR_SUCCESS);
-                    auto res = SetWindowLongPtrW(handle,
-                                                 GWLP_USERDATA,
-                                                 reinterpret_cast<LONG_PTR>(win_sys));
-                    if(res == 0) //possible error
-                    {
-                        if(Core::System::GetLastError() != ERROR_SUCCESS) //error
-                            return -1;
-                    }
-                }
-                break;
-                case WM_DISPLAYCHANGE:
-                {
-#error QueueEvent as std::variant and remove id -> we can get it from std::get(variant)
-#error MAYBE HANDLE WM_DISPLAYCHANGE IN EACH NON-SERVICE WINDOW?? THERE IS NO STRICT ORDER OF BROADCAST MESSAGES SO IF WE HAVE 1000 WINDOWS WE WILL CREATE 1000 DISPLAY UPDATES...
-                    //enumerate all HMONITOR handles
-                    //find all removed and added displays
-                    //update list of active displays
-                    //for each added display emit DisplayAddedEvent
-                    //for each removed display emit DisplayRemovedEvent
-                    //for each remain displays(non-new) check position, video mode and scale
-                    //on position emit DisplayMovedEvent
-                    //on video mode emit DisplayVideoModeChangedEvent
-                    //on scale emit DisplayScaleChangedEvent
-                    //for each window check current HMONITOR handle and prev and if changed emit WindowDisplayChangedEvent
-
-                    /*
-                    Check that monitor arrived:
-                    if not find HMONIUTOR in monitors:
-                        Add();
-                    else:
-                        get szDevice
-                        compare szDevice of new and old:
-                        if same:
-                            check inner properties and emit cghanges if needed:
-                        else:
-                            remove old and add new
-                    */
-
-#error TODO! -> ADD LIST OF ACTIVE DISPLAYS AND WINDOWS
-#error DO NOT EXPLICITLY EMIT EVENTS IN DISPLAY FUNCTIONS(THEY WILL BE EMITTED ON THIS WM_DISPLAYCHANGE)
-#error IN WINDOW'S WM_DPICHANGED ONLY SetWindowPos(or not??? -> maybe delegate it to the user??? also think about fullscreen mode)
-                }
-                break;
-                default:
-                    return DefWindowProcW(handle, message, w_param, l_param);
-                    break;
-            }
-
-            return 0;
-        }
-
         WindowSubsystem::WindowSubsystem()
             : instance(nullptr),
               public_functions{},
-              service_window_class_atom(0),
-              service_window_handle(nullptr),
               keyboard_state(nullptr),
               window_class_atom(0)
         {
@@ -220,50 +154,7 @@ namespace Core
 
                     if(keyboard_state)
                         delete keyboard_state;
-
-                    if(service_window_handle)
-                        DestroyWindow(service_window_handle);
-
-                    if(service_window_class_atom)
-                        UnregisterClassW(MAKEINTATOM(service_window_class_atom), instance);
                 });
-
-            //register service window class
-            WNDCLASSEXW service_wnd_class = {.cbSize = sizeof(WNDCLASSEXW),
-                                             .style = 0,
-                                             .lpfnWndProc = WindowSubsystem::Win32ServiceWindowProc,
-                                             .cbClsExtra = 0,
-                                             .cbWndExtra = 0,
-                                             .hInstance = instance,
-                                             .hIcon = nullptr,
-                                             .hCursor = nullptr,
-                                             .hbrBackground = nullptr,
-                                             .lpszMenuName = nullptr,
-                                             .lpszClassName =
-                                                 WindowSubsystem::WIN32_SERVICE_WINDOW_CLASS_NAME,
-                                             .hIconSm = nullptr};
-
-            if(service_window_class_atom = RegisterClassExW(&service_wnd_class);
-               service_window_class_atom == 0)
-                Core::System::ThrowLastError();
-
-            //create service window
-            service_window_handle =
-                CreateWindowExW(0,
-                                WindowSubsystem::WIN32_SERVICE_WINDOW_CLASS_NAME,
-                                nullptr,
-                                0,
-                                CW_USEDEFAULT,
-                                CW_USEDEFAULT,
-                                0,
-                                0,
-                                nullptr,
-                                nullptr,
-                                instance,
-                                this);
-
-            if(service_window_handle == nullptr)
-                Core::System::ThrowLastError();
 
             keyboard_state = new KeyboardState(this);
 
@@ -284,6 +175,8 @@ namespace Core
             if(window_class_atom = RegisterClassExW(&wnd_class); window_class_atom == 0)
                 Core::System::ThrowLastError();
 
+            HandleDisplayChange(true); //add existing displays
+
             cleanup.Drop();
 
             SUBSYSTEM = this;
@@ -293,8 +186,6 @@ namespace Core
         {
             UnregisterClassW(MAKEINTATOM(window_class_atom), instance);
             delete keyboard_state;
-            DestroyWindow(service_window_handle);
-            UnregisterClassW(MAKEINTATOM(service_window_class_atom), instance);
         }
 
         void WindowSubsystem::PollEvents()
@@ -317,7 +208,26 @@ namespace Core
                 const auto& event = events.front();
                 try
                 {
-                    event.window->EmitRaw(event.id, static_cast<const void*>(&event.data));
+                    std::visit(
+                        [this, &handle = event.handle]<typename T>(const T& data)
+                        {
+                            if constexpr(std::same_as<DisplayAddedEvent, T>)
+                            {
+                                this->Emit(data);
+                            }
+                            else if constexpr(std::same_as<DisplayRemovedEvent, T> ||
+                                              std::same_as<DisplayMovedEvent, T> ||
+                                              std::same_as<DisplayVideoModeChangedEvent, T> ||
+                                              std::same_as<DisplayScaleChangedEvent, T>)
+                            {
+                                std::get<std::shared_ptr<Display>>(handle)->Emit(data);
+                            }
+                            else
+                            {
+                                std::get<Window*>(handle)->Emit(data);
+                            }
+                        },
+                        event.data);
                     events.pop();
                 }
                 catch(...)
@@ -376,6 +286,17 @@ namespace Core
             keyboard_state->SetKeyboardAccessState(state);
         }
 
+        std::vector<std::shared_ptr<Core::Display>> WindowSubsystem::GetDisplays()
+        {
+            std::vector<std::shared_ptr<Core::Display>> out;
+            out.reserve(displays.size());
+
+            for(const auto& [_, node]: displays)
+                out.push_back(node.display);
+
+            return out;
+        }
+
         const Win32PublicDynamicFunctions& WindowSubsystem::GetPublicFunctions() const noexcept
         {
             return public_functions;
@@ -399,6 +320,118 @@ namespace Core
         void WindowSubsystem::PushEvent(Event&& event)
         {
             events.push(std::move(event));
+        }
+
+        void WindowSubsystem::HandleDisplayChange(bool initial)
+        {
+            //reset active states for current displays
+            for(auto& [_, node]: displays)
+                node.active = false;
+
+#pragma message("Maybe check szDevice???")
+            /*
+            std::unordered_map<HMONITOR, DisplayNode(Display, wchar_t[32] name)> old + new;
+
+
+            collect new displays
+            for each old display:
+                if handle found:
+                    if same names:
+                        check updates
+                    else:
+                        erase old
+                else:
+                    erase old
+            
+            */
+
+            //enumerate all HMONITOR handles
+            EnumDisplayMonitors(
+                nullptr,
+                nullptr,
+                [](HMONITOR handle, HDC dc, LPRECT rect, LPARAM data) -> BOOL
+                {
+                    WindowSubsystem* win_sys = reinterpret_cast<WindowSubsystem*>(data);
+                    auto [it, inserted] = win_sys->displays.insert(
+                        std::pair{handle, DisplayNode{.display = {}, .active = true}});
+                    if(!inserted) //already exists -> mark as active
+                        it->second.active = true;
+
+                    return TRUE;
+                },
+                reinterpret_cast<LPARAM>(this));
+
+            //firstly add displays
+            //secondly update display properties
+            for(auto& [handle, node]: displays)
+            {
+                if(!node.active)
+                    continue;
+
+                if(node.display.get() == nullptr) //new display
+                {
+                    node.display.reset(new Display(this, handle));
+                    if(initial)
+                    {
+                        events.push(
+                            Event{.data = DisplayAddedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                            .display = node.display},
+                                  .handle = nullptr});
+                    }
+                }
+                else //remain display -> check changed properties
+                {
+                    //on position emit DisplayMovedEvent
+                    //on video mode emit DisplayVideoModeChangedEvent
+                    //on scale emit DisplayScaleChangedEvent
+
+                    auto flags = node.display->Update();
+                    if(flags & DisplayChangesFlagBits::Position)
+                    {
+                        events.push(Event{
+                            .data = DisplayMovedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                      .position = node.display->GetPosition()},
+                            .handle = node.display});
+                    }
+                    else if(flags & DisplayChangesFlagBits::VideoMode)
+                    {
+                        events.push(
+                            Event{.data =
+                                      DisplayVideoModeChangedEvent{
+                                          .timestamp_ms = GetEventTimestamp(),
+                                          .video_mode = node.display->GetCurrentVideoMode()},
+                                  .handle = node.display});
+                    }
+                    else if(flags & DisplayChangesFlagBits::ScaleFactor)
+                    {
+                        events.push(Event{
+                            .data = DisplayScaleChangedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                             .scale_factor =
+                                                                 node.display->GetScaleFactor()},
+                            .handle = node.display});
+                    }
+                }
+            }
+
+            //finally remove displays so we can update window's display in handler
+            for(auto it = displays.begin(); it != displays.end(); it++)
+            {
+                const auto& [_, node] = *it;
+
+                if(node.active)
+                    continue;
+
+                events.push(Event{.data = DisplayRemovedEvent{.timestamp_ms = GetEventTimestamp()},
+                                  .handle = node.display});
+
+                displays.erase(it);
+            }
+        }
+
+        std::shared_ptr<Display>
+        WindowSubsystem::GetDisplayByMonitorHandle(HMONITOR handle) const noexcept
+        {
+            return displays.find(handle)->second.display;
         }
 
         WindowSubsystem* WindowSubsystem::GetSubsystem() noexcept

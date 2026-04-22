@@ -340,27 +340,25 @@ namespace Core
                             {
                                 if(is_pressed)
                                 {
-                                    state->parent->PushEvent(Event{
-                                        .data = {.keyboard_key_pressed =
-                                                     KeyboardKeyPressedEvent{
-                                                         .timestamp_ms = GetEventTimestamp(),
-                                                         .scancode = scancode,
-                                                         .key = key,
-                                                         .modifiers = state->GetModifierFlags()}},
-                                        .id = ClassID<KeyboardKeyPressedEvent>::ID,
-                                        .window = window});
+                                    state->parent->PushEvent(
+                                        Event{.data =
+                                                  KeyboardKeyPressedEvent{
+                                                      .timestamp_ms = GetEventTimestamp(),
+                                                      .scancode = scancode,
+                                                      .key = key,
+                                                      .modifiers = state->GetModifierFlags()},
+                                              .handle = window});
                                 }
                                 else
                                 {
-                                    state->parent->PushEvent(Event{
-                                        .data = {.keyboard_key_released =
-                                                     KeyboardKeyReleasedEvent{
-                                                         .timestamp_ms = GetEventTimestamp(),
-                                                         .scancode = scancode,
-                                                         .key = key,
-                                                         .modifiers = state->GetModifierFlags()}},
-                                        .id = ClassID<KeyboardKeyReleasedEvent>::ID,
-                                        .window = window});
+                                    state->parent->PushEvent(
+                                        Event{.data =
+                                                  KeyboardKeyReleasedEvent{
+                                                      .timestamp_ms = GetEventTimestamp(),
+                                                      .scancode = scancode,
+                                                      .key = key,
+                                                      .modifiers = state->GetModifierFlags()},
+                                              .handle = window});
                                 }
                             }
 
@@ -391,14 +389,13 @@ namespace Core
 
                                     if(window)
                                     {
-                                        state->parent->PushEvent(Event{
-                                            .data = {.keyboard_character_pressed =
-                                                         KeyboardCharacterPressedEvent{
-                                                             .timestamp_ms = GetEventTimestamp(),
-                                                             .modifiers = state->GetModifierFlags(),
-                                                             .utf32_char = utf32}},
-                                            .id = ClassID<KeyboardCharacterPressedEvent>::ID,
-                                            .window = window});
+                                        state->parent->PushEvent(
+                                            Event{.data =
+                                                      KeyboardCharacterPressedEvent{
+                                                          .timestamp_ms = GetEventTimestamp(),
+                                                          .modifiers = state->GetModifierFlags(),
+                                                          .utf32_char = utf32},
+                                                  .handle = window});
                                     }
                                 }
                             }

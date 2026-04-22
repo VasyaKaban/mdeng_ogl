@@ -58,3 +58,4 @@ INFO:
     Display as shared_ptr
     When display is being removed we should set it's HMONITOR handle to nullptr -> marks that Displayhas been removed
     If we receive WM_DISPLAYCHANGED we should both emit event if there is new display or rremoved display and also emit ConfigurationChanged with virtual display resolution and position
+* [Render] add methods to get CreateInfo struct from each objects
