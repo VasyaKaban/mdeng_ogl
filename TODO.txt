@@ -52,3 +52,9 @@ INFO:
 * One-value enums as enum class; Flags as Flags using + non-scoped enum inside namespace with FlagBits postfix
 * When we change video mode of one monitor we receive diplsyachange event. So we must change position and prev window rect for window also in fullscreen mode
 * [Render] add methods to get CreateInfo struct from each objects
+* Window fullscreen:
+    - from windowed to fullscreen -> save prev and go to fullscreen
+    - from fullscreen to windowed -> read prev and go to windowed
+    - every move and resize save prev 
+    - if fullscreen is moved or resized -> deny
+    - if fullscreen changed displays -> accept move or resize and set fullscreen of new display
