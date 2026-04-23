@@ -70,7 +70,6 @@ namespace Core
     {
         std::uint64_t timestamp_ms;
         WindowResolution resolution;
-        WindowResolution scaled_resolution;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowResizedEvent>;
 
@@ -78,7 +77,6 @@ namespace Core
     {
         std::uint64_t timestamp_ms;
         WindowResolution resolution;
-        WindowResolution scaled_resolution;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowMinimizedEvent>;
 
@@ -86,7 +84,6 @@ namespace Core
     {
         std::uint64_t timestamp_ms;
         WindowResolution resolution;
-        WindowResolution scaled_resolution;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowMaximizedEvent>;
 

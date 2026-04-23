@@ -371,7 +371,7 @@ namespace Core
                 if(node.display.get() == nullptr) //new display
                 {
                     node.display.reset(new Display(this, handle));
-                    if(initial)
+                    if(!initial)
                     {
                         events.push(
                             Event{.data = DisplayAddedEvent{.timestamp_ms = GetEventTimestamp(),

@@ -489,11 +489,270 @@ int EntryPoint(std::span<const std::string_view> arguments)
         Core::WindowSubsystemInfo win_sys_info = {.type = Core::WindowSubsystemType::Win32};
         std::unique_ptr<Core::WindowSubsystem> win_sys(Core::CreateWindowSubsystem(win_sys_info));
 
+        auto displays = win_sys->GetDisplays();
+        for(auto& dp: displays)
+        {
+            dp->Connect<Core::DisplayRemovedEvent>(
+                [dp = dp.get()](const Core::DisplayRemovedEvent& event)
+                {
+                    auto video_mode = dp->GetCurrentVideoMode();
+
+                    std::cout << std::format(
+                        "DisplayRemovedEvent:\n"
+                        "\tTimestamp: {}\n"
+                        "\tDisplay:\n"
+                        "\t\tName: {}\n"
+                        "\t\tScale factor: {}\n"
+                        "\t\tVideo mode:\n"
+                        "\t\t\tWidth: {}\n"
+                        "\t\t\tHeight: {}\n"
+                        "\t\t\tBPP: {}\n"
+                        "\t\t\tFrequency: {}\n",
+                        event.timestamp_ms,
+                        dp->GetName(),
+                        dp->GetScaleFactor(),
+                        video_mode.width,
+                        video_mode.height,
+                        video_mode.bits_per_pixel,
+                        video_mode.refresh_rate);
+
+                    return Core::EventHandlerResult::None;
+                },
+                nullptr,
+                Core::EventHandlerState::Enabled);
+
+            dp->Connect<Core::DisplayMovedEvent>(
+                [dp = dp.get()](const Core::DisplayMovedEvent& event)
+                {
+                    auto video_mode = dp->GetCurrentVideoMode();
+
+                    std::cout << std::format(
+                        "DisplayMovedEvent:\n"
+                        "\tTimestamp: {}\n"
+                        "\tDisplay:\n"
+                        "\t\tName: {}\n"
+                        "\t\tScale factor: {}\n"
+                        "\t\tVideo mode:\n"
+                        "\t\t\tWidth: {}\n"
+                        "\t\t\tHeight: {}\n"
+                        "\t\t\tBPP: {}\n"
+                        "\t\t\tFrequency: {}\n"
+                        "\tPosition:\n"
+                        "\t\tX: {}\n"
+                        "\t\tY: {}\n",
+                        event.timestamp_ms,
+                        dp->GetName(),
+                        dp->GetScaleFactor(),
+                        video_mode.width,
+                        video_mode.height,
+                        video_mode.bits_per_pixel,
+                        video_mode.refresh_rate,
+                        event.position.x,
+                        event.position.y);
+
+                    return Core::EventHandlerResult::None;
+                },
+                nullptr,
+                Core::EventHandlerState::Enabled);
+
+            dp->Connect<Core::DisplayVideoModeChangedEvent>(
+                [dp = dp.get()](const Core::DisplayVideoModeChangedEvent& event)
+                {
+                    auto video_mode = dp->GetCurrentVideoMode();
+
+                    std::cout << std::format(
+                        "DisplayVideoModeChangedEvent:\n"
+                        "\tTimestamp: {}\n"
+                        "\tDisplay:\n"
+                        "\t\tName: {}\n"
+                        "\t\tScale factor: {}\n"
+                        "\t\tVideo mode:\n"
+                        "\t\t\tWidth: {}\n"
+                        "\t\t\tHeight: {}\n"
+                        "\t\t\tBPP: {}\n"
+                        "\t\t\tFrequency: {}\n",
+                        event.timestamp_ms,
+                        dp->GetName(),
+                        dp->GetScaleFactor(),
+                        video_mode.width,
+                        video_mode.height,
+                        video_mode.bits_per_pixel,
+                        video_mode.refresh_rate);
+
+                    return Core::EventHandlerResult::None;
+                },
+                nullptr,
+                Core::EventHandlerState::Enabled);
+
+            dp->Connect<Core::DisplayScaleChangedEvent>(
+                [dp = dp.get()](const Core::DisplayScaleChangedEvent& event)
+                {
+                    auto video_mode = dp->GetCurrentVideoMode();
+
+                    std::cout << std::format(
+                        "DisplayScaleChangedEvent:\n"
+                        "\tTimestamp: {}\n"
+                        "\tDisplay:\n"
+                        "\t\tName: {}\n"
+                        "\t\tScale factor: {}\n"
+                        "\t\tVideo mode:\n"
+                        "\t\t\tWidth: {}\n"
+                        "\t\t\tHeight: {}\n"
+                        "\t\t\tBPP: {}\n"
+                        "\t\t\tFrequency: {}\n",
+                        event.timestamp_ms,
+                        dp->GetName(),
+                        dp->GetScaleFactor(),
+                        video_mode.width,
+                        video_mode.height,
+                        video_mode.bits_per_pixel,
+                        video_mode.refresh_rate);
+
+                    return Core::EventHandlerResult::None;
+                },
+                nullptr,
+                Core::EventHandlerState::Enabled);
+        }
+
         Core::WindowInfo win_info = {.resolution =
                                          Core::WindowResolution{.width = 800, .height = 600},
                                      .state = Core::WindowState::Windowed,
                                      .title = "test"};
         std::unique_ptr<Core::Window> window(win_sys->CreateWindow(win_info));
+
+        win_sys->Connect<Core::DisplayAddedEvent>(
+            [](const Core::DisplayAddedEvent& event)
+            {
+                std::cout << std::format(
+                    "DisplayAddedEvent:\n"
+                    "\tTimestamp: {}\n",
+                    event.timestamp_ms);
+
+                event.display->Connect<Core::DisplayRemovedEvent>(
+                    [dp = event.display.get()](const Core::DisplayRemovedEvent& event)
+                    {
+                        auto video_mode = dp->GetCurrentVideoMode();
+
+                        std::cout << std::format(
+                            "DisplayRemovedEvent:\n"
+                            "\tTimestamp: {}\n"
+                            "\tDisplay:\n"
+                            "\t\tName: {}\n"
+                            "\t\tScale factor: {}\n"
+                            "\t\tVideo mode:\n"
+                            "\t\t\tWidth: {}\n"
+                            "\t\t\tHeight: {}\n"
+                            "\t\t\tBPP: {}\n"
+                            "\t\t\tFrequency: {}\n",
+                            event.timestamp_ms,
+                            dp->GetName(),
+                            dp->GetScaleFactor(),
+                            video_mode.width,
+                            video_mode.height,
+                            video_mode.bits_per_pixel,
+                            video_mode.refresh_rate);
+
+                        return Core::EventHandlerResult::None;
+                    },
+                    nullptr,
+                    Core::EventHandlerState::Enabled);
+
+                event.display->Connect<Core::DisplayMovedEvent>(
+                    [dp = event.display.get()](const Core::DisplayMovedEvent& event)
+                    {
+                        auto video_mode = dp->GetCurrentVideoMode();
+
+                        std::cout << std::format(
+                            "DisplayMovedEvent:\n"
+                            "\tTimestamp: {}\n"
+                            "\tDisplay:\n"
+                            "\t\tName: {}\n"
+                            "\t\tScale factor: {}\n"
+                            "\t\tVideo mode:\n"
+                            "\t\t\tWidth: {}\n"
+                            "\t\t\tHeight: {}\n"
+                            "\t\t\tBPP: {}\n"
+                            "\t\t\tFrequency: {}\n"
+                            "\tPosition:\n"
+                            "\t\tX: {}\n"
+                            "\t\tY: {}\n",
+                            event.timestamp_ms,
+                            dp->GetName(),
+                            dp->GetScaleFactor(),
+                            video_mode.width,
+                            video_mode.height,
+                            video_mode.bits_per_pixel,
+                            video_mode.refresh_rate,
+                            event.position.x,
+                            event.position.y);
+
+                        return Core::EventHandlerResult::None;
+                    },
+                    nullptr,
+                    Core::EventHandlerState::Enabled);
+
+                event.display->Connect<Core::DisplayVideoModeChangedEvent>(
+                    [dp = event.display.get()](const Core::DisplayVideoModeChangedEvent& event)
+                    {
+                        auto video_mode = dp->GetCurrentVideoMode();
+
+                        std::cout << std::format(
+                            "DisplayVideoModeChangedEvent:\n"
+                            "\tTimestamp: {}\n"
+                            "\tDisplay:\n"
+                            "\t\tName: {}\n"
+                            "\t\tScale factor: {}\n"
+                            "\t\tVideo mode:\n"
+                            "\t\t\tWidth: {}\n"
+                            "\t\t\tHeight: {}\n"
+                            "\t\t\tBPP: {}\n"
+                            "\t\t\tFrequency: {}\n",
+                            event.timestamp_ms,
+                            dp->GetName(),
+                            dp->GetScaleFactor(),
+                            video_mode.width,
+                            video_mode.height,
+                            video_mode.bits_per_pixel,
+                            video_mode.refresh_rate);
+
+                        return Core::EventHandlerResult::None;
+                    },
+                    nullptr,
+                    Core::EventHandlerState::Enabled);
+
+                event.display->Connect<Core::DisplayScaleChangedEvent>(
+                    [dp = event.display.get()](const Core::DisplayScaleChangedEvent& event)
+                    {
+                        auto video_mode = dp->GetCurrentVideoMode();
+
+                        std::cout << std::format(
+                            "DisplayScaleChangedEvent:\n"
+                            "\tTimestamp: {}\n"
+                            "\tDisplay:\n"
+                            "\t\tName: {}\n"
+                            "\t\tScale factor: {}\n"
+                            "\t\tVideo mode:\n"
+                            "\t\t\tWidth: {}\n"
+                            "\t\t\tHeight: {}\n"
+                            "\t\t\tBPP: {}\n"
+                            "\t\t\tFrequency: {}\n",
+                            event.timestamp_ms,
+                            dp->GetName(),
+                            dp->GetScaleFactor(),
+                            video_mode.width,
+                            video_mode.height,
+                            video_mode.bits_per_pixel,
+                            video_mode.refresh_rate);
+
+                        return Core::EventHandlerResult::None;
+                    },
+                    nullptr,
+                    Core::EventHandlerState::Enabled);
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
 
         bool is_run = true;
         window->Connect<Core::WindowClosedEvent>(
@@ -517,13 +776,12 @@ int EntryPoint(std::span<const std::string_view> arguments)
                 auto display = event.display;
                 auto video_mode = display->GetCurrentVideoMode();
 
-                /*std::cout << std::format(
+                std::cout << std::format(
                     "WindowDisplayChangedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tDisplay:\n"
                     "\t\tName: {}\n"
                     "\t\tScale factor: {}\n"
-                    "\t\tDispaly Scale factor: {}\n"
                     "\t\tVideo mode:\n"
                     "\t\t\tWidth: {}\n"
                     "\t\t\tHeight: {}\n"
@@ -532,11 +790,10 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.timestamp_ms,
                     display->GetName(),
                     display->GetScaleFactor(),
-                    display->GetDisplayScaleFactor(),
                     video_mode.width,
                     video_mode.height,
                     video_mode.bits_per_pixel,
-                    video_mode.refresh_rate);*/
+                    video_mode.refresh_rate);
 
                 return Core::EventHandlerResult::None;
             },
@@ -564,20 +821,15 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::WindowResizedEvent>(
             [](const Core::WindowResizedEvent& event)
             {
-                /*std::cout << std::format(
+                std::cout << std::format(
                     "WindowResizedEvent:\n"
                     "\tTimestamp: {}\n"
                     "\tResolution:\n"
                     "\t\tWidth: {}\n"
-                    "\t\tHeight: {}\n"
-                    "\tScaled Resolution:\n"
-                    "\t\tWidth: {}\n"
                     "\t\tHeight: {}\n",
                     event.timestamp_ms,
                     event.resolution.width,
-                    event.resolution.height,
-                    event.scaled_resolution.width,
-                    event.scaled_resolution.height);*/
+                    event.resolution.height);
 
                 return Core::EventHandlerResult::None;
             },
@@ -906,7 +1158,6 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->SetMouseCursorPosition(Core::WindowPosition{.x = 0, .y = 0});
 
         auto reso = window->GetResolution();
-        auto scaled_reso = window->GetScaledResolution();
 
         window->Resize(Core::WindowResolution{.width = 1440, .height = 900});
         auto after_reso = window->GetResolution();

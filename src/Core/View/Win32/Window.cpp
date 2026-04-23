@@ -112,14 +112,59 @@ namespace Core
                             window->display =
                                 win_sys->GetDisplayByMonitorHandle(new_monitor_handle);
 
-                            win_sys->PushEvent(Event{.data = WindowDisplayChangedEvent{
-                                                         .timestamp_ms = GetEventTimestamp(),
-                                                         .display = window->display}});
+                            win_sys->PushEvent(
+                                Event{.data = WindowDisplayChangedEvent{.timestamp_ms =
+                                                                            GetEventTimestamp(),
+                                                                        .display = window->display},
+                                      .handle = window});
                         }
                     }
                     break;
                     case WM_DPICHANGED:
                     {
+                        HMONITOR new_monitor_handle =
+                            MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST);
+                        if(new_monitor_handle !=
+                           window->display.get()->GetHandle()) //update display
+                        {
+                            window->display =
+                                win_sys->GetDisplayByMonitorHandle(new_monitor_handle);
+
+                            win_sys->PushEvent(
+                                Event{.data = WindowDisplayChangedEvent{.timestamp_ms =
+                                                                            GetEventTimestamp(),
+                                                                        .display = window->display},
+                                      .handle = window});
+                        }
+
+                        auto flags = window->display->Update();
+                        if(flags & DisplayChangesFlagBits::Position)
+                        {
+                            win_sys->PushEvent(
+                                Event{.data = DisplayMovedEvent{.timestamp_ms = GetEventTimestamp(),
+                                                                .position =
+                                                                    window->display->GetPosition()},
+                                      .handle = window->display});
+                        }
+                        else if(flags & DisplayChangesFlagBits::VideoMode)
+                        {
+                            win_sys->PushEvent(
+                                Event{.data =
+                                          DisplayVideoModeChangedEvent{
+                                              .timestamp_ms = GetEventTimestamp(),
+                                              .video_mode = window->display->GetCurrentVideoMode()},
+                                      .handle = window->display});
+                        }
+                        else if(flags & DisplayChangesFlagBits::ScaleFactor)
+                        {
+                            win_sys->PushEvent(
+                                Event{.data =
+                                          DisplayScaleChangedEvent{
+                                              .timestamp_ms = GetEventTimestamp(),
+                                              .scale_factor = window->display->GetScaleFactor()},
+                                      .handle = window->display});
+                        }
+
                         /*auto awareness_type = static_cast<WindowSubsystem*>(window->GetParent())
                                                   ->GetDPIAwrenessType();
 
@@ -168,24 +213,21 @@ namespace Core
                         {
                             win_sys->PushEvent(Event{
                                 .data = WindowMaximizedEvent{.timestamp_ms = GetEventTimestamp(),
-                                                             .resolution = resolution,
-                                                             .scaled_resolution = resolution},
+                                                             .resolution = resolution},
                                 .handle = window});
                         }
                         else if(w_param == SIZE_MINIMIZED)
                         {
                             win_sys->PushEvent(Event{
                                 .data = WindowMinimizedEvent{.timestamp_ms = GetEventTimestamp(),
-                                                             .resolution = resolution,
-                                                             .scaled_resolution = resolution},
+                                                             .resolution = resolution},
                                 .handle = window});
                         }
                         else
                         {
                             win_sys->PushEvent(Event{
                                 .data = WindowResizedEvent{.timestamp_ms = GetEventTimestamp(),
-                                                           .resolution = resolution,
-                                                           .scaled_resolution = resolution},
+                                                           .resolution = resolution},
                                 .handle = window});
                         }
                     }
@@ -383,7 +425,31 @@ namespace Core
                     {
                         window->parent->GetKeyboardState()->UpdateCurrentLayout(
                             reinterpret_cast<HKL>(l_param));
+
+                        return DefWindowProcW(handle, message, w_param, l_param);
                     }
+                    break;
+                    case WM_WINDOWPOSCHANGED:
+                    {
+                        HMONITOR new_monitor_handle =
+                            MonitorFromWindow(window->handle, MONITOR_DEFAULTTONEAREST);
+                        if(window->display.get() != nullptr &&
+                           new_monitor_handle !=
+                               window->display.get()->GetHandle()) //update display
+                        {
+                            window->display =
+                                win_sys->GetDisplayByMonitorHandle(new_monitor_handle);
+
+                            win_sys->PushEvent(
+                                Event{.data = WindowDisplayChangedEvent{.timestamp_ms =
+                                                                            GetEventTimestamp(),
+                                                                        .display = window->display},
+                                      .handle = window});
+                        }
+
+                        return DefWindowProcW(handle, message, w_param, l_param);
+                    }
+                    break;
                     default:
                         return DefWindowProcW(handle, message, w_param, l_param);
                         break;
@@ -440,7 +506,8 @@ namespace Core
 
             parent->PushEvent(
                 Event{.data = WindowDisplayChangedEvent{.timestamp_ms = GetEventTimestamp(),
-                                                        .display = display}});
+                                                        .display = display},
+                      .handle = this});
 
             SetState(info.state);
             if(info.state == WindowState::Windowed)
@@ -534,11 +601,6 @@ namespace Core
 
             return WindowResolution{.width = static_cast<std::uint32_t>(rect.right),
                                     .height = static_cast<std::uint32_t>(rect.bottom)};
-        }
-
-        WindowResolution Window::GetScaledResolution() const
-        {
-            return GetResolution();
         }
 
         void Window::SetState(WindowState state)

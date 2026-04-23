@@ -30,7 +30,6 @@ namespace Core
 
             virtual void Resize(const WindowResolution& resolution) override;
             virtual WindowResolution GetResolution() const override;
-            virtual WindowResolution GetScaledResolution() const override;
 
             virtual void SetState(WindowState state) override;
             virtual WindowState GetState() const override;

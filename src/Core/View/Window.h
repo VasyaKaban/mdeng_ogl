@@ -20,7 +20,6 @@ namespace Core
 
         virtual void Resize(const WindowResolution& resolution) = 0;
         virtual WindowResolution GetResolution() const = 0;
-        virtual WindowResolution GetScaledResolution() const = 0;
 
         virtual void SetState(WindowState state) = 0;
         virtual WindowState GetState() const = 0;
