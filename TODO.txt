@@ -58,3 +58,4 @@ INFO:
     - every move and resize save prev 
     - if fullscreen is moved or resized -> deny
     - if fullscreen changed displays -> accept move or resize and set fullscreen of new display
+* (exe)Game -> (dll)Engine.Init -> Engine.ProbeRenders(renders...) -> Engine.CreateObjects(Window, ...) -> Engine.SetFrameHandler(...) -> Engine.Run()
