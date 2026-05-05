@@ -450,6 +450,40 @@ namespace Core
                         return DefWindowProcW(handle, message, w_param, l_param);
                     }
                     break;
+                    case WM_DROPFILES:
+                    {
+                        HDROP drop = reinterpret_cast<HDROP>(w_param);
+
+                        std::wstring native_file_buffer(MAX_PATH, L'\0');
+
+                        POINT point = {};
+                        DragQueryPoint(drop, &point);
+
+                        auto file_count = DragQueryFileW(drop, 0xFF'FF'FF'FF, nullptr, 0);
+                        std::vector<std::filesystem::path> files;
+                        files.reserve(file_count);
+                        for(std::size_t i = 0; i < file_count; i++)
+                        {
+                            auto size = DragQueryFileW(drop, i, nullptr, 0);
+                            if(size > native_file_buffer.size())
+                                native_file_buffer.resize(size);
+
+                            DragQueryFileW(drop, i, native_file_buffer.data(), size);
+                            files.push_back(std::filesystem::path(
+                                std::wstring_view{native_file_buffer.data(), size}));
+                        }
+
+                        DragFinish(drop);
+
+                        win_sys->PushEvent(Event{
+                            .data =
+                                DragAndDropEvent{.timestamp_ms = GetEventTimestamp(),
+                                                 .files = std::move(files),
+                                                 .mouse_cursor_position =
+                                                     WindowPosition{.x = point.x, .y = point.y}},
+                            .handle = window});
+                    }
+                    break;
                     default:
                         return DefWindowProcW(handle, message, w_param, l_param);
                         break;
@@ -464,6 +498,7 @@ namespace Core
               handle(nullptr),
               current_state(info.state),
               current_visibility(WindowVisibility::Hidden),
+              drag_and_drop_enabled(false),
               mouse_focused(false)
         {
             WindowCreateData data = {.obj = this};
@@ -728,6 +763,21 @@ namespace Core
         WindowVisibility Window::GetVisibility() const
         {
             return current_visibility;
+        }
+
+        void Window::SetDragAndDropState(bool enabled)
+        {
+            if(enabled == drag_and_drop_enabled)
+                return;
+
+            DragAcceptFiles(handle, (enabled ? TRUE : FALSE));
+
+            drag_and_drop_enabled = enabled;
+        }
+
+        bool Window::GetDragAndDropState() const
+        {
+            return drag_and_drop_enabled;
         }
 
         WindowSurfaceInfo Window::GetWindowSurfaceInfo() const noexcept

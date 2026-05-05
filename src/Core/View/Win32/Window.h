@@ -40,6 +40,9 @@ namespace Core
             virtual void SetVisibility(WindowVisibility visibility) override;
             virtual WindowVisibility GetVisibility() const override;
 
+            virtual void SetDragAndDropState(bool enabled) override;
+            virtual bool GetDragAndDropState() const override;
+
             virtual WindowSurfaceInfo GetWindowSurfaceInfo() const noexcept override;
 
             virtual std::shared_ptr<Core::Display> GetDisplay() const noexcept override;
@@ -53,6 +56,7 @@ namespace Core
 
             WindowState current_state;
             WindowVisibility current_visibility;
+            bool drag_and_drop_enabled;
             RECT prev_windowed_rect;
             bool mouse_focused;
         };

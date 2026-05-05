@@ -187,6 +187,14 @@ namespace Core
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<KeyboardKeyReleasedEvent>;
 
+    struct DragAndDropEvent
+    {
+        std::uint64_t timestamp_ms;
+        std::vector<std::filesystem::path> files;
+        WindowPosition mouse_cursor_position;
+    };
+    CORE_API_TEMPLATE template class CORE_API ClassID<DragAndDropEvent>;
+
     //helper for inner subsystem event queue
     using QueueEvent = std::variant<DisplayAddedEvent,
                                     DisplayRemovedEvent,
@@ -211,7 +219,8 @@ namespace Core
                                     MouseWheelEvent,
                                     KeyboardKeyPressedEvent,
                                     KeyboardCharacterPressedEvent,
-                                    KeyboardKeyReleasedEvent>;
+                                    KeyboardKeyReleasedEvent,
+                                    DragAndDropEvent>;
 
     std::uint64_t GetEventTimestamp() noexcept;
 };

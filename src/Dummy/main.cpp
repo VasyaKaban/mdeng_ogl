@@ -1124,6 +1124,29 @@ int EntryPoint(std::span<const std::string_view> arguments)
             nullptr,
             Core::EventHandlerState::Enabled);
 
+        window->SetDragAndDropState(true);
+        window->Connect<Core::DragAndDropEvent>(
+            [](const Core::DragAndDropEvent& event)
+            {
+                std::cout << std::format(
+                    "DragAndDropEvent:\n"
+                    "\tTimestamp: {}\n"
+                    "\tPosition:\n"
+                    "\t\tX: {}\n"
+                    "\t\tY: {}\n"
+                    "\tFiles:\n",
+                    event.timestamp_ms,
+                    event.mouse_cursor_position.x,
+                    event.mouse_cursor_position.y);
+
+                for(const auto& path: event.files)
+                    std::cout << std::format("\t\t{}\n", path.string());
+
+                return Core::EventHandlerResult::None;
+            },
+            nullptr,
+            Core::EventHandlerState::Enabled);
+
         auto display = window->GetDisplay();
         std::cerr << std::format("Display: {}\n", display->GetName());
         std::cerr << std::format("Scale factor: {}\n", display->GetScaleFactor());
