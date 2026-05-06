@@ -5,6 +5,7 @@
 #include "../WindowSubsystem.h"
 #include "Core/View/WindowEvents.h"
 #include "KeyboardState.h"
+#include "Clipboard.h"
 
 namespace Core
 {
@@ -72,6 +73,8 @@ namespace Core
 
             virtual KeyboardAccessState GetKeyboardAccessState() override;
             virtual void SetKeyboardAccessState(KeyboardAccessState state) override;
+
+            virtual std::unique_ptr<Core::Clipboard> GetClipboard() override;
 
             virtual std::vector<std::shared_ptr<Core::Display>> GetDisplays() override;
 

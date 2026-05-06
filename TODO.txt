@@ -62,4 +62,7 @@ INFO:
 * Clipboard
 * Split methods into get count and get data for compound-allocated types
 * View -> WindowSubsystem, WindowSubsystem -> WindowSubsystemConnection
+* Remove namespaces for Linux/Win32 and mark classes with appropriate prefixes
 * OpenGL backend as base classes?
+* Non-new allocated clipboard object
+* More clipboard formats: Dran'n'Drop file list

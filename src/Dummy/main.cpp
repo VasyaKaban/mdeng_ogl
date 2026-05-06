@@ -16,6 +16,7 @@
 #include "Core/View/Window.h"
 #include "Core/View/WindowEvents.h"
 #include "Core/View/WindowSubsystem.h"
+#include "Core/View/Clipboard.h"
 #include "Core/View/Display.h"
 #include "Core/Utils/DynamicLibrary.h"
 #include <cassert>
@@ -1086,9 +1087,33 @@ int EntryPoint(std::span<const std::string_view> arguments)
             nullptr,
             Core::EventHandlerState::Enabled);
 
+        int v_pressed_repeats = 0;
+
         window->Connect<Core::KeyboardKeyPressedEvent>(
-            [window = window.get()](const Core::KeyboardKeyPressedEvent& event)
+            [&, window = window.get()](const Core::KeyboardKeyPressedEvent& event)
             {
+                if((event.key == U'v' || event.key == U'V') &&
+                   event.modifiers & Core::ModifierKeyFlagBits::LeftControl)
+                {
+                    v_pressed_repeats++;
+                }
+
+                if(v_pressed_repeats == 1)
+                {
+                    auto clipboard = window->GetParent()->GetClipboard();
+                    if(clipboard->GetDataType() == Core::ClipboardDataType::MIME)
+                    {
+                        if(clipboard->GetMIMEType() == "text/plain")
+                        {
+                            auto data = clipboard->GetData();
+                            std::string_view view(reinterpret_cast<const char*>(data.data()),
+                                                  data.size());
+
+                            std::cerr << view << std::endl;
+                        }
+                    }
+                }
+
                 /*std::cout << std::format(
                     "KeyboardKeyPressedEvent:\n"
                     "\tTimestamp: {}\n"
@@ -1106,8 +1131,11 @@ int EntryPoint(std::span<const std::string_view> arguments)
             Core::EventHandlerState::Enabled);
 
         window->Connect<Core::KeyboardKeyReleasedEvent>(
-            [](const Core::KeyboardKeyReleasedEvent& event)
+            [&](const Core::KeyboardKeyReleasedEvent& event)
             {
+                if(event.key == U'v' || event.key == U'V')
+                    v_pressed_repeats = 0;
+
                 /*std::cout << std::format(
                     "KeyboardKeyReleasedEvent:\n"
                     "\tTimestamp: {}\n"

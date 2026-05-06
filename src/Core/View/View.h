@@ -10,6 +10,7 @@ namespace Core
     class WindowSubsystem;
     class Window;
     class Display;
+    class Clipboard;
 
     struct WindowResolution
     {
@@ -195,6 +196,12 @@ namespace Core
     {
         Exclusive,
         Shared
+    };
+
+    enum class ClipboardDataType
+    {
+        Unknown,
+        MIME
     };
 
     struct WindowInfo

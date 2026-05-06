@@ -1,8 +1,7 @@
 #include "WindowSubsystem.h"
 #include "Window.h"
 #include "Core/Utils/ScopedCall.hpp"
-#include <set>
-#include <format>
+#include "Clipboard.h"
 
 namespace Core
 {
@@ -284,6 +283,12 @@ namespace Core
         void WindowSubsystem::SetKeyboardAccessState(KeyboardAccessState state)
         {
             keyboard_state->SetKeyboardAccessState(state);
+        }
+
+        std::unique_ptr<Core::Clipboard> WindowSubsystem::GetClipboard()
+        {
+#pragma message("Create clipboard object on stack!")
+            return std::unique_ptr<Core::Clipboard>(new Clipboard(this));
         }
 
         std::vector<std::shared_ptr<Core::Display>> WindowSubsystem::GetDisplays()
