@@ -198,11 +198,14 @@ namespace Core
         Shared
     };
 
+#pragma message("Add other types like file list via hDrop")
     enum class ClipboardDataType
     {
         Unknown,
         MIME
     };
+
+    using ClipboardCallback = void(Clipboard* clipboard);
 
     struct WindowInfo
     {

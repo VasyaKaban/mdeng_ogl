@@ -285,10 +285,24 @@ namespace Core
             keyboard_state->SetKeyboardAccessState(state);
         }
 
-        std::unique_ptr<Core::Clipboard> WindowSubsystem::GetClipboard()
+        void WindowSubsystem::GetClipboard(const std::function<ClipboardCallback>& callback)
         {
-#pragma message("Create clipboard object on stack!")
-            return std::unique_ptr<Core::Clipboard>(new Clipboard(this));
+            Clipboard* clipboard = new(clipboard_memory) Clipboard(this);
+            std::exception_ptr ex_ptr;
+
+            try
+            {
+                callback(clipboard);
+            }
+            catch(...)
+            {
+                ex_ptr = std::current_exception();
+            }
+
+            clipboard->~Clipboard();
+
+            if(ex_ptr)
+                std::rethrow_exception(ex_ptr);
         }
 
         std::vector<std::shared_ptr<Core::Display>> WindowSubsystem::GetDisplays()

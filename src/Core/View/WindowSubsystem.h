@@ -29,7 +29,7 @@ namespace Core
         virtual KeyboardAccessState GetKeyboardAccessState() = 0;
         virtual void SetKeyboardAccessState(KeyboardAccessState state) = 0;
 
-        virtual std::unique_ptr<Clipboard> GetClipboard() = 0;
+        virtual void GetClipboard(const std::function<ClipboardCallback>& callback) = 0;
 
         virtual std::vector<std::shared_ptr<Display>> GetDisplays() = 0;
     };

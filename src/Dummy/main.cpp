@@ -1100,18 +1100,22 @@ int EntryPoint(std::span<const std::string_view> arguments)
 
                 if(v_pressed_repeats == 1)
                 {
-                    auto clipboard = window->GetParent()->GetClipboard();
-                    if(clipboard->GetDataType() == Core::ClipboardDataType::MIME)
-                    {
-                        if(clipboard->GetMIMEType() == "text/plain")
+                    window->GetParent()->GetClipboard(
+                        [](Core::Clipboard* clipboard)
                         {
-                            auto data = clipboard->GetData();
-                            std::string_view view(reinterpret_cast<const char*>(data.data()),
-                                                  data.size());
+                            if(clipboard->GetDataType() == Core::ClipboardDataType::MIME)
+                            {
+                                if(clipboard->GetMIMEType() == "text/plain")
+                                {
+                                    auto data = clipboard->GetData();
+                                    std::string_view view(
+                                        reinterpret_cast<const char*>(data.data()),
+                                        data.size());
 
-                            std::cerr << view << std::endl;
-                        }
-                    }
+                                    std::cerr << view << std::endl;
+                                }
+                            }
+                        });
                 }
 
                 /*std::cout << std::format(

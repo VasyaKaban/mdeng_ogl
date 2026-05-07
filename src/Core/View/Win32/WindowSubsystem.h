@@ -74,7 +74,7 @@ namespace Core
             virtual KeyboardAccessState GetKeyboardAccessState() override;
             virtual void SetKeyboardAccessState(KeyboardAccessState state) override;
 
-            virtual std::unique_ptr<Core::Clipboard> GetClipboard() override;
+            virtual void GetClipboard(const std::function<ClipboardCallback>& callback) override;
 
             virtual std::vector<std::shared_ptr<Core::Display>> GetDisplays() override;
 
@@ -108,6 +108,8 @@ namespace Core
             std::unordered_map<HMONITOR, DisplayNode> displays;
 
             std::queue<Event> events;
+
+            alignas(alignof(Clipboard)) std::byte clipboard_memory[sizeof(Clipboard)];
         };
     };
 };
