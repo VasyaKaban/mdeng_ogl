@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/API.h"
-#include "View.h"
+#include <span>
+#include "WindowSubsystem.h"
 
 namespace Core
 {
@@ -14,6 +14,6 @@ namespace Core
         virtual std::string_view GetMIMEType() const = 0;
         virtual std::span<const std::byte> GetData() const = 0;
 
-        virtual WindowSubsystem* GetParent() const noexcept = 0;
+        virtual WindowSubsystemConnection* GetParent() const noexcept = 0;
     };
 };

@@ -48,14 +48,16 @@ namespace Core
         friend class RCPointer;
     public:
         constexpr RCPointer() noexcept
-        requires std::is_base_of_v<RC, T>
             : ptr(nullptr)
-        {}
+        {
+            static_assert(std::is_base_of_v<RC, T>);
+        }
 
         constexpr RCPointer(T* p) noexcept
-        requires std::is_base_of_v<RC, T>
             : ptr(p)
         {
+            static_assert(std::is_base_of_v<RC, T>);
+
             if(ptr)
                 ptr->RC::IncrementRefs();
         }

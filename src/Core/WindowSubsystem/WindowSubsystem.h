@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cstdint>
-#include <type_traits>
 #include <string_view>
-#include "Core/Render/Render.h"
+#include <vector>
+#include <string>
+#include "Core/API.h"
 
 namespace Core
 {
-    class WindowSubsystem;
+    class WindowSubsystemConnection;
     class Window;
     class Display;
     class Clipboard;
@@ -24,16 +25,15 @@ namespace Core
         std::int32_t y;
     };
 
-    enum MouseButtonFlagBits : std::uint32_t
+    using MouseButtonFlags = std::uint32_t;
+    namespace MouseButtonFlagBits
     {
-        LeftButton = 1 << 0,
-        MiddleButton = 1 << 1,
-        RightButton = 1 << 2,
-        X1Button = 1 << 3,
-        X2Button = 1 << 4,
+        constexpr inline MouseButtonFlags LeftButton = 1 << 0;
+        constexpr inline MouseButtonFlags MiddleButton = 1 << 0;
+        constexpr inline MouseButtonFlags RightButton = 1 << 0;
+        constexpr inline MouseButtonFlags X1Button = 1 << 0;
+        constexpr inline MouseButtonFlags X2Button = 1 << 0;
     };
-
-    using MouseButtonFlags = std::underlying_type_t<MouseButtonFlagBits>;
 
     using KeyboardKey = std::uint32_t;
 
@@ -151,20 +151,18 @@ namespace Core
 
     using ScanCode = std::uint32_t;
 
-    enum ModifierKeyFlagBits : std::uint32_t
+    using ModifierKeyFlags = std::uint32_t;
+    namespace ModifierKeyFlagBits
     {
-        //TODO
-        LeftShift = 1 << 0,
-        RightShift = 1 << 1,
-        LeftControl = 1 << 2,
-        RightControl = 1 << 3,
-        LeftAlt = 1 << 4,
-        RightAlt = 1 << 5,
-        LeftGUI = 1 << 6, //Win
-        RightGUI = 1 << 7
+        constexpr inline ModifierKeyFlags LeftShift = 1 << 0;
+        constexpr inline ModifierKeyFlags RightShift = 1 << 1;
+        constexpr inline ModifierKeyFlags LeftControl = 1 << 2;
+        constexpr inline ModifierKeyFlags RightControl = 1 << 3;
+        constexpr inline ModifierKeyFlags LeftAlt = 1 << 4;
+        constexpr inline ModifierKeyFlags RightAlt = 1 << 5;
+        constexpr inline ModifierKeyFlags LeftGUI = 1 << 6; //Win
+        constexpr inline ModifierKeyFlags RightGUI = 1 << 7;
     };
-
-    using ModifierKeyFlags = std::underlying_type_t<ModifierKeyFlagBits>;
 
     struct VideoMode
     {
@@ -174,32 +172,62 @@ namespace Core
         std::uint32_t bits_per_pixel;
     };
 
-    enum class WindowState
+    enum class WindowState : std::uint32_t
     {
-        Windowed = 0,
-        FullScreen = 1
+        Windowed,
+        FullScreen
     };
 
-    enum class WindowVisibility
+    enum class WindowVisibility : std::uint32_t
     {
-        Hidden = 0,
-        Shown = 1
+        Hidden,
+        Shown
     };
 
-    enum class CursorState
+    enum class WindowDecorations : std::uint32_t
+    {
+        Disabled,
+        Enabled
+    };
+
+    enum class WindowAlphaBlending : std::uint32_t
+    {
+        Disabled,
+        Enabled
+    };
+
+    enum class WindowDragAndDropState : std::uint32_t
+    {
+        DeclineFiles,
+        AcceptFiles
+    };
+
+    struct WindowInfo
+    {
+        WindowResolution resolution;
+        WindowPosition position;
+        WindowState state;
+        WindowVisibility visibility;
+        WindowDecorations decorations;
+        WindowAlphaBlending alpha_blending;
+        WindowDragAndDropState drag_and_drop_state;
+        std::string_view title;
+    };
+
+    enum class CursorState : std::uint32_t
     {
         Enabled,
         Disbaled
     };
 
-    enum class KeyboardAccessState
+    enum class KeyboardAccessState : std::uint32_t
     {
         Exclusive,
         Shared
     };
 
 #pragma message("Add other types like file list via hDrop")
-    enum class ClipboardDataType
+    enum class ClipboardDataType : std::uint32_t
     {
         Unknown,
         MIME
@@ -207,39 +235,23 @@ namespace Core
 
     using ClipboardCallback = void(Clipboard* clipboard);
 
-    struct WindowInfo
-    {
-        WindowResolution resolution;
-        WindowState state;
-        std::string_view title;
-    };
-
-    using WindowSurfaceInfo = std::variant<
-#ifdef _WIN32
-        Render::Win32SurfaceInfo
-#elif defined(linux)
-        Render::XCBSurfaceInfo
-#endif
-        >;
-
-    enum class WindowSubsystemType
+    enum class WindowSubsystemConnectionType
     {
 #ifdef _WIN32
         Win32 = 0
-#elif defined(linux)
-        XCB = 1
 #endif
     };
 
-    struct WindowSubsystemInfo
+    struct WindowSubsystemConnectionInfo
     {
-        WindowSubsystemType type;
+        WindowSubsystemConnectionType type;
     };
 
-    CORE_API std::vector<WindowSubsystemType> GetAvailableWindowSubsystemTypes();
+    CORE_API std::vector<WindowSubsystemConnectionType>
+    GetAvailableWindowSubsystemConnectionTypes();
 
-    CORE_API WindowSubsystem*
-    CreateWindowSubsystem(const WindowSubsystemInfo& info); //may be ref-counted(and should be :) )
+    CORE_API WindowSubsystemConnection*
+    CreateWindowSubsystemConnection(const WindowSubsystemConnectionInfo& info);
 
     CORE_API std::string KeyboardKeyToString(KeyboardKey key);
 };

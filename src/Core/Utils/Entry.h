@@ -20,17 +20,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
         std::terminate();
 
     std::vector<std::string> string_arguments;
-    string_arguments.reserve(1 + argc);
+    string_arguments.reserve(argc);
 
-    if(args)
-    {
-        for(int i = 0; i < argc; i++)
-            string_arguments.push_back(Core::System::WideToUTF8(std::wstring_view(args[0])));
+    for(int i = 0; i < argc; i++)
+        string_arguments.push_back(Core::System::WideToUTF8(std::wstring_view(args[i])));
 
-        LocalFree(args);
-    }
-    else
-        string_arguments.push_back(""); //empty app path
+    LocalFree(args);
 
     std::vector<std::string_view> arguments;
     arguments.reserve(string_arguments.size());

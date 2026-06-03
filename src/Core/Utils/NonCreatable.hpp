@@ -1,9 +1,29 @@
 #pragma once
 
+#define CORE_NON_COPY_CONSTRUCTIBLE(CLASS_NAME) CLASS_NAME(const CLASS_NAME&) = delete;
+#define CORE_NON_COPY_ASSIGNABLE(CLASS_NAME) CLASS_NAME& operator=(const CLASS_NAME&) = delete;
+
+#define CORE_NON_MOVE_CONSTRUCTIBLE(CLASS_NAME) CLASS_NAME(CLASS_NAME&&) = delete;
+#define CORE_NON_MOVE_ASSIGNABLE(CLASS_NAME) CLASS_NAME& operator=(CLASS_NAME&&) = delete;
+
+#define CORE_NON_COPYABLE(CLASS_NAME) \
+    CORE_NON_COPY_CONSTRUCTIBLE(CLASS_NAME) \
+    CORE_NON_COPY_ASSIGNABLE(CLASS_NAME)
+
+#define CORE_NON_MOVABLE(CLASS_NAME) \
+    CORE_NON_MOVE_CONSTRUCTIBLE(CLASS_NAME) \
+    CORE_NON_MOVE_ASSIGNABLE(CLASS_NAME)
+
+#define CORE_NON_CREATABLE(CLASS_NAME) \
+    CLASS_NAME() = delete; \
+    CORE_NON_COPYABLE(CLASS_NAME) \
+    CORE_NON_MOVABLE(CLASS_NAME)
+
 #include <utility>
 
 namespace Core
 {
+
     struct NonCopyConstructible
     {
         NonCopyConstructible() = default;

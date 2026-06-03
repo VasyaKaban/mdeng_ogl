@@ -9,9 +9,12 @@ namespace Core
     {
         class WindowSubsystem;
 
-        class CORE_API Clipboard final : public Core::Clipboard, Core::NonCopyable, Core::NonMovable
+        class CORE_API Clipboard final : public Core::Clipboard
         {
         public:
+            CORE_NON_COPYABLE(Clipboard)
+            CORE_NON_MOVABLE(Clipboard)
+
             Clipboard(WindowSubsystem* _parent);
             virtual ~Clipboard() override;
 

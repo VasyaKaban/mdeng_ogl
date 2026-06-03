@@ -1,18 +1,19 @@
 #pragma once
 
-#include "View.h"
+#include <filesystem>
+#include <variant>
+#include "WindowSubsystem.h"
 #include "Core/Utils/ClassID.hpp"
+#include "Core/Utils/RC.hpp"
 #include "Core/API.h"
 
 namespace Core
 {
-    class Display;
-
     //WindowSubsystem events
     struct DisplayAddedEvent
     {
         std::uint64_t timestamp_ms;
-        std::shared_ptr<Display>
+        RCPointer<Display>
             display; //due to the 'flutter' nature of the display object, this event will be connected to WindowSubsystem. Other Display events will belong to the Display object itself
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<DisplayAddedEvent>;
@@ -55,7 +56,7 @@ namespace Core
     struct WindowDisplayChangedEvent
     {
         std::uint64_t timestamp_ms;
-        std::shared_ptr<Display> display;
+        RCPointer<Display> display;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<WindowDisplayChangedEvent>;
 
@@ -128,7 +129,7 @@ namespace Core
     struct MouseButtonPressedEvent
     {
         std::uint64_t timestamp_ms;
-        MouseButtonFlagBits button;
+        MouseButtonFlags button;
         std::uint32_t clicks;
         WindowPosition cursor_position;
     };
@@ -137,7 +138,7 @@ namespace Core
     struct MouseButtonReleasedEvent
     {
         std::uint64_t timestamp_ms;
-        MouseButtonFlagBits button;
+        MouseButtonFlags button;
         WindowPosition cursor_position;
     };
     CORE_API_TEMPLATE template class CORE_API ClassID<MouseButtonReleasedEvent>;
@@ -190,6 +191,7 @@ namespace Core
     struct DragAndDropEvent
     {
         std::uint64_t timestamp_ms;
+
         std::vector<std::filesystem::path> files;
         WindowPosition mouse_cursor_position;
     };
