@@ -66,3 +66,29 @@ INFO:
 * OpenGL backend as base classes?
 * Non-new allocated clipboard object
 * More clipboard formats: Dran'n'Drop file list
+
+
+Instance:
+    GetProperties ->
+        InstanceProperties:
+            bool exposition_only_physical_devices
+    GetFeatures ->
+        InstanceFeatures:
+            bool validation_layer
+            bool debug_messenger
+    EnumeratePhysicalDevices() ->
+        PhysicalDevice:
+            bool exposition_only(true for OGL and false for VK)
+            char name
+            PhysicalDeviceType type
+            QueueFamilyDesc queue_family_descriptions
+            ...
+
+    Surface:
+
+    CreateDevice(PhysicalDevice, Surface, PhysicalDeviceFeatures[enabled], EnabledImageFormats[]) -> 
+        Device:
+            GetProperties
+            GetFeatures
+            GetSwapchain
+            ...
