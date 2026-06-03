@@ -17,8 +17,7 @@
                 "CMAKE_C_COMPILER": "cl",
                 "CMAKE_CXX_COMPILER": "cl",
                 "CMAKE_CXX_FLAGS": "/EHsc /utf-8 /Zi /Zc:preprocessor /std:c++20",
-                "CMAKE_EXE_LINKER_FLAGS": "/ENTRY:wWinMainCRTStartup",
-                "CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY"
+                "CMAKE_EXE_LINKER_FLAGS": "/ENTRY:wWinMainCRTStartup"
             },
             "architecture": {
                 "value": "x64",

@@ -1,5 +1,4 @@
 #include "System.h"
-#include "Unicode.h"
 
 namespace Core
 {
@@ -33,7 +32,7 @@ namespace Core
                 if(size == 0)
                     description = "Failed to allocate buffer for error message";
 
-                description = Core::UTF16ToUTF8({reinterpret_cast<char16_t*>(buffer), size});
+                description = System::WideToUTF8(std::wstring_view(buffer, size));
 
                 LocalFree(buffer);
             }
@@ -122,6 +121,169 @@ namespace Core
 #endif
     }
 
+    UTF8Result System::UTF32ToUTF8(char32_t utf32) noexcept
+    {
+        UTF8Result result = {};
+
+        if(utf32 <= 0x00'7F)
+        {
+            result.data[0] = utf32;
+            result.length = 1;
+        }
+        else if(utf32 <= 0x07'FF)
+        {
+            result.data[0] = 0b1100'0000 | ((utf32 >> 6) & 0b1'1111);
+            result.data[1] = 0b1000'0000 | (utf32 & (0b11'1111));
+            result.length = 2;
+        }
+        else if(utf32 <= 0xFF'FF)
+        {
+            result.data[0] = 0b1110'0000 | ((utf32 >> 12) & 0b1111);
+            result.data[1] = 0b1000'0000 | ((utf32 >> 6) & 0b11'1111);
+            result.data[2] = 0b1000'0000 | (utf32 & (0b11'1111));
+            result.length = 3;
+        }
+        else if(utf32 <= 0x10'FF'FF)
+        {
+            result.data[0] = 0b1111'0000 | ((utf32 >> 18) & 0b111);
+            result.data[1] = 0b1000'0000 | ((utf32 >> 12) & 0b11'1111);
+            result.data[2] = 0b1000'0000 | ((utf32 >> 6) & 0b11'1111);
+            result.data[3] = 0b1000'0000 | (utf32 & (0b11'1111));
+            result.length = 4;
+        }
+
+        return result;
+    }
+
+    //high surrogates (0xD800–0xDBFF), low surrogates (0xDC00–0xDFFF),
+    std::optional<char32_t> System::UTF16ToUTF32(char16_t utf16[2]) noexcept
+    {
+        if(utf16[1] >= 0xDC'00 && utf16[1] <= 0xDF'FF) //low surrogate cannot be represented
+            return std::nullopt;
+
+        std::optional<char16_t> out;
+        if(utf16[0] >= 0xD8'00 && utf16[0] <= 0xDB'FF) //high surrogate
+        {
+            if(utf16[1] >= 0xDC'00 && utf16[1] <= 0xDF'FF) //low surrogate
+            {
+                out = ((utf16[0] - 0xD8'00) << 10) + (utf16[1] - 0xDC'00) + 0x1'00'00;
+            }
+            else
+                out = std::nullopt;
+        }
+        else //code point
+        {
+            out = utf16[0];
+        }
+
+        return out;
+    }
+
+    static bool IsValidNonPrefixUTF8Byte(char value) noexcept
+    {
+        return (value & 0b1100'0000) == 0b1000'0000;
+    }
+
+    static char32_t GetNextUTF8Codepoint(std::string_view str, std::size_t& offset) noexcept
+    {
+        if(offset == str.size())
+            return 0;
+
+        char32_t res = 0;
+        if((str[offset] & 0b1000'0000) == 0b0000'0000) //1
+        {
+            res = str[offset];
+            offset++;
+        }
+        else if((str[offset] & 0b1110'0000) == 0b1100'0000) //2
+        {
+            if(str.size() - offset >= 2)
+            {
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]))
+                {
+                    res = (static_cast<char32_t>(str[offset] & 0b1101'1111) << 8) |
+                          (str[offset + 1] & 0b1011'1111);
+
+                    offset += 2;
+                }
+            }
+        }
+        else if((str[offset] & 0b1111'0000) == 0b1110'0000) //3
+        {
+            if(str.size() - offset >= 3)
+            {
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) &&
+                   IsValidNonPrefixUTF8Byte(str[offset + 2]))
+                {
+                    res = (static_cast<char32_t>(str[offset] & 0b1110'1111) << 16) |
+                          (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 8) |
+                          (str[offset + 2] & 0b1011'1111);
+
+                    offset += 3;
+                }
+            }
+        }
+        else if((str[offset] & 0b1111'1000) == 0b1111'0000) //4
+        {
+            if(str.size() - offset >= 4)
+            {
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) &&
+                   IsValidNonPrefixUTF8Byte(str[offset + 2]) &&
+                   IsValidNonPrefixUTF8Byte(str[offset + 3]))
+                {
+                    res = (static_cast<char32_t>(str[offset] & 0b1111'0111) << 24) |
+                          (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 16) |
+                          (static_cast<char32_t>(str[offset + 2] & 0b1011'1111) << 8) |
+                          (str[offset + 3] & 0b1011'1111);
+
+                    offset += 4;
+                }
+            }
+        }
+
+        return res;
+    }
+
+    bool System::CompareUTF8(std::string_view str1, std::string_view str2) noexcept
+    {
+        //for each string get str1_codepoint and str2_codepoint
+        //if str1_codepoint < str2_codepoint -> true
+        //else if str1_codepoint > str2_codepoint -> false
+        //else continue
+        //after all return false
+
+        std::size_t str1_offset = 0;
+        std::size_t str2_offset = 0;
+
+        while(str1_offset != str1.size() && str2_offset != str2.size())
+        {
+            char32_t str1_code = GetNextUTF8Codepoint(str1, str1_offset);
+            if(str1_code == 0)
+                return false;
+
+            char32_t str2_code = GetNextUTF8Codepoint(str2, str2_offset);
+            if(str2_code == 0)
+                return false;
+
+            if(str1_code < str2_code)
+                return true;
+            else if(str1_code > str2_code)
+                return false;
+        }
+
+        return false;
+    }
+
+    bool System::IsUnicodeC0ControlCode(char value) noexcept
+    {
+        return (value >= 0 && value <= 31) || value == 127;
+    }
+
+    bool System::IsUnicodeC0ControlCodeOrSpace(char value) noexcept
+    {
+        return IsUnicodeC0ControlCode(value) || value == 32;
+    }
+
 #ifdef _WIN32
     static int CMD_SHOW = SW_SHOWDEFAULT;
     static DWORD MAIN_THREAD_ID = 0;
@@ -170,6 +332,47 @@ namespace Core
     [[noreturn]] void System::ThrowLastError()
     {
         throw Win32Exception(System::GetLastError());
+    }
+
+    std::string System::WideToUTF8(std::wstring_view wstr)
+    {
+        if(wstr.empty())
+            return {};
+
+        auto req_size =
+            WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
+        if(req_size == 0)
+            throw GetLastError();
+
+        std::string str(req_size, '\0');
+        auto res = WideCharToMultiByte(CP_UTF8,
+                                       0,
+                                       wstr.data(),
+                                       wstr.size(),
+                                       str.data(),
+                                       req_size,
+                                       nullptr,
+                                       nullptr);
+
+        if(res == 0)
+            throw GetLastError();
+
+        return str;
+    }
+
+    std::wstring System::UTF8ToWide(std::string_view str)
+    {
+        auto req_size = MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), nullptr, 0);
+        if(req_size == 0)
+            throw GetLastError();
+
+        std::wstring wstr(req_size, L'\0');
+        auto res =
+            MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), wstr.data(), wstr.size());
+        if(res == 0)
+            throw GetLastError();
+
+        return wstr;
     }
 #endif
 };

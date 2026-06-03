@@ -1,7 +1,6 @@
 #include "Display.h"
 #include "Window.h"
 #include "WindowSubsystem.h"
-#include "Core/Utils/Unicode.h"
 
 namespace Core
 {
@@ -155,9 +154,8 @@ namespace Core
                     if(std::wcscmp(source_device_name_info.viewGdiDeviceName, device_name.data()) ==
                        0)
                     {
-                        device_description = Core::UTF16ToUTF8(
-                            {reinterpret_cast<const char16_t*>(
-                                 target_device_name_info.monitorFriendlyDeviceName),
+                        device_description = Core::System::WideToUTF8(
+                            {target_device_name_info.monitorFriendlyDeviceName,
                              std::wcslen(target_device_name_info.monitorFriendlyDeviceName)});
                         break;
                     }
@@ -168,9 +166,8 @@ namespace Core
                 DISPLAY_DEVICEW display_device = {.cb = sizeof(DISPLAY_DEVICEW)};
                 if(EnumDisplayDevicesW(info.szDevice, 0, &display_device, 0) != 0)
                 {
-                    device_description = Core::UTF16ToUTF8(
-                        {reinterpret_cast<const char16_t*>(display_device.DeviceString),
-                         std::wcslen(display_device.DeviceString)});
+                    device_description = Core::System::WideToUTF8(
+                        {display_device.DeviceString, std::wcslen(display_device.DeviceString)});
                 }
             }
 

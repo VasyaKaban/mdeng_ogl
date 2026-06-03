@@ -1,6 +1,4 @@
-#include "View.h"
-#include "Core/Utils/Unicode.h"
-
+#include "WindowSubsystem.h"
 #ifdef _WIN32
 #    include "Win32/WindowSubsystem.h"
 #elif defined(linux)
@@ -353,11 +351,8 @@ namespace Core
                 break;
             default:
             {
-                char32_t c = key;
-                char buffer[4];
-                std::size_t u8_size =
-                    Core::UTF32ToUTF8(std::u32string_view{&c, 1}, buffer, std::size(buffer));
-                out.assign(buffer, u8_size);
+                UTF8Result res = Core::System::UTF32ToUTF8(key);
+                out.assign(res.data, res.length);
             }
             break;
         }

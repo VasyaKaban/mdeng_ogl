@@ -3,7 +3,6 @@
 #include "Clipboard.h"
 #include "WindowSubsystem.h"
 #include "Core/Utils/System.h"
-#include "Core/Utils/Unicode.h"
 
 namespace Core
 {
@@ -85,8 +84,9 @@ namespace Core
                     auto wide_string_size = wcsnlen(static_cast<const wchar_t*>(raw_data),
                                                     GlobalSize(handle) / sizeof(wchar_t));
 
-                    data = Core::UTF16ToUTF8(
-                        {static_cast<const char16_t*>(raw_data), wide_string_size});
+                    std::wstring_view wstr(static_cast<const wchar_t*>(raw_data), wide_string_size);
+
+                    data = Core::System::WideToUTF8(wstr);
                 }
             }
 

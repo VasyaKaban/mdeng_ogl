@@ -2,7 +2,6 @@
 #include "WindowSubsystem.h"
 #include "Core/Utils/ScopedCall.hpp"
 #include <windowsx.h>
-#include "Core/Utils/Unicode.h"
 
 namespace Core
 {
@@ -514,10 +513,10 @@ namespace Core
             if(AdjustWindowRectEx(&rect, style & ~WS_OVERLAPPED, style & WS_SYSMENU, ex_style) == 0)
                 Core::System::ThrowLastError();
 
-            std::u16string title(Core::UTF8ToUTF16(info.title));
+            auto title = Core::System::UTF8ToWide(info.title);
             handle = CreateWindowExW(ex_style,
                                      WIN32_WINDOW_CLASS_NAME,
-                                     reinterpret_cast<const wchar_t*>(title.data()),
+                                     title.data(),
                                      style,
                                      CW_USEDEFAULT,
                                      CW_USEDEFAULT,
@@ -559,8 +558,9 @@ namespace Core
 
         void Window::SetTitle(std::string_view title)
         {
-            std::u16string wtitle(Core::UTF8ToUTF16(title));
-            if(SetWindowTextW(handle, reinterpret_cast<const wchar_t*>(wtitle.data())) == 0)
+            auto wstr = Core::System::UTF8ToWide(title);
+
+            if(SetWindowTextW(handle, wstr.data()) == 0)
                 Core::System::ThrowLastError();
         }
 
@@ -577,11 +577,11 @@ namespace Core
                 Core::System::ThrowLastError();
             }
 
-            std::u16string wstr(length, L'\0');
-            if(GetWindowTextW(handle, reinterpret_cast<wchar_t*>(wstr.data()), length + 1) == 0)
+            std::wstring wstr(length, L'\0');
+            if(GetWindowTextW(handle, wstr.data(), length + 1) == 0)
                 Core::System::ThrowLastError();
 
-            return Core::UTF16ToUTF8(wstr);
+            return Core::System::WideToUTF8(wstr);
         }
 
         void Window::Resize(const WindowResolution& resolution)

@@ -1063,12 +1063,8 @@ int EntryPoint(std::span<const std::string_view> arguments)
         window->Connect<Core::KeyboardCharacterPressedEvent>(
             [](const Core::KeyboardCharacterPressedEvent& event)
             {
-                char buffer[4];
-                std::size_t u8_char_size =
-                    Core::UTF32ToUTF8(std::u32string_view{&event.utf32_char, 1},
-                                      buffer,
-                                      std::size(buffer));
-                std::string_view str{buffer, u8_char_size};
+                auto res = Core::System::UTF32ToUTF8(event.utf32_char);
+                std::string_view str{res.data, res.length};
 
                 std::cout << std::format(
                     "KeyboardCharacterPressedEvent:\n"
@@ -1080,10 +1076,10 @@ int EntryPoint(std::span<const std::string_view> arguments)
                     event.timestamp_ms,
                     ConcatModifiers(event.modifiers),
                     static_cast<std::uint32_t>(event.utf32_char),
-                    +buffer[0],
-                    +buffer[1],
-                    +buffer[2],
-                    +buffer[3],
+                    res.data[0],
+                    res.data[1],
+                    res.data[2],
+                    res.data[3],
                     str);
 
                 return Core::EventHandlerResult::None;
