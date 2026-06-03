@@ -66,7 +66,7 @@ INFO:
 * OpenGL backend as base classes?
 * Non-new allocated clipboard object
 * More clipboard formats: Dran'n'Drop file list
-
+* FunctionRef
 
 Instance:
     GetProperties ->
