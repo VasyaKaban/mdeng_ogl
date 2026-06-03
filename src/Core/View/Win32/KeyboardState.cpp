@@ -2,6 +2,7 @@
 #include "Core/Utils/ScopedCall.hpp"
 #include "WindowSubsystem.h"
 #include "hidusage.h"
+#include "Core/Utils/Unicode.h"
 
 namespace Core
 {
@@ -519,20 +520,22 @@ namespace Core
                         if(character != 0)
                         {
                             char16_t utf16_seq[2] = {character, 0};
-                            auto utf32 = Core::System::UTF16ToUTF32(utf16_seq);
-                            if(!utf32.has_value())
+                            char32_t utf32 = 0;
+                            std::size_t utf32_size = Core::UTF16ToUTF32(utf16_seq, &utf32, 1);
+
+                            if(utf32_size == 0)
                                 continue;
 
-                            if(*utf32 <= 0xFF)
+                            if(utf32 <= 0xFF)
                             {
-                                if(Core::System::IsUnicodeC0ControlCodeOrSpace(*utf32))
+                                if(Core::IsUnicodeC0ControlCodeOrSpace(utf32))
                                     continue;
                             }
 
-                            it->second = *utf32;
+                            it->second = utf32;
 
                             auto [s_it, s_inserted] = key_to_scancode_mapping.insert(std::pair{
-                                *utf32,
+                                utf32,
                                 scancode}); //there can be duplication of name(very very rare event but let's handle it)
 
                             if(!s_inserted)

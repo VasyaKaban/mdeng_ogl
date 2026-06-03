@@ -4,6 +4,7 @@
 #include <vector>
 #include <string_view>
 #include "System.h"
+#include "Unicode.h"
 
 int EntryPoint(std::span<const std::string_view> arguments);
 
@@ -25,7 +26,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
     if(args)
     {
         for(int i = 0; i < argc; i++)
-            string_arguments.push_back(Core::System::WideToUTF8(std::wstring_view(args[0])));
+        {
+            std::string arg(Core::UTF16ToUTF8({reinterpret_cast<const char16_t*>(args[i])}));
+            string_arguments.push_back(std::move(arg));
+        }
 
         LocalFree(args);
     }
