@@ -245,6 +245,8 @@ namespace Core
     struct WindowSubsystemConnectionInfo
     {
         WindowSubsystemConnectionType type;
+        KeyboardAccessState keyboard_access_state;
+        CursorState cursor_state;
     };
 
     CORE_API std::vector<WindowSubsystemConnectionType>
