@@ -2,20 +2,23 @@
 
 #include <concepts>
 #include <cassert>
+#include <utility>
 #include "NonCreatable.hpp"
+#include "Core/API.h"
 
 namespace Core
 {
-    class RC;
-
     template<typename T>
     class RCPointer;
 
-    class RC : NonCopyable, NonMovable
+    class CORE_API RC
     {
         template<typename T>
         friend class RCPointer;
     public:
+        CORE_NON_COPYABLE(RC)
+        CORE_NON_MOVABLE(RC)
+
         constexpr RC() noexcept
             : refs(0)
         {}
@@ -71,7 +74,7 @@ namespace Core
             : ptr(p.ptr)
         {
             if(ptr)
-                ptr->rc::IncrementRefs();
+                ptr->RC::IncrementRefs();
         }
 
         constexpr RCPointer& operator=(const RCPointer& p) noexcept
@@ -80,7 +83,7 @@ namespace Core
 
             ptr = p.ptr;
             if(ptr)
-                ptr->rc::IncrementRefs();
+                ptr->RC::IncrementRefs();
 
             return *this;
         }
@@ -91,7 +94,7 @@ namespace Core
             : ptr(p.ptr)
         {
             if(ptr)
-                ptr->rc::IncrementRefs();
+                ptr->RC::IncrementRefs();
         }
 
         template<typename U>
@@ -102,7 +105,7 @@ namespace Core
 
             ptr = p.ptr;
             if(ptr)
-                ptr->rc::IncrementRefs();
+                ptr->RC::IncrementRefs();
 
             return *this;
         }
@@ -143,7 +146,7 @@ namespace Core
 
             ptr = new_ptr;
             if(ptr)
-                ptr->rc::IncrementRefs();
+                ptr->RC::IncrementRefs();
         }
 
         constexpr std::size_t GetRefCount() const noexcept
@@ -151,7 +154,7 @@ namespace Core
             if(ptr == nullptr)
                 return 0;
 
-            return ptr->rc::refs;
+            return ptr->RC::refs;
         }
 
         constexpr T* Get() const noexcept
@@ -178,8 +181,8 @@ namespace Core
         {
             if(ptr != nullptr)
             {
-                ptr->rc::DecrementRefs();
-                if(!ptr->rc::IsAlive())
+                ptr->RC::DecrementRefs();
+                if(!ptr->RC::IsAlive())
                     delete ptr;
             }
         }

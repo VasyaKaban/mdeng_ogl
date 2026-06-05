@@ -229,12 +229,11 @@ namespace Core
 
         return result;
     }
-#error ADD THIS PTRS!!!!!!!!!!!!
 
-    Win32KeyboardState::Win32KeyboardState(Win32WindowSubsystemConnection* _parent,
-                                           KeyboardAccessState keybaord_access_state)
-        : parent(_parent),
-          access_state(keybaord_access_state),
+    Win32KeyboardState::Win32KeyboardState(Win32WindowSubsystemConnection* parent,
+                                           KeyboardAccessState access_state)
+        : parent(parent),
+          access_state(access_state),
           service_window_class_atom(0),
           service_window_handle(nullptr),
           vk_keyboard_state({}),
@@ -243,15 +242,15 @@ namespace Core
           current_layout(GetKeyboardLayout(Core::System::GetMainThreadID())),
           prev_scancode(0)
     {
-        HINSTANCE instance = parent->GetInstance();
+        HINSTANCE instance = this->parent->GetInstance();
         Core::ScopedCall cleanup(
             [instance, this]()
             {
-                if(service_window_handle)
-                    DestroyWindow(service_window_handle);
+                if(this->service_window_handle)
+                    DestroyWindow(this->service_window_handle);
 
-                if(service_window_class_atom)
-                    UnregisterClassW(MAKEINTATOM(service_window_class_atom), instance);
+                if(this->service_window_class_atom)
+                    UnregisterClassW(MAKEINTATOM(this->service_window_class_atom), instance);
             });
 
         //register raw input window class
@@ -269,32 +268,33 @@ namespace Core
                                      Win32KeyboardState::WIN32_KEYBOARD_STATE_CLASS_NAME,
                                  .hIconSm = nullptr};
 
-        service_window_class_atom = RegisterClassExW(&wnd_class);
-        if(service_window_class_atom == 0)
+        this->service_window_class_atom = RegisterClassExW(&wnd_class);
+        if(this->service_window_class_atom == 0)
             Core::System::ThrowLastError();
 
         //create raw input window
-        service_window_handle = CreateWindowExW(0,
-                                                Win32KeyboardState::WIN32_KEYBOARD_STATE_CLASS_NAME,
-                                                nullptr,
-                                                0,
-                                                CW_USEDEFAULT,
-                                                CW_USEDEFAULT,
-                                                0,
-                                                0,
-                                                nullptr,
-                                                nullptr,
-                                                instance,
-                                                this);
+        this->service_window_handle =
+            CreateWindowExW(0,
+                            Win32KeyboardState::WIN32_KEYBOARD_STATE_CLASS_NAME,
+                            nullptr,
+                            0,
+                            CW_USEDEFAULT,
+                            CW_USEDEFAULT,
+                            0,
+                            0,
+                            nullptr,
+                            nullptr,
+                            instance,
+                            this);
 
-        if(service_window_handle == nullptr)
+        if(this->service_window_handle == nullptr)
             Core::System::ThrowLastError();
 
-        RegisterRawKeyboardInput(service_window_handle, access_state);
+        RegisterRawKeyboardInput(this->service_window_handle, this->access_state);
         Reset();
 
         Core::System::SetLastError(ERROR_SUCCESS);
-        if(SetWindowLongPtrW(service_window_handle,
+        if(SetWindowLongPtrW(this->service_window_handle,
                              GWLP_USERDATA,
                              reinterpret_cast<LONG_PTR>(this)) == 0)
         {
@@ -303,12 +303,12 @@ namespace Core
         }
 
         //update keyboard state
-        scancode_to_key_mapping.reserve(SCANCODES_COUNT);
-        key_to_scancode_mapping.reserve(SCANCODES_COUNT);
+        this->scancode_to_key_mapping.reserve(SCANCODES_COUNT);
+        this->key_to_scancode_mapping.reserve(SCANCODES_COUNT);
         for(const auto& [sc, key]: STABLE_SCANCODES)
         {
-            scancode_to_key_mapping.insert(std::pair{sc, key});
-            key_to_scancode_mapping.insert(std::pair{key, sc});
+            this->scancode_to_key_mapping.insert(std::pair{sc, key});
+            this->key_to_scancode_mapping.insert(std::pair{key, sc});
         }
 
         auto size = GetKeyboardLayoutList(0, nullptr);
@@ -329,8 +329,8 @@ namespace Core
                 auto scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, l);
                 if(scancode != 0)
                 {
-                    auto [it, inserted] =
-                        scancode_to_key_mapping.insert(std::pair{scancode, SpecialKey::Unknown});
+                    auto [it, inserted] = this->scancode_to_key_mapping.insert(
+                        std::pair{scancode, SpecialKey::Unknown});
                     if(!inserted)
                     {
                         if(it->second != SpecialKey::Unknown)
@@ -353,12 +353,12 @@ namespace Core
 
                         it->second = *utf32;
 
-                        auto [s_it, s_inserted] = key_to_scancode_mapping.insert(std::pair{
+                        auto [s_it, s_inserted] = this->key_to_scancode_mapping.insert(std::pair{
                             *utf32,
                             scancode}); //there can be duplication of name(very very rare event but let's handle it)
 
                         if(!s_inserted)
-                            scancode_to_key_mapping.erase(it); //just remove it
+                            this->scancode_to_key_mapping.erase(it); //just remove it
                     }
                 }
             }
@@ -371,46 +371,19 @@ namespace Core
 
     Win32KeyboardState::~Win32KeyboardState()
     {
-        if(service_window_handle)
+        if(this->service_window_handle)
         {
-            DestroyWindow(service_window_handle);
-            UnregisterClassW(MAKEINTATOM(service_window_class_atom), parent->GetInstance());
+            DestroyWindow(this->service_window_handle);
+            UnregisterClassW(MAKEINTATOM(this->service_window_class_atom),
+                             this->parent->GetInstance());
             UnregisterRawKeyboardInput();
         }
     }
 
-    Win32KeyboardState::Win32KeyboardState(Win32KeyboardState&& state) noexcept
-        : parent(state.parent),
-          access_state(state.access_state),
-          service_window_class_atom(std::exchange(state.service_window_class_atom, 0)),
-          service_window_handle(std::exchange(state.service_window_handle, nullptr)),
-          vk_keyboard_state(state.vk_keyboard_state),
-          scancode_to_key_mapping(std::move(state.scancode_to_key_mapping)),
-          key_to_scancode_mapping(std::move(state.key_to_scancode_mapping)),
-          current_layout(state.current_layout),
-          prev_scancode(state.prev_scancode)
-    {}
-
-    Win32KeyboardState& Win32KeyboardState::operator=(Win32KeyboardState&& state) noexcept
-    {
-        this->~Win32KeyboardState();
-
-        parent = state.parent;
-        service_window_class_atom = std::exchange(state.service_window_class_atom, 0);
-        service_window_handle = std::exchange(state.service_window_handle, nullptr);
-        vk_keyboard_state = state.vk_keyboard_state;
-        scancode_to_key_mapping = std::move(state.scancode_to_key_mapping);
-        key_to_scancode_mapping = std::move(state.key_to_scancode_mapping);
-        current_layout = state.current_layout;
-        prev_scancode = state.prev_scancode;
-
-        return *this;
-    }
-
     KeyboardKey Win32KeyboardState::GetKeyByScancode(ScanCode scancode)
     {
-        auto it = scancode_to_key_mapping.find(scancode);
-        if(it != scancode_to_key_mapping.end())
+        auto it = this->scancode_to_key_mapping.find(scancode);
+        if(it != this->scancode_to_key_mapping.end())
             return it->second;
 
         return SpecialKey::Unknown;
@@ -418,8 +391,8 @@ namespace Core
 
     std::optional<ScanCode> Win32KeyboardState::GetScanCodeFromKey(KeyboardKey key)
     {
-        auto it = key_to_scancode_mapping.find(key);
-        if(it != key_to_scancode_mapping.end())
+        auto it = this->key_to_scancode_mapping.find(key);
+        if(it != this->key_to_scancode_mapping.end())
             return it->second;
 
         return std::nullopt;
@@ -427,28 +400,28 @@ namespace Core
 
     KeyboardAccessState Win32KeyboardState::GetKeyboardAccessState() const noexcept
     {
-        return access_state;
+        return this->access_state;
     }
 
     void Win32KeyboardState::SetKeyboardAccessState(KeyboardAccessState state)
     {
-        if(access_state == state)
+        if(this->access_state == state)
             return;
 
-        RegisterRawKeyboardInput(service_window_handle, state);
+        RegisterRawKeyboardInput(this->service_window_handle, state);
         Reset();
 
-        access_state = state;
+        this->access_state = state;
     }
 
     void Win32KeyboardState::UpdateCurrentLayout(HKL layout) noexcept
     {
-        current_layout = layout;
+        this->current_layout = layout;
     }
 
     void Win32KeyboardState::Reset()
     {
-        if(GetKeyboardState(vk_keyboard_state.data()) == 0)
+        if(GetKeyboardState(this->vk_keyboard_state.data()) == 0)
             Core::System::ThrowLastError();
     }
 
@@ -500,8 +473,8 @@ namespace Core
                 else if(data.Flags & RI_KEY_E1)
                     scancode |= 0xE1'00;
 
-                std::uint16_t stored_prev_scancode = prev_scancode;
-                prev_scancode = scancode;
+                std::uint16_t stored_prev_scancode = this->prev_scancode;
+                this->prev_scancode = scancode;
 
                 if(scancode == 0xE0'2A || scancode == 0xE0'AA || scancode == 0xE0'B6 ||
                    scancode == 0xE1'1D) //skip prefix scancodes
@@ -530,26 +503,26 @@ namespace Core
                 }
 
                 auto [scancode_it, _] =
-                    scancode_to_key_mapping.insert(std::pair{scancode, SpecialKey::Unknown});
+                    this->scancode_to_key_mapping.insert(std::pair{scancode, SpecialKey::Unknown});
 
                 //Update keyboard state
                 //Update pressed/released state
 
                 if(is_pressed)
                 {
-                    vk_keyboard_state[data.VKey] |= VIRTUAL_KEY_PRESSED_BIT;
+                    this->vk_keyboard_state[data.VKey] |= VIRTUAL_KEY_PRESSED_BIT;
                     if(lrvk)
                     {
-                        vk_keyboard_state[lrvk->common] |= VIRTUAL_KEY_PRESSED_BIT;
+                        this->vk_keyboard_state[lrvk->common] |= VIRTUAL_KEY_PRESSED_BIT;
                     }
                 }
                 else
                 {
-                    vk_keyboard_state[data.VKey] &= ~VIRTUAL_KEY_PRESSED_BIT;
+                    this->vk_keyboard_state[data.VKey] &= ~VIRTUAL_KEY_PRESSED_BIT;
                     if(lrvk)
                     {
                         //if(!(state->vk_keyboard_state[lrvk->contra] & VIRTUAL_KEY_PRESSED_BIT))
-                        vk_keyboard_state[lrvk->common] &= ~VIRTUAL_KEY_PRESSED_BIT;
+                        this->vk_keyboard_state[lrvk->common] &= ~VIRTUAL_KEY_PRESSED_BIT;
                     }
                 }
 
@@ -565,13 +538,13 @@ namespace Core
                 {
                     if(is_pressed) //toggled again
                     {
-                        if(!(vk_keyboard_state[data.VKey] & VIRTUAL_KEY_TOGGLED_BIT)) //toggle
+                        if(!(this->vk_keyboard_state[data.VKey] & VIRTUAL_KEY_TOGGLED_BIT)) //toggle
                         {
-                            vk_keyboard_state[data.VKey] |= VIRTUAL_KEY_TOGGLED_BIT;
+                            this->vk_keyboard_state[data.VKey] |= VIRTUAL_KEY_TOGGLED_BIT;
                         }
                         else //untoggle
                         {
-                            vk_keyboard_state[data.VKey] &= ~VIRTUAL_KEY_TOGGLED_BIT;
+                            this->vk_keyboard_state[data.VKey] &= ~VIRTUAL_KEY_TOGGLED_BIT;
                         }
                     }
                 }
@@ -586,7 +559,7 @@ namespace Core
                 {
                     if(is_pressed)
                     {
-                        parent->PushEvent(Event{
+                        this->parent->PushEvent(Event{
                             .data = KeyboardKeyPressedEvent{.timestamp_ms = GetEventTimestamp(),
                                                             .scancode = scancode,
                                                             .key = key,
@@ -595,7 +568,7 @@ namespace Core
                     }
                     else
                     {
-                        parent->PushEvent(Event{
+                        this->parent->PushEvent(Event{
                             .data =
                                 KeyboardKeyReleasedEvent{.timestamp_ms = GetEventTimestamp(),
                                                          .scancode = scancode,
@@ -611,11 +584,11 @@ namespace Core
 
                     int res = ToUnicodeEx(data.VKey,
                                           scancode,
-                                          vk_keyboard_state.data(),
+                                          this->vk_keyboard_state.data(),
                                           wbuffer,
                                           std::size(wbuffer),
                                           0,
-                                          current_layout);
+                                          this->current_layout);
 
                     if(res > 0) //neither dead key nor invalid combination
                     {
@@ -632,12 +605,13 @@ namespace Core
 
                         if(window)
                         {
-                            parent->PushEvent(Event{.data =
-                                                        KeyboardCharacterPressedEvent{
-                                                            .timestamp_ms = GetEventTimestamp(),
-                                                            .modifiers = state->GetModifierFlags(),
-                                                            .utf32_char = utf32},
-                                                    .handle = window});
+                            this->parent->PushEvent(
+                                Event{.data =
+                                          KeyboardCharacterPressedEvent{
+                                              .timestamp_ms = GetEventTimestamp(),
+                                              .modifiers = state->GetModifierFlags(),
+                                              .utf32_char = utf32},
+                                      .handle = window});
                         }
                     }
                 }

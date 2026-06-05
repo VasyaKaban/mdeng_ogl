@@ -19,12 +19,11 @@ namespace Core
                                                    LPARAM l_param);
     public:
         CORE_NON_COPYABLE(Win32KeyboardState)
+        CORE_NON_MOVABLE(Win32KeyboardState)
 
-        Win32KeyboardState(Win32WindowSubsystemConnection* _parent,
-                           KeyboardAccessState keybaord_access_state);
+        Win32KeyboardState(Win32WindowSubsystemConnection* parent,
+                           KeyboardAccessState access_state);
         ~Win32KeyboardState();
-        Win32KeyboardState(Win32KeyboardState&& state) noexcept;
-        Win32KeyboardState& operator=(Win32KeyboardState&& state) noexcept;
 
         KeyboardKey GetKeyByScancode(ScanCode scancode);
         std::optional<ScanCode> GetScanCodeFromKey(KeyboardKey key);

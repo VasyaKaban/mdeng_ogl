@@ -13,7 +13,7 @@ namespace Core
         CORE_NON_COPYABLE(Win32Clipboard)
         CORE_NON_MOVABLE(Win32Clipboard)
 
-        Win32Clipboard(Win32WindowSubsystemConnection* _parent);
+        Win32Clipboard(Win32WindowSubsystemConnection* parent);
         virtual ~Win32Clipboard() override;
 
         virtual ClipboardDataType GetDataType() const override;

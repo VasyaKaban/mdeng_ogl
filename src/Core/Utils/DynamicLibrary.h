@@ -8,9 +8,11 @@
 
 namespace Core
 {
-    class CORE_API DynamicLibrary : Core::NonCopyable
+    class CORE_API DynamicLibrary
     {
     public:
+        CORE_NON_COPYABLE(DynamicLibrary)
+
         using PFN_VoidFunction = void (*)();
 
         DynamicLibrary() noexcept;

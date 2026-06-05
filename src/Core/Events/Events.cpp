@@ -3,118 +3,121 @@
 
 namespace Core
 {
-    class EventHandler : public EmitterNode,
-                         public ListenerNode,
-                         Core::NonCopyable,
-                         Core::NonMovable
+    namespace Detail
     {
-    public:
-        EventHandler(EventHandlerCallerWrapperType _caller,
-                     EventHandlerDeleterWrapperType _deleter,
-                     void* _handler_memory,
-                     EmitterList* emitter_list,
-                     ListenerList* listener_list,
-                     EventHandlerState _state)
-            : handler_memory(_handler_memory),
-              caller(_caller),
-              deleter(_deleter),
-              state(_state),
-              counter(1) //for emitter
+        class EventHandler : public EmitterNode, public ListenerNode
         {
-            emitter_list->Push(this);
-            if(listener_list)
+        public:
+            CORE_NON_COPYABLE(EventHandler)
+            CORE_NON_MOVABLE(EventHandler)
+
+            EventHandler(EventHandlerCallerWrapperType _caller,
+                         EventHandlerDeleterWrapperType _deleter,
+                         void* _handler_memory,
+                         EmitterList* emitter_list,
+                         ListenerList* listener_list,
+                         EventHandlerState _state)
+                : handler_memory(_handler_memory),
+                  caller(_caller),
+                  deleter(_deleter),
+                  state(_state),
+                  counter(1) //for emitter
+            {
+                emitter_list->Push(this);
+                if(listener_list)
+                {
+                    counter++;
+                    listener_list->Push(this);
+                }
+                else
+                {
+                    this->ListenerNode::next = nullptr;
+                    this->ListenerNode::prev = nullptr;
+                }
+            }
+
+            ~EventHandler()
+            {
+                deleter(handler_memory);
+            }
+
+            EventHandlerResult operator()(const void* event)
+            {
+                return caller(handler_memory, event);
+            }
+
+            void Enable() noexcept
+            {
+                state = EventHandlerState::Enabled;
+            }
+
+            void Disable() noexcept
+            {
+                state = EventHandlerState::Disabled;
+            }
+
+            EventHandlerState GetState() const noexcept
+            {
+                return state;
+            }
+
+            void IncRef() noexcept
             {
                 counter++;
-                listener_list->Push(this);
             }
-            else
+
+            void ChainDisconnect()
             {
-                this->ListenerNode::next = nullptr;
-                this->ListenerNode::prev = nullptr;
+                DropListener();
+                DropEmitter();
+
+                if(counter == 0)
+                    delete this;
             }
-        }
 
-        ~EventHandler()
-        {
-            deleter(handler_memory);
-        }
-
-        EventHandlerResult operator()(const void* event)
-        {
-            return caller(handler_memory, event);
-        }
-
-        void Enable() noexcept
-        {
-            state = EventHandlerState::Enabled;
-        }
-
-        void Disable() noexcept
-        {
-            state = EventHandlerState::Disabled;
-        }
-
-        EventHandlerState GetState() const noexcept
-        {
-            return state;
-        }
-
-        void IncRef() noexcept
-        {
-            counter++;
-        }
-
-        void ChainDisconnect()
-        {
-            DropListener();
-            DropEmitter();
-
-            if(counter == 0)
-                delete this;
-        }
-
-        void RefDisconnect()
-        {
-            assert((counter > 0) && "Reference is not connected");
-
-            counter--;
-            if(counter == 0)
-                delete this;
-        }
-    private:
-        void DropListener() noexcept
-        {
-            bool erased = ListenerList::Erase(this);
-            if(erased)
+            void RefDisconnect()
             {
-                assert((counter > 0) && "Listener is not connected");
+                assert((counter > 0) && "Reference is not connected");
+
                 counter--;
+                if(counter == 0)
+                    delete this;
             }
-        }
-
-        void DropEmitter() noexcept
-        {
-            bool erased = EmitterList::Erase(this);
-            if(erased)
+        private:
+            void DropListener() noexcept
             {
-                assert((counter > 0) && "Emitter is not connected");
-                counter--;
+                bool erased = ListenerList::Erase(this);
+                if(erased)
+                {
+                    assert((counter > 0) && "Listener is not connected");
+                    counter--;
+                }
             }
-        }
-    private:
-        void* handler_memory;
-        EventHandlerResult (*caller)(void* memory, const void* event);
-        void (*deleter)(void* memory) noexcept;
-        EventHandlerState state;
 
-        std::uint64_t counter;
+            void DropEmitter() noexcept
+            {
+                bool erased = EmitterList::Erase(this);
+                if(erased)
+                {
+                    assert((counter > 0) && "Emitter is not connected");
+                    counter--;
+                }
+            }
+        private:
+            void* handler_memory;
+            EventHandlerResult (*caller)(void* memory, const void* event);
+            void (*deleter)(void* memory) noexcept;
+            EventHandlerState state;
+
+            std::uint64_t counter;
+        };
     };
 
     EventHandlerRef::EventHandlerRef() noexcept
         : handler(nullptr)
     {}
 
-    EventHandlerRef::EventHandlerRef(EventHandler* _handler) noexcept
+    EventHandlerRef::EventHandlerRef(Detail::EventHandler* _handler) noexcept
         : handler(_handler)
     {
         if(handler)
@@ -196,8 +199,9 @@ namespace Core
     }
 
     EventListener::EventListener() noexcept
-        : list(std::unique_ptr<ListenerList>(
-              new ListenerList(ListenerNode{.prev = nullptr, .next = nullptr}, nullptr)))
+        : list(std::unique_ptr<Detail::ListenerList>(
+              new Detail::ListenerList(Detail::ListenerNode{.prev = nullptr, .next = nullptr},
+                                       nullptr)))
     {}
 
     EventListener::~EventListener()
@@ -206,7 +210,7 @@ namespace Core
         {
             while(list->next != nullptr)
             {
-                auto handler = static_cast<EventHandler*>(list->next);
+                auto handler = static_cast<Detail::EventHandler*>(list->next);
                 handler->ChainDisconnect();
             }
         }
@@ -216,7 +220,9 @@ namespace Core
     {
         for(Core::ClassIDBase::ClassIDType id: reserved)
         {
-            EmitterList insert_list = {EmitterNode{.prev = nullptr, .next = nullptr}, nullptr};
+            Detail::EmitterList insert_list = {
+                Detail::EmitterNode{.prev = nullptr, .next = nullptr},
+                nullptr};
             mapping.insert(std::pair{id, insert_list});
         }
     }
@@ -227,7 +233,7 @@ namespace Core
         {
             while(list.next != nullptr)
             {
-                auto handler = static_cast<EventHandler*>(list.next);
+                auto handler = static_cast<Detail::EventHandler*>(list.next);
                 handler->ChainDisconnect();
             }
         }
@@ -252,14 +258,14 @@ namespace Core
         if(it == mapping.end())
             return;
 
-        EmitterList& list = it->second;
+        Detail::EmitterList& list = it->second;
         auto node = list.next;
         if(node == nullptr)
             return;
 
         while(node != &list)
         {
-            auto handler = static_cast<EventHandler*>(node);
+            auto handler = static_cast<Detail::EventHandler*>(node);
             if(handler->GetState() == EventHandlerState::Disabled)
             {
                 node = node->next;
@@ -285,8 +291,8 @@ namespace Core
     }
 
     EventHandlerRef EventEmitter::ConnectImpl(Core::ClassIDBase::ClassIDType id,
-                                              EventHandlerCallerWrapperType caller,
-                                              EventHandlerDeleterWrapperType deleter,
+                                              Detail::EventHandlerCallerWrapperType caller,
+                                              Detail::EventHandlerDeleterWrapperType deleter,
                                               void* handler_memory,
                                               EventListener* listener,
                                               EventHandlerState state)
@@ -297,10 +303,10 @@ namespace Core
                 deleter(handler_memory);
             });
 
-        EmitterList insert_list = EmitterList::CreateEmpty();
+        Detail::EmitterList insert_list = Detail::EmitterList::CreateEmpty();
         auto [it, _] = mapping.insert(std::pair{id, insert_list});
 
-        ListenerList* llist = nullptr;
+        Detail::ListenerList* llist = nullptr;
         if(listener)
         {
             assert((listener->list.get() != nullptr) &&
@@ -308,8 +314,8 @@ namespace Core
             llist = listener->list.get();
         }
 
-        EventHandler* handler =
-            new EventHandler(caller, deleter, handler_memory, &it->second, llist, state);
+        Detail::EventHandler* handler =
+            new Detail::EventHandler(caller, deleter, handler_memory, &it->second, llist, state);
 
         cleanup.Drop();
 

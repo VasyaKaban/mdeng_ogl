@@ -29,10 +29,10 @@ namespace Core
     namespace MouseButtonFlagBits
     {
         constexpr inline MouseButtonFlags LeftButton = 1 << 0;
-        constexpr inline MouseButtonFlags MiddleButton = 1 << 0;
-        constexpr inline MouseButtonFlags RightButton = 1 << 0;
-        constexpr inline MouseButtonFlags X1Button = 1 << 0;
-        constexpr inline MouseButtonFlags X2Button = 1 << 0;
+        constexpr inline MouseButtonFlags MiddleButton = 1 << 1;
+        constexpr inline MouseButtonFlags RightButton = 1 << 2;
+        constexpr inline MouseButtonFlags X1Button = 1 << 3;
+        constexpr inline MouseButtonFlags X2Button = 1 << 4;
     };
 
     using KeyboardKey = std::uint32_t;

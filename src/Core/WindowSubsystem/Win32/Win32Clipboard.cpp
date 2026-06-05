@@ -4,8 +4,8 @@
 
 namespace Core
 {
-    Win32Clipboard::Win32Clipboard(Win32WindowSubsystemConnection* _parent)
-        : parent(_parent),
+    Win32Clipboard::Win32Clipboard(Win32WindowSubsystemConnection* parent)
+        : parent(parent),
           handle(nullptr),
           raw_data(nullptr),
           format(0),

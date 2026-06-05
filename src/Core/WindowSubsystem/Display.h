@@ -10,8 +10,6 @@
 
 namespace Core
 {
-    class Window;
-
     class CORE_API Display : public RC,
                              protected ReservedEventEmitter<DisplayRemovedEvent,
                                                             DisplayMovedEvent,
@@ -27,7 +25,6 @@ namespace Core
         virtual VideoMode GetCurrentVideoMode() const = 0;
         virtual WindowPosition GetPosition() const = 0;
         virtual std::vector<VideoMode> GetVideoModes() const = 0;
-
         virtual float GetScaleFactor() const = 0; // return dpi / default_dpi;
         /*
         HIDPI handling:
