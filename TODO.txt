@@ -67,6 +67,7 @@ INFO:
 * Non-new allocated clipboard object
 * More clipboard formats: Dran'n'Drop file list
 * FunctionRef
+* RCPointer -> explicit instantitation for array types due to the operator delete[] need!
 
 Instance:
     GetProperties ->
