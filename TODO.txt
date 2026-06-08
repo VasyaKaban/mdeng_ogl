@@ -94,7 +94,8 @@ Instance:
             GetSwapchain
             ...
 
-Vector<T>
+Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
+Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
 Stack<T>
 Queue<T>
 Heap<T, Comparator>
