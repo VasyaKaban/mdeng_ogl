@@ -93,3 +93,76 @@ Instance:
             GetFeatures
             GetSwapchain
             ...
+
+Vector<T>
+Span<T>
+Stack<T>
+Queue<T>
+Heap<T, Comparator>
+List<T>
+Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
+UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
+StaticVector(like array but with reserve and push_back)<T, SIZE>
+Path
+PathView???
+File
+String<char8_t, char16_t, char32_t> + AsNative():
+	char8_t -> char
+	char16_t -> wchar_t on Win32 and char16_t elsewhere
+	char32_t -> wchar_t on non-Win32 targets and char32_t on Win32
+StringCharEncoder:
+	size_t GetInputDataSize(CHAR[any char that can be converted]* input, size_t size)
+	isize_t/*codepoint size: 0 -> end, > 0 -> success, < 0 -> error*/ GetNextCodePoint(CHAR[any char that can be converted]* input, size_t size, size_t& offset);
+String<CHAR, StringCharEncoder>	
+StringView<CHAR>
+NullTerminatedStringView<CHAR> -> throw exception on every innser string change when last char is not null-terminated
+Ring<T, SIZE>
+Pool<T>
+RawPool
+Union<Types...>
+Any
+Optional<T>
+Expected<T, E>
+Callable<R (Args... ?...) ?>
+CallableRef<R (Args... ?...) ?>
+Thread + Semaphores, barriers, fences, mutexes, ...
+Bitset???
+Matrix, vector???
+regex -> via PCRE???
+
+RCPointer:
+	T* ptr
+	where T: 
+		size_t IncrementRefs() noexcept;
+		size_t DecrementRefs() noecxept;
+		void operator delete(T* ptr) noexcept;
+		
+		
+class RC -> non-atomic counter. delete via class
+class ARC -> atomi counter. delete via class
+
+	
+class Container:
+	...
+	Allocator* allocator;
+	
+	+ void* ReleaseMemory(bool destroy_objects)
+	
+class RCPointer:
+	T* ptr
+	Allocator* allocator
+	
+	+ void* ReleaseMemory(bool destroy_objects);
+	
+class UniquePointer:
+	T* ptr
+	Allocator* allocator
+
+	+ void* ReleaseMemory(bool destroy_objects);//use it when we wnat to handle object itself or when we reset the inner allocator explicitly
+	
+
+class Allocator:
+	virtual void* Allocate(const MemoryRequirements& req) = 0;
+	virtual void Deallocate(void* ptr) = 0;
+	
+	+ void ResetAllocations();
