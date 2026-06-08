@@ -95,7 +95,6 @@ Instance:
             ...
 
 Vector<T>
-Span<T>
 Stack<T>
 Queue<T>
 Heap<T, Comparator>
