@@ -9,20 +9,20 @@ namespace Core
     {
         template<std::size_t N, typename T, typename... Args>
         requires(N < sizeof...(Args) + 1)
-        struct nth
+        struct Nth
         {
-            using type = nth<N - 1, Args...>::type;
+            using type = Nth<N - 1, Args...>::Type;
         };
 
         template<typename T, typename... Args>
-        struct nth<0, T, Args...>
+        struct Nth<0, T, Args...>
         {
-            using type = T;
+            using Type = T;
         };
 
         template<std::size_t N, typename T, typename... Args>
         requires(N < sizeof...(Args) + 1)
-        using nth_t = nth<N, T, Args...>;
+        using NthType = Nth<N, T, Args...>;
     };
 
     template<typename... Args>
@@ -32,7 +32,7 @@ namespace Core
 
         template<std::size_t Index>
         requires(Index < COUNT)
-        using Nth = Detail::nth<Index, Args...>::type;
+        using Nth = Detail::Nth<Index, Args...>::Type;
     };
 
     template<std::size_t Index, typename A, typename... Args>

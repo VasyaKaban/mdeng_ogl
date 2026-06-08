@@ -123,7 +123,6 @@ Any
 Optional<T>
 Expected<T, E>
 Callable<R (Args... ?...) ?>
-CallableRef<R (Args... ?...) ?>
 Thread + Semaphores, barriers, fences, mutexes, ...
 Bitset???
 Matrix, vector???
