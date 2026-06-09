@@ -24,19 +24,21 @@ namespace Core
     class CORE_API Allocator
     {
     public:
-        Allocator(Allocator1* handle = nullptr) noexcept;
+        Allocator(InterfacePointer<Allocator1> handle = nullptr) noexcept;
         ~Allocator() = default;
         Allocator(const Allocator&) = default;
         Allocator(Allocator&&) = default;
         Allocator& operator=(const Allocator&) = default;
         Allocator& operator=(Allocator&&) = default;
 
+        //Interface
         InterfaceVersion GetVersion() const noexcept;
 
+        //Allocator1
         void* Allocate(const MemoryRequirements& req) noexcept;
         void Deallocate(void* ptr) noexcept;
     private:
-        Allocator1* handle;
+        InterfacePointer<Allocator1> handle;
     };
 
     CORE_API Allocator GetGlobalAllocator() noexcept;

@@ -17,6 +17,16 @@ namespace Core
             return VERSION;
         }
 
+        virtual void Acquire() noexcept override
+        {
+            //noop
+        }
+
+        virtual void Release() noexcept override
+        {
+            //noop
+        }
+
         virtual void* Allocate(const MemoryRequirements& req) noexcept override
         {
             return ::operator new(req.size, std::align_val_t(req.alignment), std::nothrow_t{});
@@ -28,7 +38,7 @@ namespace Core
         }
     };
 
-    Allocator::Allocator(Allocator1* handle) noexcept
+    Allocator::Allocator(InterfacePointer<Allocator1> handle) noexcept
         : handle(handle)
     {}
 

@@ -124,6 +124,7 @@ Any
 Optional<T>
 Expected<T, E>
 Callable<R (Args... ?...) ?>
+Tuple<Types...>
 Thread + Semaphores, barriers, fences, mutexes, ...
 Bitset???
 Matrix, vector???
