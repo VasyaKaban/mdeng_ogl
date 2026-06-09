@@ -2,21 +2,23 @@
 
 #include <cstdint>
 #include <utility>
+#include "ClassID.hpp"
 #include "Core/API.h"
 
 namespace Core
 {
-    using InterfaceVersion = uint32_t;
-
     class CORE_API Interface
     {
     public:
         virtual ~Interface() = 0;
 
-        virtual InterfaceVersion GetVersion() const noexcept = 0;
+        //Implements: check that current object implements(has in hierarchy class with current ClassID)
+        //This methods should be implemented for interfaces. It is not required for end classes to implement this method
+        virtual bool Implements(ClassID id) const noexcept;
         virtual void Acquire() noexcept = 0;
         virtual void Release() noexcept = 0;
     };
+    CORE_CLASS_ID(CORE_API_TEMPLATE, CORE_API, Interface)
 
     template<typename T>
     class InterfacePointer

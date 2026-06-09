@@ -6,16 +6,16 @@ namespace Core
     Allocator1::~Allocator1()
     {}
 
-    class GlobalAllocator : public Allocator1
+    bool Allocator1::Implements(ClassID id) const noexcept
+    {
+        return id == ClassIdentity<Allocator1>::ID || this->Interface::Implements(id);
+    }
+
+    class GlobalAllocator final : public Allocator1
     {
     public:
         GlobalAllocator() = default;
         virtual ~GlobalAllocator() = default;
-
-        virtual InterfaceVersion GetVersion() const noexcept override
-        {
-            return VERSION;
-        }
 
         virtual void Acquire() noexcept override
         {
@@ -42,9 +42,9 @@ namespace Core
         : handle(handle)
     {}
 
-    InterfaceVersion Allocator::GetVersion() const noexcept
+    bool Allocator::Implements(ClassID id) const noexcept
     {
-        return this->handle->GetVersion();
+        return this->handle->Implements(id);
     }
 
     void* Allocator::Allocate(const MemoryRequirements& req) noexcept

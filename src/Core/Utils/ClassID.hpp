@@ -5,24 +5,26 @@
 
 namespace Core
 {
-    template<typename T>
-    class ClassID;
+    using ClassID = std::uint64_t;
 
-    class CORE_API ClassIDBase
+    template<typename T>
+    class ClassIdentity;
+
+    class CORE_API ClassIdentityBase
     {
-    public:
-        using ClassIDType = std::uint64_t;
     private:
         template<typename T>
-        friend class ClassID;
+        friend class ClassIdentity;
 
-        static ClassIDType GenerateID() noexcept;
+        static ClassID GenerateID() noexcept;
     };
 
     template<typename T>
-    class ClassID
+    class ClassIdentity
     {
     public:
-        static inline const ClassIDBase::ClassIDType ID = ClassIDBase::GenerateID();
+        static inline const ClassID ID = ClassIdentityBase::GenerateID();
     };
+
+#define CORE_CLASS_ID(TEMPLATE_API, API, TYPE) TEMPLATE_API template class API ClassIdentity<TYPE>;
 };

@@ -2,9 +2,9 @@
 
 namespace Core
 {
-    static ClassIDBase::ClassIDType CLASS_BASE_ID_COUNTER = 0;
+    static ClassID CLASS_BASE_ID_COUNTER = 0;
 
-    ClassIDBase::ClassIDType ClassIDBase::GenerateID() noexcept
+    ClassID ClassIdentityBase::GenerateID() noexcept
     {
         return CLASS_BASE_ID_COUNTER++;
     }
