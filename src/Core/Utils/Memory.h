@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cstddef>
-#include "Core/API.h"
+#include "Interface.h"
 
 namespace Core
 {
@@ -11,15 +10,34 @@ namespace Core
         size_t size;
     };
 
-    class CORE_API Allocator
+    class CORE_API Allocator1 : public Interface
     {
     public:
-        virtual ~Allocator() = 0;
+        constexpr static InterfaceVersion VERSION = 1;
+
+        virtual ~Allocator1() override = 0;
 
         virtual void* Allocate(const MemoryRequirements& req) noexcept = 0;
         virtual void Deallocate(void* ptr) noexcept = 0;
     };
 
-    CORE_API Allocator* GetGlobalAllocator() noexcept;
+    class CORE_API Allocator
+    {
+    public:
+        Allocator(Allocator1* handle = nullptr) noexcept;
+        ~Allocator() = default;
+        Allocator(const Allocator&) = default;
+        Allocator(Allocator&&) = default;
+        Allocator& operator=(const Allocator&) = default;
+        Allocator& operator=(Allocator&&) = default;
 
+        InterfaceVersion GetVersion() const noexcept;
+
+        void* Allocate(const MemoryRequirements& req) noexcept;
+        void Deallocate(void* ptr) noexcept;
+    private:
+        Allocator1* handle;
+    };
+
+    CORE_API Allocator GetGlobalAllocator() noexcept;
 };

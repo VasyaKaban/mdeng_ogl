@@ -3,14 +3,19 @@
 
 namespace Core
 {
-    Allocator::~Allocator()
+    Allocator1::~Allocator1()
     {}
 
-    class GlobalAllocator : public Allocator
+    class GlobalAllocator : public Allocator1
     {
     public:
         GlobalAllocator() = default;
         virtual ~GlobalAllocator() = default;
+
+        virtual InterfaceVersion GetVersion() const noexcept override
+        {
+            return VERSION;
+        }
 
         virtual void* Allocate(const MemoryRequirements& req) noexcept override
         {
@@ -23,10 +28,29 @@ namespace Core
         }
     };
 
+    Allocator::Allocator(Allocator1* handle) noexcept
+        : handle(handle)
+    {}
+
+    InterfaceVersion Allocator::GetVersion() const noexcept
+    {
+        return this->handle->GetVersion();
+    }
+
+    void* Allocator::Allocate(const MemoryRequirements& req) noexcept
+    {
+        return this->handle->Allocate(req);
+    }
+
+    void Allocator::Deallocate(void* ptr) noexcept
+    {
+        return this->handle->Deallocate(ptr);
+    }
+
     static GlobalAllocator GLOBAL_ALLOCATOR;
 
-    Allocator* GetGlobalAllocator() noexcept
+    Allocator GetGlobalAllocator() noexcept
     {
-        return &GLOBAL_ALLOCATOR;
+        return Allocator(&GLOBAL_ALLOCATOR);
     }
 };
