@@ -166,3 +166,16 @@ class Allocator:
 	virtual void Deallocate(void* ptr) = 0;
 	
 	+ void ResetAllocations();
+
+aligned(min=sizeof(u64)) PoolNode:
+    u32 header_start_offset
+    ...pad to alignof(Header)
+    Header:
+        u63 size
+        u1 is_free
+        u64 next
+        u64 prev
+        u64 next_free
+        u64 prev_free
+    ...data(aligned to data alignment)
+    ...pad to fill PollNode alignment(sizeof(u64))
