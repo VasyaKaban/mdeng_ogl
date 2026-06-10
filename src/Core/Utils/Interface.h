@@ -12,34 +12,52 @@ namespace Core
     public:
         virtual ~Interface() = 0;
 
-        //Implements: check that current object implements(has in hierarchy class with current ClassID)
-        //This methods should be implemented for interfaces. It is not required for end classes to implement this method
-        virtual bool Implements(ClassID id) const noexcept;
+        //Cast: check that current object implements(has in hierarchy class with current ClassID) and performs inner cast to the desired class type(with possible class disambiguation)
+        //This methods should be implemented for interfaces and for classes(in case of ambiguation)
+        virtual const void* Cast(ClassID id) const noexcept;
         virtual void Acquire() noexcept = 0;
         virtual void Release() noexcept = 0;
     };
     CORE_CLASS_ID(CORE_API_TEMPLATE, CORE_API, Interface)
 
+    //both To and From can be const or not
+    template<typename To, typename From>
+    requires std::is_base_of_v<Interface, std::remove_const_t<To>> &&
+             std::same_as<std::remove_const_t<To>, To> &&
+             std::is_base_of_v<Interface, std::remove_const_t<From>> &&
+             std::same_as<std::remove_const_t<From>, From> && std::convertible_to<From*, To*>
+    To* InterfaceCast(From* from) noexcept
+    {
+        ClassID id = ClassIdentity<std::remove_cvref_t<To>>::ID;
+
+        if constexpr(std::same_as<std::remove_const_t<From>, From>)
+            return static_cast<To*>(const_cast<void*>(from->Cast(id)));
+        else
+            return static_cast<To*>(from->Cast(id));
+    }
+
     template<typename T>
     class InterfacePointer
     {
+        static_assert(std::is_base_of_v<Interface, std::remove_const_t<T>>);
     public:
         InterfacePointer(T* obj = nullptr) noexcept
             : obj(obj)
         {
-            obj->Interface::Acquire();
+            if(this->obj)
+                this->obj->Interface::Acquire();
         }
 
         ~InterfacePointer()
         {
-            if(obj)
-                obj->Interface::Release();
+            if(this->obj)
+                this->obj->Interface::Release();
         }
 
         InterfacePointer(const InterfacePointer& ifacep) noexcept
         {
             ifacep.obj->Interface::Acquire();
-            obj = ifacep.obj;
+            this->obj = ifacep.obj;
         }
 
         InterfacePointer(InterfacePointer&& ifacep) noexcept
@@ -51,7 +69,7 @@ namespace Core
             Reset();
 
             ifacep.obj->Interface::Acquire();
-            obj = ifacep.obj;
+            this->obj = ifacep.obj;
 
             return *this;
         }
@@ -60,7 +78,7 @@ namespace Core
         {
             Reset();
 
-            obj = std::exchange(ifacep.obj, nullptr);
+            this->obj = std::exchange(ifacep.obj, nullptr);
 
             return *this;
         }
@@ -70,7 +88,7 @@ namespace Core
         InterfacePointer(const InterfacePointer<U>& ifacep) noexcept
         {
             ifacep.obj->Interface::Acquire();
-            obj = ifacep.obj;
+            this->obj = ifacep.obj;
         }
 
         template<typename U>
@@ -86,7 +104,7 @@ namespace Core
             Reset();
 
             ifacep.obj->Interface::Acquire();
-            obj = ifacep.obj;
+            this->obj = ifacep.obj;
 
             return *this;
         }
@@ -97,28 +115,40 @@ namespace Core
         {
             Reset();
 
-            obj = std::exchange(ifacep.obj, nullptr);
+            this->obj = std::exchange(ifacep.obj, nullptr);
 
             return *this;
         }
 
         void Reset() noexcept
         {
-            if(obj)
+            if(this->obj)
             {
-                obj->Interface::Release();
-                obj = nullptr;
+                this->obj->Interface::Release();
+                this->obj = nullptr;
             }
         }
 
         T* operator->() const noexcept
         {
-            return obj;
+            return this->obj;
         }
 
         explicit operator bool() const noexcept
         {
-            return obj != nullptr;
+            return this->obj != nullptr;
+        }
+
+        //both To and From can be const or not
+        template<typename To>
+        requires std::is_base_of_v<Interface, std::remove_const_t<To>> &&
+                 std::same_as<std::remove_const_t<To>, To> && std::convertible_to<T*, To*>
+        InterfacePointer<To> InterfaceCast() const noexcept
+        {
+            if(!this->obj)
+                return InterfacePointer<To>{};
+
+            return InterfacePointer<To>(::Core::InterfaceCast<To>(this->obj));
         }
     private:
         T* obj;

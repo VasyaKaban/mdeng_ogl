@@ -16,7 +16,7 @@ namespace Core
         virtual ~Allocator1() override = 0;
 
         //Interface
-        virtual bool Implements(ClassID id) const noexcept override;
+        virtual const void* Cast(ClassID id) const noexcept override;
 
         virtual void* Allocate(const MemoryRequirements& req) noexcept = 0;
         virtual void Deallocate(void* ptr) noexcept = 0;
@@ -26,15 +26,16 @@ namespace Core
     class CORE_API Allocator
     {
     public:
-        Allocator(InterfacePointer<Allocator1> handle = nullptr) noexcept;
+        Allocator() noexcept;
+        Allocator(InterfacePointer<Allocator1> handle) noexcept;
         ~Allocator() = default;
         Allocator(const Allocator&) = default;
         Allocator(Allocator&&) = default;
         Allocator& operator=(const Allocator&) = default;
         Allocator& operator=(Allocator&&) = default;
 
-        //Interface
-        bool Implements(ClassID id) const noexcept;
+        InterfacePointer<Allocator1> GetHandle() const noexcept;
+        explicit operator bool() const noexcept;
 
         //Allocator1
         void* Allocate(const MemoryRequirements& req) noexcept;

@@ -168,14 +168,15 @@ class Allocator:
 	+ void ResetAllocations();
 
 aligned(min=sizeof(u64)) PoolNode:
-    u32 header_start_offset
-    ...pad to alignof(Header)
+    ...padding in case of small block before
     Header:
-        u63 size
+        u32 before_padding_size
         u1 is_free
+        u64 size
         u64 next
         u64 prev
         u64 next_free
         u64 prev_free
     ...data(aligned to data alignment)
     ...pad to fill PollNode alignment(sizeof(u64))
+

@@ -6,9 +6,12 @@ namespace Core
     Allocator1::~Allocator1()
     {}
 
-    bool Allocator1::Implements(ClassID id) const noexcept
+    const void* Allocator1::Cast(ClassID id) const noexcept
     {
-        return id == ClassIdentity<Allocator1>::ID || this->Interface::Implements(id);
+        if(id == ClassIdentity<Allocator1>::ID)
+            return this;
+
+        return this->Interface::Cast(id);
     }
 
     class GlobalAllocator final : public Allocator1
@@ -38,13 +41,21 @@ namespace Core
         }
     };
 
+    Allocator::Allocator() noexcept
+        : handle()
+    {}
     Allocator::Allocator(InterfacePointer<Allocator1> handle) noexcept
         : handle(handle)
     {}
 
-    bool Allocator::Implements(ClassID id) const noexcept
+    InterfacePointer<Allocator1> Allocator::GetHandle() const noexcept
     {
-        return this->handle->Implements(id);
+        return this->handle;
+    }
+
+    Allocator::operator bool() const noexcept
+    {
+        return static_cast<bool>(this->handle);
     }
 
     void* Allocator::Allocate(const MemoryRequirements& req) noexcept
