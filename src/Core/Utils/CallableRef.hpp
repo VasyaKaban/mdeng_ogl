@@ -1,24 +1,94 @@
 #pragma once
 
-#include <memory>
+#include <type_traits>
+#include <concepts>
+#include "NonType.hpp"
 
 namespace Core
 {
     namespace Detail
     {
-        template<typename F, typename... Args>
-        constexpr auto CallableRefCallerWrapper(void* memory, Args... args) noexcept(
-            noexcept((*reinterpret_cast<F*>(memory))(args...)))
+        template<typename R, bool IsNoexcept, typename... Args>
+        constexpr R CallableRefCallerWrapperFunctionPointer(const void* memory, Args... args) noexcept(IsNoexcept)
         {
-            return (*reinterpret_cast<F*>(memory))(args...);
+            return (*reinterpret_cast<R (*)(Args...)>(const_cast<void*>(memory)))(args...);
         }
 
-        template<typename F, typename... Args>
-        constexpr auto CallableRefCallerWrapper(const void* memory, Args... args) noexcept(
-            noexcept((*reinterpret_cast<const F*>(memory))(args...)))
+        template<typename T, typename R, bool IsNoexcept, typename... Args>
+        constexpr R CallableRefCallerWrapperObject(const void* memory, Args... args) noexcept(IsNoexcept)
         {
-            return (*reinterpret_cast<const F*>(memory))(args...);
+            if constexpr(std::is_const_v<T>)
+                return (*reinterpret_cast<T*>(memory))(args...);
+            else
+                return (*reinterpret_cast<T*>(const_cast<void*>(memory)))(args...);
         }
+
+        //C: const, Member: const
+        //C: non-const, Member: non-const
+        //C: non-const, Member: const -> make C as const
+        template<typename C, auto Member, typename R, bool IsNoexcept, typename... Args>
+        constexpr R CallableRefCallerWrapperClassMember(const void* memory, Args... args) noexcept(IsNoexcept)
+        {
+            if constexpr(std::is_const_v<C>)
+                return (reinterpret_cast<C*>(memory)->*Member)(args...);
+            else
+                return (reinterpret_cast<C*>(const_cast<void*>(memory))->*Member)(args...);
+        }
+
+        template<typename R, bool IsConst, bool IsNoexcept, typename... Args>
+        class CallableRefBase
+        {
+        public:
+            CallableRefBase()
+                : memory(nullptr),
+                  caller(nullptr)
+            {}
+
+            CallableRefBase(R (*func_ptr)(Args...) noexcept(IsNoexcept)) noexcept
+            requires(!IsConst)
+                : memory(reinterpret_cast<const void*>(func_ptr)),
+                  caller(&Detail::CallableRefCallerWrapperFunctionPointer<R, IsNoexcept, Args...>)
+            {}
+
+            template<typename T>
+            requires((!std::is_const_v<T>) || (std::is_const_v<T> && IsConst)) && requires(T& obj, Args... args) {
+                { obj(args...) } -> std::same_as<R>;
+            }
+            CallableRefBase(T&& obj) noexcept
+                : memory(reinterpret_cast<const void*>(std::addressof(obj))),
+                  caller(&Detail::CallableRefCallerWrapperObject<std::conditional_t<IsConst, const std::remove_reference_t<T>, std::remove_reference_t<T>>, R, IsNoexcept>)
+            {}
+
+            template<auto Member, typename C>
+            requires((!std::is_const_v<C>) || (std::is_const_v<C> && IsConst)) && requires(C& obj, Args... args) {
+                { (obj.*Member)(args...) } -> std::same_as<R>;
+            }
+            CallableRefBase(NonTypeArgument<Member>, C&& obj) noexcept
+                : memory(reinterpret_cast<const void*>(std::addressof(obj))),
+                  caller(&Detail::CallableRefCallerWrapperClassMember<std::conditional_t<IsConst, const std::remove_reference_t<C>, std::remove_reference_t<C>>, Member, R, IsNoexcept>)
+            {}
+
+            ~CallableRefBase() = default;
+            CallableRefBase(const CallableRefBase&) = default;
+            CallableRefBase(CallableRefBase&&) = default;
+            CallableRefBase& operator=(const CallableRefBase&) = default;
+            CallableRefBase& operator=(CallableRefBase&&) = default;
+
+            template<typename... NArgs>
+            requires std::invocable<R(Args...), NArgs...>
+            R operator()(NArgs&&... args) const noexcept(IsNoexcept)
+            {
+                return this->caller(this->memory, std::forward<NArgs>(args)...);
+            }
+
+            constexpr explicit operator bool() const noexcept
+            {
+                return this->caller != nullptr;
+            }
+        private:
+            const void* memory;
+            R (*caller)(const void* memory, Args... args) noexcept(IsNoexcept);
+        };
     };
 
     template<typename F>
@@ -26,202 +96,32 @@ namespace Core
     class CallableRef;
 
     template<typename R, typename... Args>
-    class CallableRef<R(Args...)>
+    class CallableRef<R(Args...)> : public Detail::CallableRefBase<R, false, false, Args...>
     {
-    public:
-        CallableRef()
-            : memory(nullptr),
-              caller(nullptr)
-        {}
-
-        template<typename F>
-        requires requires(F& func, Args... args) {
-            { std::invoke(func, args...) } -> std::same_as<R>;
-        }
-        CallableRef(F& func) noexcept
-            : memory(reinterpret_cast<void*>(std::addressof(func))),
-              caller(&Detail::CallableRefCallerWrapper<F, Args...>)
-        {}
-
-        ~CallableRef() = default;
-        CallableRef(const CallableRef&) = default;
-        CallableRef(CallableRef&&) = default;
-        CallableRef& operator=(const CallableRef&) = default;
-        CallableRef& operator=(CallableRef&&) = default;
-
-        template<typename F>
-        requires requires(F& func, Args... args) {
-            { std::invoke(func, args...) } -> std::same_as<R>;
-        }
-        CallableRef& operator=(F& func) noexcept
-        {
-            this->memory = reinterpret_cast<void*>(std::addressof(func));
-            this->caller = &Detail::CallableRefCallerWrapper<F, Args...>;
-
-            return *this;
-        }
-
-        R operator()(Args... args) const
-        {
-            return this->caller(this->memory, args...);
-        }
-
-        constexpr explicit operator bool() const noexcept
-        {
-            return this->caller != nullptr;
-        }
-    private:
-        void* memory;
-        R (*caller)(void* memory, Args...);
+        using Detail::CallableRefBase<R, false, false, Args...>::CallableRefBase;
     };
 
     template<typename R, typename... Args>
-    class CallableRef<R(Args...) const>
+    class CallableRef<R(Args...) const> : public Detail::CallableRefBase<R, true, false, Args...>
     {
-    public:
-        CallableRef()
-            : memory(nullptr),
-              caller(nullptr)
-        {}
-
-        template<typename F>
-        requires requires(const F& func, Args... args) {
-            { std::invoke(func, args...) } -> std::same_as<R>;
-        }
-        CallableRef(const F& func) noexcept
-            : memory(reinterpret_cast<const void*>(std::addressof(func))),
-              caller(&Detail::CallableRefCallerWrapper<F, Args...>)
-        {}
-
-        ~CallableRef() = default;
-        CallableRef(const CallableRef&) = default;
-        CallableRef(CallableRef&&) = default;
-        CallableRef& operator=(const CallableRef&) = default;
-        CallableRef& operator=(CallableRef&&) = default;
-
-        template<typename F>
-        requires requires(const F& func, Args... args) {
-            { std::invoke(func, args...) } -> std::same_as<R>;
-        }
-        CallableRef& operator=(const F& func) noexcept
-        {
-            this->memory = reinterpret_cast<const void*>(std::addressof(func));
-            this->caller = &Detail::CallableRefCallerWrapper<F, Args...>;
-
-            return *this;
-        }
-
-        R operator()(Args... args) const
-        {
-            return this->caller(this->memory, args...);
-        }
-
-        constexpr explicit operator bool() const noexcept
-        {
-            return this->caller != nullptr;
-        }
-    private:
-        const void* memory;
-        R (*caller)(const void* memory, Args...);
+        using Detail::CallableRefBase<R, true, false, Args...>::CallableRefBase;
     };
 
     template<typename R, typename... Args>
-    class CallableRef<R(Args...) noexcept>
+    class CallableRef<R(Args...) noexcept> : public Detail::CallableRefBase<R, false, true, Args...>
     {
-    public:
-        CallableRef()
-            : memory(nullptr),
-              caller(nullptr)
-        {}
-
-        template<typename F>
-        requires requires(F& func, Args... args) {
-            { std::invoke(func, args...) } noexcept -> std::same_as<R>;
-        }
-        CallableRef(F& func) noexcept
-            : memory(reinterpret_cast<void*>(std::addressof(func))),
-              caller(&Detail::CallableRefCallerWrapper<F, Args...>)
-        {}
-
-        ~CallableRef() = default;
-        CallableRef(const CallableRef&) = default;
-        CallableRef(CallableRef&&) = default;
-        CallableRef& operator=(const CallableRef&) = default;
-        CallableRef& operator=(CallableRef&&) = default;
-
-        template<typename F>
-        requires requires(F& func, Args... args) {
-            { std::invoke(func, args...) } noexcept -> std::same_as<R>;
-        }
-        CallableRef& operator=(F& func) noexcept
-        {
-            this->memory = reinterpret_cast<void*>(std::addressof(func));
-            this->caller = &Detail::CallableRefCallerWrapper<F, Args...>;
-
-            return *this;
-        }
-
-        R operator()(Args... args) const noexcept
-        {
-            return this->caller(this->memory, args...);
-        }
-
-        constexpr explicit operator bool() const noexcept
-        {
-            return this->caller != nullptr;
-        }
-    private:
-        void* memory;
-        R (*caller)(void* memory, Args...) noexcept;
+        using Detail::CallableRefBase<R, false, true, Args...>::CallableRefBase;
     };
 
     template<typename R, typename... Args>
-    class CallableRef<R(Args...) const noexcept>
+    class CallableRef<R(Args...) const noexcept> : public Detail::CallableRefBase<R, true, true, Args...>
     {
-    public:
-        CallableRef()
-            : memory(nullptr),
-              caller(nullptr)
-        {}
-
-        template<typename F>
-        requires requires(const F& func, Args... args) {
-            { std::invoke(func, args...) } noexcept -> std::same_as<R>;
-        }
-        CallableRef(const F& func) noexcept
-            : memory(reinterpret_cast<const void*>(std::addressof(func))),
-              caller(&Detail::CallableRefCallerWrapper<F, Args...>)
-        {}
-
-        ~CallableRef() = default;
-        CallableRef(const CallableRef&) = default;
-        CallableRef(CallableRef&&) = default;
-        CallableRef& operator=(const CallableRef&) = default;
-        CallableRef& operator=(CallableRef&&) = default;
-
-        template<typename F>
-        requires requires(const F& func, Args... args) {
-            { std::invoke(func, args...) } noexcept -> std::same_as<R>;
-        }
-        CallableRef& operator=(const F& func) noexcept
-        {
-            this->memory = reinterpret_cast<const void*>(std::addressof(func));
-            this->caller = &Detail::CallableRefCallerWrapper<F, Args...>;
-
-            return *this;
-        }
-
-        R operator()(Args... args) const noexcept
-        {
-            return this->caller(this->memory, args...);
-        }
-
-        constexpr explicit operator bool() const noexcept
-        {
-            return this->caller != nullptr;
-        }
-    private:
-        const void* memory;
-        R (*caller)(const void* memory, Args...) noexcept;
+        using Detail::CallableRefBase<R, true, true, Args...>::CallableRefBase;
     };
+
+    template<typename R, typename... Args>
+    CallableRef(R (*func_ptr)(Args...)) -> CallableRef<R(Args...)>;
+
+    template<typename R, typename... Args>
+    CallableRef(R (*func_ptr)(Args...) noexcept) -> CallableRef<R(Args...) noexcept>;
 };

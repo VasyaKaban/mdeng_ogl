@@ -63,7 +63,7 @@ BreakBeforeTernaryOperators: false
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
 BreakStringLiterals: true
-ColumnLimit: 100
+ColumnLimit: 200
 CompactNamespaces: false
 Cpp11BracedListStyle: true
 DisableFormat: false
