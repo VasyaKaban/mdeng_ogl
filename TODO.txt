@@ -191,4 +191,11 @@ Pool:
     T* front -> nullptr if empty
 
 Change <typename U> to both versions of const T& and T&& for push and insert 
-FunctionRef -> support for member functions and what about & and && quals?
+
+	
+Function:
+	const void* memory;
+	size_t memory_size;
+	R(*caller)(void *memory, Args...);
+	void(*destroyer)(void* memory) noexcept;
+	
