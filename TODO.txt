@@ -99,7 +99,6 @@ Vector<T> + remove Resize and all default_value and add Unchecked push_back(with
 Stack<T>
 Queue<T>
 Heap<T, Comparator>
-List<T>
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
 StaticVector(like array but with reserve and push_back)<T, SIZE>
