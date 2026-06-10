@@ -1,5 +1,6 @@
 #include "Memory.h"
 #include <new>
+#include "Binary.hpp"
 
 namespace Core
 {
@@ -30,14 +31,36 @@ namespace Core
             //noop
         }
 
-        virtual void* Allocate(const MemoryRequirements& req) noexcept override
+        virtual void* Allocate(const MemoryRequirements& req) override
         {
-            return ::operator new(req.size, std::align_val_t(req.alignment), std::nothrow_t{});
+            if(!IsPowerOf2(req.alignment))
+                CORE_THROW_EXCEPTION_MOCK("Alignment is not power of two")
+
+            MemoryRequirements new_req(req);
+            if(!Align(new_req.size, new_req.alignment))
+                CORE_THROW_EXCEPTION_MOCK("Too many memory requested")
+
+            void* ptr =
+                ::operator new(new_req.size, std::align_val_t(new_req.alignment), std::nothrow_t{});
+            if(!ptr)
+                CORE_THROW_EXCEPTION_MOCK("Bad alloc")
+
+            return ptr;
         }
 
         virtual void Deallocate(void* ptr) noexcept override
         {
             ::operator delete(ptr);
+        }
+
+        virtual bool Grow(void* ptr, size_t size) noexcept override
+        {
+            return false;
+        }
+
+        virtual bool Trim(void* ptr, size_t size) noexcept override
+        {
+            return false;
         }
     };
 
@@ -58,7 +81,7 @@ namespace Core
         return static_cast<bool>(this->handle);
     }
 
-    void* Allocator::Allocate(const MemoryRequirements& req) noexcept
+    void* Allocator::Allocate(const MemoryRequirements& req)
     {
         return this->handle->Allocate(req);
     }
@@ -66,6 +89,16 @@ namespace Core
     void Allocator::Deallocate(void* ptr) noexcept
     {
         return this->handle->Deallocate(ptr);
+    }
+
+    bool Allocator::Grow(void* ptr, size_t size) noexcept
+    {
+        return this->handle->Grow(ptr, size);
+    }
+
+    bool Allocator::Trim(void* ptr, size_t size) noexcept
+    {
+        return this->handle->Trim(ptr, size);
     }
 
     static GlobalAllocator GLOBAL_ALLOCATOR;

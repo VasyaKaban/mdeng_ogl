@@ -1,13 +1,6 @@
-/**
- * @file
- *
- * Represents scoped_call class
- */
-
 #pragma once
 
 #include <concepts>
-#include <optional>
 #include <utility>
 
 namespace Core
@@ -16,87 +9,116 @@ namespace Core
     class ScopedCall
     {
     public:
-        constexpr ScopedCall() = default;
-
-        constexpr ScopedCall(const F& _func) noexcept(std::is_nothrow_copy_constructible_v<F>)
-        requires std::is_copy_constructible_v<F>
-            : func(_func)
+        constexpr ScopedCall() noexcept
+            : created(false)
         {}
 
-        constexpr ScopedCall(F&& _func) noexcept(std::is_nothrow_move_constructible_v<F>)
+        constexpr ScopedCall(const F& func) noexcept(std::is_nothrow_copy_constructible_v<F>)
+        requires std::is_copy_constructible_v<F>
+            : data{func},
+              created(true)
+        {}
+
+        constexpr ScopedCall(F&& func) noexcept(std::is_nothrow_move_constructible_v<F>)
         requires std::is_move_constructible_v<F>
-            : func(std::move(_func))
+            : data(std::move(func)),
+              created(true)
         {}
 
         constexpr ~ScopedCall()
         {
-            if(func)
-                func.value()();
+            if(created)
+            {
+                data.func();
+                data.func.~F();
+            }
         }
 
-        constexpr ScopedCall(const ScopedCall& d_destroy) noexcept(
+        constexpr ScopedCall(const ScopedCall& scall) noexcept(
             std::is_nothrow_copy_constructible_v<F>)
         requires std::is_copy_constructible_v<F>
-            : func(d_destroy.func)
+            : data(scall.data),
+              created(scall.created)
         {}
 
-        constexpr ScopedCall(ScopedCall&& d_destroy) noexcept(
-            std::is_nothrow_move_constructible_v<F>)
+        constexpr ScopedCall(ScopedCall&& scall) noexcept(std::is_nothrow_move_constructible_v<F>)
         requires std::is_move_constructible_v<F>
-            : func(std::move(d_destroy.func))
+            : data(std::move(scall.data)),
+              created(std::exchange(scall.created, false))
         {}
 
         ScopedCall&
-        operator=(const ScopedCall& d_destroy) noexcept(std::is_nothrow_copy_assignable_v<F>)
+        operator=(const ScopedCall& scall) noexcept(std::is_nothrow_copy_assignable_v<F>)
         requires std::is_copy_assignable_v<F>
         {
-            func = d_destroy.func;
+            this->Drop();
+
+            this->data = scall.data;
+            this->created = scall.created;
+
             return *this;
         }
 
-        ScopedCall& operator=(const F& _func) noexcept(std::is_nothrow_copy_assignable_v<F>)
+        ScopedCall& operator=(ScopedCall&& scall) noexcept(std::is_nothrow_move_assignable_v<F>)
+        requires std::is_move_assignable_v<F>
+        {
+            this->Drop();
+
+            this->data = std::move(scall.data);
+            this->created = std::exchange(scall.created, false);
+
+            return *this;
+        }
+
+        ScopedCall& operator=(const F& func) noexcept(std::is_nothrow_copy_assignable_v<F>)
         requires std::is_copy_assignable_v<F>
         {
-            func = _func;
+            this->Drop();
+
+            this->data = func;
+            this->created = true;
+
             return *this;
         }
 
-        ScopedCall& operator=(F&& _func) noexcept(std::is_nothrow_move_assignable_v<F>)
+        ScopedCall& operator=(F&& func) noexcept(std::is_nothrow_move_assignable_v<F>)
         requires std::is_move_assignable_v<F>
         {
-            func = std::move<F>(_func);
-            return *this;
-        }
+            this->Drop();
 
-        ScopedCall& operator=(ScopedCall&& d_destroy) noexcept(std::is_nothrow_move_assignable_v<F>)
-        requires std::is_move_assignable_v<F>
-        {
-            func = std::move(d_destroy.func);
-            return *this;
-        }
+            this->data = std::move(func);
+            this->created = true;
 
-        ScopedCall& operator=(const std::nullopt_t&) noexcept
-        {
-            func.reset();
             return *this;
         }
 
         constexpr explicit operator bool() const noexcept
         {
-            return func;
+            return this->created;
         }
 
         constexpr void Drop() noexcept
         {
-            func = std::nullopt;
+            if(this->created)
+            {
+                this->data.func.~F();
+                this->created = false;
+            }
         }
 
         constexpr void Call() const noexcept(std::is_nothrow_invocable_v<F>)
         {
-            if(func)
-                func.value()();
+            if(this->created)
+                this->data.func();
         }
     private:
-        std::optional<F> func;
+        union ScopedCallCallableWrapper
+        {
+            F func;
+
+            ~ScopedCallCallableWrapper()
+            {}
+        } data;
+        bool created;
     };
 };

@@ -179,3 +179,15 @@ aligned(min=sizeof(u64)) PoolNode:
     ...data(aligned to data alignment)
     ...pad to fill PollNode alignment(sizeof(u64))
 
+
+
+Queue:
+    Allocator allocator
+    Chain<Pool> free_pools
+    Chain<Pool> active_pools
+
+Pool:
+    T data[SIZE]
+    T* front -> nullptr if empty
+
+Change <typename U> to both versions of const T& and T&& for push and insert 

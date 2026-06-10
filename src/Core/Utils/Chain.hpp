@@ -336,14 +336,14 @@ namespace Core
             return Iterator(this->base.next);
         }
 
-        Iterator End() noexcept
-        {
-            return Iterator(&this->base);
-        }
-
         ConstIterator Begin() const noexcept
         {
             return ConstIterator(this->base.next);
+        }
+
+        Iterator End() noexcept
+        {
+            return Iterator(&this->base);
         }
 
         ConstIterator End() const noexcept
@@ -399,8 +399,6 @@ namespace Core
         {
             Node* node = static_cast<Node*>(this->allocator.Allocate(
                 MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
-            if(!node)
-                CORE_THROW_EXCEPTION_MOCK("Bad alloc")
 
             try
             {

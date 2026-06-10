@@ -18,8 +18,13 @@ namespace Core
         //Interface
         virtual const void* Cast(ClassID id) const noexcept override;
 
-        virtual void* Allocate(const MemoryRequirements& req) noexcept = 0;
+        virtual void* Allocate(const MemoryRequirements& req) = 0;
         virtual void Deallocate(void* ptr) noexcept = 0;
+        virtual bool
+        Grow(void* ptr,
+             size_t size /*grow allocation to the 'size' bytes. without realloc*/) noexcept = 0;
+        virtual bool Trim(void* ptr,
+                          size_t size /*trim allocation to the 'size' bytes*/) noexcept = 0;
     };
     CORE_CLASS_ID(CORE_API_TEMPLATE, CORE_API, Allocator1)
 
@@ -38,8 +43,10 @@ namespace Core
         explicit operator bool() const noexcept;
 
         //Allocator1
-        void* Allocate(const MemoryRequirements& req) noexcept;
+        void* Allocate(const MemoryRequirements& req);
         void Deallocate(void* ptr) noexcept;
+        bool Grow(void* ptr, size_t size) noexcept;
+        bool Trim(void* ptr, size_t size) noexcept;
     private:
         InterfacePointer<Allocator1> handle;
     };
