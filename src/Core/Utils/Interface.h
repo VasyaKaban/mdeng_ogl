@@ -1,34 +1,35 @@
 #pragma once
 
-#include <cstdint>
 #include <utility>
-#include "ClassID.hpp"
+#include "UUID.hpp"
 #include "Core/API.h"
 
 namespace Core
 {
+#define CORE_INTERFACE_ID(VALUE) constexpr static UUID INTERFACE_IDENTITY = VALUE;
+#define CORE_INTERFACE_GET_ID(CLASS, ...) CLASS __VA_OPT__(, __VA_ARGS__)::INTERFACE_IDENTITY
+
     class CORE_API Interface
     {
     public:
+        CORE_INTERFACE_ID("57e7739d-9466-4a43-8e02-c0ef30a14df9")
+
         virtual ~Interface() = 0;
 
         //Cast: check that current object implements(has in hierarchy class with current ClassID) and performs inner cast to the desired class type(with possible class disambiguation)
         //This methods should be implemented for interfaces and for classes(in case of ambiguation)
-        virtual const void* Cast(ClassID id) const noexcept;
+        virtual const void* Cast(const UUID& id) const noexcept;
         virtual void Acquire() noexcept = 0;
         virtual void Release() noexcept = 0;
     };
-    CORE_CLASS_ID(CORE_API_TEMPLATE, CORE_API, Interface)
 
     //both To and From can be const or not
     template<typename To, typename From>
-    requires std::is_base_of_v<Interface, std::remove_const_t<To>> &&
-             std::same_as<std::remove_const_t<To>, To> &&
-             std::is_base_of_v<Interface, std::remove_const_t<From>> &&
+    requires std::is_base_of_v<Interface, std::remove_const_t<To>> && std::same_as<std::remove_const_t<To>, To> && std::is_base_of_v<Interface, std::remove_const_t<From>> &&
              std::same_as<std::remove_const_t<From>, From> && std::convertible_to<From*, To*>
     To* InterfaceCast(From* from) noexcept
     {
-        ClassID id = ClassIdentity<std::remove_cvref_t<To>>::ID;
+        const auto& id = CORE_INTERFACE_GET_ID(std::remove_cvref_t<To>);
 
         if constexpr(std::same_as<std::remove_const_t<From>, From>)
             return static_cast<To*>(const_cast<void*>(from->Cast(id)));
@@ -141,8 +142,7 @@ namespace Core
 
         //both To and From can be const or not
         template<typename To>
-        requires std::is_base_of_v<Interface, std::remove_const_t<To>> &&
-                 std::same_as<std::remove_const_t<To>, To> && std::convertible_to<T*, To*>
+        requires std::is_base_of_v<Interface, std::remove_const_t<To>> && std::same_as<std::remove_const_t<To>, To> && std::convertible_to<T*, To*>
         InterfacePointer<To> InterfaceCast() const noexcept
         {
             if(!this->obj)

@@ -2,7 +2,7 @@
 
 #include <type_traits>
 #include <concepts>
-#include "NonType.hpp"
+#include "Traits.hpp"
 
 namespace Core
 {
@@ -11,16 +11,7 @@ namespace Core
         template<typename R, bool IsNoexcept, typename... Args>
         constexpr R CallableRefCallerWrapperFunctionPointer(const void* memory, Args... args) noexcept(IsNoexcept)
         {
-            return (*reinterpret_cast<R (*)(Args...)>(const_cast<void*>(memory)))(args...);
-        }
-
-        template<typename T, typename R, bool IsNoexcept, typename... Args>
-        constexpr R CallableRefCallerWrapperObject(const void* memory, Args... args) noexcept(IsNoexcept)
-        {
-            if constexpr(std::is_const_v<T>)
-                return (*reinterpret_cast<T*>(memory))(args...);
-            else
-                return (*reinterpret_cast<T*>(const_cast<void*>(memory)))(args...);
+            return (*reinterpret_cast<R (*)(Args...)>(const_cast<void*>(memory)))(std::forward<Args>(args)...);
         }
 
         //C: const, Member: const
@@ -30,9 +21,9 @@ namespace Core
         constexpr R CallableRefCallerWrapperClassMember(const void* memory, Args... args) noexcept(IsNoexcept)
         {
             if constexpr(std::is_const_v<C>)
-                return (reinterpret_cast<C*>(memory)->*Member)(args...);
+                return (reinterpret_cast<C*>(memory)->*Member)(std::forward<Args>(args)...);
             else
-                return (reinterpret_cast<C*>(const_cast<void*>(memory))->*Member)(args...);
+                return (reinterpret_cast<C*>(const_cast<void*>(memory))->*Member)(std::forward<Args>(args)...);
         }
 
         template<typename R, bool IsConst, bool IsNoexcept, typename... Args>
@@ -50,22 +41,22 @@ namespace Core
                   caller(&Detail::CallableRefCallerWrapperFunctionPointer<R, IsNoexcept, Args...>)
             {}
 
-            template<typename T>
-            requires((!std::is_const_v<T>) || (std::is_const_v<T> && IsConst)) && requires(T& obj, Args... args) {
-                { obj(args...) } -> std::same_as<R>;
+            template<typename C, auto Member = static_cast<R (std::remove_cvref_t<C>::*)(Args...) const noexcept(IsNoexcept)>(&std::remove_cvref_t<C>::operator())>
+            requires IsConst && requires(C&& obj, Args... args) {
+                { (std::forward<C>(obj).*Member)(std::forward<Args>(args)...) } -> std::same_as<R>;
             }
-            CallableRefBase(T&& obj) noexcept
+            CallableRefBase(C&& obj, NonType<Member> = NonTypeArgument<Member>) noexcept
                 : memory(reinterpret_cast<const void*>(std::addressof(obj))),
-                  caller(&Detail::CallableRefCallerWrapperObject<std::conditional_t<IsConst, const std::remove_reference_t<T>, std::remove_reference_t<T>>, R, IsNoexcept>)
+                  caller(&Detail::CallableRefCallerWrapperClassMember<const std::remove_reference_t<C>, Member, R, IsNoexcept>)
             {}
 
-            template<auto Member, typename C>
-            requires((!std::is_const_v<C>) || (std::is_const_v<C> && IsConst)) && requires(C& obj, Args... args) {
-                { (obj.*Member)(args...) } -> std::same_as<R>;
+            template<typename C, auto Member = static_cast<R (std::remove_cvref_t<C>::*)(Args...) noexcept(IsNoexcept)>(&std::remove_cvref_t<C>::operator())>
+            requires(!IsConst && !std::is_const_v<C>) && requires(C&& obj, Args... args) {
+                { (std::forward<C>(obj).*Member)(std::forward<Args>(args)...) } -> std::same_as<R>;
             }
-            CallableRefBase(NonTypeArgument<Member>, C&& obj) noexcept
+            CallableRefBase(C&& obj, NonType<Member> = NonTypeArgument<Member>) noexcept
                 : memory(reinterpret_cast<const void*>(std::addressof(obj))),
-                  caller(&Detail::CallableRefCallerWrapperClassMember<std::conditional_t<IsConst, const std::remove_reference_t<C>, std::remove_reference_t<C>>, Member, R, IsNoexcept>)
+                  caller(&Detail::CallableRefCallerWrapperClassMember<std::remove_reference_t<C>, Member, R, IsNoexcept>)
             {}
 
             ~CallableRefBase() = default;
@@ -74,11 +65,9 @@ namespace Core
             CallableRefBase& operator=(const CallableRefBase&) = default;
             CallableRefBase& operator=(CallableRefBase&&) = default;
 
-            template<typename... NArgs>
-            requires std::invocable<R(Args...), NArgs...>
-            R operator()(NArgs&&... args) const noexcept(IsNoexcept)
+            R operator()(Args... args) const noexcept(IsNoexcept)
             {
-                return this->caller(this->memory, std::forward<NArgs>(args)...);
+                return this->caller(this->memory, std::forward<Args>(args)...);
             }
 
             constexpr explicit operator bool() const noexcept
@@ -124,4 +113,19 @@ namespace Core
 
     template<typename R, typename... Args>
     CallableRef(R (*func_ptr)(Args...) noexcept) -> CallableRef<R(Args...) noexcept>;
+
+    template<typename C>
+    CallableRef(C&& obj) -> CallableRef<ClassMemberType<decltype(&std::remove_cvref_t<C>::operator())>>;
+
+    template<auto Member, typename R, typename... Args, typename C>
+    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...)>) -> CallableRef<R(Args...)>;
+
+    template<auto Member, typename R, typename... Args, typename C>
+    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...) const>) -> CallableRef<R(Args...) const>;
+
+    template<auto Member, typename R, typename... Args, typename C>
+    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...) noexcept>) -> CallableRef<R(Args...) noexcept>;
+
+    template<auto Member, typename R, typename... Args, typename C>
+    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...) const noexcept>) -> CallableRef<R(Args...) const noexcept>;
 };

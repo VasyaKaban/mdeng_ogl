@@ -7,9 +7,9 @@ namespace Core
     Allocator1::~Allocator1()
     {}
 
-    const void* Allocator1::Cast(ClassID id) const noexcept
+    const void* Allocator1::Cast(const UUID& id) const noexcept
     {
-        if(id == ClassIdentity<Allocator1>::ID)
+        if(id == CORE_INTERFACE_GET_ID(Allocator1))
             return this;
 
         return this->Interface::Cast(id);
@@ -40,8 +40,7 @@ namespace Core
             if(!Align(new_req.size, new_req.alignment))
                 CORE_THROW_EXCEPTION_MOCK("Too many memory requested")
 
-            void* ptr =
-                ::operator new(new_req.size, std::align_val_t(new_req.alignment), std::nothrow_t{});
+            void* ptr = ::operator new(new_req.size, std::align_val_t(new_req.alignment), std::nothrow_t{});
             if(!ptr)
                 CORE_THROW_EXCEPTION_MOCK("Bad alloc")
 

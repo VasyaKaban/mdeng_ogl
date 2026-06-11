@@ -5,8 +5,11 @@ namespace Core
     Interface::~Interface()
     {}
 
-    bool Interface::Implements(ClassID id) const noexcept
+    const void* Interface::Cast(const UUID& id) const noexcept
     {
-        return id == ClassIdentity<Interface>::ID;
+        if(id == CORE_INTERFACE_GET_ID(Interface))
+            return this;
+
+        return nullptr;
     }
 };

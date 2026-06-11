@@ -20,13 +20,13 @@ namespace Core
     concept TypeInstantiation = IsTypeInstantiation<T, D>::VALUE;
 
     template<typename T, template<auto...> typename D>
-    struct IsNonTypeInstantiation : std::false_type
+    struct IsNonTypeInstantiation
     {
         constexpr static bool VALUE = false;
     };
 
     template<auto... Args, template<auto...> typename D>
-    struct IsNonTypeInstantiation<D<Args...>, D> : std::true_type
+    struct IsNonTypeInstantiation<D<Args...>, D>
     {
         constexpr static bool VALUE = true;
     };

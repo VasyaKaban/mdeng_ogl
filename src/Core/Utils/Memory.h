@@ -13,20 +13,18 @@ namespace Core
     class CORE_API Allocator1 : public Interface
     {
     public:
+        CORE_INTERFACE_ID("4f256e68-169d-48f0-8229-936d97facf1d")
+
         virtual ~Allocator1() override = 0;
 
         //Interface
-        virtual const void* Cast(ClassID id) const noexcept override;
+        virtual const void* Cast(const UUID& id) const noexcept override;
 
         virtual void* Allocate(const MemoryRequirements& req) = 0;
         virtual void Deallocate(void* ptr) noexcept = 0;
-        virtual bool
-        Grow(void* ptr,
-             size_t size /*grow allocation to the 'size' bytes. without realloc*/) noexcept = 0;
-        virtual bool Trim(void* ptr,
-                          size_t size /*trim allocation to the 'size' bytes*/) noexcept = 0;
+        virtual bool Grow(void* ptr, size_t size /*grow allocation to the 'size' bytes. without realloc*/) noexcept = 0;
+        virtual bool Trim(void* ptr, size_t size /*trim allocation to the 'size' bytes*/) noexcept = 0;
     };
-    CORE_CLASS_ID(CORE_API_TEMPLATE, CORE_API, Allocator1)
 
     class CORE_API Allocator
     {

@@ -192,10 +192,13 @@ Pool:
 
 Change <typename U> to both versions of const T& and T&& for push and insert 
 
+FunctionWrapper:
+    ...function[fucntion_size]
+    Allocator allocator
 	
 Function:
-	const void* memory;
-	size_t memory_size;
+	const void* memory; -> small function or pointer to wrapper
+    u63 size
+    u1 is_small_function
 	R(*caller)(void *memory, Args...);
 	void(*destroyer)(void* memory) noexcept;
-	
