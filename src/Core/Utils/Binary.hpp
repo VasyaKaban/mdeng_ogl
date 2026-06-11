@@ -29,7 +29,8 @@ namespace Core
         }
 
         auto div = size / alignment;
-        if(div == size)
+        auto quat = size % alignment;
+        if(quat == 0)
             return true;
 
         auto max_div = std::numeric_limits<I>::max() / alignment;
