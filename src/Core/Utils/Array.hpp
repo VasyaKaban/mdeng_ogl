@@ -70,7 +70,7 @@ namespace Core
 
         Array& operator=(const Array& array)
         {
-            this->~Array();
+            this->Clear();
 
             T* new_memory = AllocateMemory(array.size);
 
@@ -96,7 +96,7 @@ namespace Core
 
         Array& operator=(Array&& array) noexcept
         {
-            this->~Array();
+            this->Clear();
 
             memory = std::exchange(array.memory, nullptr);
             size = std::exchange(array.size, 0);
@@ -150,8 +150,7 @@ namespace Core
         ////////////////////////////////////////////////////////////////////////
 
         template<typename U>
-        requires std::constructible_from<T, U> && (std::is_nothrow_move_constructible_v<T> ||
-                                                   std::is_nothrow_copy_constructible_v<T>)
+        requires std::constructible_from<T, U> && (std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>)
         void PushToEnd(U&& value)
         {
             if(this->capacity > this->size) //push back if there is enough capacity
@@ -176,8 +175,7 @@ namespace Core
             else
             {
                 if(this->allocator.Grow(this->memory,
-                                        sizeof(T) *
-                                            (this->capacity + 1))) //firstly try to grow memory
+                                        sizeof(T) * (this->capacity + 1))) //firstly try to grow memory
                 {
                     this->capacity++;
                     new(this->memory) T(std::forward<U>(value));
@@ -356,8 +354,7 @@ namespace Core
     private:
         T* AllocateMemory(size_t size)
         {
-            return static_cast<T*>(
-                allocator.Allocate(MemoryRequirements{.alignment = alignof(T), .size = size}));
+            return static_cast<T*>(allocator.Allocate(MemoryRequirements{.alignment = alignof(T), .size = size}));
         }
 
         static void DestroyObjects(T* memory, size_t size) noexcept
@@ -366,8 +363,7 @@ namespace Core
                 (memory + i)->~T();
         }
 
-        static void
-        DestroyObjectsAndDeallocateMemory(T* memory, size_t size, Allocator& allocator) noexcept
+        static void DestroyObjectsAndDeallocateMemory(T* memory, size_t size, Allocator& allocator) noexcept
         {
             DestroyObjects(memory, size);
 
@@ -381,8 +377,7 @@ namespace Core
     };
 
     template<std::ranges::sized_range R>
-    Array(R&& values)
-        -> Array<std::remove_cvref_t<std::ranges::range_value_t<std::remove_cvref_t<R>>>>;
+    Array(R&& values) -> Array<std::remove_cvref_t<std::ranges::range_value_t<std::remove_cvref_t<R>>>>;
 
     //std compat
     template<typename T>

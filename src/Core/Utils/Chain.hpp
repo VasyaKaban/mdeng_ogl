@@ -180,7 +180,7 @@ namespace Core
 
         Chain& operator=(const Chain& chain)
         {
-            this->~Clear();
+            this->Clear();
 
             try
             {
@@ -198,7 +198,7 @@ namespace Core
 
         Chain& operator=(Chain&& chain) noexcept
         {
-            this->~Clear();
+            this->Clear();
 
             this->base = std::exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base));
             this->size = std::exchange(chain.size, 0);
@@ -263,10 +263,7 @@ namespace Core
             AllocateAndInsertNode(std::forward<U>(value), this->base.prev);
         }
 
-        void Splice(ConstIterator before_it,
-                    Chain& chain,
-                    ConstIterator begin,
-                    ConstIterator end) noexcept
+        void Splice(ConstIterator before_it, Chain& chain, ConstIterator begin, ConstIterator end) noexcept
         {
             Detail::ChainNodeBase* before_node = before_it.node;
 
@@ -351,8 +348,7 @@ namespace Core
             return ConstIterator(this->base);
         }
     public:
-        void
-        UpdateBase() noexcept //use on move when we must change first and last references to the base
+        void UpdateBase() noexcept //use on move when we must change first and last references to the base
         {
             if(this->size == 0)
             {
@@ -393,12 +389,10 @@ namespace Core
         }
 
         template<typename U>
-        void AllocateAndInsertNode(
-            U&& value,
-            Detail::ChainNodeBase* prev_node) //allocate node and insert right after prev_node
+        void AllocateAndInsertNode(U&& value,
+                                   Detail::ChainNodeBase* prev_node) //allocate node and insert right after prev_node
         {
-            Node* node = static_cast<Node*>(this->allocator.Allocate(
-                MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
+            Node* node = static_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
             try
             {
@@ -449,8 +443,7 @@ namespace Core
     };
 
     template<std::ranges::range R>
-    Chain(R&& values)
-        -> Chain<std::remove_cvref_t<std::ranges::range_value_t<std::remove_cvref_t<R>>>>;
+    Chain(R&& values) -> Chain<std::remove_cvref_t<std::ranges::range_value_t<std::remove_cvref_t<R>>>>;
 
     //std compat
     template<typename T>

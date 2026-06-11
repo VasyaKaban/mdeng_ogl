@@ -34,8 +34,7 @@ namespace Core
             }
         }
 
-        constexpr ScopedCall(const ScopedCall& scall) noexcept(
-            std::is_nothrow_copy_constructible_v<F>)
+        constexpr ScopedCall(const ScopedCall& scall) noexcept(std::is_nothrow_copy_constructible_v<F>)
         requires std::is_copy_constructible_v<F>
             : data(scall.data),
               created(scall.created)
@@ -47,8 +46,7 @@ namespace Core
               created(std::exchange(scall.created, false))
         {}
 
-        ScopedCall&
-        operator=(const ScopedCall& scall) noexcept(std::is_nothrow_copy_assignable_v<F>)
+        constexpr ScopedCall& operator=(const ScopedCall& scall) noexcept(std::is_nothrow_copy_assignable_v<F>)
         requires std::is_copy_assignable_v<F>
         {
             this->Drop();
@@ -59,7 +57,7 @@ namespace Core
             return *this;
         }
 
-        ScopedCall& operator=(ScopedCall&& scall) noexcept(std::is_nothrow_move_assignable_v<F>)
+        constexpr ScopedCall& operator=(ScopedCall&& scall) noexcept(std::is_nothrow_move_assignable_v<F>)
         requires std::is_move_assignable_v<F>
         {
             this->Drop();
@@ -70,7 +68,7 @@ namespace Core
             return *this;
         }
 
-        ScopedCall& operator=(const F& func) noexcept(std::is_nothrow_copy_assignable_v<F>)
+        constexpr ScopedCall& operator=(const F& func) noexcept(std::is_nothrow_copy_assignable_v<F>)
         requires std::is_copy_assignable_v<F>
         {
             this->Drop();
@@ -81,7 +79,7 @@ namespace Core
             return *this;
         }
 
-        ScopedCall& operator=(F&& func) noexcept(std::is_nothrow_move_assignable_v<F>)
+        constexpr ScopedCall& operator=(F&& func) noexcept(std::is_nothrow_move_assignable_v<F>)
         requires std::is_move_assignable_v<F>
         {
             this->Drop();
@@ -114,10 +112,20 @@ namespace Core
     private:
         union ScopedCallCallableWrapper
         {
+            bool placeholder;
             F func;
 
-            ~ScopedCallCallableWrapper()
+            constexpr ScopedCallCallableWrapper() noexcept
+                : placeholder(false)
             {}
+
+            constexpr ~ScopedCallCallableWrapper()
+            {}
+
+            ScopedCallCallableWrapper(const ScopedCallCallableWrapper&) = default;
+            ScopedCallCallableWrapper(ScopedCallCallableWrapper&&) = default;
+            ScopedCallCallableWrapper& operator=(const ScopedCallCallableWrapper&) = default;
+            ScopedCallCallableWrapper& operator=(ScopedCallCallableWrapper&&) = default;
         } data;
         bool created;
     };
