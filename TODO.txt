@@ -127,7 +127,6 @@ Thread + Semaphores, barriers, fences, mutexes, ...
 Bitset???
 Matrix, vector???
 regex -> via PCRE???
-ScopedCall -> check union validity!!!!
 
 RCPointer:
 	T* ptr

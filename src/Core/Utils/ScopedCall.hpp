@@ -1,132 +1,31 @@
 #pragma once
 
-#include <concepts>
-#include <utility>
+#include "Nullable.hpp"
 
 namespace Core
 {
-    template<std::invocable F>
-    class ScopedCall
+    template<typename F>
+    requires std::invocable<F>
+    class ScopedCall : public Nullable<F>
     {
     public:
-        constexpr ScopedCall() noexcept
-            : created(false)
-        {}
+        using Nullable<F>::Nullable;
+        using Nullable<F>::operator=;
 
-        constexpr ScopedCall(const F& func) noexcept(std::is_nothrow_copy_constructible_v<F>)
-        requires std::is_copy_constructible_v<F>
-            : data{func},
-              created(true)
-        {}
-
-        constexpr ScopedCall(F&& func) noexcept(std::is_nothrow_move_constructible_v<F>)
-        requires std::is_move_constructible_v<F>
-            : data(std::move(func)),
-              created(true)
-        {}
-
-        constexpr ~ScopedCall()
+        ~ScopedCall()
         {
-            if(created)
-            {
-                data.func();
-                data.func.~F();
-            }
+            if(this->HasValue())
+                this->GetValue()();
         }
 
-        constexpr ScopedCall(const ScopedCall& scall) noexcept(std::is_nothrow_copy_constructible_v<F>)
-        requires std::is_copy_constructible_v<F>
-            : data(scall.data),
-              created(scall.created)
-        {}
-
-        constexpr ScopedCall(ScopedCall&& scall) noexcept(std::is_nothrow_move_constructible_v<F>)
-        requires std::is_move_constructible_v<F>
-            : data(std::move(scall.data)),
-              created(std::exchange(scall.created, false))
-        {}
-
-        constexpr ScopedCall& operator=(const ScopedCall& scall) noexcept(std::is_nothrow_copy_assignable_v<F>)
-        requires std::is_copy_assignable_v<F>
+        void Call() const noexcept(std::is_nothrow_invocable_v<F>)
         {
-            this->Drop();
-
-            this->data = scall.data;
-            this->created = scall.created;
-
-            return *this;
+            if(this->HasValue())
+                this->GetValue()();
         }
-
-        constexpr ScopedCall& operator=(ScopedCall&& scall) noexcept(std::is_nothrow_move_assignable_v<F>)
-        requires std::is_move_assignable_v<F>
-        {
-            this->Drop();
-
-            this->data = std::move(scall.data);
-            this->created = std::exchange(scall.created, false);
-
-            return *this;
-        }
-
-        constexpr ScopedCall& operator=(const F& func) noexcept(std::is_nothrow_copy_assignable_v<F>)
-        requires std::is_copy_assignable_v<F>
-        {
-            this->Drop();
-
-            this->data = func;
-            this->created = true;
-
-            return *this;
-        }
-
-        constexpr ScopedCall& operator=(F&& func) noexcept(std::is_nothrow_move_assignable_v<F>)
-        requires std::is_move_assignable_v<F>
-        {
-            this->Drop();
-
-            this->data = std::move(func);
-            this->created = true;
-
-            return *this;
-        }
-
-        constexpr explicit operator bool() const noexcept
-        {
-            return this->created;
-        }
-
-        constexpr void Drop() noexcept
-        {
-            if(this->created)
-            {
-                this->data.func.~F();
-                this->created = false;
-            }
-        }
-
-        constexpr void Call() const noexcept(std::is_nothrow_invocable_v<F>)
-        {
-            if(this->created)
-                this->data.func();
-        }
-    private:
-        union ScopedCallCallableWrapper
-        {
-            bool placeholder;
-            F func;
-
-            constexpr ScopedCallCallableWrapper() noexcept
-                : placeholder(false)
-            {}
-
-            constexpr ~ScopedCallCallableWrapper()
-            {}
-
-            ScopedCallCallableWrapper(const ScopedCallCallableWrapper&) = default;
-            ScopedCallCallableWrapper(ScopedCallCallableWrapper&&) = default;
-            ScopedCallCallableWrapper& operator=(const ScopedCallCallableWrapper&) = default;
-            ScopedCallCallableWrapper& operator=(ScopedCallCallableWrapper&&) = default;
-        } data;
-        bool created;
     };
+
+    template<typename F>
+    requires std::invocable<F>
+    ScopedCall(F&&) -> ScopedCall<std::remove_reference_t<F>>;
 };

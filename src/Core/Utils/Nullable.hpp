@@ -5,7 +5,7 @@
 namespace Core
 {
     template<typename T>
-    requires(!std::is_reference_v<T>)
+    requires(!std::is_reference_v<T> && !std::is_volatile_v<T>)
     class Nullable
     {
     public:
