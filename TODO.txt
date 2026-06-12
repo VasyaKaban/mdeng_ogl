@@ -120,7 +120,6 @@ Pool<T>
 RawPool
 Union<Types...>
 Any
-Optional<T>
 Expected<T, E>
 Callable<R (Args... ?...) ?>
 Tuple<Types...>
