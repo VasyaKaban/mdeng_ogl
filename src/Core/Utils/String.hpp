@@ -233,6 +233,7 @@ namespace Core
             : data(nullptr),
               size(0),
               capacity(0),
+              codepoint_size(0),
               allocator(allocator),
               encoder()
         {}
@@ -247,6 +248,7 @@ namespace Core
             : data(nullptr),
               size(str.size),
               capacity(str.size),
+              codepoint_size(str.codepoint_size),
               allocator(str.allocator),
               encoder()
         {
@@ -264,6 +266,7 @@ namespace Core
             : data(std::exchange(str.data, nullptr)),
               size(std::exchange(str.size, 0)),
               capacity(std::exchange(str.capacity, 0)),
+              codepoint_size(std::exchange(str.codepoint_size, 0)),
               allocator(str.allocator),
               encoder()
         {}
@@ -283,6 +286,9 @@ namespace Core
                 memcpy(this->data, str.data, str.size);
             }
 
+            this->size = str.size;
+            this->capacity = str.size;
+            this->codepoint_size = str.codepoint_size;
             this->allocator = new_allocator;
 
             return *this;
@@ -292,14 +298,16 @@ namespace Core
         {
             this->ClearAndFlush();
 
-            data = std::exchange(str.data, nullptr);
-            size = std::exchange(str.size, 0);
-            capacity = std::exchange(str.capacity, 0);
-            allocator = str.allocator;
+            this->data = std::exchange(str.data, nullptr);
+            this->size = std::exchange(str.size, 0);
+            this->capacity = std::exchange(str.capacity, 0);
+            this->codepoint_size = std::exchange(str.codepoint_size, 0);
+            this->allocator = str.allocator;
 
             return *this;
         }
 
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         template<Character OC, StringEncoder<OC> OE>
         String(const String<OC, OE>& str);
 
@@ -316,17 +324,54 @@ namespace Core
 
         template<Character OC>
         String(OC* input, size_t input_size);
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        bool IsEmpty() const noexcept;
-        size_t GetSize() const noexcept;
-        size_t GetCapacity() const noexcept;
-        size_t GetCodePointSize() const noexcept;
-        Allocator GetAllocator() const noexcept;
-        C* GetData() noexcept;
-        const C* GetData() const noexcept;
-        typename E::NativeCharType* GetDataAsNativeChar() noexcept;
-        const typename E::NativeCharType* GetDataAsNativeChar() const noexcept;
+        bool IsEmpty() const noexcept
+        {
+            return this->size == 0;
+        }
 
+        size_t GetSize() const noexcept
+        {
+            return this->size;
+        }
+
+        size_t GetCapacity() const noexcept
+        {
+            return this->capacity;
+        }
+
+        size_t GetCodePointSize() const noexcept
+        {
+            return this->codepoint_size;
+        }
+
+        Allocator GetAllocator() const noexcept
+        {
+            return this->allocator;
+        }
+
+        C* GetData() noexcept
+        {
+            return this->data;
+        }
+
+        const C* GetData() const noexcept
+        {
+            return this->data;
+        }
+
+        typename E::NativeCharType* GetDataAsNativeChar() noexcept
+        {
+            return reinterpret_cast<typename E::NativeCharType*>(this->data);
+        }
+
+        const typename E::NativeCharType* GetDataAsNativeChar() const noexcept
+        {
+            return reinterpret_cast<const typename E::NativeCharType*>(this->data);
+        }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         void Reserve(size_t size);
         void Clear() noexcept;
         void ClearAndFlush() noexcept;
@@ -353,10 +398,12 @@ namespace Core
         ConstCharIterator CharBegin() const noexcept;
         CharIterator CharEnd() noexcept;
         ConstCharIterator CharEnd() const noexcept;
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private:
         C* data;
         size_t size;
         size_t capacity;
+        size_t codepoint_size;
 
         Allocator allocator;
         [[maybe_unused]] E encoder;
