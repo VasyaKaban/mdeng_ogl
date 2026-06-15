@@ -1,6 +1,8 @@
 #pragma once
 
 #include <concepts>
+#include <cassert>
+#include <ranges>
 #include "Instantiation.hpp"
 #include "Memory.h"
 #include "Nullable.hpp"
@@ -15,6 +17,12 @@ namespace Core
 
     struct StringEncoderConvertResult
     {
+        size_t output_size;
+    };
+
+    struct StringInputCheckResult
+    {
+        size_t bad_character_offset; //if equal to input_size then no error occured
         size_t output_size;
     };
 
@@ -64,7 +72,7 @@ namespace Core
             Nullable<CodePointResult> res;
             if((input[0] & 0b1000'0000) == 0) //one char
             {
-                res = CodePointResult{.input_offset = 1, .codepoint = input[0]};
+                res = CodePointResult{.input_offset = 1, .codepoint = static_cast<char32_t>(input[0])};
             }
             else if((input[0] & 0b1110'0000) == 0b1100'0000)
             {
@@ -108,14 +116,14 @@ namespace Core
                         char16_t low_surrogate = input[1];
 
                         res = CodePointResult{.input_offset = 2,
-                                              .codepoint = ((static_cast<char32_t>(high_surrogate) - HIGH_SURROGATE_PAIR_RANGE.first) << 10) +
-                                                           (static_cast<char32_t>(low_surrogate) - LOW_SURROGATE_PAIR_RANGE.first) + 0x1'00'00};
+                                              .codepoint = ((static_cast<char32_t>(high_surrogate) - static_cast<char32_t>(HIGH_SURROGATE_PAIR_RANGE.first)) << 10) +
+                                                           (static_cast<char32_t>(low_surrogate) - static_cast<char32_t>(LOW_SURROGATE_PAIR_RANGE.first)) + 0x1'00'00};
                     }
                 }
             }
             else if(!(input[0] >= LOW_SURROGATE_PAIR_RANGE.first && input[0] <= LOW_SURROGATE_PAIR_RANGE.last))
             {
-                res = CodePointResult{.input_offset = 1, .codepoint = input[0]};
+                res = CodePointResult{.input_offset = 1, .codepoint = static_cast<char32_t>(input[0])};
             }
 
             return res;
@@ -129,6 +137,41 @@ namespace Core
 
             return res;
         }
+
+        template<typename E, Character C>
+        requires StringEncoder<C, E>
+        StringInputCheckResult CheckInputIsValid(const C* input, size_t input_size)
+        {
+            E encoder;
+            StringInputCheckResult res = {.bad_character_offset = 0, .output_size = 0};
+            while(res.bad_character_offset != input_size)
+            {
+                auto opt = GetNextCodePoint(input + res.bad_character_offset, input_size - res.bad_character_offset);
+                if(!opt)
+                    return res;
+
+                res.bad_character_offset += opt->input_offset;
+
+                res.output_size += encoder.ConvertCodePoint(opt->codepoint, nullptr)->output_size;
+            }
+
+            return res;
+        }
+
+        template<typename E, Character C>
+        requires StringEncoder<C, E>
+        void ConvertInput(const C* input, size_t input_size, typename E::CharType* output)
+        {
+            E encoder;
+            StringInputCheckResult res = {.bad_character_offset = 0, .output_size = 0};
+            while(res.bad_character_offset != input_size)
+            {
+                auto opt = GetNextCodePoint(input + res.bad_character_offset, input_size - res.bad_character_offset);
+                res.bad_character_offset += opt->input_offset;
+
+                res.output_size += encoder.ConvertCodePoint(opt->codepoint, output + res.output_size)->output_size;
+            }
+        }
     };
 
     struct UTF8StringEncoder
@@ -141,31 +184,41 @@ namespace Core
             StringEncoderConvertResult res = {.output_size = 0};
             if(codepoint <= 0x00'7F)
             {
-                output[0] = codepoint & 0b0111'1111;
+                if(output)
+                    output[0] = codepoint & 0b0111'1111;
 
                 res.output_size = 1;
             }
             else if(codepoint <= 0x07'FF)
             {
-                output[1] = (codepoint & 0b0011'1111) | 0b1000'0000;
-                output[0] = ((codepoint >> 6) & 0b0001'1111) | 0b1100'0000;
+                if(output)
+                {
+                    output[1] = (codepoint & 0b0011'1111) | 0b1000'0000;
+                    output[0] = ((codepoint >> 6) & 0b0001'1111) | 0b1100'0000;
+                }
 
                 res.output_size = 2;
             }
             else if(codepoint <= 0xFF'FF)
             {
-                output[2] = (codepoint & 0b0011'1111) | 0b1000'0000;
-                output[1] = ((codepoint >> 6) & 0b0011'1111) | 0b1000'0000;
-                output[0] = ((codepoint >> 12) & 0b0000'1111) | 0b1110'0000;
+                if(output)
+                {
+                    output[2] = (codepoint & 0b0011'1111) | 0b1000'0000;
+                    output[1] = ((codepoint >> 6) & 0b0011'1111) | 0b1000'0000;
+                    output[0] = ((codepoint >> 12) & 0b0000'1111) | 0b1110'0000;
+                }
 
                 res.output_size = 3;
             }
             else //if(codepoint < 0x10'FF'FF)
             {
-                output[3] = (codepoint & 0b0011'1111) | 0b1000'0000;
-                output[2] = ((codepoint >> 6) & 0b0011'1111) | 0b1000'0000;
-                output[1] = ((codepoint >> 12) & 0b0011'1111) | 0b1000'0000;
-                output[0] = ((codepoint >> 18) & 0b0000'0111) | 0b1111'0000;
+                if(output)
+                {
+                    output[3] = (codepoint & 0b0011'1111) | 0b1000'0000;
+                    output[2] = ((codepoint >> 6) & 0b0011'1111) | 0b1000'0000;
+                    output[1] = ((codepoint >> 12) & 0b0011'1111) | 0b1000'0000;
+                    output[0] = ((codepoint >> 18) & 0b0000'0111) | 0b1111'0000;
+                }
 
                 res.output_size = 4;
             }
@@ -181,16 +234,20 @@ namespace Core
 
         StringEncoderConvertResult ConvertCodePoint(char32_t codepoint, CharType* output) const noexcept
         {
-            if(codepoint < HIGH_SURROGATE_PAIR_RANGE.first)
+            if(codepoint < static_cast<char32_t>(HIGH_SURROGATE_PAIR_RANGE.first))
             {
-                output[0] = codepoint;
+                if(output)
+                    output[0] = static_cast<char16_t>(codepoint);
 
                 return StringEncoderConvertResult{.output_size = 1};
             }
             else
             {
-                output[0] = ((codepoint - 0x1'00'00) >> 10) + HIGH_SURROGATE_PAIR_RANGE.first;
-                output[1] = ((codepoint - 0x1'00'00) % 0x400) + LOW_SURROGATE_PAIR_RANGE.first;
+                if(output)
+                {
+                    output[0] = ((codepoint - 0x1'00'00) >> 10) + HIGH_SURROGATE_PAIR_RANGE.first;
+                    output[1] = ((codepoint - 0x1'00'00) % 0x400) + LOW_SURROGATE_PAIR_RANGE.first;
+                }
 
                 return StringEncoderConvertResult{.output_size = 2};
             }
@@ -204,7 +261,8 @@ namespace Core
 
         StringEncoderConvertResult ConvertCodePoint(char32_t codepoint, CharType* output) const noexcept
         {
-            output[0] = codepoint;
+            if(output)
+                output[0] = codepoint;
 
             return StringEncoderConvertResult{.output_size = 1};
         }
@@ -215,7 +273,81 @@ namespace Core
         template<Character C, StringEncoder<C> E>
         class StringCharIterator
         {
-#pragma message("TODO!")
+            template<typename OC, typename OE>
+            friend class String;
+
+            StringCharIterator(C* data, size_t size) noexcept
+                : data(data),
+                  size(size)
+            {}
+
+            C* GetAddress() const noexcept
+            {
+                return this->data;
+            }
+        public:
+            StringCharIterator() = default;
+            ~StringCharIterator() = default;
+            StringCharIterator(const StringCharIterator&) = default;
+            StringCharIterator(StringCharIterator&&) = default;
+            StringCharIterator& operator=(const StringCharIterator&) = default;
+            StringCharIterator& operator=(StringCharIterator&&) = default;
+
+            StringCharIterator operator++(int) noexcept
+            {
+                StringCharIterator out(*this);
+
+                StringCodePointEncoder codepoint_encoder;
+                this->size += codepoint_encoder.GetNextCodePoint(this->data, this->size)->input_offset;
+
+                return out;
+            }
+
+            StringCharIterator& operator++() noexcept
+            {
+                StringCodePointEncoder codepoint_encoder;
+                this->size += codepoint_encoder.GetNextCodePoint(this->data, this->size)->input_offset;
+
+                return *this;
+            }
+
+            bool operator==(const StringCharIterator& it) const noexcept
+            {
+                return this->data == it.data && this->size == it.size;
+            }
+
+            C& operator*() const noexcept
+            {
+                return *this->data;
+            }
+
+            C* operator->() const noexcept
+            {
+                return this->data;
+            }
+
+            char32_t GetCodePoint() const noexcept
+            {
+                StringCodePointEncoder codepoint_encoder;
+                return codepoint_encoder.GetNextCodePoint(this->data, this->size)->codepoint;
+            }
+        private:
+            C* data;
+            size_t size;
+        };
+
+        enum class StringReserveStatus
+        {
+            EnoughCapacity,
+            GrowMemory,
+            ReallocateMemory
+        };
+
+        template<Character C>
+        struct StringReserveResult
+        {
+            StringReserveStatus status;
+            C* new_memory;
         };
     };
 
@@ -233,9 +365,7 @@ namespace Core
             : data(nullptr),
               size(0),
               capacity(0),
-              codepoint_size(0),
-              allocator(allocator),
-              encoder()
+              allocator(allocator)
         {}
 
         ~String()
@@ -248,13 +378,11 @@ namespace Core
             : data(nullptr),
               size(str.size),
               capacity(str.size),
-              codepoint_size(str.codepoint_size),
-              allocator(str.allocator),
-              encoder()
+              allocator(str.allocator)
         {
             if(!str.IsEmpty())
             {
-                this->data = reinterpret_cast<C*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(C), .size = str.size}));
+                this->data = reinterpret_cast<C*>(this->allocator.Allocate(GetMemoryRequirements(str.size)));
                 if(!this->data)
                     CORE_THROW_EXCEPTION_MOCK("BAD ALLOC");
 
@@ -266,9 +394,7 @@ namespace Core
             : data(std::exchange(str.data, nullptr)),
               size(std::exchange(str.size, 0)),
               capacity(std::exchange(str.capacity, 0)),
-              codepoint_size(std::exchange(str.codepoint_size, 0)),
-              allocator(str.allocator),
-              encoder()
+              allocator(str.allocator)
         {}
 
         String& operator=(const String& str)
@@ -279,7 +405,7 @@ namespace Core
 
             if(!str.IsEmpty())
             {
-                this->data = reinterpret_cast<C*>(new_allocator.Allocate(MemoryRequirements{.alignment = alignof(C), .size = str.size}));
+                this->data = reinterpret_cast<C*>(new_allocator.Allocate(GetMemoryRequirements(str.size)));
                 if(!this->data)
                     CORE_THROW_EXCEPTION_MOCK("BAD ALLOC");
 
@@ -288,7 +414,6 @@ namespace Core
 
             this->size = str.size;
             this->capacity = str.size;
-            this->codepoint_size = str.codepoint_size;
             this->allocator = new_allocator;
 
             return *this;
@@ -301,30 +426,59 @@ namespace Core
             this->data = std::exchange(str.data, nullptr);
             this->size = std::exchange(str.size, 0);
             this->capacity = std::exchange(str.capacity, 0);
-            this->codepoint_size = std::exchange(str.codepoint_size, 0);
             this->allocator = str.allocator;
 
             return *this;
         }
 
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         template<Character OC, StringEncoder<OC> OE>
-        String(const String<OC, OE>& str);
+        String(const String<OC, OE>& str)
+            : String(str.data, str.size, str.allocator)
+        {}
 
         template<Character OC, StringEncoder<OC> OE>
-        String(String<OC, OE>&& str) noexcept;
+        String(String<OC, OE>&& str) noexcept
+            : String(str.data, str.size, str.allocator)
+        {}
 
         template<Character OC, StringEncoder<OC> OE>
-        String& operator=(const String<OC, OE>& str);
+        String& operator=(const String<OC, OE>& str)
+        {
+            this->Clear();
+
+            this->Append(str.data, str.size);
+
+            return *this;
+        }
 
         template<Character OC, StringEncoder<OC> OE>
-        String& operator=(String<OC, OE>&& str) noexcept;
+        String& operator=(String<OC, OE>&& str) noexcept
+        {
+            this->Clear();
 
-        String(C* input, size_t input_size);
+            this->Append(str.data, str.size);
+
+            return *this;
+        }
+
+        String(const C* input, size_t input_size, Allocator allocator = GetGlobalAllocator())
+            : data(nullptr),
+              size(0),
+              capacity(0),
+              allocator(allocator)
+        {
+            this->Append(input, input_size);
+        }
 
         template<Character OC>
-        String(OC* input, size_t input_size);
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        String(const OC* input, size_t input_size, Allocator allocator = GetGlobalAllocator())
+            : data(nullptr),
+              size(0),
+              capacity(0),
+              allocator(allocator)
+        {
+            this->Append(input, input_size);
+        }
 
         bool IsEmpty() const noexcept
         {
@@ -339,11 +493,6 @@ namespace Core
         size_t GetCapacity() const noexcept
         {
             return this->capacity;
-        }
-
-        size_t GetCodePointSize() const noexcept
-        {
-            return this->codepoint_size;
         }
 
         Allocator GetAllocator() const noexcept
@@ -371,43 +520,231 @@ namespace Core
             return reinterpret_cast<const typename E::NativeCharType*>(this->data);
         }
 
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        void Reserve(size_t size);
-        void Clear() noexcept;
-        void ClearAndFlush() noexcept;
+        void Reserve(size_t reserve)
+        {
+            if(this->capacity >= reserve)
+                return;
 
-        void Prepend(C* input, size_t input_size);
+            if(this->data != nullptr && this->allocator.Grow(this->data, reserve * sizeof(C))) //try grow
+            {
+                this->capacity = reserve;
+            }
+            else //allocate new buffer
+            {
+                C* new_memory = reinterpret_cast<C*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
+                if(!new_memory)
+                    CORE_THROW_EXCEPTION_MOCK("Bad alloc");
+
+                memcpy(new_memory, this->data, this->size * sizeof(C));
+
+                if(this->data != nullptr)
+                    this->allocator.Deallocate(this->data);
+
+                this->data = new_memory;
+                this->capacity = reserve;
+            }
+        }
+
+        void Clear() noexcept
+        {
+            this->size = 0;
+        }
+
+        void ClearAndFlush() noexcept
+        {
+            if(this->data)
+            {
+                this->allocator.Deallocate(this->data);
+
+                this->data = nullptr;
+                this->size = 0;
+                this->capacity = 0;
+            }
+        }
+
+        void Prepend(const C* input, size_t input_size)
+        {
+            if(input_size == 0)
+                return;
+
+            size_t new_size = this->size + input_size;
+            if(this->capacity >= this->size + input_size)
+            {
+                memmove(this->data + input_size, this->data, GetSizeInBytes(this->size));
+                memcpy(this->data, input, GetSizeInBytes(input_size));
+            }
+            else if(this->data != nullptr && this->allocator.Grow(this->data, GetSizeInBytes(new_size)))
+            {
+                memmove(this->data + input_size, this->data, GetSizeInBytes(this->size));
+                memcpy(this->data, input, GetSizeInBytes(input_size));
+
+                this->capacity = new_size;
+            }
+            else
+            {
+                C* new_memory = this->allocator.Allocate(GetMemoryRequirements(new_size));
+                if(!new_memory)
+                    CORE_THROW_EXCEPTION_MOCK("Bad alloc");
+
+                memcpy(new_memory, input, GetSizeInBytes(input_size));
+                memcpy(new_memory + input_size, this->data, GetSizeInBytes(this->size));
+
+                this->capacity = new_size;
+
+                this->allocator.Deallocate(this->data);
+                this->data = new_memory;
+            }
+
+            this->size = new_size;
+        }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        template<Character OC>
+        void Prepend(const OC* input, size_t input_size);
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        void Append(const C* input, size_t input_size)
+        {
+            if(input_size == 0)
+                return;
+
+            StringCodePointEncoder codepoint_encoder;
+            auto check_res = codepoint_encoder.CheckInputIsValid<E>(input, input_size);
+            if(check_res.bad_character_offset != input_size)
+                CORE_THROW_EXCEPTION_MOCK("Bad character");
+
+            this->Reserve(this->size + input_size);
+
+            memcpy(this->data + this->size, input, input_size * sizeof(C));
+
+            this->size += input_size;
+        }
 
         template<Character OC>
-        void Prepend(OC* input, size_t input_size);
+        void Append(const OC* input, size_t input_size)
+        {
+            if(input_size == 0)
+                return;
 
-        void Append(C* input, size_t input_size);
+            StringCodePointEncoder codepoint_encoder;
+            auto check_res = codepoint_encoder.CheckInputIsValid<E>(input, input_size);
+            if(check_res.bad_character_offset != input_size)
+                CORE_THROW_EXCEPTION_MOCK("Bad character");
 
-        template<Character OC>
-        void Append(OC* input, size_t input_size);
+            this->Reserve(this->size + check_res.output_size);
 
-        void EraseFirst(ConstCharIterator end_it);
-        void EraseLast(ConstCharIterator first_it);
+            codepoint_encoder.ConvertInput<E>(input, input_size, this->data + this->size);
 
-        Iterator Begin() noexcept;
-        ConstIterator Begin() const noexcept;
-        Iterator End() noexcept;
-        ConstIterator End() const noexcept;
+            this->size += check_res.output_size;
+        }
 
-        CharIterator CharBegin() noexcept;
-        ConstCharIterator CharBegin() const noexcept;
-        CharIterator CharEnd() noexcept;
-        ConstCharIterator CharEnd() const noexcept;
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        void EraseFirst(ConstCharIterator end_it)
+        {
+            auto addr = end_it.GetAddress();
+            assert(addr >= this->data && addr <= (this->data + this->size));
+
+            size_t erase_size = addr - this->data;
+
+            this->size -= erase_size;
+
+            memmove(this->data, addr, this->size);
+        }
+
+        void EraseLast(ConstCharIterator first_it)
+        {
+            auto addr = first_it.GetAddress();
+            assert(addr >= this->data && addr <= (this->data + this->size));
+
+            size_t erase_size = (this->data + this->size) - addr;
+
+            this->size -= erase_size;
+        }
+
+        Iterator Begin() noexcept
+        {
+            return Iterator(this->data);
+        }
+
+        ConstIterator Begin() const noexcept
+        {
+            return ConstIterator(this->data);
+        }
+
+        Iterator End() noexcept
+        {
+            return Iterator(this->data + this->size);
+        }
+
+        ConstIterator End() const noexcept
+        {
+            return ConstIterator(this->data + this->size);
+        }
+
+        CharIterator CharBegin() noexcept
+        {
+            return CharIterator(this->data, this->size);
+        }
+
+        ConstCharIterator CharBegin() const noexcept
+        {
+            return ConstCharIterator(this->data, this->size);
+        }
+
+        CharIterator CharEnd() noexcept
+        {
+            return CharIterator(this->data + this->size, 0);
+        }
+
+        ConstCharIterator CharEnd() const noexcept
+        {
+            return ConstCharIterator(this->data + this->size, 0);
+        }
+    private:
+        static MemoryRequirements GetMemoryRequirements(size_t size) noexcept
+        {
+            return MemoryRequirements{.alignment = alignof(C), .size = size * sizeof(C)};
+        }
+
+        static size_t GetSizeInBytes(size_t size) noexcept
+        {
+            return size * sizeof(C);
+        }
+
+#error HERE!!!!!
+        Detail::ReserveResult RawReserve(size_t reserve)
+        {
+            if(this->capacity >= reserve)
+                return Detail::ReserveResult{.status = ReserveStatus::EnoughCapacity};
+
+            if(this->data != nullptr && this->allocator.Grow(this->data, reserve * sizeof(C))) //try grow
+            {
+                this->capacity = reserve;
+            }
+            else //allocate new buffer
+            {
+                C* new_memory = reinterpret_cast<C*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
+                if(!new_memory)
+                    CORE_THROW_EXCEPTION_MOCK("Bad alloc");
+
+                memcpy(new_memory, this->data, this->size * sizeof(C));
+
+                if(this->data != nullptr)
+                    this->allocator.Deallocate(this->data);
+
+                this->data = new_memory;
+                this->capacity = reserve;
+            }
+        }
     private:
         C* data;
         size_t size;
         size_t capacity;
-        size_t codepoint_size;
-
         Allocator allocator;
-        [[maybe_unused]] E encoder;
     };
+
+    using UTF8String = String<char8_t, UTF8StringEncoder>;
+    using UTF16String = String<char16_t, UTF16StringEncoder>;
+    using UTF32String = String<char32_t, UTF32StringEncoder>;
 
     //std compat
     template<typename T>
@@ -430,8 +767,18 @@ namespace Core
     {
         return std::forward<T>(str).GetSize();
     }
+};
 
-    using UTF8String = String<char8_t, UTF8StringEncoder>;
-    using UTF16String = String<char16_t, UTF16StringEncoder>;
-    using UTF32String = String<char32_t, UTF32StringEncoder>;
+//std compat
+namespace std
+{
+    template<Core::Character C, Core::StringEncoder<C> E>
+    struct iterator_traits<Core::Detail::StringCharIterator<C, E>>
+    {
+        using difference_type = std::ptrdiff_t;
+        using value_type = C;
+        using pointer = C*;
+        using reference = C&;
+        using iterator_category = std::forward_iterator_tag;
+    };
 };
