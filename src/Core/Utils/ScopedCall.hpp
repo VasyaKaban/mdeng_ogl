@@ -6,11 +6,12 @@ namespace Core
 {
     template<typename F>
     requires std::invocable<F>
-    class ScopedCall : public Nullable<F>
+    class ScopedCall : private Nullable<F>
     {
     public:
         using Nullable<F>::Nullable;
         using Nullable<F>::operator=;
+        using Nullable<F>::Clear;
 
         ~ScopedCall()
         {
