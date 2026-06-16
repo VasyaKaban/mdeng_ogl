@@ -472,7 +472,7 @@ namespace Core
 namespace std
 {
     template<typename T>
-    struct iterator_traits<Core::Detail::ChainIterator<T>>
+    struct iterator_traits<::Core::Detail::ChainIterator<T>>
     {
         using difference_type = std::ptrdiff_t;
         using value_type = T;
