@@ -482,6 +482,131 @@ namespace Core
             return *this;
         }
 
+        ConstIterator Find(const char8_t* input, size_t input_size) const noexcept
+        {
+            if(input_size == 0)
+                return Begin();
+
+            size_t str_offset = 0;
+            while(this->size - str_offset >= input_size)
+            {
+                size_t input_offset = 0;
+                for(; input_offset < input_size; input_offset++)
+                {
+                    if(input[input_offset] != this->data[str_offset + input_offset])
+                        break;
+                }
+
+                if(input_offset == input_size)
+                    return ConstIterator(this->data + str_offset);
+
+                str_offset++;
+            }
+
+            return End();
+        }
+
+        ConstIterator Find(const char* input, size_t input_size) const noexcept
+        {
+            return Find(reinterpret_cast<const char8_t*>(input), input_size);
+        }
+
+        template<size_t N>
+        ConstIterator Find(const char8_t (&input)[N]) const noexcept
+        {
+            return Find(input, N - 1);
+        }
+
+        template<size_t N>
+        ConstIterator Find(const char (&input)[N]) const noexcept
+        {
+            return Find(reinterpret_cast<const char8_t*>(input), N - 1);
+        }
+
+        ConstIterator Find(const String& str) const noexcept
+        {
+            return Find(str.data, str.size);
+        }
+
+        bool StartsWith(const char8_t* input, size_t input_size) const noexcept
+        {
+            if(input_size == 0)
+                return true;
+
+            if(this->size < input_size)
+                return false;
+
+            for(size_t i = 0; i < input_size; i++)
+            {
+                if(input[i] != this->data[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        bool StartsWith(const char* input, size_t input_size) const noexcept
+        {
+            return StartsWith(reinterpret_cast<const char8_t*>(input), input_size);
+        }
+
+        template<size_t N>
+        bool StartsWith(const char8_t (&input)[N]) const noexcept
+        {
+            return StartsWith(input, N - 1);
+        }
+
+        template<size_t N>
+        bool StartsWith(const char (&input)[N]) const noexcept
+        {
+            return StartsWith(reinterpret_cast<const char8_t*>(input), N - 1);
+        }
+
+        bool StartsWith(const String& str) const noexcept
+        {
+            return StartsWith(str.data, str.size);
+        }
+
+        bool EndsWith(const char8_t* input, size_t input_size) const noexcept
+        {
+            if(input_size == 0)
+                return true;
+
+            if(this->size < input_size)
+                return false;
+
+            size_t str_offset = (this->size - input_size);
+            for(size_t i = 0; i < input_size; i++)
+            {
+                if(input[i] != this->data[str_offset + i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        bool EndsWith(const char* input, size_t input_size) const noexcept
+        {
+            return EndsWith(reinterpret_cast<const char8_t*>(input), input_size);
+        }
+
+        template<size_t N>
+        bool EndsWith(const char8_t (&input)[N]) const noexcept
+        {
+            return EndsWith(input, N - 1);
+        }
+
+        template<size_t N>
+        bool EndsWith(const char (&input)[N]) const noexcept
+        {
+            return EndsWith(reinterpret_cast<const char8_t*>(input), N - 1);
+        }
+
+        bool EndsWith(const String& str) const noexcept
+        {
+            return EndsWith(str.data, str.size);
+        }
+
         bool operator==(const String& str) const noexcept
         {
             if(IsEmpty() && str.IsEmpty())
@@ -492,11 +617,60 @@ namespace Core
                 return memcmp(this->data, str.data, this->size) == 0;
         }
 
-        //alphanumeric compare???
+        template<size_t N>
+        bool operator==(const char8_t (&input)[N]) const noexcept
+        {
+            size_t input_size = N - 1;
+            if(IsEmpty() && input_size == 0)
+                return true;
+            else if(this->size != input_size)
+                return false;
+            else
+                return memcmp(this->data, input, this->size) == 0;
+        }
 
-        //find
-        //starts
-        //ends
+        template<size_t N>
+        bool operator==(const char (&input)[N]) const noexcept
+        {
+            const char8_t(&u8_input)[N] = reinterpret_cast<const char8_t(&)[N]>(input);
+
+            return this->operator==(u8_input);
+        }
+
+        bool operator<(const String& str) const noexcept
+        {
+            //for each string get str1_codepoint and str2_codepoint
+            //if str1_codepoint < str2_codepoint -> true
+            //else if str1_codepoint > str2_codepoint -> false
+            //else continue
+            //after all return false
+
+            auto str1_begin = CharBegin();
+            auto str1_end = CharEnd();
+
+            auto str2_begin = str.CharBegin();
+            auto str2_end = str.CharEnd();
+
+            while(str1_begin != str1_end && str2_begin != str2_end)
+            {
+                auto str1_codepoint = *str1_begin;
+                auto str2_codepoint = *str2_begin;
+
+                if(str1_codepoint.utf32 < str2_codepoint.utf32)
+                    return true;
+                else if(str1_codepoint.utf32 > str2_codepoint.utf32)
+                    return false;
+
+                str1_begin++;
+                str2_begin++;
+            }
+
+            //prefix is same for both -> select shorter string
+            if(this->size < str.size)
+                return true;
+
+            return false;
+        }
     private:
         char8_t* data;
         size_t size;
