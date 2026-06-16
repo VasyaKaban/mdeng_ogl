@@ -2,45 +2,48 @@
 
 #include <cstddef>
 #include <utility>
+#include <concepts>
 
 namespace Core
 {
     namespace Detail
     {
-        template<std::size_t N, typename T, typename... Args>
-        requires(N < sizeof...(Args) + 1)
-        struct Nth
+        template<size_t TargetIndex, size_t CurrentIndex, typename T, typename... Types>
+        struct TypeOfIndex
         {
-            using type = Nth<N - 1, Args...>::Type;
+            using Type = TypeOfIndex<TargetIndex, CurrentIndex + 1, Types...>::Type;
         };
 
-        template<typename T, typename... Args>
-        struct Nth<0, T, Args...>
+        template<size_t CurrentIndex, typename T, typename... Types>
+        struct TypeOfIndex<CurrentIndex, CurrentIndex, T, Types...>
         {
             using Type = T;
         };
 
-        template<std::size_t N, typename T, typename... Args>
-        requires(N < sizeof...(Args) + 1)
-        using NthType = Nth<N, T, Args...>;
+        template<typename T, size_t CurrentIndex, typename C, typename... Types>
+        struct IndexOfType
+        {
+            constexpr static size_t INDEX = IndexOfType<T, CurrentIndex + 1, Types...>::INDEX;
+        };
+
+        template<size_t CurrentIndex, typename C, typename... Types>
+        struct IndexOfType<C, CurrentIndex, C, Types...>
+        {
+            constexpr static size_t INDEX = CurrentIndex;
+        };
     };
 
-    template<typename... Args>
+    template<typename... Types>
     struct Variadic
     {
-        constexpr static std::size_t COUNT = sizeof...(Args);
+        constexpr static std::size_t COUNT = sizeof...(Types);
 
         template<std::size_t Index>
         requires(Index < COUNT)
-        using Nth = Detail::Nth<Index, Args...>::Type;
-    };
+        using TypeOfIndex = Detail::TypeOfIndex<Index, 0, Types...>::Type;
 
-    template<std::size_t Index, typename A, typename... Args>
-    constexpr auto& NthArgument(A&& arg, Args&&... args) noexcept
-    {
-        if constexpr(Index == 0)
-            return arg;
-        else
-            return NthArgument<Index - 1>(std::forward<Args>(args)...);
-    }
+        template<typename T>
+        requires(std::same_as<T, Types> || ...)
+        constexpr static size_t IndexOfType = Detail::IndexOfType<T, 0, Types...>::INDEX;
+    };
 };

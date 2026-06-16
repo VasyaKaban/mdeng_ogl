@@ -110,7 +110,6 @@ StringView<CHAR>
 Ring<T, SIZE>
 Pool<T>
 RawPool
-Union<Types...>
 Any
 Expected<T, E>
 Callable<R (Args... ?...) ?>
@@ -193,3 +192,11 @@ Function:
     u1 is_small_function
 	R(*caller)(void *memory, Args...);
 	void(*destroyer)(void* memory) noexcept;
+
+
+Types... -> Unique
+Union:
+    Ctor<T>(NonType<T>, U&&);
+    Get<T or Index> -> T&
+    Set<T or Index>(U&&) -> T&
+    
