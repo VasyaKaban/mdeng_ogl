@@ -200,6 +200,31 @@ namespace Core
             }
         }
 
+        bool FlushUnusedReserve() noexcept
+        {
+            bool res = false;
+
+            if(!this->data)
+                res = true;
+            else if(this->size == 0 && this->capacity != 0)
+            {
+                this->allocator.Deallocate(this->data);
+
+                this->data = nullptr;
+                this->capacity = 0;
+
+                res = true;
+            }
+            else if(this->capacity > this->size)
+            {
+                res = allocator.Trim(this->data, this->size);
+                if(res)
+                    this->capacity = this->size;
+            }
+
+            return res;
+        }
+
         template<Character C>
         void Prepend(const C* input, size_t input_size)
         {
@@ -632,7 +657,7 @@ namespace Core
         template<size_t N>
         bool operator==(const char (&input)[N]) const noexcept
         {
-            const char8_t(&u8_input)[N] = reinterpret_cast<const char8_t(&)[N]>(input);
+            const char8_t (&u8_input)[N] = reinterpret_cast<const char8_t (&)[N]>(input);
 
             return this->operator==(u8_input);
         }
