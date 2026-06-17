@@ -1,8 +1,8 @@
 #pragma once
 
-#include "StringEncoder.hpp"
 #include <cassert>
-#include "../Memory.h"
+#include "Memory.h"
+#include "StringImpl/StringCommon.h"
 
 namespace Core
 {
@@ -14,6 +14,9 @@ namespace Core
 
         using CharIterator = Detail::StringCharIterator<char8_t>;
         using ConstCharIterator = Detail::StringCharIterator<const char8_t>;
+
+        using RangeAdaptor = Detail::StringCharIteratorRangeAdaptor<char8_t>;
+        using ConstRangeAdaptor = Detail::StringCharIteratorRangeAdaptor<const char8_t>;
 
         String(Allocator allocator = GetGlobalAllocator()) noexcept
             : data(nullptr),
@@ -108,12 +111,31 @@ namespace Core
             this->Append(input, N - 1);
         }
 
+        String(ConstCharIterator begin, ConstCharIterator end, Allocator allocator = GetGlobalAllocator())
+            : String(begin.GetAddress(), end.GetAddress() - begin.GetAddress(), allocator)
+        {}
+
+        template<Character C>
+        String(const Detail::StringCharIteratorRangeAdaptor<C> range, Allocator allocator = GetGlobalAllocator())
+            : String(range.Begin().GetAddress(), range.End().GetAddress() - range.Begin().GetAddress(), allocator)
+        {}
+
         template<Character C, size_t N>
         String& operator=(const C (&input)[N]) noexcept
         {
             this->ClearAndFlush();
 
             this->Append(input, N - 1);
+
+            return *this;
+        }
+
+        template<Character C>
+        String& operator=(const Detail::StringCharIteratorRangeAdaptor<C> range) noexcept
+        {
+            this->ClearAndFlush();
+
+            this->Append(range.Begin().GetAddress(), range.End().GetAddress() - range.Begin().GetAddress());
 
             return *this;
         }
@@ -461,12 +483,12 @@ namespace Core
 
         Detail::StringCharIteratorRangeAdaptor<char8_t> GetCharRange() noexcept
         {
-            return {this->data, this->size};
+            return RangeAdaptor{this->data, this->size};
         }
 
         Detail::StringCharIteratorRangeAdaptor<const char8_t> GetCharRange() const noexcept
         {
-            return {this->data, this->size};
+            return ConstRangeAdaptor{this->data, this->size};
         }
 
         String operator+(const String& str)
@@ -509,31 +531,7 @@ namespace Core
 
         ConstIterator Find(const char8_t* input, size_t input_size) const noexcept
         {
-            if(input_size == 0)
-                return Begin();
-
-            size_t str_offset = 0;
-            while(this->size - str_offset >= input_size)
-            {
-                size_t input_offset = 0;
-                for(; input_offset < input_size; input_offset++)
-                {
-                    if(input[input_offset] != this->data[str_offset + input_offset])
-                        break;
-                }
-
-                if(input_offset == input_size)
-                    return ConstIterator(this->data + str_offset);
-
-                str_offset++;
-            }
-
-            return End();
-        }
-
-        ConstIterator Find(const char* input, size_t input_size) const noexcept
-        {
-            return Find(reinterpret_cast<const char8_t*>(input), input_size);
+            return ::Core::Detail::FindInString(this->data, this->size, input, input_size);
         }
 
         template<size_t N>
@@ -542,49 +540,36 @@ namespace Core
             return Find(input, N - 1);
         }
 
-        template<size_t N>
-        ConstIterator Find(const char (&input)[N]) const noexcept
-        {
-            return Find(reinterpret_cast<const char8_t*>(input), N - 1);
-        }
-
         ConstIterator Find(const String& str) const noexcept
         {
             return Find(str.data, str.size);
         }
 
-        bool StartsWith(const char8_t* input, size_t input_size) const noexcept
+        ConstIterator FindReverse(const char8_t* input, size_t input_size) const noexcept
         {
-            if(input_size == 0)
-                return true;
-
-            if(this->size < input_size)
-                return false;
-
-            for(size_t i = 0; i < input_size; i++)
-            {
-                if(input[i] != this->data[i])
-                    return false;
-            }
-
-            return true;
+            return ::Core::Detail::FindInStringReverse(this->data, this->size, input, input_size);
         }
 
-        bool StartsWith(const char* input, size_t input_size) const noexcept
+        template<size_t N>
+        ConstIterator FindReverse(const char8_t (&input)[N]) const noexcept
         {
-            return StartsWith(reinterpret_cast<const char8_t*>(input), input_size);
+            return FindReverse(input, N - 1);
+        }
+
+        ConstIterator FindReverse(const String& str) const noexcept
+        {
+            return FindReverse(str.data, str.size);
+        }
+
+        bool StartsWith(const char8_t* input, size_t input_size) const noexcept
+        {
+            return ::Core::Detail::StringStartsWith(this->data, this->size, input, input_size);
         }
 
         template<size_t N>
         bool StartsWith(const char8_t (&input)[N]) const noexcept
         {
             return StartsWith(input, N - 1);
-        }
-
-        template<size_t N>
-        bool StartsWith(const char (&input)[N]) const noexcept
-        {
-            return StartsWith(reinterpret_cast<const char8_t*>(input), N - 1);
         }
 
         bool StartsWith(const String& str) const noexcept
@@ -594,37 +579,13 @@ namespace Core
 
         bool EndsWith(const char8_t* input, size_t input_size) const noexcept
         {
-            if(input_size == 0)
-                return true;
-
-            if(this->size < input_size)
-                return false;
-
-            size_t str_offset = (this->size - input_size);
-            for(size_t i = 0; i < input_size; i++)
-            {
-                if(input[i] != this->data[str_offset + i])
-                    return false;
-            }
-
-            return true;
-        }
-
-        bool EndsWith(const char* input, size_t input_size) const noexcept
-        {
-            return EndsWith(reinterpret_cast<const char8_t*>(input), input_size);
+            return ::Core::Detail::StringEndsWith(this->data, this->size, input, input_size);
         }
 
         template<size_t N>
         bool EndsWith(const char8_t (&input)[N]) const noexcept
         {
             return EndsWith(input, N - 1);
-        }
-
-        template<size_t N>
-        bool EndsWith(const char (&input)[N]) const noexcept
-        {
-            return EndsWith(reinterpret_cast<const char8_t*>(input), N - 1);
         }
 
         bool EndsWith(const String& str) const noexcept
@@ -634,67 +595,18 @@ namespace Core
 
         bool operator==(const String& str) const noexcept
         {
-            if(IsEmpty() && str.IsEmpty())
-                return true;
-            else if(this->size != str.size)
-                return false;
-            else
-                return memcmp(this->data, str.data, this->size) == 0;
+            return ::Core::Detail::CompareStringsEquality(this->data, this->size, str.data, str.size);
         }
 
         template<size_t N>
         bool operator==(const char8_t (&input)[N]) const noexcept
         {
-            size_t input_size = N - 1;
-            if(IsEmpty() && input_size == 0)
-                return true;
-            else if(this->size != input_size)
-                return false;
-            else
-                return memcmp(this->data, input, this->size) == 0;
-        }
-
-        template<size_t N>
-        bool operator==(const char (&input)[N]) const noexcept
-        {
-            const char8_t (&u8_input)[N] = reinterpret_cast<const char8_t (&)[N]>(input);
-
-            return this->operator==(u8_input);
+            return ::Core::Detail::CompareStringsEquality(this->data, this->size, input, N - 1);
         }
 
         bool operator<(const String& str) const noexcept
         {
-            //for each string get str1_codepoint and str2_codepoint
-            //if str1_codepoint < str2_codepoint -> true
-            //else if str1_codepoint > str2_codepoint -> false
-            //else continue
-            //after all return false
-
-            auto str1_begin = CharBegin();
-            auto str1_end = CharEnd();
-
-            auto str2_begin = str.CharBegin();
-            auto str2_end = str.CharEnd();
-
-            while(str1_begin != str1_end && str2_begin != str2_end)
-            {
-                auto str1_codepoint = *str1_begin;
-                auto str2_codepoint = *str2_begin;
-
-                if(str1_codepoint.utf32 < str2_codepoint.utf32)
-                    return true;
-                else if(str1_codepoint.utf32 > str2_codepoint.utf32)
-                    return false;
-
-                str1_begin++;
-                str2_begin++;
-            }
-
-            //prefix is same for both -> select shorter string
-            if(this->size < str.size)
-                return true;
-
-            return false;
+            return ::Core::Detail::CompareStringsLexicallyLess(this->data, this->size, str.data, str.size);
         }
     private:
         char8_t* data;

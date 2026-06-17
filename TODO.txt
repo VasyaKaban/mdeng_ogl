@@ -107,16 +107,12 @@ UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key t
 StaticVector(like array but with reserve and push_back)<T, SIZE>
 Path
 File
-StringView<CHAR>
 Ring<T, SIZE>
 Pool<T>
 RawPool
-Any
 Expected<T, E>
 Callable<R (Args... ?...) ?>
-Tuple<Types...>
 Thread + Semaphores, barriers, fences, mutexes, ...
-Bitset???
 Matrix, vector???
 regex -> via PCRE???
 
@@ -200,4 +196,3 @@ Union:
     Ctor<T>(NonType<T>, U&&);
     Get<T or Index> -> T&
     Set<T or Index>(U&&) -> T&
-    

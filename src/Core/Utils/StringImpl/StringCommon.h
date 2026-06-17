@@ -6,9 +6,6 @@
 
 namespace Core
 {
-    class String;
-    class StringView;
-
     struct StringEncoderLengthResult
     {
         size_t input_offset;
@@ -392,13 +389,11 @@ namespace Core
         requires std::same_as<char8_t, C> || std::same_as<const char8_t, C>
         class StringCharIterator
         {
-            friend class ::Core::String;
-            friend class ::Core::StringView;
-
-            StringCharIterator(C* data) noexcept
+        public:
+            explicit StringCharIterator(C* data) noexcept
                 : data(data)
             {}
-        public:
+
             StringCharIterator() = default;
             ~StringCharIterator() = default;
             StringCharIterator(const StringCharIterator&) = default;
@@ -457,15 +452,13 @@ namespace Core
         requires std::same_as<char8_t, C> || std::same_as<const char8_t, C>
         class StringCharIteratorRangeAdaptor
         {
-            friend class ::Core::String;
-            friend class ::Core::StringView;
+        public:
+            using Iterator = StringCharIterator<C>;
 
-            StringCharIteratorRangeAdaptor(C* data, size_t size) noexcept
+            explicit StringCharIteratorRangeAdaptor(C* data, size_t size) noexcept
                 : data(data),
                   size(size)
             {}
-        public:
-            using Iterator = StringCharIterator<C>;
 
             StringCharIteratorRangeAdaptor() = default;
             ~StringCharIteratorRangeAdaptor() = default;
@@ -502,6 +495,20 @@ namespace Core
         {
             return std::forward<T>(rng).End();
         }
+
+        //string utils
+        const char8_t* FindInString(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+
+        const char8_t* FindInStringReverse(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+
+        bool StringStartsWith(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+
+        bool StringEndsWith(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+
+        bool CompareStringsEquality(const char8_t* data1, size_t data_size1, const char8_t* data2, size_t data_size2) noexcept;
+
+        bool CompareStringsLexicallyLess(const char8_t* data1, size_t data_size1, const char8_t* data2, size_t data_size2) noexcept;
+
     };
 };
 
