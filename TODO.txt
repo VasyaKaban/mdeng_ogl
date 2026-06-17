@@ -97,6 +97,7 @@ Instance:
 * WindowSubsystem: CharacterInputEvent -> change utf32 and utf8[4] to string buffer due to the possible complex codepoints sequence like emoji
 * Get rid of MAX_PATH 
 * Constants as Index not INDEX???
+* String and Path -> on realloc allocate capacity * 2
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
 Stack<T>
