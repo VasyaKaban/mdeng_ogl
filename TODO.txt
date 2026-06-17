@@ -106,6 +106,7 @@ Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
 StaticVector(like array but with reserve and push_back)<T, SIZE>
 Path
+PathView
 File
 Ring<T, SIZE>
 Pool<T>
@@ -196,3 +197,27 @@ Union:
     Ctor<T>(NonType<T>, U&&);
     Get<T or Index> -> T&
     Set<T or Index>(U&&) -> T&
+
+Win32:
+    only . and ..
+Unix:
+    same rules for . and .. but ...+ is a valid folder name
+
+root:
+    DRIVE: -> Win32
+    / -> Unix
+
+Add \\?\ for absolute Win32 folder
+
+for Unix forbid only Null and /
+for Win32 firbid:
+    Null, /, \, :, *, ?, ", <, >, |
+
+So use POSIX rules for Path class and change it only when we check for root path
+Use / as separator
+Use \ as separator on Win32
+Absolue on Posix -> starts with /
+Absolute on Win32 -> starts with DRIVE:
+Store Path and PathView as vallid UTF-8 string. On OS API access copy buffer to temporary buffer and append '\0'. For Win32 also translate into UTF-16 and map all / and \ as \
+Treat ..+ as folder but on Win32 it will throw exception
+DO not care about forbidden names and symbols on Win32 but it will throw exception
