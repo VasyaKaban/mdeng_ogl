@@ -118,6 +118,29 @@ Thread + Semaphores, barriers, fences, mutexes, ...
 Matrix, vector???
 regex -> via PCRE???
 
+Root:
+	Unix: /
+	Windows: \\?\
+
+so
+static Path GetRoot()
+{
+	if(WIN32)
+		return "//?/"; //let's keep non-back slash
+	else if(Unix)
+		return "/";
+	else
+		error();
+}
+
+class Path:
+	String data;
+	bool is_normalized; -> update every call to MakeAbsolute or path append
+	
+//same for PathView
+
+for every inner call copy data to temporary buffer and change separators
+
 RCPointer:
 	T* ptr
 	where T: 
