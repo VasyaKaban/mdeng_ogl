@@ -85,7 +85,7 @@ namespace Core
             {
                 ChainIterator ret(this->node);
 
-                this->node = this->node->next;
+                ++(*this);
 
                 return ret;
             }
@@ -182,6 +182,11 @@ namespace Core
         {
             this->Clear();
 
+            Allocator old_allocator = this->allocator;
+            Allocator new_allocator = chain.allocator;
+
+            this->allocator = new_allocator;
+
             try
             {
                 for(auto it = chain.Begin(); it != chain.End(); it++)
@@ -190,6 +195,8 @@ namespace Core
             catch(...)
             {
                 Clear();
+                this->allocator = old_allocator;
+
                 throw;
             }
 

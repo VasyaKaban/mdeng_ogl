@@ -405,9 +405,7 @@ namespace Core
             {
                 StringCharIterator out(*this);
 
-                char32_t utf32 = StringEncoder::GetUTF32Codepoint(this->data);
-                auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
-                this->data += utf8.length;
+                ++(*this);
 
                 return out;
             }

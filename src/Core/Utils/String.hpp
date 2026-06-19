@@ -40,9 +40,6 @@ namespace Core
             if(!str.IsEmpty())
             {
                 this->data = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = str.size}));
-                if(!this->data)
-                    CORE_THROW_EXCEPTION_MOCK("BAD ALLOC");
-
                 memcpy(this->data, str.data, str.size);
             }
         }
@@ -56,18 +53,15 @@ namespace Core
 
         String& operator=(const String& str)
         {
+            Allocator new_allocator = str.allocator;
+
             if(str.IsEmpty())
             {
                 this->ClearAndFlush();
-                this->allocator = str.allocator;
             }
             else
             {
-                Allocator new_allocator = str.allocator;
-
                 char8_t* new_memory = reinterpret_cast<char8_t*>(new_allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = str.size}));
-                if(new_memory)
-                    CORE_THROW_EXCEPTION_MOCK("BAD ALLOC");
 
                 this->ClearAndFlush();
                 memcpy(new_memory, str.data, str.size);
@@ -78,8 +72,9 @@ namespace Core
                 this->data = new_memory;
                 this->size = str.size;
                 this->capacity = this->size;
-                this->allocator = new_allocator;
             }
+
+            this->allocator = new_allocator;
 
             return *this;
         }
@@ -192,8 +187,6 @@ namespace Core
             else //allocate new buffer
             {
                 char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = reserve}));
-                if(!new_memory)
-                    CORE_THROW_EXCEPTION_MOCK("Bad alloc");
 
                 memcpy(new_memory, this->data, this->size);
 
@@ -274,8 +267,6 @@ namespace Core
             else
             {
                 char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = new_size}));
-                if(!new_memory)
-                    CORE_THROW_EXCEPTION_MOCK("Bad alloc");
 
                 StringEncoder::Convert(input, input_size, new_memory); //copy new data
                 memcpy(new_memory + length_res.output_size, this->data, this->size);
@@ -370,8 +361,6 @@ namespace Core
                 else
                 {
                     char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = new_size}));
-                    if(!new_memory)
-                        CORE_THROW_EXCEPTION_MOCK("Bad alloc");
 
                     memcpy(new_memory, this->data, first_part_size);
                     StringEncoder::Convert(input, input_size, new_memory + first_part_size);
