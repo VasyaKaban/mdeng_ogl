@@ -562,6 +562,11 @@ namespace Core
         {
             return ::Core::Detail::CompareStringsLexicallyLess(this->data, this->size, str.data, str.size);
         }
+
+        static MemoryRequirements GetMemoryRequirements(size_t reserve) noexcept
+        {
+            return MemoryRequirements{.alignment = alignof(char8_t), .size = reserve};
+        }
     private:
         char8_t* data;
         size_t size;

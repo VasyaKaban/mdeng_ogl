@@ -337,6 +337,11 @@ namespace Core
         {
             return ConstIterator(this->base);
         }
+
+        static MemoryRequirements GetMemoryRequirements(size_t size) noexcept
+        {
+            return MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node) * size};
+        }
     public:
         void UpdateBase() noexcept //use on move when we must change first and last references to the base
         {

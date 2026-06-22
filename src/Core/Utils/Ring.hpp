@@ -305,6 +305,11 @@ namespace Core
             this->next_push = this->data;
             this->next_pop = nullptr;
         }
+
+        static MemoryRequirements GetMemoryRequirements(size_t reserve) noexcept
+        {
+            return MemoryRequirements{.alignment = alignof(T), .size = sizeof(T) * reserve};
+        }
     private:
         void DestroyObjects() noexcept
         {
