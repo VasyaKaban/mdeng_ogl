@@ -465,12 +465,12 @@ namespace Core
             StringCharIteratorRangeAdaptor& operator=(const StringCharIteratorRangeAdaptor&) = default;
             StringCharIteratorRangeAdaptor& operator=(StringCharIteratorRangeAdaptor&&) = default;
 
-            Iterator Begin() noexcept
+            Iterator GetIterator() noexcept
             {
                 return Iterator(this->data);
             }
 
-            Iterator End() noexcept
+            Iterator GetSentinel() noexcept
             {
                 return Iterator(this->data + this->size);
             }
@@ -484,14 +484,14 @@ namespace Core
         requires TypeInstantiation<std::remove_cvref_t<T>, StringCharIteratorRangeAdaptor>
         auto begin(T&& rng) noexcept
         {
-            return std::forward<T>(rng).Begin();
+            return std::forward<T>(rng).GetIterator();
         }
 
         template<typename T>
         requires TypeInstantiation<std::remove_cvref_t<T>, StringCharIteratorRangeAdaptor>
         auto end(T&& rng) noexcept
         {
-            return std::forward<T>(rng).End();
+            return std::forward<T>(rng).GetSentinel();
         }
 
         //string utils

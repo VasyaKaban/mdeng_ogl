@@ -89,7 +89,7 @@ namespace Core
 
         template<Character C>
         String(const Detail::StringCharIteratorRangeAdaptor<C> range, Allocator allocator = GetGlobalAllocator())
-            : String(range.Begin().GetAddress(), range.End().GetAddress() - range.Begin().GetAddress(), allocator)
+            : String(range.GetIterator().GetAddress(), range.GetSentinel().GetAddress() - range.GetIterator().GetAddress(), allocator)
         {}
 
         template<Character C, size_t N>
@@ -107,7 +107,7 @@ namespace Core
         {
             *this = String(this->allocator);
 
-            this->Append(range.Begin().GetAddress(), range.End().GetAddress() - range.Begin().GetAddress());
+            this->Append(range.GetIterator().GetAddress(), range.GetSentinel().GetAddress() - range.GetIterator().GetAddress());
 
             return *this;
         }
@@ -287,11 +287,11 @@ namespace Core
         template<Character C>
         void Insert(ConstCharIterator before_it, const C* input, size_t input_size)
         {
-            if(before_it == CharBegin())
+            if(before_it == GetCharIterator())
             {
                 Prepend(input, input_size);
             }
-            else if(before_it == CharEnd())
+            else if(before_it == GetCharSentinel())
             {
                 Append(input, input_size);
             }
@@ -376,11 +376,11 @@ namespace Core
 
         void Erase(ConstCharIterator begin, ConstCharIterator end) noexcept
         {
-            if(end == CharEnd())
+            if(end == GetCharSentinel())
             {
                 EraseLast(begin);
             }
-            else if(begin == CharBegin())
+            else if(begin == GetCharIterator())
             {
                 EraseFirst(end);
             }
@@ -395,42 +395,42 @@ namespace Core
             }
         }
 
-        Iterator Begin() noexcept
+        Iterator GetIterator() noexcept
         {
             return Iterator(this->data);
         }
 
-        ConstIterator Begin() const noexcept
+        ConstIterator GetIterator() const noexcept
         {
             return ConstIterator(this->data);
         }
 
-        Iterator End() noexcept
+        Iterator GetSentinel() noexcept
         {
             return Iterator(this->data + this->size);
         }
 
-        ConstIterator End() const noexcept
+        ConstIterator GetSentinel() const noexcept
         {
             return ConstIterator(this->data + this->size);
         }
 
-        CharIterator CharBegin() noexcept
+        CharIterator GetCharIterator() noexcept
         {
             return CharIterator(this->data);
         }
 
-        ConstCharIterator CharBegin() const noexcept
+        ConstCharIterator GetCharIterator() const noexcept
         {
             return ConstCharIterator(this->data);
         }
 
-        CharIterator CharEnd() noexcept
+        CharIterator GetCharSentinel() noexcept
         {
             return CharIterator(this->data + this->size);
         }
 
-        ConstCharIterator CharEnd() const noexcept
+        ConstCharIterator GetCharSentinel() const noexcept
         {
             return ConstCharIterator(this->data + this->size);
         }
@@ -574,14 +574,14 @@ namespace Core
     requires std::same_as<std::remove_cvref_t<T>, String>
     auto begin(T&& str) noexcept
     {
-        return std::forward<T>(str).Begin();
+        return std::forward<T>(str).GetIterator();
     }
 
     template<typename T>
     requires std::same_as<std::remove_cvref_t<T>, String>
     auto end(T&& str) noexcept
     {
-        return std::forward<T>(str).End();
+        return std::forward<T>(str).GetSentinel();
     }
 
     template<typename T>

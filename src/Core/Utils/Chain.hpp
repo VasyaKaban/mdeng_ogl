@@ -318,22 +318,22 @@ namespace Core
             return this->base.prev->AsChainNode<T>()->value;
         }
 
-        Iterator Begin() noexcept
+        Iterator GetIterator() noexcept
         {
             return Iterator(this->base.next);
         }
 
-        ConstIterator Begin() const noexcept
+        ConstIterator GetIterator() const noexcept
         {
             return ConstIterator(this->base.next);
         }
 
-        Iterator End() noexcept
+        Iterator GetSentinel() noexcept
         {
             return Iterator(&this->base);
         }
 
-        ConstIterator End() const noexcept
+        ConstIterator GetSentinel() const noexcept
         {
             return ConstIterator(this->base);
         }
@@ -440,14 +440,14 @@ namespace Core
     requires TypeInstantiation<std::remove_cvref_t<T>, Chain>
     auto begin(T&& chain) noexcept
     {
-        return std::forward<T>(chain).Begin();
+        return std::forward<T>(chain).GetIterator();
     }
 
     template<typename T>
     requires TypeInstantiation<std::remove_cvref_t<T>, Chain>
     auto end(T&& chain) noexcept
     {
-        return std::forward<T>(chain).End();
+        return std::forward<T>(chain).GetSentinel();
     }
 
     template<typename T>

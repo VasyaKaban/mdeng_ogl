@@ -79,12 +79,12 @@ namespace Core
             return this->data[index];
         }
 
-        constexpr Iterator Begin() const noexcept
+        constexpr Iterator GetIterator() const noexcept
         {
             return this->data;
         }
 
-        constexpr Iterator End() const noexcept
+        constexpr Iterator GetSentinel() const noexcept
         {
             return this->data + this->size;
         }
@@ -106,13 +106,13 @@ namespace Core
     template<TypeInstantiation<Span> T>
     auto begin(T&& sp) noexcept
     {
-        return std::forward<T>(sp).Begin();
+        return std::forward<T>(sp).GetIterator();
     }
 
     template<TypeInstantiation<Span> T>
     auto end(T&& sp) noexcept
     {
-        return std::forward<T>(sp).End();
+        return std::forward<T>(sp).GetSentinel();
     }
 
     template<TypeInstantiation<Span> T>
@@ -121,11 +121,3 @@ namespace Core
         return std::forward<T>(sp).GetSize();
     }
 };
-
-constexpr int arr[5] = {1, 2, 3, 4, 5};
-constexpr auto a = std::to_address(arr);
-
-using t = std::iter_value_t<decltype(arr)>;
-
-constexpr Core::Span sp(arr, 5);
-constexpr Core::Span sp2(arr, arr + 5);

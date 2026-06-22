@@ -47,7 +47,7 @@ namespace Core
 
         template<Character C>
         StringView(const Detail::StringCharIteratorRangeAdaptor<C> range)
-            : StringView(range.Begin(), range.End())
+            : StringView(range.GetIterator(), range.GetSentinel())
         {}
 
         template<size_t N>
@@ -88,22 +88,22 @@ namespace Core
             return reinterpret_cast<const char*>(this->data);
         }
 
-        Iterator Begin() const noexcept
+        Iterator GetIterator() const noexcept
         {
             return Iterator(this->data);
         }
 
-        Iterator End() const noexcept
+        Iterator GetSentinel() const noexcept
         {
             return Iterator(this->data + this->size);
         }
 
-        CharIterator CharBegin() const noexcept
+        CharIterator GetCharIterator() const noexcept
         {
             return CharIterator(this->data);
         }
 
-        CharIterator CharEnd() const noexcept
+        CharIterator GetCharSentinel() const noexcept
         {
             return CharIterator(this->data + this->size);
         }
@@ -202,14 +202,14 @@ namespace Core
     requires std::same_as<std::remove_cvref_t<T>, StringView>
     auto begin(T&& str) noexcept
     {
-        return std::forward<T>(str).Begin();
+        return std::forward<T>(str).GetIterator();
     }
 
     template<typename T>
     requires std::same_as<std::remove_cvref_t<T>, StringView>
     auto end(T&& str) noexcept
     {
-        return std::forward<T>(str).End();
+        return std::forward<T>(str).GetSentinel();
     }
 
     template<typename T>

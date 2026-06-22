@@ -99,7 +99,6 @@ Instance:
 * Constants as Index not INDEX???
 * String and Path -> on realloc allocate capacity * 2
 * Add method like 'static GetAllocationMetrics(...) -> size_t, ...' for getting allocation size and alignment for specified reserve/size/count/etc... 
-* Begin and End methods to GetIterator and GetSentinel
 * Add reverse iterator and sentinel
 * Add hints like assume and assume_aligned as macro
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
