@@ -32,16 +32,10 @@ namespace Core
         }
 
         String(const String& str)
-            : data(nullptr),
-              size(str.size),
-              capacity(str.size),
-              allocator(str.allocator)
         {
-            if(!str.IsEmpty())
-            {
-                this->data = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = str.size}));
-                memcpy(this->data, str.data, str.size);
-            }
+            String tmp_str(str.data, str.size, str.allocator);
+
+            *this = std::move(tmp_str);
         }
 
         String(String&& str) noexcept
@@ -53,35 +47,18 @@ namespace Core
 
         String& operator=(const String& str)
         {
-            Allocator new_allocator = str.allocator;
+            *this = String(this->allocator);
 
-            if(str.IsEmpty())
-            {
-                this->ClearAndFlush();
-            }
-            else
-            {
-                char8_t* new_memory = reinterpret_cast<char8_t*>(new_allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = str.size}));
+            String tmp_str(str.data, str.size, str.allocator);
 
-                this->ClearAndFlush();
-                memcpy(new_memory, str.data, str.size);
-
-                if(this->data)
-                    this->allocator.Deallocate(this->data);
-
-                this->data = new_memory;
-                this->size = str.size;
-                this->capacity = this->size;
-            }
-
-            this->allocator = new_allocator;
+            *this = std::move(tmp_str);
 
             return *this;
         }
 
         String& operator=(String&& str) noexcept
         {
-            this->ClearAndFlush();
+            this->~String();
 
             this->data = std::exchange(str.data, nullptr);
             this->size = std::exchange(str.size, 0);
@@ -118,7 +95,7 @@ namespace Core
         template<Character C, size_t N>
         String& operator=(const C (&input)[N]) noexcept
         {
-            this->ClearAndFlush();
+            *this = String(this->allocator);
 
             this->Append(input, N - 1);
 
@@ -128,7 +105,7 @@ namespace Core
         template<Character C>
         String& operator=(const Detail::StringCharIteratorRangeAdaptor<C> range) noexcept
         {
-            this->ClearAndFlush();
+            *this = String(this->allocator);
 
             this->Append(range.Begin().GetAddress(), range.End().GetAddress() - range.Begin().GetAddress());
 
@@ -201,18 +178,6 @@ namespace Core
         void Clear() noexcept
         {
             this->size = 0;
-        }
-
-        void ClearAndFlush() noexcept
-        {
-            if(this->data)
-            {
-                this->allocator.Deallocate(this->data);
-
-                this->data = nullptr;
-                this->size = 0;
-                this->capacity = 0;
-            }
         }
 
         bool FlushUnusedReserve() noexcept

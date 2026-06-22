@@ -158,16 +158,11 @@ namespace Core
               size(0),
               allocator(chain.allocator)
         {
-            try
-            {
-                for(auto it = chain.Begin(); it != chain.End(); it++)
-                    PushToEnd(*it);
-            }
-            catch(...)
-            {
-                Clear();
-                throw;
-            }
+            Chain tmp_chain(chain.allocator);
+            for(const auto& value: chain)
+                tmp_chain.PushToEnd(value);
+
+            *this = std::move(tmp_chain);
         }
 
         Chain(Chain&& chain) noexcept
@@ -180,32 +175,20 @@ namespace Core
 
         Chain& operator=(const Chain& chain)
         {
-            this->Clear();
+            *this = Chain(this->allocator);
 
-            Allocator old_allocator = this->allocator;
-            Allocator new_allocator = chain.allocator;
+            Chain tmp_chain(chain.allocator);
+            for(const auto& value: chain)
+                tmp_chain.PushToEnd(value);
 
-            this->allocator = new_allocator;
-
-            try
-            {
-                for(auto it = chain.Begin(); it != chain.End(); it++)
-                    PushToEnd(*it);
-            }
-            catch(...)
-            {
-                Clear();
-                this->allocator = old_allocator;
-
-                throw;
-            }
+            *this = std::move(tmp_chain);
 
             return *this;
         }
 
         Chain& operator=(Chain&& chain) noexcept
         {
-            this->Clear();
+            this->~Chain();
 
             this->base = std::exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base));
             this->size = std::exchange(chain.size, 0);

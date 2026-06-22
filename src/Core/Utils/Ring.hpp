@@ -4,6 +4,51 @@
 
 namespace Core
 {
+    namespace Detail
+    {
+        template<typename T, typename F>
+        requires std::invocable<F, T*>
+        void RingForEach(T* data, size_t capacity, size_t size, T* next_pop, T* next_push, F&& func)
+        {
+            if(next_pop == nullptr) //empty -> no-op
+                return;
+
+            if(next_push == nullptr) //full -> iterate from begin to end
+            {
+                for(size_t i = 0; i < size; i++)
+                    std::forward<F>(func)(data + i);
+            }
+            else
+            {
+                if(next_push > next_pop) //linear -> iterate from push to pop
+                {
+                    auto ptr = next_pop;
+                    while(ptr != next_push)
+                    {
+                        std::forward<F>(func)(ptr);
+                        ptr++;
+                    }
+                }
+                else //non-linear -> iterate from pop to end and then from begin to push
+                {
+                    auto ptr = next_pop;
+                    while(ptr != (data + capacity))
+                    {
+                        std::forward<F>(func)(ptr);
+                        ptr++;
+                    }
+
+                    ptr = data;
+                    while(ptr != next_push)
+                    {
+                        std::forward<F>(func)(ptr);
+                        ptr++;
+                    }
+                }
+            }
+        }
+    };
+
     template<typename T>
     requires std::same_as<std::remove_cvref_t<T>, T>
     class Ring
@@ -34,21 +79,20 @@ namespace Core
 
         Ring(const Ring& ring)
         requires std::is_copy_constructible_v<T>
-            : Ring(ring.size, ring.allocator)
         {
-            try
-            {
-                ring.ForEach(
-                    [this](const T* obj)
-                    {
-                        this->Push(*obj);
-                    });
-            }
-            catch(...)
-            {
-                Clear();
-                throw;
-            }
+            Ring tmp_ring(ring.size, ring.allocator);
+
+            RingForEach(ring.data,
+                        ring.capacity,
+                        ring.size,
+                        ring.next_pop,
+                        ring.next_push,
+                        [&tmp_ring](const T* obj)
+                        {
+                            tmp_ring.Push(*obj);
+                        });
+
+            *this = std::move(tmp_ring);
         }
 
         Ring(Ring&& ring) noexcept
@@ -63,30 +107,21 @@ namespace Core
         Ring& operator=(const Ring& ring)
         requires std::is_copy_constructible_v<T>
         {
-            Clear();
+            *this = Ring(this->allocator);
 
-            Allocator old_allocator = this->allocator;
-            Allocator new_allocator = ring.allocator;
+            Ring tmp_ring(ring.size, ring.allocator);
 
-            this->allocator = new_allocator;
+            RingForEach(ring.data,
+                        ring.capacity,
+                        ring.size,
+                        ring.next_pop,
+                        ring.next_push,
+                        [&tmp_ring](const T* obj)
+                        {
+                            tmp_ring.Push(*obj);
+                        });
 
-            try
-            {
-                Reserve(ring.size);
-
-                ring.ForEach(
-                    [this](const T* obj)
-                    {
-                        this->Push(*obj);
-                    });
-            }
-            catch(...)
-            {
-                Clear();
-                this->allocator = old_allocator;
-
-                throw;
-            }
+            *this = std::move(tmp_ring);
 
             return *this;
         }
@@ -204,7 +239,7 @@ namespace Core
             if(this->capacity >= reserve)
                 return;
 
-            if(!CanPop() || !CanPush() || (this->next_push > this->next_pop)) //empty or full or linear -> try grow
+            if(this->data && (!CanPop() || !CanPush() || (this->next_push > this->next_pop))) //empty or full or linear -> try grow
             {
                 if(this->allocator.Grow(this->data, sizeof(T) * reserve))
                 {
@@ -218,16 +253,20 @@ namespace Core
 
             try
             {
-                ForEach(
-                    [this, new_memory, &offset](T* obj)
-                    {
-                        if constexpr(std::is_nothrow_move_constructible_v<T>)
-                            new(new_memory + offset) T(std::move(*obj));
-                        else
-                            new(new_memory + offset) T(*obj);
+                RingForEach(this->data,
+                            this->capacity,
+                            this->size,
+                            this->next_pop,
+                            this->next_push,
+                            [this, new_memory, &offset](T* obj)
+                            {
+                                if constexpr(std::is_nothrow_move_constructible_v<T>)
+                                    new(new_memory + offset) T(std::move(*obj));
+                                else
+                                    new(new_memory + offset) T(*obj);
 
-                        offset++;
-                    });
+                                offset++;
+                            });
             }
             catch(...)
             {
@@ -239,13 +278,13 @@ namespace Core
                 throw;
             }
 
-            size_t current_size = this->size;
-            Clear();
+            DestroyObjects();
 
-            this->allocator.Deallocate(this->data);
+            if(this->data)
+                this->allocator.Deallocate(this->data);
+
             this->data = new_memory;
             this->capacity = reserve;
-            this->size = current_size;
 
             if(offset == 0)
             {
@@ -269,14 +308,15 @@ namespace Core
     private:
         void DestroyObjects() noexcept
         {
-            if(this->capacity != 0)
-            {
-                ForEach(
-                    [](T* obj)
-                    {
-                        obj->~T();
-                    });
-            }
+            RingForEach(this->data,
+                        this->capacity,
+                        this->size,
+                        this->next_pop,
+                        this->next_push,
+                        [](T* obj)
+                        {
+                            obj->~T();
+                        });
         }
 
         void CorrectPointers(T*& moved_ptr, T*& static_ptr) noexcept
@@ -290,93 +330,6 @@ namespace Core
 
             if(moved_ptr == static_ptr) //reset
                 moved_ptr = nullptr;
-        }
-
-        template<typename F>
-        requires std::invocable<F, T*>
-        void ForEach(F&& func)
-        {
-            if(!CanPop()) //empty -> no-op
-            {
-            }
-            else if(!CanPush()) //full -> iterate from begin to end
-            {
-                for(size_t i = 0; i < this->size; i++)
-                    std::forward<F>(func)(this->data + i);
-            }
-            else
-            {
-                if(this->next_push > this->next_pop) //linear -> iterate from push to pop
-                {
-                    T* ptr = this->next_push;
-                    while(ptr != this->next_pop)
-                    {
-                        std::forward<F>(func)(ptr);
-                        ptr++;
-                    }
-                }
-                else //non-linear -> iterate from push to end and then from begin to pop
-                {
-                    T* ptr = this->next_push;
-                    while(ptr != (this->data + this->capacity))
-                    {
-                        std::forward<F>(func)(ptr);
-                        ptr++;
-                    }
-
-                    ptr = this->data;
-                    while(ptr != this->next_pop)
-                    {
-                        std::forward<F>(func)(ptr);
-                        ptr++;
-                    }
-                }
-            }
-        }
-
-        template<typename F>
-        requires std::invocable<F, const T*>
-        void ForEach(F&& func) const
-        {
-            if(this->capacity != 0)
-            {
-                if(!CanPop()) //empty -> no-op
-                {
-                }
-                else if(!CanPush()) //full -> iterate from begin to end
-                {
-                    for(size_t i = 0; i < this->size; i++)
-                        std::forward<F>(func)(this->data + i);
-                }
-                else
-                {
-                    if(this->next_push > this->next_pop) //linear -> iterate from push to pop
-                    {
-                        T* ptr = this->next_push;
-                        while(ptr != this->next_pop)
-                        {
-                            std::forward<F>(func)(ptr);
-                            ptr++;
-                        }
-                    }
-                    else //non-linear -> iterate from push to end and then from begin to pop
-                    {
-                        T* ptr = this->next_push;
-                        while(ptr != (this->data + this->capacity))
-                        {
-                            std::forward<F>(func)(ptr);
-                            ptr++;
-                        }
-
-                        ptr = this->data;
-                        while(ptr != this->next_pop)
-                        {
-                            std::forward<F>(func)(ptr);
-                            ptr++;
-                        }
-                    }
-                }
-            }
         }
     private:
         T* data;
