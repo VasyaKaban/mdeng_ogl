@@ -1,16 +1,16 @@
 #pragma once
 
-#include <ranges>
-#include <cassert>
 #include "Memory.h"
 #include "Instantiation.hpp"
+#include <ranges>
+#include <cassert>
 
 namespace Core
 {
     template<typename T>
+    requires std::same_as<std::remove_cvref_t<T>, T>
     class Array
     {
-        static_assert(std::same_as<std::remove_cvref_t<T>, T>);
     public:
         using Iterator = T*;
         using ConstIterator = const T*;
@@ -25,40 +25,27 @@ namespace Core
         Array(size_t reserve, Allocator allocator = GetGlobalAllocator()) noexcept
             : Array(allocator)
         {
-            if(reserve != 0)
-            {
-                this->memory = AllocateMemory(reserve);
-                this->capacity = reserve;
-            }
+            Reserve(reserve);
         }
 
         ~Array()
         {
-            DestroyObjectsAndDeallocateMemory(this->memory, this->size, this->allocator);
+            if(this->memory)
+            {
+                DestroyObjects();
+
+                this->allocator.Deallocate(this->memory);
+            }
         }
 
         Array(const Array& array)
-        requires std::copy_constructible<T>
-            : Array(array.allocator)
         {
-            T* new_memory = AllocateMemory(array.size);
+            Array tmp_array(array.size, array.allocator);
 
-            size_t index = 0;
-            try
-            {
-                for(; index < array.size; index++)
-                    new(new_memory + index) T(array.memory[index]);
-            }
-            catch(...)
-            {
-                DestroyObjectsAndDeallocateMemory(new_memory, index, this->allocator);
+            for(size_t i = 0; i < array.size; i++)
+                tmp_array.Push(array[i]);
 
-                throw;
-            }
-
-            this->memory = new_memory;
-            this->size = array.size;
-            this->capacity = this->size;
+            *this = std::move(tmp_array);
         }
 
         Array(Array&& array) noexcept
@@ -70,231 +57,293 @@ namespace Core
 
         Array& operator=(const Array& array)
         {
-            this->Clear();
+            Array tmp_array(array.size, array.allocator);
 
-            T* new_memory = AllocateMemory(array.size);
+            for(size_t i = 0; i < array.size; i++)
+                tmp_array.Push(array[i]);
 
-            size_t index = 0;
-            try
-            {
-                for(; index < array.size; index++)
-                    new(new_memory + index) T(array.memory[index]);
-            }
-            catch(...)
-            {
-                DestroyObjectsAndDeallocateMemory(new_memory, index, this->allocator);
-
-                throw;
-            }
-
-            this->memory = new_memory;
-            this->size = array.size;
-            this->capacity = this->size;
+            *this = std::move(tmp_array);
 
             return *this;
         }
 
         Array& operator=(Array&& array) noexcept
         {
-            this->Clear();
+            this->~Array();
 
-            memory = std::exchange(array.memory, nullptr);
-            size = std::exchange(array.size, 0);
-            capacity = std::exchange(array.capacity, 0);
-            allocator = array.allocator;
+            this->memory = std::exchange(array.memory, nullptr);
+            this->size = std::exchange(array.size, 0);
+            this->capacity = std::exchange(array.capacity, 0);
+            this->allocator = array.allocator;
 
             return *this;
         }
 
         template<std::ranges::sized_range R>
-        requires std::constructible_from<T, std::ranges::range_value_t<std::remove_cvref_t<R>>>
         Array(R&& values, Allocator allocator = GetGlobalAllocator())
-            : Array(allocator)
         {
-            size_t values_size = std::ranges::size(std::forward<R>(values));
-            if(values_size != 0)
+            Array tmp_array(std::ranges::size(std::forward<R>(values)), allocator);
+
+            for(auto&& value: std::forward<R>(values))
+                tmp_array.Push(std::forward<decltype(value)>(value));
+
+            *this = std::move(tmp_array);
+        }
+
+        //on enough capacity -> move right and place
+        //on grow -> move right and place
+        //om alloc -> copy left, place, copy right
+        void Insert(ConstIterator before_it, const T& value)
+        requires std::copy_constructible<T> && std::is_nothrow_copy_constructible_v<T> && (std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>)
+        {
+            assert(before_it >= this->memory);
+            assert(before_it <= this->memory + this->size);
+
+            if(this->capacity != this->size) //move right and place
             {
-                T* new_memory = AllocateMemory(values_size);
-
-                size_t index = 0;
-                try
+                MoveRight(const_cast<T*>(before_it) + 1, GetSentinel() - (before_it + 1), 1);
+                new(const_cast<T*>(before_it) + 1) T(value);
+                this->size++;
+            }
+            else if(this->memory != nullptr && this->allocator.Grow(this->memory, sizeof(T) * (this->size + 1))) //move right and place
+            {
+                MoveRight(const_cast<T*>(before_it) + 1, GetSentinel() - (before_it + 1), 1);
+                new(const_cast<T*>(before_it) + 1) T(value);
+                this->size++;
+            }
+            else //copy left, place, copy right
+            {
+                Array<T> tmp_array(this->size + 1, this->allocator);
+                for(auto it = GetIterator(); it <= before_it; it++) //copy left
                 {
-                    for(auto&& value: std::forward<R>(values))
-                    {
-                        new(new_memory + index) T(std::forward<decltype(value)>(value));
-                        index++;
-                    }
-                }
-                catch(...)
-                {
-                    DestroyObjectsAndDeallocateMemory(new_memory, index, this->allocator);
-                    throw;
+                    if constexpr(std::is_nothrow_move_constructible_v<T>)
+                        tmp_array.Push(std::move(*it));
+                    else
+                        tmp_array.Push(*it);
                 }
 
-                this->memory = new_memory;
-                this->size = values_size;
-                this->capacity = this->size;
+                tmp_array.Push(value); //place
+
+                for(auto it = before_it + 1; it != GetSentinel(); it++) //copy right
+                {
+                    if constexpr(std::is_nothrow_move_constructible_v<T>)
+                        tmp_array.Push(std::move(*it));
+                    else
+                        tmp_array.Push(*it);
+                }
+
+                *this = std::move(tmp_array);
             }
         }
 
-        ////////////////////////////////////////////////////////////////////////
-        //insert back -> push back
-        //insert -> move + possible alloc
-        //if enough capacity -> move or copy and insert new object
-        //otherwise try to grow and perform the same op from above
-        //else allocate new memory, copy old objects and insert new and free previous memory
+        void Insert(ConstIterator before_it, T&& value)
+        requires std::move_constructible<T> && std::is_nothrow_move_constructible_v<T> && (std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>)
+        {
+            assert(before_it >= this->memory);
+            assert(before_it <= this->memory + this->size);
+
+            if(this->capacity != this->size) //move right and place
+            {
+                MoveRight(const_cast<T*>(before_it) + 1, GetSentinel() - (before_it + 1), 1);
+                new(const_cast<T*>(before_it) + 1) T(std::move(value));
+                this->size++;
+            }
+            else if(this->memory != nullptr && this->allocator.Grow(this->memory, sizeof(T) * (this->size + 1))) //move right and place
+            {
+                MoveRight(const_cast<T*>(before_it) + 1, GetSentinel() - (before_it + 1), 1);
+                new(const_cast<T*>(before_it) + 1) T(std::move(value));
+                this->size++;
+            }
+            else //copy left, place, copy right
+            {
+                Array<T> tmp_array(this->size + 1, this->allocator);
+                for(auto it = GetIterator(); it <= before_it; it++) //copy left
+                {
+                    if constexpr(std::is_nothrow_move_constructible_v<T>)
+                        tmp_array.Push(std::move(*it));
+                    else
+                        tmp_array.Push(*it);
+                }
+
+                tmp_array.Push(std::move(value)); //place
+
+                for(auto it = before_it + 1; it != GetSentinel(); it++) //copy right
+                {
+                    if constexpr(std::is_nothrow_move_constructible_v<T>)
+                        tmp_array.Push(std::move(*it));
+                    else
+                        tmp_array.Push(*it);
+                }
+
+                *this = std::move(tmp_array);
+            }
+        }
+
+        template<typename U>
+        requires std::constructible_from<T, U> && std::is_nothrow_constructible_v<T, U> && (std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>)
+        void Insert(ConstIterator before_it, U&& value)
+        {
+            assert(before_it >= this->memory);
+            assert(before_it <= this->memory + this->size);
+
+            if(this->capacity != this->size) //move right and place
+            {
+                MoveRight(const_cast<T*>(before_it) + 1, GetSentinel() - (before_it + 1), 1);
+                new(const_cast<T*>(before_it) + 1) T(std::forward<U>(value));
+                this->size++;
+            }
+            else if(this->memory != nullptr && this->allocator.Grow(this->memory, sizeof(T) * (this->size + 1))) //move right and place
+            {
+                MoveRight(const_cast<T*>(before_it) + 1, GetSentinel() - (before_it + 1), 1);
+                new(const_cast<T*>(before_it) + 1) T(std::forward<U>(value));
+                this->size++;
+            }
+            else //copy left, place, copy right
+            {
+                Array<T> tmp_array(this->size + 1, this->allocator);
+                for(auto it = GetIterator(); it <= before_it; it++) //copy left
+                {
+                    if constexpr(std::is_nothrow_move_constructible_v<T>)
+                        tmp_array.Push(std::move(*it));
+                    else
+                        tmp_array.Push(*it);
+                }
+
+                tmp_array.Push(std::forward<U>(value)); //place
+
+                for(auto it = before_it + 1; it != GetSentinel(); it++) //copy right
+                {
+                    if constexpr(std::is_nothrow_move_constructible_v<T>)
+                        tmp_array.Push(std::move(*it));
+                    else
+                        tmp_array.Push(*it);
+                }
+
+                *this = std::move(tmp_array);
+            }
+        }
+
+        void Push(const T& value)
+        requires std::copy_constructible<T>
+        {
+            if(this->capacity == this->size)
+                Reserve(this->size + 1);
+
+            new(this->memory + this->size) T(value);
+
+            this->size++;
+        }
+
+        void Push(T&& value)
+        requires std::move_constructible<T>
+        {
+            if(this->capacity == this->size)
+                Reserve(this->size + 1);
+
+            new(this->memory + this->size) T(std::move(value));
+
+            this->size++;
+        }
 
         template<typename U>
         requires std::constructible_from<T, U>
-        void Insert(ConstIterator before_it, U&& value);
-        ////////////////////////////////////////////////////////////////////////
-
-        template<typename U>
-        requires std::constructible_from<T, U> && (std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>)
-        void PushToEnd(U&& value)
+        void Push(U&& value)
         {
-            if(this->capacity > this->size) //push back if there is enough capacity
-            {
-                new(this->memory + this->size) T(std::forward<U>(value));
-            }
-            else if(!this->memory) //if there is no memory then allocate and create object
-            {
-                this->memory = AllocateMemory(1);
-                try
-                {
-                    new(this->memory) T(std::forward<U>(value));
-                    this->capacity++;
-                }
-                catch(...)
-                {
-                    this->allocator.Deallocate(this->memory);
-                    this->memory = nullptr;
-                    throw;
-                }
-            }
-            else
-            {
-                if(this->allocator.Grow(this->memory,
-                                        sizeof(T) * (this->capacity + 1))) //firstly try to grow memory
-                {
-                    this->capacity++;
-                    new(this->memory) T(std::forward<U>(value));
-                }
-                else //otherwise allocate new memory, copy or move objects from old memory into new one and deallocate old memory
-                {
-                    //allocate new memory
-                    size_t new_capacity = this->capacity * 2;
-                    T* new_memory = AllocateMemory(new_capacity);
+            if(this->capacity == this->size)
+                Reserve(this->size + 1);
 
-                    //forward new object to the 'end' of the new memory
-                    try
-                    {
-                        new(new_memory + this->size) T(std::forward<U>(value));
-                    }
-                    catch(...)
-                    {
-                        this->allocator.Deallocate(new_memory);
-                        throw;
-                    }
-
-                    //copy or move objects from old memory
-                    for(size_t i = 0; i < this->size; i++)
-                    {
-                        if constexpr(std::is_nothrow_move_constructible_v<T>)
-                            new(new_memory + i) T(std::move(this->memory[i]));
-                        else
-                            new(new_memory + i) T(this->memory[i]);
-                    }
-
-                    //we should destroy previous objects from old memory before deallocation
-                    DestroyObjectsAndDeallocateMemory(this->memory, this->size, this->allocator);
-
-                    this->memory = new_memory;
-                    this->capacity = new_capacity;
-                }
-            }
+            new(this->memory + this->size) T(std::forward<U>(value));
 
             this->size++;
         }
 
         void Erase(ConstIterator it) noexcept
-        requires std::is_nothrow_move_assignable_v<T> || std::is_nothrow_copy_assignable_v<T>
         {
-            assert(this->size != 0);
-            assert(it >= this->memory && it < (this->memory + this->size));
+            Erase(it, it + 1);
+        }
 
-            size_t start_index = (it - this->memory) + 1;
-            for(size_t i = start_index; i < this->size; i++)
-            {
-                T& prev = *(this->memory + (i - 1));
-                T& current = *(this->memory + i);
+        void Erase(ConstIterator begin, ConstIterator end) noexcept
+        {
+            assert(end > begin);
+            assert(begin >= this->memory);
+            assert(begin < this->memory + this->size);
+            assert(end <= this->memory + this->size);
 
-                if constexpr(std::is_nothrow_move_assignable_v<T>)
-                    prev = std::move(current);
-                else
-                    prev = current;
-            }
+            size_t steps = end - begin;
 
-            (this->memory + (this->size - 1))->~T(); //erase last
+            if(end != GetSentinel())
+                MoveLeft(const_cast<T*>(end), GetSentinel() - end, steps);
 
-            this->size--;
+            this->size -= steps;
         }
 
         void EraseLast() noexcept
         {
-            assert(this->size != 0);
+            assert(!IsEmpty());
 
-            (this->memory + (this->size - 1))->~T();
+            (this->memory + this->size - 1)->~T();
 
             this->size--;
         }
 
+        void Reserve(size_t reserve)
+        {
+            static_assert(std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>);
+
+            if(this->capacity >= reserve)
+                return;
+
+            if(this->memory != nullptr && this->allocator.Grow(this->memory, sizeof(T) * reserve)) //try grow
+            {
+                this->capacity = reserve;
+            }
+            else //allocate new buffer
+            {
+                T* new_memory = reinterpret_cast<T*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
+
+                for(size_t i = 0; i < this->size; i++)
+                {
+                    if constexpr(std::is_nothrow_move_constructible_v<T>)
+                    {
+                        new(new_memory + i) T(std::move(this->memory[i]));
+                    }
+                    else
+                    {
+                        new(new_memory + i) T(this->memory[i]);
+                    }
+                }
+
+                if(this->memory)
+                {
+                    DestroyObjects();
+                    this->allocator.Deallocate(this->memory);
+                }
+
+                this->memory = new_memory;
+                this->capacity = reserve;
+            }
+        }
+
         void Clear() noexcept
         {
-            DestroyObjects(this->memory, this->size);
+            DestroyObjects();
 
             this->size = 0;
-        }
-
-        void Reset() noexcept
-        {
-            if(this->memory)
-            {
-                DestroyObjectsAndDeallocateMemory(this->memory, this->size, allocator);
-
-                this->memory = nullptr;
-                this->size = 0;
-                this->capacity = 0;
-            }
-        }
-
-        bool FlushUnusedReserve() noexcept
-        {
-            bool res = false;
-            if(!this->memory)
-                res = true;
-            else if(this->size == 0 && this->capacity != 0)
-            {
-                allocator.Deallocate(memory);
-
-                this->memory = nullptr;
-                this->capacity = 0;
-
-                res = true;
-            }
-            else if(this->capacity > this->size)
-            {
-                res = allocator.Trim(this->memory, this->size * sizeof(T));
-                if(res)
-                    this->capacity = this->size;
-            }
-
-            return res;
         }
 
         bool IsEmpty() const noexcept
         {
             return this->size == 0;
+        }
+
+        T* GetData() noexcept
+        {
+            return this->memory;
+        }
+
+        const T* GetData() const noexcept
+        {
+            return this->memory;
         }
 
         size_t GetSize() const noexcept
@@ -307,67 +356,127 @@ namespace Core
             return this->capacity;
         }
 
+        T& GetFirst() noexcept
+        {
+            return this->memory[0];
+        }
+
+        const T& GetFirst() const noexcept
+        {
+            return this->memory[0];
+        }
+
+        T& GetLast() noexcept
+        {
+            return this->memory[this->size - 1];
+        }
+
+        const T& GetLast() const noexcept
+        {
+            return this->memory[this->size - 1];
+        }
+
         Allocator GetAllocator() const noexcept
         {
             return this->allocator;
         }
 
-        T& GetFirst() noexcept
+        Iterator GetIterator() noexcept
         {
-            return *(this->memory);
+            return Iterator(this->memory);
         }
 
-        const T& GetFirst() const noexcept
+        ConstIterator GetIterator() const noexcept
         {
-            return *(this->memory);
+            return ConstIterator(this->memory);
         }
 
-        T& GetLast() noexcept
+        Iterator GetSentinel() noexcept
         {
-            return *(this->memory + (this->size - 1));
+            return Iterator(this->memory + this->size);
         }
 
-        const T& GetLast() const noexcept
+        ConstIterator GetSentinel() const noexcept
         {
-            return *(this->memory + (this->size - 1));
+            return ConstIterator(this->memory + this->size);
         }
 
-        Iterator Begin() noexcept
+        T& operator[](size_t index) noexcept
         {
-            return this->memory;
+            assert(index < size);
+
+            return this->memory[index];
         }
 
-        ConstIterator Begin() const noexcept
+        const T& operator[](size_t index) const noexcept
         {
-            return this->memory;
+            assert(index < size);
+
+            return this->memory[index];
         }
 
-        Iterator End() noexcept
+        static MemoryRequirements GetMemoryRequirements(size_t reserve) noexcept
         {
-            return this->memory + this->size;
-        }
-
-        ConstIterator End() const noexcept
-        {
-            return this->memory + this->size;
+            return MemoryRequirements{.alignment = alignof(T), .size = sizeof(T) * reserve};
         }
     private:
-        T* AllocateMemory(size_t size)
+        static void MoveRight(T* data, size_t size, size_t steps) noexcept
         {
-            return static_cast<T*>(allocator.Allocate(MemoryRequirements{.alignment = alignof(T), .size = size}));
-        }
+            static_assert(std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>);
 
-        static void DestroyObjects(T* memory, size_t size) noexcept
-        {
+            if(size == 0)
+                return;
+
+            T* ptr = data + size - 1;
             for(size_t i = 0; i < size; i++)
-                (memory + i)->~T();
+            {
+                if constexpr(std::is_nothrow_move_constructible_v<T>)
+                {
+                    new(ptr + steps) T(std::move(*ptr));
+                }
+                else
+                {
+                    new(ptr + steps) T(*ptr);
+                }
+
+                ptr->~T();
+
+                ptr--;
+            }
         }
 
-        static void DestroyObjectsAndDeallocateMemory(T* memory, size_t size, Allocator& allocator) noexcept
+        static void MoveLeft(T* data, size_t size, size_t steps) noexcept
         {
-            DestroyObjects(memory, size);
+            static_assert(std::is_nothrow_move_constructible_v<T> || std::is_nothrow_copy_constructible_v<T>);
 
-            allocator.Deallocate(memory);
+            if(size == 0)
+                return;
+
+            T* ptr = data;
+            for(size_t i = 0; i < size; i++)
+            {
+                if constexpr(std::is_nothrow_move_constructible_v<T>)
+                {
+                    new(ptr - steps) T(std::move(*ptr));
+                }
+                else
+                {
+                    new(ptr - steps) T(*ptr);
+                }
+
+                ptr->~T();
+
+                ptr++;
+            }
+        }
+
+        void DestroyObjects() noexcept
+        {
+            if(this->memory == nullptr)
+                return;
+
+            for(size_t i = 0; i < this->size; i++)
+                (this->memory + i)->~T();
         }
     private:
         T* memory;
@@ -376,28 +485,25 @@ namespace Core
         Allocator allocator;
     };
 
-    template<std::ranges::sized_range R>
-    Array(R&& values) -> Array<std::remove_cvref_t<std::ranges::range_value_t<std::remove_cvref_t<R>>>>;
-
     //std compat
     template<typename T>
-    requires TypeInstantiation<std::remove_cvref_t<T>, Array>
-    auto begin(T&& array) noexcept
+    requires TypeInstantiation<T, Array>
+    auto begin(T&& str) noexcept
     {
-        return std::forward<T>(array).Begin();
+        return std::forward<T>(str).GetIterator();
     }
 
     template<typename T>
-    requires TypeInstantiation<std::remove_cvref_t<T>, Array>
-    auto end(T&& array) noexcept
+    requires TypeInstantiation<T, Array>
+    auto end(T&& str) noexcept
     {
-        return std::forward<T>(array).End();
+        return std::forward<T>(str).GetSentinel();
     }
 
     template<typename T>
-    requires TypeInstantiation<std::remove_cvref_t<T>, Array>
-    auto size(T&& array) noexcept
+    requires TypeInstantiation<T, Array>
+    auto size(T&& str) noexcept
     {
-        return std::forward<T>(array).GetSize();
+        return std::forward<T>(str).GetSize();
     }
 };

@@ -163,7 +163,7 @@ namespace Core
             }
             else //allocate new buffer
             {
-                char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = reserve}));
+                char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
 
                 memcpy(new_memory, this->data, this->size);
 
@@ -231,14 +231,16 @@ namespace Core
             }
             else
             {
-                char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = new_size}));
+                char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(GetMemoryRequirements(new_size)));
 
                 StringEncoder::Convert(input, input_size, new_memory); //copy new data
                 memcpy(new_memory + length_res.output_size, this->data, this->size);
 
                 this->capacity = new_size;
 
-                this->allocator.Deallocate(this->data);
+                if(this->data != nullptr)
+                    this->allocator.Deallocate(this->data);
+
                 this->data = new_memory;
             }
 
@@ -333,7 +335,9 @@ namespace Core
 
                     this->capacity = new_size;
 
-                    this->allocator.Deallocate(this->data);
+                    if(this->data != nullptr)
+                        this->allocator.Deallocate(this->data);
+
                     this->data = new_memory;
                 }
 

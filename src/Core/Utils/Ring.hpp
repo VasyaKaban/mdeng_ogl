@@ -248,7 +248,7 @@ namespace Core
                 }
             }
 
-            T* new_memory = reinterpret_cast<T*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(T), .size = sizeof(T) * reserve}));
+            T* new_memory = reinterpret_cast<T*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
             size_t offset = 0;
 
             try
@@ -278,10 +278,11 @@ namespace Core
                 throw;
             }
 
-            DestroyObjects();
-
             if(this->data)
+            {
+                DestroyObjects();
                 this->allocator.Deallocate(this->data);
+            }
 
             this->data = new_memory;
             this->capacity = reserve;
