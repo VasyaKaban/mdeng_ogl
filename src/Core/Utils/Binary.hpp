@@ -20,7 +20,7 @@ namespace Core
     template<std::unsigned_integral I>
     constexpr bool Align(I& size, I alignment) noexcept
     {
-        assert(alignment != 0 && size != 0);
+        assert(alignment != 0);
 
         if(alignment >= size)
         {
