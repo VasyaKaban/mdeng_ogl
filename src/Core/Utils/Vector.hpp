@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <utility>
+#include <cassert>
 
 namespace Core
 {
@@ -29,9 +30,9 @@ namespace Core
         Vector& operator=(Vector&&) = default;
 
         template<typename... Args>
-        requires(sizeof...(Args) == Size) && (std::is_arithmetic_v<Args> && ...)
+        requires(sizeof...(Args) <= Size) && (std::is_arithmetic_v<Args> && ...)
         constexpr Vector(Args... args) noexcept
-            : data{args...}
+            : data{static_cast<I>(args)...}
         {}
 
         template<typename OI, size_t OtherAlignment, size_t OtherSize>
@@ -195,21 +196,11 @@ namespace Core
         }
 
         template<typename OI, size_t OtherAlignment, size_t OtherSize>
-        constexpr auto operator+(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
+        constexpr Vector operator+(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            using OutType = Vector<std::common_type_t<I, OI>, std::max(Alignment, OtherAlignment), std::max(Size, OtherSize)>;
-
-            size_t size = std::min(Size, OtherSize);
-
-            OutType result(*this);
-            for(size_t i = 0; i < size; i++)
+            Vector result(*this);
+            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
                 result[i] += vec.data[i];
-
-            if constexpr(OtherSize > Size)
-            {
-                for(size_t i = size; i < OtherSize; i++)
-                    result[i] = vec.data[i];
-            }
 
             return result;
         }
@@ -224,21 +215,11 @@ namespace Core
         }
 
         template<typename OI, size_t OtherAlignment, size_t OtherSize>
-        constexpr auto operator-(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
+        constexpr Vector operator-(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            using OutType = Vector<std::common_type_t<I, OI>, std::max(Alignment, OtherAlignment), std::max(Size, OtherSize)>;
-
-            size_t size = std::min(Size, OtherSize);
-
-            OutType result(*this);
-            for(size_t i = 0; i < size; i++)
+            Vector result(*this);
+            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
                 result[i] -= vec.data[i];
-
-            if constexpr(OtherSize > Size)
-            {
-                for(size_t i = size; i < OtherSize; i++)
-                    result[i] = -vec.data[i];
-            }
 
             return result;
         }
@@ -253,14 +234,10 @@ namespace Core
         }
 
         template<typename OI, size_t OtherAlignment, size_t OtherSize>
-        constexpr auto operator*(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
+        constexpr Vector operator*(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            using OutType = Vector<std::common_type_t<I, OI>, std::max(Alignment, OtherAlignment), std::max(Size, OtherSize)>;
-
-            size_t size = std::min(Size, OtherSize);
-
-            OutType result(*this, 0);
-            for(size_t i = 0; i < size; i++)
+            Vector result(*this);
+            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
                 result[i] *= vec.data[i];
 
             return result;
@@ -276,14 +253,10 @@ namespace Core
         }
 
         template<typename OI, size_t OtherAlignment, size_t OtherSize>
-        constexpr auto operator/(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
+        constexpr Vector operator/(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            using OutType = Vector<std::common_type_t<I, OI>, std::max(Alignment, OtherAlignment), std::max(Size, OtherSize)>;
-
-            size_t size = std::min(Size, OtherSize);
-
-            OutType result(*this, 0);
-            for(size_t i = 0; i < size; i++)
+            Vector result(*this);
+            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
                 result[i] /= vec.data[i];
 
             return result;
@@ -373,7 +346,7 @@ namespace Core
         }
 
         template<typename OI, size_t OtherAlignment>
-        constexpr auto Project(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
+        constexpr Vector Project(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
         {
             using OutType = std::common_type_t<I, OI, float>;
 
@@ -383,22 +356,18 @@ namespace Core
 
             result *= vec.GetInvertedLength();
 
-            return Vector<OutType, std::max(Alignment, OtherAlignment), Size>(vec) * result;
+            return Vector<I, Alignment, Size>(vec) * result;
         }
 
         template<typename OI, size_t OtherAlignment>
         requires(Size == 3)
-        constexpr auto Cross(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
+        constexpr Vector Cross(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
         {
             //x = v0y * v1z - v1y * v0z;
             //y = -(v0x * v1z - v1x * v0z);
             //z = v0x * v1y - v1x * v0y
 
-            using OutType = std::common_type_t<I, OI, float>;
-
-            return Vector<OutType, std::max(Alignment, OtherAlignment), Size>(this->data[1] * vec[2] - vec[1] * this->data[2],
-                                                                              -(this->data[0] * vec[2] - vec[0] * this->data[2]),
-                                                                              this->data[0] * vec[1] - vec[0] * this->data[1]);
+            return Vector<I, Alignment, Size>(this->data[1] * vec[2] - vec[1] * this->data[2], -(this->data[0] * vec[2] - vec[0] * this->data[2]), this->data[0] * vec[1] - vec[0] * this->data[1]);
         }
 
         constexpr Vector operator-() const noexcept
@@ -416,6 +385,11 @@ namespace Core
                 comp = -comp;
 
             return *this;
+        }
+
+        consteval static size_t GetSize() noexcept
+        {
+            return Size;
         }
     private:
         alignas(Alignment) I data[Size];
