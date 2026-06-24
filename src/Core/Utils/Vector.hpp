@@ -417,17 +417,6 @@ namespace Core
 
             return *this;
         }
-
-        /*
-        TODO
-        template<size_t Offset, size_t ViewSize>
-        requires (Offset < Size && Offset + ViewSize <= Size)
-        VectorView<I, ViewSize> TakeView() noexcept;
-
-        template<size_t Offset, size_t ViewSize>
-        requires (Offset < Size && Offset + ViewSize <= Size)
-        VectorView<I, ViewSize> TakeView() const noexcept;
-        */
     private:
         alignas(Alignment) I data[Size];
     };

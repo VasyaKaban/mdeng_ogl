@@ -117,9 +117,7 @@ RawPool
 Callable<R (Args... ?...) ?>
 Thread + Semaphores, barriers, fences, mutexes, ...
 Matrix
-MatrixView
 Vector
-VectorView
 Quaternion
 Matrix, vector???
 regex -> via PCRE???
