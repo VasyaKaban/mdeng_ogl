@@ -485,6 +485,9 @@ namespace Core
         Allocator allocator;
     };
 
+    template<std::ranges::sized_range R>
+    Array(R&& values) -> Array<std::remove_cvref_t<std::ranges::range_value_t<std::remove_cvref_t<R>>>>;
+
     //std compat
     template<typename T>
     requires TypeInstantiation<T, Array>
