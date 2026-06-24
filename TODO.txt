@@ -102,6 +102,7 @@ Instance:
 * Add hints like assume and assume_aligned as macro
 * Change typename U to typename Args to insert/Push object
 * Ring -> use Reserve in Push instad of assert 
+* Saturating math
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
 Heap<T, Comparator>
