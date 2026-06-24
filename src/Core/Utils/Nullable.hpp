@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <cassert>
 
 namespace Core
 {
@@ -161,39 +162,50 @@ namespace Core
 
         T& operator*() & noexcept
         {
+            assert(this->is_created);
+
             return *reinterpret_cast<T*>(this->data);
         }
 
         const T& operator*() const& noexcept
         {
+            assert(this->is_created);
+
             return *reinterpret_cast<const T*>(this->data);
         }
 
         T&& operator*() && noexcept
         {
+            assert(this->is_created);
+
             return std::move(*reinterpret_cast<T*>(this->data));
         }
 
         const T&& operator*() const&& noexcept
         {
+            assert(this->is_created);
+
             return std::move(*reinterpret_cast<const T*>(this->data));
         }
 
         T* operator->() noexcept
         {
+            assert(this->is_created);
+
             return reinterpret_cast<T*>(this->data);
         }
 
         const T* operator->() const noexcept
         {
+            assert(this->is_created);
+
             return reinterpret_cast<const T*>(this->data);
         }
     private:
-        alignas(alignof(T)) std::byte data[sizeof(T)];
+        alignas(alignof(T)) char data[sizeof(T)];
         bool is_created;
     };
 
     template<typename T>
-    requires(!std::is_volatile_v<T>)
     Nullable(T&&) -> Nullable<std::remove_reference_t<T>>;
 };

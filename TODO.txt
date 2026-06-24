@@ -113,7 +113,6 @@ PathView
 File
 Pool<T>
 RawPool
-Expected<T, E>
 Callable<R (Args... ?...) ?>
 Thread + Semaphores, barriers, fences, mutexes, ...
 Matrix, vector???

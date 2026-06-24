@@ -1,315 +1,306 @@
-
 #pragma once
+
 #include <concepts>
-#include <utility>
+#include "Binary.hpp"
+#include "Traits.hpp"
 
 namespace Core
 {
-    struct Unexpected
-    {};
+    namespace Detail
+    {
+        struct ExpectedMetrics
+        {
+            size_t alignment;
+            size_t size;
+        };
 
-    constexpr inline Unexpected Unexpected;
+        template<typename T, typename E>
+        constexpr ExpectedMetrics GetExpectedMetrics() noexcept
+        {
+            ExpectedMetrics metrics = {.alignment = alignof(T), .size = sizeof(T)};
+            if(metrics.alignment < alignof(E))
+                metrics.alignment = alignof(E);
+
+            if(metrics.size < sizeof(E))
+                metrics.size = sizeof(E);
+
+            Align(metrics.size, metrics.alignment);
+
+            return metrics;
+        }
+    };
 
     template<typename T, typename E>
+    requires(!std::is_reference_v<T> && !std::is_volatile_v<T>) && (!std::is_reference_v<E> && !std::is_volatile_v<E>)
     class Expected
     {
+        constexpr static Detail::ExpectedMetrics METRICS = Detail::GetExpectedMetrics<T, E>();
     public:
-        constexpr Expected() noexcept(std::is_nothrow_default_constructible_v<T>)
+        Expected() noexcept(std::is_nothrow_default_constructible_v<T>)
         requires std::is_default_constructible_v<T>
-            : data{T{}},
-              is_error(false)
-        {}
-
-        template<typename U = T>
-        requires std::constructible_from<T, U>
-        constexpr Expected(U&& val) noexcept(std::is_nothrow_constructible_v<T, U>)
-            : data(std::forward<U>(val)),
-              is_error(false)
-        {}
-
-        template<typename U = E>
-        requires std::constructible_from<E, U> && (!std::constructible_from<T, U>)
-        constexpr Expected(U&& err) noexcept(std::is_nothrow_constructible_v<E, U>)
-            : data(std::forward<U>(err)),
-              is_error(true)
-        {}
-
-        template<typename U = E>
-        requires std::assignable_from<E&, U>
-        constexpr Expected(U&& err,
-                           struct Unexpected _) noexcept(std::is_nothrow_assignable_v<E&, U>)
         {
-            is_error = true;
-            data.error = std::forward<U>(err);
+            new(this->data) T;
+            this->is_value_created = true;
         }
 
-        constexpr ~Expected()
+        ~Expected()
         {
-            if(is_error)
-                data.error.~E();
+            if(this->is_value_created)
+                reinterpret_cast<T*>(this->data)->~T();
             else
-                data.value.~T();
+                reinterpret_cast<E*>(this->data)->~E();
         }
 
-        constexpr Expected(const Expected& ex) noexcept(std::is_nothrow_copy_assignable_v<T> &&
-                                                        std::is_nothrow_copy_assignable_v<E>)
+        Expected(const Expected& ex) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<E>)
+        requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
         {
-            is_error = ex.is_error;
-            if(ex.is_error)
-                data.error = ex.data.error;
+            if(ex.is_value_created)
+                new(this->data) T(*reinterpret_cast<const T*>(ex.data));
             else
-                data.value = ex.data.value;
+                new(this->data) E(*reinterpret_cast<const E*>(ex.data));
+
+            this->is_value_created = ex.is_value_created;
         }
 
-        constexpr Expected(Expected&& ex) noexcept(std::is_nothrow_move_assignable_v<T> &&
-                                                   std::is_nothrow_move_assignable_v<E>)
+        Expected(Expected&& ex) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
+        requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
         {
-            is_error = ex.is_error;
-            if(ex.is_error)
-                data.error = std::move(ex.data.error);
+            if(ex.is_value_created)
+                new(this->data) T(std::move(*reinterpret_cast<const T*>(ex.data)));
             else
-                data.value = std::move(ex.data.value);
+                new(this->data) E(std::move(*reinterpret_cast<const E*>(ex.data)));
+
+            this->is_value_created = ex.is_value_created;
         }
 
-        constexpr Expected&
-        operator=(const Expected& ex) noexcept(std::is_nothrow_copy_assignable_v<T> &&
-                                               std::is_nothrow_copy_assignable_v<E>)
+        Expected& operator=(const Expected& ex) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<E>)
+        requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E> && std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<E>
         {
             this->~Expected();
-            is_error = ex.is_error;
-            if(ex.is_error)
-                data.error = ex.data.error;
+
+            if(ex.is_value_created)
+                new(this->data) T(ex.GetValue());
             else
-                data.value = ex.data.value;
+                new(this->data) E(ex.GetError());
+
+            this->is_value_created = ex.is_value_created;
+
             return *this;
         }
 
-        constexpr Expected&
-        operator=(Expected&& ex) noexcept(std::is_nothrow_move_assignable_v<T> &&
-                                          std::is_nothrow_move_assignable_v<E>)
+        Expected& operator=(Expected&& ex) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
+        requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E> && std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>
         {
             this->~Expected();
-            is_error = ex.is_error;
-            if(ex.is_error)
-                data.error = std::move(ex.data.error);
+
+            if(ex.is_value_created)
+                new(this->data) T(std::move(ex).GetValue());
             else
-                data.value = std::move(ex.data.value);
+                new(this->data) E(std::move(ex).GetError());
+
+            this->is_value_created = ex.is_value_created;
+
             return *this;
         }
 
-        template<typename U = T>
-        requires std::assignable_from<T&, U>
-        constexpr Expected& operator=(U&& value) noexcept(std::is_nothrow_assignable_v<T&, U>)
+        Expected(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires std::is_copy_constructible_v<T>
         {
-            this->~Expected();
-            is_error = false;
-            data.value = std::forward<U>(value);
-            return *this;
+            new(this->data) T(value);
+            this->is_value_created = true;
         }
 
-        template<typename U = E>
-        requires std::assignable_from<E&, U> && (!std::assignable_from<T&, U>)
-        constexpr Expected& operator=(U&& error) noexcept(std::is_nothrow_assignable_v<E&, U>)
+        Expected(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::is_move_constructible_v<T>
         {
-            this->~Expected();
-            is_error = true;
-            data.error = std::forward<U>(error);
-            return *this;
+            new(this->data) E(std::move(value));
+            this->is_value_created = true;
         }
 
-        constexpr explicit operator bool() const noexcept
+        Expected(const E& error) noexcept(std::is_nothrow_copy_constructible_v<E>)
+        requires std::is_copy_constructible_v<E>
         {
-            return !is_error;
+            new(this->data) E(error);
+            this->is_value_created = false;
         }
 
-        constexpr E& Error() & noexcept
+        Expected(E&& error) noexcept(std::is_nothrow_move_constructible_v<E>)
+        requires std::is_move_constructible_v<E>
         {
-            return data.error;
-        }
-
-        constexpr const E& Error() const& noexcept
-        {
-            return data.error;
-        }
-
-        constexpr E&& Error() && noexcept
-        {
-            return std::move(data.error);
-        }
-
-        constexpr const E&& Error() const&& noexcept
-        {
-            return std::move(data.error);
-        }
-
-        constexpr T& Value() & noexcept
-        {
-            return data.value;
-        }
-
-        constexpr const T& Value() const& noexcept
-        {
-            return data.value;
-        }
-
-        constexpr T&& Value() && noexcept
-        {
-            return std::move(data.value);
-        }
-
-        constexpr const T&& Value() const&& noexcept
-        {
-            return std::move(data.value);
-        }
-
-        constexpr bool HasValue() const noexcept
-        {
-            return !is_error;
-        }
-
-        constexpr T* operator->() noexcept
-        {
-            return &Value();
-        }
-
-        constexpr const T* operator->() const noexcept
-        {
-            return &Value();
-        }
-
-        constexpr T& operator*() & noexcept
-        {
-            return Value();
-        }
-        constexpr const T& operator*() const& noexcept
-        {
-            return Value();
-        }
-
-        constexpr T&& operator*() && noexcept
-        {
-            return Value();
-        }
-
-        constexpr const T&& operator*() const&& noexcept
-        {
-            return Value();
+            new(this->data) E(std::move(error));
+            this->is_value_created = false;
         }
 
         template<typename U>
-        constexpr T ValueOr(U&& other) const& noexcept(std::is_nothrow_convertible_v<U, T>)
+        requires std::constructible_from<T, U> && std::is_nothrow_constructible_v<T, U>
+        Expected(InPlaceType<T>, U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
         {
-            if(HasValue())
-                return **this;
-            return std::forward<U>(other);
+            new(this->data) T(std::forward<T>(value));
+            this->is_value_created = true;
         }
 
         template<typename U>
-        constexpr T ValueOr(U&& other) const&& noexcept(std::is_nothrow_convertible_v<U, T>)
+        requires std::constructible_from<E, U> && std::is_nothrow_constructible_v<E, U>
+        Expected(InPlaceType<E>, U&& value) noexcept(std::is_nothrow_constructible_v<E, U>)
         {
-            if(HasValue())
-                return **this;
-            return std::forward<U>(other);
+            new(this->data) E(std::forward<E>(value));
+            this->is_value_created = false;
         }
 
-        template<typename F>
-        constexpr Expected<T, E> AndThen(F&& func) &
+        Expected& operator=(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires std::is_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<T>
         {
-            if(HasValue())
-                return std::forward<F>(func)(**this);
-            else
-                return Error();
+            this->~Expected();
+
+            new(this->data) T(value);
+
+            this->is_value_created = true;
+
+            return *this;
         }
 
-        template<typename F>
-        constexpr Expected<T, E> AndThen(F&& func) const&
+        Expected& operator=(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::is_move_constructible_v<T> && std::is_nothrow_move_constructible_v<T>
         {
-            if(HasValue())
-                return std::forward<F>(func)(**this);
-            else
-                return Error();
+            this->~Expected();
+
+            new(this->data) T(std::move(value));
+
+            this->is_value_created = true;
+
+            return *this;
         }
 
-        template<typename F>
-        constexpr Expected<T, E> AndThen(F&& func) &&
+        Expected& operator=(const E& error) noexcept(std::is_nothrow_copy_constructible_v<E>)
+        requires std::is_copy_constructible_v<E> && std::is_nothrow_copy_constructible_v<E>
         {
-            if(HasValue())
-                return std::forward<F>(func)(std::move(**this));
-            else
-                return Error();
+            this->~Expected();
+
+            new(this->data) E(error);
+
+            this->is_value_created = false;
+
+            return *this;
         }
 
-        template<typename F>
-        constexpr Expected<T, E> AndThen(F&& func) const&&
+        Expected& operator=(E&& error) noexcept(std::is_nothrow_move_constructible_v<E>)
+        requires std::is_move_constructible_v<E> && std::is_nothrow_move_constructible_v<E>
         {
-            if(HasValue())
-                return std::forward<F>(func)(std::move(**this));
-            else
-                return Error();
+            this->~Expected();
+
+            new(this->data) E(std::move(error));
+
+            this->is_value_created = false;
+
+            return *this;
         }
 
-        template<typename F>
-        constexpr Expected<T, E> OrElse(F&& func) &
+        bool HasValue() const noexcept
         {
-            if(!HasValue())
-                return std::forward<F>(func)(Error());
-            else
-                return Value();
+            return this->is_value_created;
         }
 
-        template<typename F>
-        constexpr Expected<T, E> OrElse(F&& func) const&
+        bool HasError() const noexcept
         {
-            if(!HasValue())
-                return std::forward<F>(func)(Error());
-            else
-                return Value();
+            return !this->is_value_created;
         }
 
-        template<typename F>
-        constexpr Expected<T, E> OrElse(F&& func) &&
+        T& GetValue() & noexcept
         {
-            if(!HasValue())
-                return std::forward<F>(func)(std::move(Error()));
-            else
-                return Value();
+            return (*this).operator*();
         }
 
-        template<typename F>
-        constexpr Expected<T, E> OrElse(F&& func) const&&
+        const T& GetValue() const& noexcept
         {
-            if(!HasValue())
-                return std::forward<F>(func)(std::move(Error()));
-            else
-                return Value();
+            return (*this).operator*();
+        }
+
+        T&& GetValue() && noexcept
+        {
+            return std::move(*this).operator*();
+        }
+
+        const T&& GetValue() const&& noexcept
+        {
+            return std::move(*this).operator*();
+        }
+
+        E& GetError() & noexcept
+        {
+            assert(!this->is_value_created);
+
+            return *reinterpret_cast<E*>(this->data);
+        }
+
+        const E& GetError() const& noexcept
+        {
+            assert(!this->is_value_created);
+
+            return *reinterpret_cast<const E*>(this->data);
+        }
+
+        E&& GetError() && noexcept
+        {
+            assert(!this->is_value_created);
+
+            return std::move(*reinterpret_cast<E*>(this->data));
+        }
+
+        const E&& GetError() const&& noexcept
+        {
+            assert(!this->is_value_created);
+
+            return std::move(*reinterpret_cast<const E*>(this->data));
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return this->is_value_created;
+        }
+
+        T& operator*() & noexcept
+        {
+            assert(this->is_value_created);
+
+            return *reinterpret_cast<T*>(this->data);
+        }
+
+        const T& operator*() const& noexcept
+        {
+            assert(this->is_value_created);
+
+            return *reinterpret_cast<const T*>(this->data);
+        }
+
+        T&& operator*() && noexcept
+        {
+            assert(this->is_value_created);
+
+            return std::move(*reinterpret_cast<T*>(this->data));
+        }
+
+        const T&& operator*() const&& noexcept
+        {
+            assert(this->is_value_created);
+
+            return std::move(*reinterpret_cast<const T*>(this->data));
+        }
+
+        T* operator->() noexcept
+        {
+            assert(this->is_value_created);
+
+            return reinterpret_cast<T*>(this->data);
+        }
+
+        const T* operator->() const noexcept
+        {
+            assert(this->is_value_created);
+
+            return reinterpret_cast<const T*>(this->data);
         }
     private:
-        union ExpectedData
-        {
-            T value;
-            E error;
-
-            constexpr ExpectedData() noexcept(std::is_nothrow_default_constructible_v<T>)
-            requires std::is_default_constructible_v<T>
-                : value{}
-            {}
-
-            constexpr ~ExpectedData()
-            {}
-
-            template<typename U = T>
-            requires std::constructible_from<T, U>
-            constexpr ExpectedData(U&& val) noexcept(std::is_nothrow_constructible_v<T, U>)
-                : value(std::forward<U>(val))
-            {}
-
-            template<typename U = E>
-            requires std::constructible_from<E, U> && (!std::constructible_from<T, U>)
-            constexpr ExpectedData(U&& err) noexcept(std::is_nothrow_constructible_v<E, U>)
-                : error(std::forward<U>(err))
-            {}
-
-        } data;
-        bool is_error;
+        alignas(METRICS.alignment) char data[METRICS.size];
+        bool is_value_created;
     };
-}
+};
