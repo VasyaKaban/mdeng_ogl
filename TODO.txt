@@ -103,6 +103,7 @@ Instance:
 * Change typename U to typename Args to insert/Push object
 * Ring -> use Reserve in Push instad of assert 
 * Saturating math
+* Args... for constructor for conatiners
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
 Heap<T, Comparator>
@@ -115,6 +116,11 @@ Pool<T>
 RawPool
 Callable<R (Args... ?...) ?>
 Thread + Semaphores, barriers, fences, mutexes, ...
+Matrix
+MatrixView
+Vector
+VectorView
+Quaternion
 Matrix, vector???
 regex -> via PCRE???
 
