@@ -97,17 +97,16 @@ Instance:
 * WindowSubsystem: CharacterInputEvent -> change utf32 and utf8[4] to string buffer due to the possible complex codepoints sequence like emoji
 * Get rid of MAX_PATH 
 * Constants as Index not INDEX???
-* String and Path and Array -> on realloc allocate capacity * 2. Check all Reserve(...) calls and Allocate(...) calls
+* String and Path and Array and Ring -> on realloc allocate capacity * 2. Check all Reserve(...) calls and Allocate(...) calls
 * Add reverse iterator and sentinel
 * Add hints like assume and assume_aligned as macro
 * Change typename U to typename Args to insert/Push object
+* Ring -> use Reserve in Push instad of assert 
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
-Queue<T>
 Heap<T, Comparator>
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
-StaticVector(like array but with reserve and push_back)<T, SIZE>
 Path
 PathView
 File
