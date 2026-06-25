@@ -356,7 +356,7 @@ namespace Core
 
             result *= vec.GetInvertedLength();
 
-            return Vector<I, Alignment, Size>(vec) * result;
+            return Vector(vec) * result;
         }
 
         template<typename OI, size_t OtherAlignment>
@@ -367,7 +367,7 @@ namespace Core
             //y = -(v0x * v1z - v1x * v0z);
             //z = v0x * v1y - v1x * v0y
 
-            return Vector<I, Alignment, Size>(this->data[1] * vec[2] - vec[1] * this->data[2], -(this->data[0] * vec[2] - vec[0] * this->data[2]), this->data[0] * vec[1] - vec[0] * this->data[1]);
+            return Vector(this->data[1] * vec[2] - vec[1] * this->data[2], -(this->data[0] * vec[2] - vec[0] * this->data[2]), this->data[0] * vec[1] - vec[0] * this->data[1]);
         }
 
         constexpr Vector operator-() const noexcept

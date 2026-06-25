@@ -104,6 +104,7 @@ Instance:
 * Ring -> use Reserve in Push instad of assert 
 * Saturating math
 * Args... for constructor for conatiners
+* Use Core scalar types as usings
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
 Heap<T, Comparator>
@@ -116,10 +117,7 @@ Pool<T>
 RawPool
 Callable<R (Args... ?...) ?>
 Thread + Semaphores, barriers, fences, mutexes, ...
-Matrix
-Vector
 Quaternion
-Matrix, vector???
 regex -> via PCRE???
 
 Root:
