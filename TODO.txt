@@ -105,6 +105,8 @@ Instance:
 * Saturating math
 * Args... for constructor for conatiners
 * Use Core scalar types as usings
+* Use Types.hpp everywhere
+* Extend Traits.hpp weith std-like traits and concepts ans use them
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
 Heap<T, Comparator>
