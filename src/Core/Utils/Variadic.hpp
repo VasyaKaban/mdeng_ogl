@@ -1,49 +1,48 @@
 #pragma once
 
-#include <cstddef>
-#include <utility>
-#include <concepts>
+#include "Types.hpp"
+#include "Traits.hpp"
 
 namespace Core
 {
     namespace Detail
     {
-        template<size_t TargetIndex, size_t CurrentIndex, typename T, typename... Types>
+        template<DeviceSize TargetIndex, DeviceSize CurrentIndex, typename T, typename... Types>
         struct TypeOfIndex
         {
             using Type = TypeOfIndex<TargetIndex, CurrentIndex + 1, Types...>::Type;
         };
 
-        template<size_t CurrentIndex, typename T, typename... Types>
+        template<DeviceSize CurrentIndex, typename T, typename... Types>
         struct TypeOfIndex<CurrentIndex, CurrentIndex, T, Types...>
         {
             using Type = T;
         };
 
-        template<typename T, size_t CurrentIndex, typename C, typename... Types>
+        template<typename T, DeviceSize CurrentIndex, typename C, typename... Types>
         struct IndexOfType
         {
-            constexpr static size_t INDEX = IndexOfType<T, CurrentIndex + 1, Types...>::INDEX;
+            constexpr static DeviceSize Index = IndexOfType<T, CurrentIndex + 1, Types...>::Index;
         };
 
-        template<size_t CurrentIndex, typename C, typename... Types>
+        template<DeviceSize CurrentIndex, typename C, typename... Types>
         struct IndexOfType<C, CurrentIndex, C, Types...>
         {
-            constexpr static size_t INDEX = CurrentIndex;
+            constexpr static DeviceSize Index = CurrentIndex;
         };
     };
 
     template<typename... Types>
     struct Variadic
     {
-        constexpr static std::size_t COUNT = sizeof...(Types);
+        constexpr static DeviceSize Count = sizeof...(Types);
 
-        template<std::size_t Index>
-        requires(Index < COUNT)
+        template<DeviceSize Index>
+        requires(Index < Count)
         using TypeOfIndex = Detail::TypeOfIndex<Index, 0, Types...>::Type;
 
         template<typename T>
-        requires(std::same_as<T, Types> || ...)
-        constexpr static size_t IndexOfType = Detail::IndexOfType<T, 0, Types...>::INDEX;
+        requires(SameAs<T, Types> || ...)
+        constexpr static DeviceSize IndexOfType = Detail::IndexOfType<T, 0, Types...>::Index;
     };
 };

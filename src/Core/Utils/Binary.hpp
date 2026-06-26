@@ -1,12 +1,11 @@
 #pragma once
 
 #include <cassert>
-#include <concepts>
-#include <limits>
+#include "Traits.hpp"
 
 namespace Core
 {
-    template<std::unsigned_integral I>
+    template<UnsignedIntegral I>
     constexpr bool IsPowerOf2(I value) noexcept
     {
         if(value == 0)
@@ -17,8 +16,8 @@ namespace Core
         return (value & (value - 1)) == 0;
     }
 
-    template<std::unsigned_integral I>
-    constexpr bool Align(I& size, I alignment) noexcept
+    template<UnsignedIntegral I>
+    constexpr Bool Align(I& size, I alignment) noexcept
     {
         assert(alignment != 0);
 
@@ -33,12 +32,28 @@ namespace Core
         if(quat == 0)
             return true;
 
-        auto max_div = std::numeric_limits<I>::max() / alignment;
+        auto max_div = NumericLimits<I>::Max / alignment;
         if(max_div < div + 1)
             return false;
 
         size = (div + 1) * alignment;
 
         return true;
+    }
+
+#pragma message("Use popcnt")
+    template<UnsignedIntegral I>
+    constexpr I CountBits(I value) noexcept
+    {
+        I result = 0;
+        while(value)
+        {
+            if(value & 0b1)
+                result++;
+
+            value >>= 1;
+        }
+
+        return result;
     }
 };

@@ -1,17 +1,18 @@
 #pragma once
 
+#include "Types.hpp"
+
 namespace Core
 {
     //NonType
     template<auto Value, typename T = decltype(Value)>
     struct NonType
-    {
-        constexpr NonType() = default;
-    };
+    {};
 
     template<auto Value>
     constexpr inline NonType<Value> NonTypeArgument{};
 
+    //InPlaceType
     template<typename T>
     struct InPlaceType
     {
@@ -21,34 +22,365 @@ namespace Core
     template<typename T>
     constexpr inline InPlaceType<T> InPlaceTypeArgument{};
 
-    /*template<bool Condition, auto TrueValue, auto FalseValue>
-    struct Conditional;
-
-    template<auto TrueValue, auto FalseValue>
-    struct Conditional<true, TrueValue, FalseValue>
+    namespace Detail
     {
-        constexpr static auto Value = TrueValue;
-    };
+        template<typename M>
+        struct ClassMemberImpl
+        {
+            constexpr static Bool Value = false;
+        };
 
-    template<auto TrueValue, auto FalseValue>
-    struct Conditional<false, TrueValue, FalseValue>
-    {
-        constexpr static auto Value = FalseValue;
-    };
+        template<typename C, typename M>
+        struct ClassMemberImpl<M C::*>
+        {
+            constexpr static Bool Value = true;
+        };
 
-    template<bool Condition, auto TrueValue, auto FalseValue>
-    constexpr inline auto ConditionalValue = Conditional<Condition, TrueValue, FalseValue>::Value;
-    */
+        template<typename M>
+        struct ClassMemberTypeImpl;
 
-    template<typename M>
-    struct ClassMember;
+        template<typename C, typename M>
+        struct ClassMemberTypeImpl<M C::*>
+        {
+            using Type = M;
+        };
 
-    template<typename C, typename M>
-    struct ClassMember<M C::*>
-    {
-        using Type = M;
+        template<typename M>
+        struct ClassMemberClassTypeImpl;
+
+        template<typename C, typename M>
+        struct ClassMemberClassTypeImpl<M C::*>
+        {
+            using Type = C;
+        };
+
+        template<Bool Condition, typename TrueType, typename FalseType>
+        struct ConditionalTypeImpl
+        {
+            using Type = TrueType;
+        };
+
+        template<typename TrueType, typename FalseType>
+        struct ConditionalTypeImpl<false, TrueType, FalseType>
+        {
+            using Type = FalseType;
+        };
+
+        template<typename T, typename U>
+        struct SameAsImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename T>
+        struct SameAsImpl<T, T>
+        {
+            constexpr static Bool Value = true;
+        };
+
+        template<typename T>
+        struct RValueReferenceImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename T>
+        struct RValueReferenceImpl<T&&>
+        {
+            constexpr static Bool Value = true;
+        };
+
+        template<typename T>
+        struct LValueReferenceImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename T>
+        struct LValueReferenceImpl<T&>
+        {
+            constexpr static Bool Value = true;
+        };
+
+        template<typename T>
+        struct ReferenceImpl
+        {
+            constexpr static Bool Value = RValueReferenceImpl<T>::Value || LValueReferenceImpl<T>::Value;
+        };
+
+        template<typename T>
+        struct ConstImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename T>
+        struct ConstImpl<const T>
+        {
+            constexpr static Bool Value = true;
+        };
+
+        template<typename T>
+        struct VolatileImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename T>
+        struct VolatileImpl<volatile T>
+        {
+            constexpr static Bool Value = true;
+        };
+
+        template<typename T>
+        struct DropRValueReferenceImpl
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropRValueReferenceImpl<T&&>
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropLValueReferenceImpl
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropLValueReferenceImpl<T&>
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropReferenceImpl
+        {
+            using Type = DropRValueReferenceImpl<typename DropLValueReferenceImpl<T>::Type>::Type;
+        };
+
+        template<typename T>
+        struct DropConstImpl
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropConstImpl<const T>
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropVolatileImpl
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropVolatileImpl<volatile T>
+        {
+            using Type = T;
+        };
+
+        template<typename T>
+        struct DropConstVolatileReferenceImpl
+        {
+            using Type = DropReferenceImpl<typename DropVolatileImpl<typename DropConstImpl<T>::Type>::Type>::Type;
+        };
+
+        template<typename T>
+        struct PointerImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename T>
+        struct PointerImpl<T*>
+        {
+            constexpr static Bool Value = true;
+        };
+
+        template<typename T>
+        struct ArrayImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename T>
+        struct ArrayImpl<T[]>
+        {
+            constexpr static Bool Value = true;
+        };
     };
 
     template<typename T>
-    using ClassMemberType = ClassMember<T>::Type;
+    consteval T&& DeclareValue() noexcept
+    {
+        static_assert("Do not use in evaluated context");
+    }
+
+    template<typename M>
+    concept ClassMember = Detail::ClassMemberImpl<M>::Value;
+
+    template<ClassMember M>
+    using ClassMemberType = Detail::ClassMemberTypeImpl<M>::Type;
+
+    template<ClassMember M>
+    using ClassMemberClassType = Detail::ClassMemberClassTypeImpl<M>::Type;
+
+    template<Bool Condition, typename TrueType, typename FalseType>
+    using ConditionalType = Detail::ConditionalTypeImpl<Condition, TrueType, FalseType>;
+
+    template<typename T, typename U>
+    concept SameAs = Detail::SameAsImpl<T, U>::Value;
+
+    template<typename T>
+    concept RValueReference = Detail::RValueReferenceImpl<T>::Value;
+
+    template<typename T>
+    concept LValueReference = Detail::LValueReferenceImpl<T>::Value;
+
+    template<typename T>
+    concept Reference = Detail::ReferenceImpl<T>::Value;
+
+    template<typename T>
+    concept Const = Detail::ConstImpl<T>::Value;
+
+    template<typename T>
+    concept Volatile = Detail::VolatileImpl<T>::Value;
+
+    template<typename T>
+    using DropRValueReference = Detail::DropRValueReferenceImpl<T>;
+
+    template<typename T>
+    using DropLValueReference = Detail::DropLValueReferenceImpl<T>;
+
+    template<typename T>
+    using DropReference = Detail::DropReferenceImpl<T>::Type;
+
+    template<typename T>
+    using DropConst = Detail::DropConstImpl<T>;
+
+    template<typename T>
+    using DropVolatile = Detail::DropVolatileImpl<T>;
+
+    template<typename T>
+    using DropConstVolatileReference = Detail::DropConstVolatileReferenceImpl<T>::Type;
+
+    template<typename T>
+    concept Destructible = requires(T value) { value.~T(); };
+
+    template<typename T>
+    concept NoexceptDestructible = requires(T value) {
+        { value.~T() } noexcept;
+    };
+
+    template<typename T>
+    concept DefaultConstructible = requires { T(); };
+
+    template<typename T>
+    concept NoexceptDefaultConstructible = requires {
+        { T() } noexcept;
+    };
+
+    template<typename T>
+    concept CopyConstructible = requires(const T& value) { T(value); };
+
+    template<typename T>
+    concept NoexceptCopyConstructible = requires(const T& value) {
+        { T(value) } noexcept;
+    };
+
+    template<typename T>
+    concept MoveConstructible = requires(T value) { T(static_cast<T&&>(value)); };
+
+    template<typename T>
+    concept NoexceptMoveConstructible = requires(T value) {
+        { T(static_cast<T&&>(value)) } noexcept;
+    };
+
+    template<typename T>
+    concept CopyAssignable = requires(T& value1, const T& value2) { value1 = value2; };
+
+    template<typename T>
+    concept NoexceptCopyAssignable = requires(T& value1, const T& value2) {
+        { value1 = value2 } noexcept;
+    };
+
+    template<typename T>
+    concept MoveAssignable = requires(T& value1, T value2) { value1 = static_cast<T&&>(value2); };
+
+    template<typename T>
+    concept NoexceptMoveAssignable = requires(T& value1, T value2) {
+        { value1 = static_cast<T&&>(value2) } noexcept;
+    };
+
+    template<typename T, typename... Args>
+    concept Constructible = requires(Args... args) { T(args...); };
+
+    template<typename T, typename... Args>
+    concept NoexceptConstructible = requires(Args... args) {
+        { T(args...) } noexcept;
+    };
+
+    template<typename T, typename U>
+    concept Assignable = requires(T& value1, U value2) { value1 = value2; };
+
+    template<typename T, typename U>
+    concept NoexceptAssignable = requires(T& value1, U value2) {
+        { value1 = value2 } noexcept;
+    };
+
+    template<typename T>
+    concept Pointer = Detail::PointerImpl<T>::Value;
+
+    template<typename T>
+    concept Array = Detail::ArrayImpl<T>::Value;
+
+    template<typename F, typename... Args>
+    concept Invocable = (LValueReference<F> && requires(F& func, Args... args) { func(args...); }) || (!LValueReference<F> && requires(F&& func, Args... args) { static_cast<F&&>(func)(args...); });
+
+    template<typename F, typename... Args>
+    concept NoexceptInvocable = (LValueReference<F> && requires(F& func, Args... args) {
+                                    { func(args...) } noexcept;
+                                }) || (!LValueReference<F> && requires(F&& func, Args... args) {
+                                    { static_cast<F&&>(func)(args...) } noexcept;
+                                });
+
+    template<typename F, typename R, typename... Args>
+    concept InvocableWithResult = (LValueReference<F> && requires(F& func, Args... args) {
+                                      { func(args...) } -> SameAs<R>;
+                                  }) || (!LValueReference<F> && requires(F&& func, Args... args) {
+                                      { static_cast<F&&>(func)(args...) } -> SameAs<R>;
+                                  });
+
+    template<typename F, typename R, typename... Args>
+    concept NoexceptInvocableWithResult = (LValueReference<F> && requires(F& func, Args... args) {
+                                              { func(args...) } noexcept -> SameAs<R>;
+                                          }) || (!LValueReference<F> && requires(F&& func, Args... args) {
+                                              { static_cast<F&&>(func)(args...) } noexcept -> SameAs<R>;
+                                          });
+
+    template<typename T>
+    concept FloatingPoint = SameAs<T, Float32> || SameAs<T, Float64>;
+
+    template<typename T>
+    concept Integral = SameAs<T, Int8> || SameAs<T, Int16> || SameAs<T, Int32> || SameAs<T, Int64> || SameAs<T, UInt8> || SameAs<T, UInt16> || SameAs<T, UInt32> || SameAs<T, UInt64> ||
+                       SameAs<T, UTF8Char> || SameAs<T, UTF16Char> || SameAs<T, UTF32Char> || SameAs<T, Char> || SameAs<T, WideChar> || SameAs<T, Bool>;
+
+    template<typename T>
+    concept SignedIntegral = Integral<T> && (T(-1) < T(0));
+
+    template<typename T>
+    concept UnsignedIntegral = Integral<T> && !SignedIntegral<T>;
+
+    template<typename T>
+    concept StandardLayout = __is_standard_layout(T);
+
+    template<typename B, typename D>
+    concept BaseOf = __is_base_of(B, D);
 };

@@ -66,8 +66,9 @@ namespace Core
             friend class ::Core::Chain;
 
             using ChainValueType = std::remove_cvref_t<U>;
+            using Base = std::conditional_t<std::is_const_v<U>, const Detail::ChainNodeBase, Detail::ChainNodeBase>;
 
-            ChainIterator(Detail::ChainNodeBase* node) noexcept
+            ChainIterator(Base* node) noexcept
                 : node(node)
             {}
         public:
@@ -115,12 +116,12 @@ namespace Core
 
             U& operator*() const noexcept
             {
-                return node->AsChainNode<ChainValueType>()->value;
+                return node->template AsChainNode<ChainValueType>()->value;
             }
 
             U* operator->() const noexcept
             {
-                return std::addressof(node->AsChainNode<ChainValueType>()->value);
+                return std::addressof(node->template AsChainNode<ChainValueType>()->value);
             }
 
             bool operator==(const ChainIterator& it) const noexcept
@@ -128,7 +129,7 @@ namespace Core
                 return this->node == it.node;
             }
         private:
-            Detail::ChainNodeBase* node;
+            Base* node;
         };
     };
 
@@ -335,7 +336,7 @@ namespace Core
 
         ConstIterator GetSentinel() const noexcept
         {
-            return ConstIterator(this->base);
+            return ConstIterator(&this->base);
         }
 
         static MemoryRequirements GetMemoryRequirements(size_t size) noexcept
