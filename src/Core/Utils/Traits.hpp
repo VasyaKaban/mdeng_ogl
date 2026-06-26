@@ -379,6 +379,9 @@ namespace Core
     concept UnsignedIntegral = Integral<T> && !SignedIntegral<T>;
 
     template<typename T>
+    concept Arithmetic = FloatingPoint<T> || Integral<T>;
+
+    template<typename T>
     concept StandardLayout = __is_standard_layout(T);
 
     template<typename B, typename D>

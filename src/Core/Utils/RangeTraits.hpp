@@ -11,10 +11,18 @@ namespace Core
     };
 
     template<typename T>
-    concept SizedRange = Range<T> && requires(T& rng) { size(rng); };
+    concept SizedRange = Range<T> && requires(T& rng) {
+        { size(rng) } -> Integral;
+    };
 
     template<Range T>
     using RangeDereferenceType = decltype(*begin(DeclareValue<T>()));
+
+    template<Range T>
+    using RangeIterator = DropReference<decltype(begin(DeclareValue<T>()))>;
+
+    template<Range T>
+    using RangeSentinel = DropReference<decltype(end(DeclareValue<T>()))>;
 
     template<typename T>
     concept ForwardIterator = requires(T iter) {

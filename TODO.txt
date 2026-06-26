@@ -109,6 +109,7 @@ Instance:
 * Extend Traits.hpp weith std-like traits and concepts ans use them
 * Use T (&&arr)[N] as initializer-list replacement
 * Change assert to self-implemented
+* Add traits: CommonArithmeticType
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
 Heap<T, Comparator>
