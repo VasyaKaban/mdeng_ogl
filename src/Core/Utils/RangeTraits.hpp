@@ -15,4 +15,22 @@ namespace Core
 
     template<Range T>
     using RangeDereferenceType = decltype(*begin(DeclareValue<T>()));
+
+    template<typename T>
+    concept ForwardIterator = requires(T iter) {
+        { iter++ } -> SameAs<T>;
+        { ++iter } -> SameAs<T&>;
+        { iter == iter } -> SameAs<Bool>;
+    };
+
+    template<typename T>
+    concept BidirectionalIterator = ForwardIterator<T> && requires(T iter) {
+        { iter-- } -> SameAs<T>;
+        { --iter } -> SameAs<T&>;
+    };
+
+    template<typename T, typename I>
+    concept Sentinel = requires(I iter, T sent) {
+        { sent != iter } -> SameAs<Bool>;
+    };
 };
