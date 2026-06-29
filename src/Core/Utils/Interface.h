@@ -1,7 +1,7 @@
 #pragma once
 
-#include <utility>
 #include "UUID.hpp"
+#include "Traits.hpp"
 #include "Core/API.h"
 
 namespace Core
@@ -25,13 +25,13 @@ namespace Core
 
     //both To and From can be const or not
     template<typename To, typename From>
-    requires std::is_base_of_v<Interface, std::remove_const_t<To>> && std::same_as<std::remove_const_t<To>, To> && std::is_base_of_v<Interface, std::remove_const_t<From>> &&
-             std::same_as<std::remove_const_t<From>, From> && std::convertible_to<From*, To*>
+    requires BaseOf<Interface, DropConstVolatileReference<To>> && SameAs<DropConstVolatileReference<To>, To> && BaseOf<Interface, DropConstVolatileReference<From>> &&
+             SameAs<DropConstVolatileReference<From>, From> && Constructible<To*, From*>
     To* InterfaceCast(From* from) noexcept
     {
-        const auto& id = CORE_INTERFACE_GET_ID(std::remove_cvref_t<To>);
+        const auto& id = CORE_INTERFACE_GET_ID(DropConstVolatileReference<To>);
 
-        if constexpr(std::same_as<std::remove_const_t<From>, From>)
+        if constexpr(SameAs<DropConstVolatileReference<From>, From>)
             return static_cast<To*>(const_cast<void*>(from->Cast(id)));
         else
             return static_cast<To*>(from->Cast(id));
@@ -40,7 +40,7 @@ namespace Core
     template<typename T>
     class InterfacePointer
     {
-        static_assert(std::is_base_of_v<Interface, std::remove_const_t<T>>);
+        static_assert(BaseOf<Interface, DropConstVolatileReference<T>>);
     public:
         InterfacePointer(T* obj = nullptr) noexcept
             : obj(obj)
@@ -62,7 +62,7 @@ namespace Core
         }
 
         InterfacePointer(InterfacePointer&& ifacep) noexcept
-            : obj(std::exchange(ifacep.obj, nullptr))
+            : obj(Exchange(ifacep.obj, nullptr))
         {}
 
         InterfacePointer& operator=(const InterfacePointer& ifacep) noexcept
@@ -79,13 +79,13 @@ namespace Core
         {
             Reset();
 
-            this->obj = std::exchange(ifacep.obj, nullptr);
+            this->obj = Exchange(ifacep.obj, nullptr);
 
             return *this;
         }
 
         template<typename U>
-        requires std::convertible_to<U*, T*>
+        requires Constructible<T*, U*>
         InterfacePointer(const InterfacePointer<U>& ifacep) noexcept
         {
             ifacep.obj->Interface::Acquire();
@@ -93,13 +93,13 @@ namespace Core
         }
 
         template<typename U>
-        requires std::convertible_to<U*, T*>
+        requires Constructible<T*, U*>
         InterfacePointer(InterfacePointer<U>&& ifacep) noexcept
-            : obj(std::exchange(ifacep.obj, nullptr))
+            : obj(Exchange(ifacep.obj, nullptr))
         {}
 
         template<typename U>
-        requires std::convertible_to<U*, T*>
+        requires Constructible<T*, U*>
         InterfacePointer& operator=(const InterfacePointer<U>& ifacep) noexcept
         {
             Reset();
@@ -111,12 +111,12 @@ namespace Core
         }
 
         template<typename U>
-        requires std::convertible_to<U*, T*>
+        requires Constructible<T*, U*>
         InterfacePointer& operator=(InterfacePointer<U>&& ifacep) noexcept
         {
             Reset();
 
-            this->obj = std::exchange(ifacep.obj, nullptr);
+            this->obj = Exchange(ifacep.obj, nullptr);
 
             return *this;
         }
@@ -142,7 +142,7 @@ namespace Core
 
         //both To and From can be const or not
         template<typename To>
-        requires std::is_base_of_v<Interface, std::remove_const_t<To>> && std::same_as<std::remove_const_t<To>, To> && std::convertible_to<T*, To*>
+        requires BaseOf<Interface, DropConstVolatileReference<To>> && SameAs<DropConstVolatileReference<To>, To> && Constructible<To*, T*>
         InterfacePointer<To> InterfaceCast() const noexcept
         {
             if(!this->obj)

@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cassert>
+#include "Types.hpp"
 
 namespace Core
 {
-    constexpr static size_t UUID_SIZE = 16;
+    constexpr static DeviceSize UUID_SIZE = 16;
 
     class alignas(UUID_SIZE) UUID
     {
@@ -23,7 +24,7 @@ namespace Core
 
         consteval UUID(const unsigned char (&raw)[UUID_SIZE]) noexcept
         {
-            for(size_t i = 0; i < UUID_SIZE; i++)
+            for(DeviceSize i = 0; i < UUID_SIZE; i++)
                 this->data[i] = raw[i];
         }
 
@@ -32,8 +33,8 @@ namespace Core
         consteval UUID(const char (&data)[37]) noexcept
         {
             int index = 0;
-            size_t data_index = 0;
-            for(size_t i = 0; i < 36; i++)
+            DeviceSize data_index = 0;
+            for(DeviceSize i = 0; i < 36; i++)
             {
                 if(i == 8 || i == 13 || i == 18 || i == 23)
                 {
@@ -64,7 +65,7 @@ namespace Core
 
         constexpr bool operator==(const unsigned char (&raw)[UUID_SIZE]) const noexcept
         {
-            for(size_t i = 0; i < UUID_SIZE; i++)
+            for(DeviceSize i = 0; i < UUID_SIZE; i++)
             {
                 if(this->data[i] != raw[i])
                     return false;

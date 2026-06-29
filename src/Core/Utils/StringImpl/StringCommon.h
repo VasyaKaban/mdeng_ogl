@@ -1,55 +1,54 @@
 #pragma once
 
-#include <concepts>
-#include <ranges>
-#include "../Instantiation.hpp"
+#include "../Types.hpp"
+#include "../Traits.hpp"
 
 namespace Core
 {
     struct StringEncoderLengthResult
     {
-        size_t input_offset;
-        size_t output_size;
+        DeviceSize input_offset;
+        DeviceSize output_size;
     };
 
     struct UTF8CodePoint
     {
         union
         {
-            char8_t u8_data[4];
-            char data[4];
+            UTF8Char u8_data[4];
+            Char data[4];
         } utf8;
-        uint8_t length;
+        UInt8 length;
     };
 
     struct CodePoint
     {
         UTF8CodePoint utf8;
-        char32_t utf32;
+        UTF32Char utf32;
     };
 
     template<typename C>
-    concept Character = std::same_as<C, char> || std::same_as<C, wchar_t> || std::same_as<C, char8_t> || std::same_as<C, char16_t> || std::same_as<C, char32_t>;
+    concept Character = SameAs<C, Char> || SameAs<C, WideChar> || SameAs<C, UTF8Char> || SameAs<C, UTF16Char> || SameAs<C, UTF32Char>;
 
     struct SurrogatePair
     {
-        char16_t first;
-        char16_t last;
+        UTF16Char first;
+        UTF16Char last;
     };
 
-    constexpr inline bool WIDE_CHAR_IS_UTF16 = (WCHAR_MAX == 0xFF'FF);
-    constexpr inline bool WIDE_CHAR_IS_UTF32 = (WCHAR_MAX > 0xFF'FF);
+    constexpr inline Bool WIDE_CHAR_IS_UTF16 = (NumericLimits<WideChar>::Max == 0xFF'FF);
+    constexpr inline Bool WIDE_CHAR_IS_UTF32 = (NumericLimits<WideChar>::Max > 0xFF'FF);
 
     constexpr inline SurrogatePair HIGH_SURROGATE_PAIR_RANGE = {.first = 0xD8'00, .last = 0xDB'FF};
     constexpr inline SurrogatePair LOW_SURROGATE_PAIR_RANGE = {.first = 0xDC'00, .last = 0xDF'FF};
 
-    constexpr inline char32_t TWO_UTF16_CODE_UNITS_FIRST_CODE_POINT = 0x1'00'00;
+    constexpr inline UTF32Char TWO_UTF16_CODE_UNITS_FIRST_CODE_POINT = 0x1'00'00;
 
     //Let 'char' to be a valid UTF8 char
     //TODO: add enum VariableLengthEncoding for 'char' decode
     struct StringEncoder
     {
-        static size_t GetCodePointSize(char32_t codepoint) noexcept
+        static DeviceSize GetCodePointSize(UTF32Char codepoint) noexcept
         {
             if(codepoint <= 0x00'7F)
                 return 1;
@@ -61,85 +60,85 @@ namespace Core
                 return 4;
         }
 
-        static UTF8CodePoint GetUTF8CodePoint(char32_t codepoint) noexcept
+        static UTF8CodePoint GetUTF8CodePoint(UTF32Char codepoint) noexcept
         {
             UTF8CodePoint res;
             if(codepoint <= 0x00'7F)
             {
                 res.length = 1;
-                res.utf8 = {static_cast<char8_t>(codepoint & 0b0111'1111)};
+                res.utf8 = {static_cast<UTF8Char>(codepoint & 0b0111'1111)};
             }
             else if(codepoint <= 0x07'FF)
             {
                 res.length = 2;
-                res.utf8 = {static_cast<char8_t>(((codepoint >> 6) & 0b0001'1111) | 0b1100'0000), static_cast<char8_t>((codepoint & 0b0011'1111) | 0b1000'0000)};
+                res.utf8 = {static_cast<UTF8Char>(((codepoint >> 6) & 0b0001'1111) | 0b1100'0000), static_cast<UTF8Char>((codepoint & 0b0011'1111) | 0b1000'0000)};
             }
             else if(codepoint <= 0xFF'FF)
             {
                 res.length = 3;
-                res.utf8 = {static_cast<char8_t>(((codepoint >> 12) & 0b0000'1111) | 0b1110'0000),
-                            static_cast<char8_t>(((codepoint >> 6) & 0b0011'1111) | 0b100'0000),
-                            static_cast<char8_t>((codepoint & 0b0011'1111) | 0b1000'0000)};
+                res.utf8 = {static_cast<UTF8Char>(((codepoint >> 12) & 0b0000'1111) | 0b1110'0000),
+                            static_cast<UTF8Char>(((codepoint >> 6) & 0b0011'1111) | 0b100'0000),
+                            static_cast<UTF8Char>((codepoint & 0b0011'1111) | 0b1000'0000)};
             }
             else //if(codepoint < 0x10'FF'FF)
             {
                 res.length = 4;
-                res.utf8 = {static_cast<char8_t>(((codepoint >> 18) & 0b0000'0111) | 0b1111'0000),
-                            static_cast<char8_t>(((codepoint >> 12) & 0b0011'1111) | 0b1000'0000),
-                            static_cast<char8_t>(((codepoint >> 6) & 0b0011'1111) | 0b1000'0000),
-                            static_cast<char8_t>((codepoint & 0b0011'1111) | 0b1000'0000)};
+                res.utf8 = {static_cast<UTF8Char>(((codepoint >> 18) & 0b0000'0111) | 0b1111'0000),
+                            static_cast<UTF8Char>(((codepoint >> 12) & 0b0011'1111) | 0b1000'0000),
+                            static_cast<UTF8Char>(((codepoint >> 6) & 0b0011'1111) | 0b1000'0000),
+                            static_cast<UTF8Char>((codepoint & 0b0011'1111) | 0b1000'0000)};
             }
 
             return res;
         }
 
-        static char32_t GetUTF32Codepoint(const char8_t* input) noexcept
+        static UTF32Char GetUTF32Codepoint(const UTF8Char* input) noexcept
         {
             if((input[0] & 0b1000'0000) == 0) //one char
-                return static_cast<char32_t>(input[0]);
+                return static_cast<UTF32Char>(input[0]);
             else if((input[0] & 0b1110'0000) == 0b1100'0000)
-                return (static_cast<char32_t>(input[0] & 0b0001'1111) << 6) | static_cast<char32_t>(input[1] & 0b0011'1111);
+                return (static_cast<UTF32Char>(input[0] & 0b0001'1111) << 6) | static_cast<UTF32Char>(input[1] & 0b0011'1111);
             else if((input[0] & 0b1111'0000) == 0b1110'0000)
-                return (static_cast<char32_t>(input[0] & 0b0000'1111) << 12) | (static_cast<char32_t>(input[1] & 0b0011'1111) << 6) | static_cast<char32_t>(input[2] & 0b0011'1111);
+                return (static_cast<UTF32Char>(input[0] & 0b0000'1111) << 12) | (static_cast<UTF32Char>(input[1] & 0b0011'1111) << 6) | static_cast<UTF32Char>(input[2] & 0b0011'1111);
             else //if((input[0] & 0b1111'1000) == 0b1111'0000)
-                return (static_cast<char32_t>(input[0] & 0b0000'0111) << 18) | (static_cast<char32_t>(input[1] & 0b0011'1111) << 12) | (static_cast<char32_t>(input[2] & 0b0011'1111) << 6) |
-                       static_cast<char32_t>(input[3] & 0b0011'1111);
+                return (static_cast<UTF32Char>(input[0] & 0b0000'0111) << 18) | (static_cast<UTF32Char>(input[1] & 0b0011'1111) << 12) | (static_cast<UTF32Char>(input[2] & 0b0011'1111) << 6) |
+                       static_cast<UTF32Char>(input[3] & 0b0011'1111);
         }
 
         //char
-        static StringEncoderLengthResult GetLength(const char* input, size_t input_size) noexcept
+        static StringEncoderLengthResult GetLength(const Char* input, DeviceSize input_size) noexcept
         {
-            return GetLength(reinterpret_cast<const char8_t*>(input), input_size);
+            return GetLength(reinterpret_cast<const UTF8Char*>(input), input_size);
         }
 
-        static void Convert(const char* input, size_t input_size, char8_t* output) noexcept
+        static void Convert(const Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
-            return Convert(reinterpret_cast<const char8_t*>(input), input_size, output);
+            return Convert(reinterpret_cast<const UTF8Char*>(input), input_size, output);
         }
 
-        //wchar_t
-        static StringEncoderLengthResult GetLength(const wchar_t* input, size_t input_size) noexcept
-        {
-            if constexpr(WIDE_CHAR_IS_UTF16)
-                return GetLength(reinterpret_cast<const char16_t*>(input), input_size);
-            else if(WIDE_CHAR_IS_UTF32)
-                return GetLength(reinterpret_cast<const char32_t*>(input), input_size);
-            else
-                return GetLength(reinterpret_cast<const char8_t*>(input), input_size);
-        }
-
-        static void Convert(const wchar_t* input, size_t input_size, char8_t* output) noexcept
+        //WideChar
+        static StringEncoderLengthResult GetLength(const WideChar* input, DeviceSize input_size) noexcept
         {
             if constexpr(WIDE_CHAR_IS_UTF16)
-                Convert(reinterpret_cast<const char16_t*>(input), input_size, output);
+                return GetLength(reinterpret_cast<const UTF16Char*>(input), input_size);
             else if(WIDE_CHAR_IS_UTF32)
-                Convert(reinterpret_cast<const char32_t*>(input), input_size, output);
+                return GetLength(reinterpret_cast<const UTF32Char*>(input), input_size);
             else
-                Convert(reinterpret_cast<const char8_t*>(input), input_size, output);
+                return GetLength(reinterpret_cast<const UTF8Char*>(input), input_size);
         }
 
-        //char8_t
-        static StringEncoderLengthResult GetLength(const char8_t* input, size_t input_size) noexcept
+        static void Convert(const WideChar* input, DeviceSize input_size, UTF8Char* output) noexcept
+        {
+            if constexpr(WIDE_CHAR_IS_UTF16)
+                Convert(reinterpret_cast<const UTF16Char*>(input), input_size, output);
+            else if(WIDE_CHAR_IS_UTF32)
+                Convert(reinterpret_cast<const UTF32Char*>(input), input_size, output);
+            else
+                Convert(reinterpret_cast<const UTF8Char*>(input), input_size, output);
+        }
+
+        //UTF8Char
+        static StringEncoderLengthResult GetLength(const UTF8Char* input, DeviceSize input_size) noexcept
         {
             StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
             while(res.input_offset != input_size)
@@ -180,17 +179,17 @@ namespace Core
             return res;
         }
 
-        static void Convert(const char8_t* input, size_t input_size, char8_t* output) noexcept
+        static void Convert(const UTF8Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
             memcpy(output, input, input_size);
         }
 
-        //char16_t
-        static StringEncoderLengthResult GetLength(const char16_t* input, size_t input_size) noexcept
+        //UTF16Char
+        static StringEncoderLengthResult GetLength(const UTF16Char* input, DeviceSize input_size) noexcept
         {
             StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
 
-            char32_t codepoint;
+            UTF32Char codepoint;
             while(res.input_offset != input_size)
             {
                 if(input[res.input_offset] >= LOW_SURROGATE_PAIR_RANGE.first && input[res.input_offset] <= LOW_SURROGATE_PAIR_RANGE.last) //low surogate
@@ -200,17 +199,17 @@ namespace Core
                     if(input_size < 2 || !(input[res.input_offset + 1] >= LOW_SURROGATE_PAIR_RANGE.first && input[res.input_offset + 1] <= LOW_SURROGATE_PAIR_RANGE.last))
                         break;
 
-                    char16_t high_surrogate = input[res.input_offset];
-                    char16_t low_surrogate = input[res.input_offset + 1];
+                    UTF16Char high_surrogate = input[res.input_offset];
+                    UTF16Char low_surrogate = input[res.input_offset + 1];
 
-                    codepoint = ((static_cast<char32_t>(high_surrogate) - static_cast<char32_t>(HIGH_SURROGATE_PAIR_RANGE.first)) << 10) +
-                                (static_cast<char32_t>(low_surrogate) - static_cast<char32_t>(LOW_SURROGATE_PAIR_RANGE.first)) + 0x1'00'00;
+                    codepoint = ((static_cast<UTF32Char>(high_surrogate) - static_cast<UTF32Char>(HIGH_SURROGATE_PAIR_RANGE.first)) << 10) +
+                                (static_cast<UTF32Char>(low_surrogate) - static_cast<UTF32Char>(LOW_SURROGATE_PAIR_RANGE.first)) + 0x1'00'00;
 
                     res.input_offset += 2;
                 }
                 else
                 {
-                    codepoint = static_cast<char32_t>(input[res.input_offset]);
+                    codepoint = static_cast<UTF32Char>(input[res.input_offset]);
 
                     res.input_offset++;
                 }
@@ -221,26 +220,26 @@ namespace Core
             return res;
         }
 
-        static void Convert(const char16_t* input, size_t input_size, char8_t* output) noexcept
+        static void Convert(const UTF16Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
             StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
 
-            char32_t codepoint;
+            UTF32Char codepoint;
             while(res.input_offset != input_size)
             {
                 if(input[res.input_offset] >= HIGH_SURROGATE_PAIR_RANGE.first && input[res.input_offset] <= HIGH_SURROGATE_PAIR_RANGE.last) //high surrogate
                 {
-                    char16_t high_surrogate = input[res.input_offset];
-                    char16_t low_surrogate = input[res.input_offset + 1];
+                    UTF16Char high_surrogate = input[res.input_offset];
+                    UTF16Char low_surrogate = input[res.input_offset + 1];
 
-                    codepoint = ((static_cast<char32_t>(high_surrogate) - static_cast<char32_t>(HIGH_SURROGATE_PAIR_RANGE.first)) << 10) +
-                                (static_cast<char32_t>(low_surrogate) - static_cast<char32_t>(LOW_SURROGATE_PAIR_RANGE.first)) + 0x1'00'00;
+                    codepoint = ((static_cast<UTF32Char>(high_surrogate) - static_cast<UTF32Char>(HIGH_SURROGATE_PAIR_RANGE.first)) << 10) +
+                                (static_cast<UTF32Char>(low_surrogate) - static_cast<UTF32Char>(LOW_SURROGATE_PAIR_RANGE.first)) + 0x1'00'00;
 
                     res.input_offset += 2;
                 }
                 else
                 {
-                    codepoint = static_cast<char32_t>(input[res.input_offset]);
+                    codepoint = static_cast<UTF32Char>(input[res.input_offset]);
 
                     res.input_offset++;
                 }
@@ -252,8 +251,8 @@ namespace Core
             }
         }
 
-        //char32_t
-        static StringEncoderLengthResult GetLength(const char32_t* input, size_t input_size) noexcept
+        //UTF32Char
+        static StringEncoderLengthResult GetLength(const UTF32Char* input, DeviceSize input_size) noexcept
         {
             StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
             while(res.input_offset != input_size)
@@ -265,7 +264,7 @@ namespace Core
             return res;
         }
 
-        static void Convert(const char32_t* input, size_t input_size, char8_t* output) noexcept
+        static void Convert(const UTF32Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
             StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
             while(res.input_offset != input_size)
@@ -279,14 +278,14 @@ namespace Core
         }
 
         //utf8 to other
-        static size_t GetUTF16Size(const char8_t* input, size_t input_size) noexcept
+        static DeviceSize GetUTF16Size(const UTF8Char* input, DeviceSize input_size) noexcept
         {
-            size_t out = 0;
+            DeviceSize out = 0;
 
-            size_t offset = 0;
+            DeviceSize offset = 0;
             while(offset != input_size)
             {
-                char32_t utf32 = StringEncoder::GetUTF32Codepoint(input + offset);
+                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(input + offset);
                 auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
 
                 if(utf32 < TWO_UTF16_CODE_UNITS_FIRST_CODE_POINT)
@@ -300,14 +299,14 @@ namespace Core
             return out;
         }
 
-        static size_t GetUTF32Size(const char8_t* input, size_t input_size) noexcept
+        static DeviceSize GetUTF32Size(const UTF8Char* input, DeviceSize input_size) noexcept
         {
-            size_t out = 0;
+            DeviceSize out = 0;
 
-            size_t offset = 0;
+            DeviceSize offset = 0;
             while(offset != input_size)
             {
-                char32_t utf32 = StringEncoder::GetUTF32Codepoint(input + offset);
+                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(input + offset);
                 auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
 
                 out++;
@@ -318,7 +317,7 @@ namespace Core
             return out;
         }
 
-        static size_t GetWideCharSize(const char8_t* input, size_t input_size) noexcept
+        static DeviceSize GetWideCharSize(const UTF8Char* input, DeviceSize input_size) noexcept
         {
             if constexpr(WIDE_CHAR_IS_UTF16)
                 return GetUTF16Size(input, input_size);
@@ -328,19 +327,19 @@ namespace Core
                 return input_size;
         }
 
-        static void ConvertToUTF16(const char8_t* input, size_t input_size, char16_t* output) noexcept
+        static void ConvertToUTF16(const UTF8Char* input, DeviceSize input_size, UTF16Char* output) noexcept
         {
-            size_t output_offset = 0;
+            DeviceSize output_offset = 0;
 
-            size_t input_offset = 0;
+            DeviceSize input_offset = 0;
             while(input_offset != input_size)
             {
-                char32_t utf32 = StringEncoder::GetUTF32Codepoint(input + input_offset);
+                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(input + input_offset);
                 auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
 
                 if(utf32 < TWO_UTF16_CODE_UNITS_FIRST_CODE_POINT)
                 {
-                    output[output_offset] = static_cast<char16_t>(utf32);
+                    output[output_offset] = static_cast<UTF16Char>(utf32);
                     output_offset++;
                 }
                 else
@@ -355,14 +354,14 @@ namespace Core
             }
         }
 
-        static void ConvertToUTF32(const char8_t* input, size_t input_size, char32_t* output) noexcept
+        static void ConvertToUTF32(const UTF8Char* input, DeviceSize input_size, UTF32Char* output) noexcept
         {
-            size_t output_offset = 0;
+            DeviceSize output_offset = 0;
 
-            size_t input_offset = 0;
+            DeviceSize input_offset = 0;
             while(input_offset != input_size)
             {
-                char32_t utf32 = StringEncoder::GetUTF32Codepoint(input + input_offset);
+                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(input + input_offset);
                 auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
 
                 output[output_offset] = utf32;
@@ -372,12 +371,12 @@ namespace Core
             }
         }
 
-        static void ConvertToWideChar(const char8_t* input, size_t input_size, wchar_t* output) noexcept
+        static void ConvertToWideChar(const UTF8Char* input, DeviceSize input_size, WideChar* output) noexcept
         {
             if constexpr(WIDE_CHAR_IS_UTF16)
-                return ConvertToUTF16(input, input_size, reinterpret_cast<char16_t*>(output));
+                return ConvertToUTF16(input, input_size, reinterpret_cast<UTF16Char*>(output));
             else if constexpr(WIDE_CHAR_IS_UTF32)
-                return ConvertToUTF32(input, input_size, reinterpret_cast<char32_t*>(output));
+                return ConvertToUTF32(input, input_size, reinterpret_cast<UTF32Char*>(output));
             else
                 memcpy(output, input, input_size);
         }
@@ -386,7 +385,7 @@ namespace Core
     namespace Detail
     {
         template<typename C>
-        requires std::same_as<char8_t, C> || std::same_as<const char8_t, C>
+        requires SameAs<UTF8Char, C> || SameAs<const UTF8Char, C>
         class StringCharIterator
         {
         public:
@@ -412,7 +411,7 @@ namespace Core
 
             StringCharIterator& operator++() noexcept
             {
-                char32_t utf32 = StringEncoder::GetUTF32Codepoint(this->data);
+                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(this->data);
                 auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
                 this->data += utf8.length;
 
@@ -420,14 +419,14 @@ namespace Core
             }
 
             template<typename OC>
-            bool operator==(const StringCharIterator<OC>& it) const noexcept
+            Bool operator==(const StringCharIterator<OC>& it) const noexcept
             {
                 return this->data == it.data;
             }
 
             CodePoint operator*() const noexcept
             {
-                char32_t utf32 = StringEncoder::GetUTF32Codepoint(this->data);
+                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(this->data);
                 auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
 
                 return CodePoint{.utf8 = utf8, .utf32 = utf32};
@@ -447,13 +446,13 @@ namespace Core
         };
 
         template<typename C>
-        requires std::same_as<char8_t, C> || std::same_as<const char8_t, C>
+        requires SameAs<UTF8Char, C> || SameAs<const UTF8Char, C>
         class StringCharIteratorRangeAdaptor
         {
         public:
             using Iterator = StringCharIterator<C>;
 
-            explicit StringCharIteratorRangeAdaptor(C* data, size_t size) noexcept
+            explicit StringCharIteratorRangeAdaptor(C* data, DeviceSize size) noexcept
                 : data(data),
                   size(size)
             {}
@@ -476,50 +475,36 @@ namespace Core
             }
         private:
             C* data;
-            size_t size;
+            DeviceSize size;
         };
 
         //std compat
         template<typename T>
-        requires TypeInstantiation<std::remove_cvref_t<T>, StringCharIteratorRangeAdaptor>
+        requires TypeInstantiation<DropConstVolatileReference<T>, StringCharIteratorRangeAdaptor>
         auto begin(T&& rng) noexcept
         {
-            return std::forward<T>(rng).GetIterator();
+            return Forward(rng).GetIterator();
         }
 
         template<typename T>
-        requires TypeInstantiation<std::remove_cvref_t<T>, StringCharIteratorRangeAdaptor>
+        requires TypeInstantiation<DropConstVolatileReference<T>, StringCharIteratorRangeAdaptor>
         auto end(T&& rng) noexcept
         {
-            return std::forward<T>(rng).GetSentinel();
+            return Forward(rng).GetSentinel();
         }
 
         //string utils
-        const char8_t* FindInString(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+        const UTF8Char* FindInString(const UTF8Char* data, DeviceSize data_size, const UTF8Char* input, DeviceSize input_size) noexcept;
 
-        const char8_t* FindInStringReverse(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+        const UTF8Char* FindInStringReverse(const UTF8Char* data, DeviceSize data_size, const UTF8Char* input, DeviceSize input_size) noexcept;
 
-        bool StringStartsWith(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+        Bool StringStartsWith(const UTF8Char* data, DeviceSize data_size, const UTF8Char* input, DeviceSize input_size) noexcept;
 
-        bool StringEndsWith(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept;
+        Bool StringEndsWith(const UTF8Char* data, DeviceSize data_size, const UTF8Char* input, DeviceSize input_size) noexcept;
 
-        bool CompareStringsEquality(const char8_t* data1, size_t data_size1, const char8_t* data2, size_t data_size2) noexcept;
+        Bool CompareStringsEquality(const UTF8Char* data1, DeviceSize data_size1, const UTF8Char* data2, DeviceSize data_size2) noexcept;
 
-        bool CompareStringsLexicallyLess(const char8_t* data1, size_t data_size1, const char8_t* data2, size_t data_size2) noexcept;
+        Bool CompareStringsLexicallyLess(const UTF8Char* data1, DeviceSize data_size1, const UTF8Char* data2, DeviceSize data_size2) noexcept;
 
-    };
-};
-
-//std compat
-namespace std
-{
-    template<typename C>
-    struct iterator_traits<::Core::Detail::StringCharIterator<C>>
-    {
-        using difference_type = ptrdiff_t;
-        using value_type = ::Core::CodePoint;
-        using pointer = void;
-        using reference = void;
-        using iterator_category = std::forward_iterator_tag;
     };
 };

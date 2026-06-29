@@ -2,16 +2,16 @@
 
 #include <cassert>
 #include "Core/API.h"
-#include "StringImpl/StringCommon.h"
+#include "String.hpp"
 
 namespace Core
 {
     class StringView
     {
     public:
-        using Iterator = const char8_t*;
-        using CharIterator = Detail::StringCharIterator<const char8_t>;
-        using RangeAdaptor = Detail::StringCharIteratorRangeAdaptor<const char8_t>;
+        using Iterator = const UTF8Char*;
+        using CharIterator = Detail::StringCharIterator<const UTF8Char>;
+        using RangeAdaptor = Detail::StringCharIteratorRangeAdaptor<const UTF8Char>;
 
         StringView() noexcept
             : data(nullptr),
@@ -25,7 +25,7 @@ namespace Core
         StringView& operator=(const StringView&) = default;
         StringView& operator=(StringView&&) = default;
 
-        StringView(const char8_t* input, size_t input_size)
+        StringView(const UTF8Char* input, DeviceSize input_size)
             : data(input),
               size(input_size)
         {
@@ -35,9 +35,13 @@ namespace Core
         }
 
         //for all (&input)[N] erase last character -> we do not hold null-terminated character
-        template<size_t N>
-        StringView(const char8_t (&input)[N])
+        template<DeviceSize N>
+        StringView(const UTF8Char (&input)[N])
             : StringView(input, N - 1)
+        {}
+
+        StringView(const String& str) noexcept
+            : StringView(str.GetData(), str.GetSize())
         {}
 
         StringView(CharIterator begin, CharIterator end) noexcept
@@ -50,8 +54,8 @@ namespace Core
             : StringView(range.GetIterator(), range.GetSentinel())
         {}
 
-        template<size_t N>
-        StringView& operator=(const char8_t (&input)[N]) noexcept
+        template<DeviceSize N>
+        StringView& operator=(const UTF8Char (&input)[N]) noexcept
         {
             StringView view(input);
             *this = view;
@@ -73,19 +77,19 @@ namespace Core
             return this->size == 0;
         }
 
-        size_t GetSize() const noexcept
+        DeviceSize GetSize() const noexcept
         {
             return this->size;
         }
 
-        const char8_t* GetData() const noexcept
+        const UTF8Char* GetData() const noexcept
         {
             return this->data;
         }
 
-        const char* GetDataAsNativeChar() const noexcept
+        const Char* GetDataAsNativeChar() const noexcept
         {
-            return reinterpret_cast<const char*>(this->data);
+            return reinterpret_cast<const Char*>(this->data);
         }
 
         Iterator GetIterator() const noexcept
@@ -108,18 +112,18 @@ namespace Core
             return CharIterator(this->data + this->size);
         }
 
-        Detail::StringCharIteratorRangeAdaptor<const char8_t> GetCharRange() const noexcept
+        Detail::StringCharIteratorRangeAdaptor<const UTF8Char> GetCharRange() const noexcept
         {
             return RangeAdaptor{this->data, this->size};
         }
 
-        Iterator Find(const char8_t* input, size_t input_size) const noexcept
+        Iterator Find(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::FindInString(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
-        Iterator Find(const char8_t (&input)[N]) const noexcept
+        template<DeviceSize N>
+        Iterator Find(const UTF8Char (&input)[N]) const noexcept
         {
             return Find(input, N - 1);
         }
@@ -129,13 +133,13 @@ namespace Core
             return Find(str.data, str.size);
         }
 
-        Iterator FindReverse(const char8_t* input, size_t input_size) const noexcept
+        Iterator FindReverse(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::FindInStringReverse(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
-        Iterator FindReverse(const char8_t (&input)[N]) const noexcept
+        template<DeviceSize N>
+        Iterator FindReverse(const UTF8Char (&input)[N]) const noexcept
         {
             return FindReverse(input, N - 1);
         }
@@ -145,13 +149,13 @@ namespace Core
             return FindReverse(str.data, str.size);
         }
 
-        bool StartsWith(const char8_t* input, size_t input_size) const noexcept
+        bool StartsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::StringStartsWith(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
-        bool StartsWith(const char8_t (&input)[N]) const noexcept
+        template<DeviceSize N>
+        bool StartsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return StartsWith(input, N - 1);
         }
@@ -161,13 +165,13 @@ namespace Core
             return StartsWith(str.data, str.size);
         }
 
-        bool EndsWith(const char8_t* input, size_t input_size) const noexcept
+        bool EndsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::StringEndsWith(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
-        bool EndsWith(const char8_t (&input)[N]) const noexcept
+        template<DeviceSize N>
+        bool EndsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return EndsWith(input, N - 1);
         }
@@ -182,8 +186,8 @@ namespace Core
             return ::Core::Detail::CompareStringsEquality(this->data, this->size, str.data, str.size);
         }
 
-        template<size_t N>
-        bool operator==(const char8_t (&input)[N]) const noexcept
+        template<DeviceSize N>
+        bool operator==(const UTF8Char (&input)[N]) const noexcept
         {
             return ::Core::Detail::CompareStringsEquality(this->data, this->size, input, N - 1);
         }
@@ -193,29 +197,29 @@ namespace Core
             return ::Core::Detail::CompareStringsLexicallyLess(this->data, this->size, str.data, str.size);
         }
     private:
-        const char8_t* data;
-        size_t size;
+        const UTF8Char* data;
+        DeviceSize size;
     };
 
     //std compat
     template<typename T>
-    requires std::same_as<std::remove_cvref_t<T>, StringView>
+    requires SameAs<DropConstVolatileReference<T>, StringView>
     auto begin(T&& str) noexcept
     {
-        return std::forward<T>(str).GetIterator();
+        return Forward(str).GetIterator();
     }
 
     template<typename T>
-    requires std::same_as<std::remove_cvref_t<T>, StringView>
+    requires SameAs<DropConstVolatileReference<T>, StringView>
     auto end(T&& str) noexcept
     {
-        return std::forward<T>(str).GetSentinel();
+        return Forward(str).GetSentinel();
     }
 
     template<typename T>
-    requires std::same_as<std::remove_cvref_t<T>, StringView>
+    requires SameAs<DropConstVolatileReference<T>, StringView>
     auto size(T&& str) noexcept
     {
-        return std::forward<T>(str).GetSize();
+        return Forward(str).GetSize();
     }
 };

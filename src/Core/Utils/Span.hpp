@@ -1,15 +1,15 @@
 #pragma once
 
-#include <cstddef>
-#include <iterator>
-#include <memory>
-#include "Instantiation.hpp"
+#include "Types.hpp"
+#include "Traits.hpp"
 
 namespace Core
 {
     template<typename T>
     class Span
     {
+        template<typename U>
+        friend class Span;
     public:
         using Iterator = T*;
 
@@ -20,22 +20,13 @@ namespace Core
 
         ~Span() = default;
 
-        constexpr Span(T* data, size_t size) noexcept
+        constexpr Span(T* data, DeviceSize size) noexcept
             : data(data),
               size(size)
         {}
 
-        template<std::contiguous_iterator It>
-        requires std::convertible_to<std::remove_reference_t<std::iter_reference_t<It>>, T>
-        constexpr Span(It begin, size_t size) noexcept
-            : data(std::to_address(begin)),
-              size(size)
-        {}
-
-        template<std::contiguous_iterator It, std::sentinel_for<It> Se>
-        requires std::convertible_to<std::remove_reference_t<std::iter_reference_t<It>>, T>
-        constexpr Span(It begin, Se end) noexcept
-            : data(std::to_address(begin)),
+        constexpr Span(T* begin, T* end) noexcept
+            : data(begin),
               size(end - begin)
         {}
 
@@ -44,12 +35,41 @@ namespace Core
         constexpr Span& operator=(const Span&) = default;
         constexpr Span& operator=(Span&&) = default;
 
+        template<typename U>
+        requires Constructible<T*, U*>
+        constexpr Span(U* begin, DeviceSize size) noexcept
+            : data(begin),
+              size(size)
+        {}
+
+        template<typename U>
+        requires Constructible<T*, U*>
+        constexpr Span(U* begin, U* end) noexcept
+            : data(begin),
+              size(end - begin)
+        {}
+
+        template<typename U>
+        requires Constructible<T*, U*>
+        constexpr Span(const Span<U>& sp) noexcept
+            : data(sp.data),
+              size(sp.size)
+        {}
+
+        template<typename U>
+        requires Constructible<T*, U*>
+        constexpr Span& operator=(const Span<U>& sp) noexcept
+        {
+            this->data = sp.data;
+            this->size = sp.size;
+        }
+
         constexpr bool IsEmpty() const noexcept
         {
             return this->size == 0;
         }
 
-        constexpr size_t GetSize() const noexcept
+        constexpr DeviceSize GetSize() const noexcept
         {
             return this->size;
         }
@@ -59,7 +79,7 @@ namespace Core
             return this->data;
         }
 
-        constexpr Span SubSpan(size_t offset, size_t size) const noexcept
+        constexpr Span SubSpan(DeviceSize offset, DeviceSize size) const noexcept
         {
             return Span{this->data + offset, size};
         }
@@ -74,7 +94,7 @@ namespace Core
             return this->data[this->size - 1];
         }
 
-        constexpr T& operator[](size_t index) const noexcept
+        constexpr T& operator[](DeviceSize index) const noexcept
         {
             return this->data[index];
         }
@@ -90,34 +110,31 @@ namespace Core
         }
     private:
         T* data;
-        size_t size;
+        DeviceSize size;
     };
 
     template<typename T>
-    Span(T* data, size_t size) -> Span<T>;
+    Span(T* data, DeviceSize size) -> Span<T>;
 
-    template<std::contiguous_iterator It>
-    Span(It begin, size_t size) -> Span<std::remove_reference_t<std::iter_reference_t<It>>>;
-
-    template<std::contiguous_iterator It, std::sentinel_for<It> Se>
-    Span(It begin, Se end) -> Span<std::remove_reference_t<std::iter_reference_t<It>>>;
+    template<typename T>
+    Span(T* begin, T* end) -> Span<T>;
 
     //std compat
     template<TypeInstantiation<Span> T>
     auto begin(T&& sp) noexcept
     {
-        return std::forward<T>(sp).GetIterator();
+        return Forward(sp).GetIterator();
     }
 
     template<TypeInstantiation<Span> T>
     auto end(T&& sp) noexcept
     {
-        return std::forward<T>(sp).GetSentinel();
+        return Forward(sp).GetSentinel();
     }
 
     template<TypeInstantiation<Span> T>
     auto size(T&& sp) noexcept
     {
-        return std::forward<T>(sp).GetSize();
+        return Forward(sp).GetSize();
     }
 };

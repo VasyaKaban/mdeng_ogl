@@ -215,6 +215,30 @@ namespace Core
         {
             constexpr static Bool Value = true;
         };
+
+        template<typename T, template<typename...> typename D>
+        struct TypeInstantiationImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<typename... Args, template<typename...> typename D>
+        struct TypeInstantiationImpl<D<Args...>, D>
+        {
+            constexpr static Bool Value = true;
+        };
+
+        template<typename T, template<auto...> typename D>
+        struct NonTypeInstantiationImpl
+        {
+            constexpr static Bool Value = false;
+        };
+
+        template<auto... Args, template<auto...> typename D>
+        struct NonTypeInstantiationImpl<D<Args...>, D>
+        {
+            constexpr static Bool Value = true;
+        };
     };
 
     template<typename T>
@@ -341,6 +365,12 @@ namespace Core
     template<typename T>
     concept Array = Detail::ArrayImpl<T>::Value;
 
+    template<typename T, template<typename...> typename D>
+    concept TypeInstantiation = Detail::TypeInstantiationImpl<T, D>::Value;
+
+    template<typename T, template<auto...> typename D>
+    concept NonTypeInstantiation = Detail::NonTypeInstantiationImpl<T, D>::Value;
+
     template<typename F, typename... Args>
     concept Invocable = (LValueReference<F> && requires(F& func, Args... args) { func(args...); }) || (!LValueReference<F> && requires(F&& func, Args... args) { static_cast<F&&>(func)(args...); });
 
@@ -433,4 +463,7 @@ namespace Core
 
     template<typename B, typename D>
     concept BaseOf = __is_base_of(B, D);
+
+    template<typename T>
+    concept Complex = requires(int T::*) { true; };
 };

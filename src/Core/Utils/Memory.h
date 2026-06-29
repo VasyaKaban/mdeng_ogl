@@ -6,9 +6,12 @@ namespace Core
 {
     struct MemoryRequirements
     {
-        size_t alignment;
-        size_t size;
+        DeviceSize alignment;
+        DeviceSize size;
     };
+
+    CORE_API void* RuntimeAllocateMemory(const MemoryRequirements& req) noexcept;
+    CORE_API void RuntimeDeallocateMemory(void* ptr) noexcept;
 
     class CORE_API Allocator1 : public Interface
     {
@@ -22,8 +25,8 @@ namespace Core
 
         virtual void* Allocate(const MemoryRequirements& req) = 0;
         virtual void Deallocate(void* ptr) noexcept = 0;
-        virtual bool Grow(void* ptr, size_t size /*grow allocation to the 'size' bytes. without realloc*/) noexcept = 0;
-        virtual bool Trim(void* ptr, size_t size /*trim allocation to the 'size' bytes*/) noexcept = 0;
+        virtual bool Grow(void* ptr, DeviceSize size /*grow allocation to the 'size' bytes. without realloc*/) noexcept = 0;
+        virtual bool Trim(void* ptr, DeviceSize size /*trim allocation to the 'size' bytes*/) noexcept = 0;
     };
 
     class CORE_API Allocator
@@ -43,8 +46,8 @@ namespace Core
         //Allocator1
         void* Allocate(const MemoryRequirements& req);
         void Deallocate(void* ptr) noexcept;
-        bool Grow(void* ptr, size_t size) noexcept;
-        bool Trim(void* ptr, size_t size) noexcept;
+        bool Grow(void* ptr, DeviceSize size) noexcept;
+        bool Trim(void* ptr, DeviceSize size) noexcept;
     private:
         InterfacePointer<Allocator1> handle;
     };

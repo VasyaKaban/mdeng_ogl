@@ -1,8 +1,8 @@
 #pragma once
 
-#include <type_traits>
-#include <concepts>
 #include "Traits.hpp"
+#include "Utility.hpp"
+#include "CallableTraits.hpp"
 
 namespace Core
 {
@@ -11,7 +11,7 @@ namespace Core
         template<typename R, bool IsNoexcept, typename... Args>
         constexpr R CallableRefCallerWrapperFunctionPointer(const void* memory, Args... args) noexcept(IsNoexcept)
         {
-            return (*reinterpret_cast<R (*)(Args...)>(const_cast<void*>(memory)))(std::forward<Args>(args)...);
+            return (*reinterpret_cast<R (*)(Args...)>(const_cast<void*>(memory)))(Forward(args)...);
         }
 
         //C: const, Member: const
@@ -20,10 +20,10 @@ namespace Core
         template<typename C, auto Member, typename R, bool IsNoexcept, typename... Args>
         constexpr R CallableRefCallerWrapperClassMember(const void* memory, Args... args) noexcept(IsNoexcept)
         {
-            if constexpr(std::is_const_v<C>)
-                return (reinterpret_cast<C*>(memory)->*Member)(std::forward<Args>(args)...);
+            if constexpr(Const<C>)
+                return (reinterpret_cast<C*>(memory)->*Member)(Forward(args)...);
             else
-                return (reinterpret_cast<C*>(const_cast<void*>(memory))->*Member)(std::forward<Args>(args)...);
+                return (reinterpret_cast<C*>(const_cast<void*>(memory))->*Member)(Forward(args)...);
         }
 
         template<typename R, bool IsConst, bool IsNoexcept, typename... Args>
@@ -41,22 +41,22 @@ namespace Core
                   caller(&Detail::CallableRefCallerWrapperFunctionPointer<R, IsNoexcept, Args...>)
             {}
 
-            template<typename C, auto Member = static_cast<R (std::remove_cvref_t<C>::*)(Args...) const noexcept(IsNoexcept)>(&std::remove_cvref_t<C>::operator())>
+            template<typename C, auto Member = static_cast<R (DropConstVolatileReference<C>::*)(Args...) const noexcept(IsNoexcept)>(&DropConstVolatileReference<C>::operator())>
             requires IsConst && requires(C&& obj, Args... args) {
-                { (std::forward<C>(obj).*Member)(std::forward<Args>(args)...) } -> std::same_as<R>;
+                { (Forward(obj).*Member)(Forward(args)...) } -> SameAs<R>;
             }
             CallableRefBase(C&& obj, NonType<Member> = NonTypeArgument<Member>) noexcept
-                : memory(reinterpret_cast<const void*>(std::addressof(obj))),
-                  caller(&Detail::CallableRefCallerWrapperClassMember<const std::remove_reference_t<C>, Member, R, IsNoexcept>)
+                : memory(reinterpret_cast<const void*>(GetAddress(obj))),
+                  caller(&Detail::CallableRefCallerWrapperClassMember<const DropConstVolatileReference<C>, Member, R, IsNoexcept>)
             {}
 
-            template<typename C, auto Member = static_cast<R (std::remove_cvref_t<C>::*)(Args...) noexcept(IsNoexcept)>(&std::remove_cvref_t<C>::operator())>
-            requires(!IsConst && !std::is_const_v<C>) && requires(C&& obj, Args... args) {
-                { (std::forward<C>(obj).*Member)(std::forward<Args>(args)...) } -> std::same_as<R>;
+            template<typename C, auto Member = static_cast<R (DropConstVolatileReference<C>::*)(Args...) noexcept(IsNoexcept)>(&DropConstVolatileReference<C>::operator())>
+            requires(!IsConst && !Const<C>) && requires(C&& obj, Args... args) {
+                { (Forward(obj).*Member)(Forward(args)...) } -> SameAs<R>;
             }
             CallableRefBase(C&& obj, NonType<Member> = NonTypeArgument<Member>) noexcept
-                : memory(reinterpret_cast<const void*>(std::addressof(obj))),
-                  caller(&Detail::CallableRefCallerWrapperClassMember<std::remove_reference_t<C>, Member, R, IsNoexcept>)
+                : memory(reinterpret_cast<const void*>(GetAddress(obj))),
+                  caller(&Detail::CallableRefCallerWrapperClassMember<DropConstVolatileReference<C>, Member, R, IsNoexcept>)
             {}
 
             ~CallableRefBase() = default;
@@ -67,7 +67,7 @@ namespace Core
 
             R operator()(Args... args) const noexcept(IsNoexcept)
             {
-                return this->caller(this->memory, std::forward<Args>(args)...);
+                return this->caller(this->memory, Forward(args)...);
             }
 
             constexpr explicit operator bool() const noexcept
@@ -81,7 +81,7 @@ namespace Core
     };
 
     template<typename F>
-    requires std::is_function_v<F>
+    requires Callable<F>
     class CallableRef;
 
     template<typename R, typename... Args>
@@ -115,17 +115,17 @@ namespace Core
     CallableRef(R (*func_ptr)(Args...) noexcept) -> CallableRef<R(Args...) noexcept>;
 
     template<typename C>
-    CallableRef(C&& obj) -> CallableRef<ClassMemberType<decltype(&std::remove_cvref_t<C>::operator())>>;
+    CallableRef(C&& obj) -> CallableRef<ClassMemberType<decltype(&DropConstVolatileReference<C>::operator())>>;
 
     template<auto Member, typename R, typename... Args, typename C>
-    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...)>) -> CallableRef<R(Args...)>;
+    CallableRef(C&& obj, NonType<Member, R (DropConstVolatileReference<C>::*)(Args...)>) -> CallableRef<R(Args...)>;
 
     template<auto Member, typename R, typename... Args, typename C>
-    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...) const>) -> CallableRef<R(Args...) const>;
+    CallableRef(C&& obj, NonType<Member, R (DropConstVolatileReference<C>::*)(Args...) const>) -> CallableRef<R(Args...) const>;
 
     template<auto Member, typename R, typename... Args, typename C>
-    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...) noexcept>) -> CallableRef<R(Args...) noexcept>;
+    CallableRef(C&& obj, NonType<Member, R (DropConstVolatileReference<C>::*)(Args...) noexcept>) -> CallableRef<R(Args...) noexcept>;
 
     template<auto Member, typename R, typename... Args, typename C>
-    CallableRef(C&& obj, NonType<Member, R (std::remove_cvref_t<C>::*)(Args...) const noexcept>) -> CallableRef<R(Args...) const noexcept>;
+    CallableRef(C&& obj, NonType<Member, R (DropConstVolatileReference<C>::*)(Args...) const noexcept>) -> CallableRef<R(Args...) const noexcept>;
 };

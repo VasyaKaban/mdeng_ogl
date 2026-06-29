@@ -1,11 +1,7 @@
 #pragma once
 
-#include <concepts>
-#include <cassert>
-#include <utility>
-#include <ranges>
 #include "Memory.h"
-#include "Instantiation.hpp"
+#include "RangeTraits.hpp"
 
 namespace Core
 {
@@ -44,11 +40,11 @@ namespace Core
         {
             T value;
 
-            template<typename U>
-            requires std::constructible_from<T, U>
-            ChainNode(U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
+            template<typename... Args>
+            requires Constructible<T, Args...>
+            ChainNode(Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
                 : ChainNodeBase(),
-                  value(std::forward<U>(value))
+                  value(Forward(args)...)
             {}
 
             ~ChainNode() = default;
@@ -65,8 +61,8 @@ namespace Core
             template<typename T>
             friend class ::Core::Chain;
 
-            using ChainValueType = std::remove_cvref_t<U>;
-            using Base = std::conditional_t<std::is_const_v<U>, const Detail::ChainNodeBase, Detail::ChainNodeBase>;
+            using ChainValueType = DropConstVolatileReference<U>;
+            using Base = Conditional<Const<U>, const Detail::ChainNodeBase, Detail::ChainNodeBase>;
 
             ChainIterator(Base* node) noexcept
                 : node(node)
@@ -121,7 +117,7 @@ namespace Core
 
             U* operator->() const noexcept
             {
-                return std::addressof(node->template AsChainNode<ChainValueType>()->value);
+                return GetAddress(node->template AsChainNode<ChainValueType>()->value);
             }
 
             bool operator==(const ChainIterator& it) const noexcept
@@ -136,7 +132,7 @@ namespace Core
     template<typename T>
     class Chain
     {
-        static_assert(std::same_as<T, std::remove_cvref_t<T>>);
+        static_assert(SameAs<T, DropConstVolatileReference<T>>);
 
         using Node = Detail::ChainNode<T>;
     public:
@@ -163,12 +159,12 @@ namespace Core
             for(const auto& value: chain)
                 tmp_chain.PushToEnd(value);
 
-            *this = std::move(tmp_chain);
+            *this = Move(tmp_chain);
         }
 
         Chain(Chain&& chain) noexcept
-            : base(std::exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base))),
-              size(std::exchange(chain.size, 0)),
+            : base(Exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base))),
+              size(Exchange(chain.size, 0)),
               allocator(chain.allocator)
         {
             UpdateBase();
@@ -182,7 +178,7 @@ namespace Core
             for(const auto& value: chain)
                 tmp_chain.PushToEnd(value);
 
-            *this = std::move(tmp_chain);
+            *this = Move(tmp_chain);
 
             return *this;
         }
@@ -191,8 +187,8 @@ namespace Core
         {
             this->~Chain();
 
-            this->base = std::exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base));
-            this->size = std::exchange(chain.size, 0);
+            this->base = Exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base));
+            this->size = Exchange(chain.size, 0);
             this->allocator = chain.allocator;
 
             UpdateBase();
@@ -200,7 +196,7 @@ namespace Core
             return *this;
         }
 
-        template<std::ranges::range R>
+        template<Range R>
         Chain(R&& values, Allocator allocator = GetGlobalAllocator())
             : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
               size(0),
@@ -208,8 +204,8 @@ namespace Core
         {
             try
             {
-                for(auto&& value: std::forward<R>(values))
-                    PushToEnd(std::forward<decltype(value)>(value));
+                for(auto&& value: Forward(values))
+                    PushToEnd(Forward(value));
             }
             catch(...)
             {
@@ -233,25 +229,25 @@ namespace Core
             return this->allocator;
         }
 
-        template<typename U>
-        requires std::constructible_from<T, U>
-        void Insert(ConstIterator before_it, U&& value)
+        template<typename... Args>
+        requires Constructible<T, Args...>
+        void Insert(ConstIterator before_it, Args&&... args)
         {
-            AllocateAndInsertNode(std::forward<U>(value), before_it.node);
+            AllocateAndInsertNode(Forward(args)..., before_it.node);
         }
 
-        template<typename U>
-        requires std::constructible_from<T, U>
-        void PushToBegin(U&& value)
+        template<typename... Args>
+        requires Constructible<T, Args...>
+        void PushToBegin(Args&&... args)
         {
-            AllocateAndInsertNode(std::forward<U>(value), &this->base);
+            AllocateAndInsertNode(Forward(args)..., &this->base);
         }
 
-        template<typename U>
-        requires std::constructible_from<T, U>
-        void PushToEnd(U&& value)
+        template<typename... Args>
+        requires Constructible<T, Args...>
+        void PushToEnd(Args&&... args)
         {
-            AllocateAndInsertNode(std::forward<U>(value), this->base.prev);
+            AllocateAndInsertNode(Forward(args)..., this->base.prev);
         }
 
         void Splice(ConstIterator before_it, Chain& chain, ConstIterator begin, ConstIterator end) noexcept
@@ -384,15 +380,15 @@ namespace Core
             this->size++;
         }
 
-        template<typename U>
-        void AllocateAndInsertNode(U&& value,
+        template<typename... Args>
+        void AllocateAndInsertNode(Args&&... args,
                                    Detail::ChainNodeBase* prev_node) //allocate node and insert right after prev_node
         {
             Node* node = static_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
             try
             {
-                new(node) Node(std::forward<U>(value));
+                new(node) Node(Forward(args)...);
             }
             catch(...)
             {
@@ -438,42 +434,28 @@ namespace Core
         Allocator allocator;
     };
 
-    template<std::ranges::range R>
-    Chain(R&& values) -> Chain<std::remove_cvref_t<std::ranges::range_value_t<std::remove_cvref_t<R>>>>;
+    template<Range R>
+    Chain(R&& values) -> Chain<DropConstVolatileReference<RangeDereferenceType<R>>>;
 
     //std compat
     template<typename T>
-    requires TypeInstantiation<std::remove_cvref_t<T>, Chain>
+    requires TypeInstantiation<DropConstVolatileReference<T>, Chain>
     auto begin(T&& chain) noexcept
     {
-        return std::forward<T>(chain).GetIterator();
+        return Forward(chain).GetIterator();
     }
 
     template<typename T>
-    requires TypeInstantiation<std::remove_cvref_t<T>, Chain>
+    requires TypeInstantiation<DropConstVolatileReference<T>, Chain>
     auto end(T&& chain) noexcept
     {
-        return std::forward<T>(chain).GetSentinel();
+        return Forward(chain).GetSentinel();
     }
 
     template<typename T>
-    requires TypeInstantiation<std::remove_cvref_t<T>, Chain>
+    requires TypeInstantiation<DropConstVolatileReference<T>, Chain>
     auto size(T&& chain) noexcept
     {
-        return std::forward<T>(chain).GetSize();
+        return Forward(chain).GetSize();
     }
-};
-
-//std compat
-namespace std
-{
-    template<typename T>
-    struct iterator_traits<::Core::Detail::ChainIterator<T>>
-    {
-        using difference_type = std::ptrdiff_t;
-        using value_type = T;
-        using pointer = T*;
-        using reference = T&;
-        using iterator_category = std::bidirectional_iterator_tag;
-    };
 };

@@ -51,4 +51,12 @@ namespace Core
         value1 = Move(value2);
         value2 = Move(tmp_value);
     }
+
+    template<typename T>
+    constexpr T* GetAddress(T& value) noexcept
+    {
+        static_assert(!(Complex<T> && requires { value.operator&(); }), "Complex types with overloaded operator& are not supported. Use wrapper or remove operator& overloading");
+
+        return &value;
+    }
 };

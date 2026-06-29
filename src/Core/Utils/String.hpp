@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include "Memory.h"
+#include "Utility.hpp"
 #include "StringImpl/StringCommon.h"
 
 namespace Core
@@ -9,14 +10,14 @@ namespace Core
     class String
     {
     public:
-        using Iterator = char8_t*;
-        using ConstIterator = const char8_t*;
+        using Iterator = UTF8Char*;
+        using ConstIterator = const UTF8Char*;
 
-        using CharIterator = Detail::StringCharIterator<char8_t>;
-        using ConstCharIterator = Detail::StringCharIterator<const char8_t>;
+        using CharIterator = Detail::StringCharIterator<UTF8Char>;
+        using ConstCharIterator = Detail::StringCharIterator<const UTF8Char>;
 
-        using RangeAdaptor = Detail::StringCharIteratorRangeAdaptor<char8_t>;
-        using ConstRangeAdaptor = Detail::StringCharIteratorRangeAdaptor<const char8_t>;
+        using RangeAdaptor = Detail::StringCharIteratorRangeAdaptor<UTF8Char>;
+        using ConstRangeAdaptor = Detail::StringCharIteratorRangeAdaptor<const UTF8Char>;
 
         String(Allocator allocator = GetGlobalAllocator()) noexcept
             : data(nullptr),
@@ -35,13 +36,13 @@ namespace Core
         {
             String tmp_str(str.data, str.size, str.allocator);
 
-            *this = std::move(tmp_str);
+            *this = Move(tmp_str);
         }
 
         String(String&& str) noexcept
-            : data(std::exchange(str.data, nullptr)),
-              size(std::exchange(str.size, 0)),
-              capacity(std::exchange(str.capacity, 0)),
+            : data(Exchange(str.data, nullptr)),
+              size(Exchange(str.size, 0)),
+              capacity(Exchange(str.capacity, 0)),
               allocator(str.allocator)
         {}
 
@@ -51,7 +52,7 @@ namespace Core
 
             String tmp_str(str.data, str.size, str.allocator);
 
-            *this = std::move(tmp_str);
+            *this = Move(tmp_str);
 
             return *this;
         }
@@ -60,9 +61,9 @@ namespace Core
         {
             this->~String();
 
-            this->data = std::exchange(str.data, nullptr);
-            this->size = std::exchange(str.size, 0);
-            this->capacity = std::exchange(str.capacity, 0);
+            this->data = Exchange(str.data, nullptr);
+            this->size = Exchange(str.size, 0);
+            this->capacity = Exchange(str.capacity, 0);
             this->allocator = str.allocator;
 
             return *this;
@@ -132,24 +133,24 @@ namespace Core
             return this->allocator;
         }
 
-        char8_t* GetData() noexcept
+        UTF8Char* GetData() noexcept
         {
             return this->data;
         }
 
-        const char8_t* GetData() const noexcept
+        const UTF8Char* GetData() const noexcept
         {
             return this->data;
         }
 
-        char* GetDataAsNativeChar() noexcept
+        Char* GetDataAsNativeChar() noexcept
         {
-            return reinterpret_cast<char*>(this->data);
+            return reinterpret_cast<Char*>(this->data);
         }
 
-        const char* GetDataAsNativeChar() const noexcept
+        const Char* GetDataAsNativeChar() const noexcept
         {
-            return reinterpret_cast<const char*>(this->data);
+            return reinterpret_cast<const Char*>(this->data);
         }
 
         void Reserve(size_t reserve)
@@ -163,7 +164,7 @@ namespace Core
             }
             else //allocate new buffer
             {
-                char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
+                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
 
                 memcpy(new_memory, this->data, this->size);
 
@@ -231,7 +232,7 @@ namespace Core
             }
             else
             {
-                char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(GetMemoryRequirements(new_size)));
+                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(this->allocator.Allocate(GetMemoryRequirements(new_size)));
 
                 StringEncoder::Convert(input, input_size, new_memory); //copy new data
                 memcpy(new_memory + length_res.output_size, this->data, this->size);
@@ -308,8 +309,8 @@ namespace Core
 
                 size_t new_size = this->size + length_res.output_size;
 
-                char8_t* second_part_start_ptr = const_cast<char8_t*>(before_it.GetAddress());
-                char8_t* second_part_final_ptr = second_part_start_ptr + length_res.output_size;
+                UTF8Char* second_part_start_ptr = const_cast<UTF8Char*>(before_it.GetAddress());
+                UTF8Char* second_part_final_ptr = second_part_start_ptr + length_res.output_size;
                 size_t first_part_size = second_part_start_ptr - this->data;
                 size_t second_part_size = this->size - first_part_size;
 
@@ -327,7 +328,7 @@ namespace Core
                 }
                 else
                 {
-                    char8_t* new_memory = reinterpret_cast<char8_t*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(char8_t), .size = new_size}));
+                    UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(UTF8Char), .size = new_size}));
 
                     memcpy(new_memory, this->data, first_part_size);
                     StringEncoder::Convert(input, input_size, new_memory + first_part_size);
@@ -393,7 +394,7 @@ namespace Core
                 size_t erase_size = (end.GetAddress() - begin.GetAddress());
 
                 size_t size_to_move = (this->data + this->size) - end.GetAddress();
-                memmove(const_cast<char8_t*>(begin.GetAddress()), end.GetAddress(), size_to_move);
+                memmove(const_cast<UTF8Char*>(begin.GetAddress()), end.GetAddress(), size_to_move);
 
                 this->size -= erase_size;
             }
@@ -439,12 +440,12 @@ namespace Core
             return ConstCharIterator(this->data + this->size);
         }
 
-        Detail::StringCharIteratorRangeAdaptor<char8_t> GetCharRange() noexcept
+        Detail::StringCharIteratorRangeAdaptor<UTF8Char> GetCharRange() noexcept
         {
             return RangeAdaptor{this->data, this->size};
         }
 
-        Detail::StringCharIteratorRangeAdaptor<const char8_t> GetCharRange() const noexcept
+        Detail::StringCharIteratorRangeAdaptor<const UTF8Char> GetCharRange() const noexcept
         {
             return ConstRangeAdaptor{this->data, this->size};
         }
@@ -487,13 +488,13 @@ namespace Core
             return *this;
         }
 
-        ConstIterator Find(const char8_t* input, size_t input_size) const noexcept
+        ConstIterator Find(const UTF8Char* input, size_t input_size) const noexcept
         {
             return ::Core::Detail::FindInString(this->data, this->size, input, input_size);
         }
 
         template<size_t N>
-        ConstIterator Find(const char8_t (&input)[N]) const noexcept
+        ConstIterator Find(const UTF8Char (&input)[N]) const noexcept
         {
             return Find(input, N - 1);
         }
@@ -503,13 +504,13 @@ namespace Core
             return Find(str.data, str.size);
         }
 
-        ConstIterator FindReverse(const char8_t* input, size_t input_size) const noexcept
+        ConstIterator FindReverse(const UTF8Char* input, size_t input_size) const noexcept
         {
             return ::Core::Detail::FindInStringReverse(this->data, this->size, input, input_size);
         }
 
         template<size_t N>
-        ConstIterator FindReverse(const char8_t (&input)[N]) const noexcept
+        ConstIterator FindReverse(const UTF8Char (&input)[N]) const noexcept
         {
             return FindReverse(input, N - 1);
         }
@@ -519,13 +520,13 @@ namespace Core
             return FindReverse(str.data, str.size);
         }
 
-        bool StartsWith(const char8_t* input, size_t input_size) const noexcept
+        bool StartsWith(const UTF8Char* input, size_t input_size) const noexcept
         {
             return ::Core::Detail::StringStartsWith(this->data, this->size, input, input_size);
         }
 
         template<size_t N>
-        bool StartsWith(const char8_t (&input)[N]) const noexcept
+        bool StartsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return StartsWith(input, N - 1);
         }
@@ -535,13 +536,13 @@ namespace Core
             return StartsWith(str.data, str.size);
         }
 
-        bool EndsWith(const char8_t* input, size_t input_size) const noexcept
+        bool EndsWith(const UTF8Char* input, size_t input_size) const noexcept
         {
             return ::Core::Detail::StringEndsWith(this->data, this->size, input, input_size);
         }
 
         template<size_t N>
-        bool EndsWith(const char8_t (&input)[N]) const noexcept
+        bool EndsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return EndsWith(input, N - 1);
         }
@@ -557,7 +558,7 @@ namespace Core
         }
 
         template<size_t N>
-        bool operator==(const char8_t (&input)[N]) const noexcept
+        bool operator==(const UTF8Char (&input)[N]) const noexcept
         {
             return ::Core::Detail::CompareStringsEquality(this->data, this->size, input, N - 1);
         }
@@ -569,10 +570,10 @@ namespace Core
 
         static MemoryRequirements GetMemoryRequirements(size_t reserve) noexcept
         {
-            return MemoryRequirements{.alignment = alignof(char8_t), .size = reserve};
+            return MemoryRequirements{.alignment = alignof(UTF8Char), .size = reserve};
         }
     private:
-        char8_t* data;
+        UTF8Char* data;
         size_t size;
         size_t capacity;
         Allocator allocator;
@@ -580,23 +581,23 @@ namespace Core
 
     //std compat
     template<typename T>
-    requires std::same_as<std::remove_cvref_t<T>, String>
+    requires SameAs<DropConstVolatileReference<T>, String>
     auto begin(T&& str) noexcept
     {
-        return std::forward<T>(str).GetIterator();
+        return Forward(str).GetIterator();
     }
 
     template<typename T>
-    requires std::same_as<std::remove_cvref_t<T>, String>
+    requires SameAs<DropConstVolatileReference<T>, String>
     auto end(T&& str) noexcept
     {
-        return std::forward<T>(str).GetSentinel();
+        return Forward(str).GetSentinel();
     }
 
     template<typename T>
-    requires std::same_as<std::remove_cvref_t<T>, String>
+    requires SameAs<DropConstVolatileReference<T>, String>
     auto size(T&& str) noexcept
     {
-        return std::forward<T>(str).GetSize();
+        return Forward(str).GetSize();
     }
 };

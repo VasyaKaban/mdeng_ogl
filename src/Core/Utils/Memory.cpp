@@ -1,9 +1,26 @@
 #include "Memory.h"
-#include <new>
 #include "Binary.hpp"
 
 namespace Core
 {
+    void* RuntimeAllocateMemory(const MemoryRequirements& req) noexcept
+    {
+#ifdef _MSC_VER
+        return _aligned_malloc(req.size, req.alignment);
+#else
+        return aligned_alloc(req.alignment, req.size)
+#endif
+    }
+
+    void RuntimeDeallocateMemory(void* ptr) noexcept
+    {
+#ifdef _MSC_VER
+        return _aligned_free(ptr);
+#else
+        return free(ptr);
+#endif
+    }
+
     Allocator1::~Allocator1()
     {}
 
@@ -40,7 +57,7 @@ namespace Core
             if(!Align(new_req.size, new_req.alignment))
                 CORE_THROW_EXCEPTION_MOCK("Too many memory requested")
 
-            void* ptr = ::operator new(new_req.size, std::align_val_t(new_req.alignment), std::nothrow_t{});
+            void* ptr = RuntimeAllocateMemory(new_req);
             if(!ptr)
                 CORE_THROW_EXCEPTION_MOCK("Bad alloc")
 
@@ -49,15 +66,15 @@ namespace Core
 
         virtual void Deallocate(void* ptr) noexcept override
         {
-            ::operator delete(ptr);
+            RuntimeDeallocateMemory(ptr);
         }
 
-        virtual bool Grow(void* ptr, size_t size) noexcept override
+        virtual bool Grow(void* ptr, DeviceSize size) noexcept override
         {
             return false;
         }
 
-        virtual bool Trim(void* ptr, size_t size) noexcept override
+        virtual bool Trim(void* ptr, DeviceSize size) noexcept override
         {
             return false;
         }
@@ -90,12 +107,12 @@ namespace Core
         return this->handle->Deallocate(ptr);
     }
 
-    bool Allocator::Grow(void* ptr, size_t size) noexcept
+    bool Allocator::Grow(void* ptr, DeviceSize size) noexcept
     {
         return this->handle->Grow(ptr, size);
     }
 
-    bool Allocator::Trim(void* ptr, size_t size) noexcept
+    bool Allocator::Trim(void* ptr, DeviceSize size) noexcept
     {
         return this->handle->Trim(ptr, size);
     }
