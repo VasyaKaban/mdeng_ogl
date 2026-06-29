@@ -99,7 +99,6 @@ Instance:
 * Constants as Index not INDEX???
 * String and Path and Array and Ring -> on realloc allocate capacity * 2. Check all Reserve(...) calls and Allocate(...) calls
 * Add reverse iterator and sentinel
-* Add hints like assume and assume_aligned as macro
 * Change typename U to typename Args to insert/Push object
 * Ring -> use Reserve in Push instad of assert 
 * Saturating math
@@ -109,10 +108,8 @@ Instance:
 * Extend Traits.hpp weith std-like traits and concepts ans use them
 * Use T (&&arr)[N] as initializer-list replacement
 * Change assert to self-implemented
-* Add traits: CommonArithmeticType
 Do not care about move_if_noexcept -> require move to be noexcept in all old-to-new copy
 Vector<T> + remove Resize and all default_value and add Unchecked push_back(without checks)
-Heap<T, Comparator>
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
 Path

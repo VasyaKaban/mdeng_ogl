@@ -55,13 +55,13 @@ namespace Core
         };
 
         template<Bool Condition, typename TrueType, typename FalseType>
-        struct ConditionalTypeImpl
+        struct ConditionalImpl
         {
             using Type = TrueType;
         };
 
         template<typename TrueType, typename FalseType>
-        struct ConditionalTypeImpl<false, TrueType, FalseType>
+        struct ConditionalImpl<false, TrueType, FalseType>
         {
             using Type = FalseType;
         };
@@ -233,7 +233,7 @@ namespace Core
     using ClassMemberClassType = Detail::ClassMemberClassTypeImpl<M>::Type;
 
     template<Bool Condition, typename TrueType, typename FalseType>
-    using ConditionalType = Detail::ConditionalTypeImpl<Condition, TrueType, FalseType>;
+    using Conditional = Detail::ConditionalImpl<Condition, TrueType, FalseType>::Type;
 
     template<typename T, typename U>
     concept SameAs = Detail::SameAsImpl<T, U>::Value;
@@ -380,6 +380,53 @@ namespace Core
 
     template<typename T>
     concept Arithmetic = FloatingPoint<T> || Integral<T>;
+
+    namespace Detail
+    {
+        template<typename T, typename... Types>
+        struct CommonArithmeticImpl
+        {};
+
+        template<typename T>
+        struct CommonArithmeticImpl<T>
+        {
+            using Type = T;
+        };
+
+        /*
+        signed signed -> select bigger size
+        usnigned unsigned -> select bigger size
+        float float -> select bigger size
+        */
+        template<typename T, typename U, typename... Types>
+        requires(SignedIntegral<T> && SignedIntegral<U>) || (UnsignedIntegral<T> && UnsignedIntegral<U>) || (FloatingPoint<T> && FloatingPoint<U>)
+        struct CommonArithmeticImpl<T, U, Types...>
+        {
+            using Type = CommonArithmeticImpl<Conditional<sizeof(T) < sizeof(U), U, T>, Types...>::Type;
+        };
+
+        //signed unsigned if same size -> select unsigned else select bigger size
+        template<typename T, typename U, typename... Types>
+        requires(SignedIntegral<T> && UnsignedIntegral<U>) || (UnsignedIntegral<T> && SignedIntegral<U>)
+        struct CommonArithmeticImpl<T, U, Types...>
+        {
+            using Type = CommonArithmeticImpl<Conditional<sizeof(T) == sizeof(U), ConditionalImpl<UnsignedIntegral<U>, U, T>, Conditional<sizeof(T) < sizeof(U), U, T>>, Types...>;
+        };
+
+        /*
+        float signed -> float
+        unsigned float -> float
+        */
+        template<typename T, typename U, typename... Types>
+        requires FloatingPoint<T> || FloatingPoint<U>
+        struct CommonArithmeticImpl<T, U, Types...>
+        {
+            using Type = CommonArithmeticImpl<Conditional<FloatingPoint<T>, T, U>, Types...>;
+        };
+    };
+
+    template<Arithmetic T, Arithmetic... Types>
+    using CommonArithmetic = Detail::CommonArithmeticImpl<T, Types...>::Type;
 
     template<typename T>
     concept StandardLayout = __is_standard_layout(T);
