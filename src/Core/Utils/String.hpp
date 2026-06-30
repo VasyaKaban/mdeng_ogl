@@ -70,14 +70,14 @@ namespace Core
         }
 
         template<Character C>
-        String(const C* input, size_t input_size, Allocator allocator = GetGlobalAllocator())
+        String(const C* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator())
             : String(allocator)
         {
             this->Append(input, input_size);
         }
 
         //for all (&input)[N] erase last character -> we do not hold null-terminated character
-        template<Character C, size_t N>
+        template<Character C, DeviceSize N>
         String(const C (&input)[N], Allocator allocator = GetGlobalAllocator())
             : String(allocator)
         {
@@ -93,7 +93,7 @@ namespace Core
             : String(range.GetIterator().GetAddress(), range.GetSentinel().GetAddress() - range.GetIterator().GetAddress(), allocator)
         {}
 
-        template<Character C, size_t N>
+        template<Character C, DeviceSize N>
         String& operator=(const C (&input)[N]) noexcept
         {
             *this = String(this->allocator);
@@ -113,17 +113,17 @@ namespace Core
             return *this;
         }
 
-        bool IsEmpty() const noexcept
+        Bool IsEmpty() const noexcept
         {
             return this->size == 0;
         }
 
-        size_t GetSize() const noexcept
+        DeviceSize GetSize() const noexcept
         {
             return this->size;
         }
 
-        size_t GetCapacity() const noexcept
+        DeviceSize GetCapacity() const noexcept
         {
             return this->capacity;
         }
@@ -153,7 +153,7 @@ namespace Core
             return reinterpret_cast<const Char*>(this->data);
         }
 
-        void Reserve(size_t reserve)
+        Void Reserve(DeviceSize reserve)
         {
             if(this->capacity >= reserve)
                 return;
@@ -176,14 +176,14 @@ namespace Core
             }
         }
 
-        void Clear() noexcept
+        Void Clear() noexcept
         {
             this->size = 0;
         }
 
-        bool FlushUnusedReserve() noexcept
+        Bool FlushUnusedReserve() noexcept
         {
-            bool res = false;
+            Bool res = false;
 
             if(!this->data)
                 res = true;
@@ -207,7 +207,7 @@ namespace Core
         }
 
         template<Character C>
-        void Prepend(const C* input, size_t input_size)
+        Void Prepend(const C* input, DeviceSize input_size)
         {
             if(input_size == 0)
                 return;
@@ -216,7 +216,7 @@ namespace Core
             if(length_res.input_offset != input_size)
                 CORE_THROW_EXCEPTION_MOCK("Bad character");
 
-            size_t new_size = this->size + length_res.output_size;
+            DeviceSize new_size = this->size + length_res.output_size;
 
             if(this->capacity >= new_size)
             {
@@ -248,19 +248,19 @@ namespace Core
             this->size = new_size;
         }
 
-        template<Character C, size_t N>
-        void Prepend(const C (&input)[N])
+        template<Character C, DeviceSize N>
+        Void Prepend(const C (&input)[N])
         {
             Prepend(input, N - 1);
         }
 
-        void Prepend(const String& str)
+        Void Prepend(const String& str)
         {
             Prepend(str.data, str.size);
         }
 
         template<Character C>
-        void Append(const C* input, size_t input_size)
+        Void Append(const C* input, DeviceSize input_size)
         {
             if(input_size == 0)
                 return;
@@ -276,19 +276,19 @@ namespace Core
             this->size += res.output_size;
         }
 
-        template<Character C, size_t N>
-        void Append(const C (&input)[N])
+        template<Character C, DeviceSize N>
+        Void Append(const C (&input)[N])
         {
             Append(input, N - 1);
         }
 
-        void Append(const String& str)
+        Void Append(const String& str)
         {
             Append(str.data, str.size);
         }
 
         template<Character C>
-        void Insert(ConstCharIterator before_it, const C* input, size_t input_size)
+        Void Insert(ConstCharIterator before_it, const C* input, DeviceSize input_size)
         {
             if(before_it == GetCharIterator())
             {
@@ -307,12 +307,12 @@ namespace Core
                 if(length_res.input_offset != input_size)
                     CORE_THROW_EXCEPTION_MOCK("Bad character");
 
-                size_t new_size = this->size + length_res.output_size;
+                DeviceSize new_size = this->size + length_res.output_size;
 
                 UTF8Char* second_part_start_ptr = const_cast<UTF8Char*>(before_it.GetAddress());
                 UTF8Char* second_part_final_ptr = second_part_start_ptr + length_res.output_size;
-                size_t first_part_size = second_part_start_ptr - this->data;
-                size_t second_part_size = this->size - first_part_size;
+                DeviceSize first_part_size = second_part_start_ptr - this->data;
+                DeviceSize second_part_size = this->size - first_part_size;
 
                 if(this->capacity >= new_size)
                 {
@@ -346,40 +346,40 @@ namespace Core
             }
         }
 
-        template<Character C, size_t N>
-        void Insert(ConstCharIterator before_it, const C (&input)[N])
+        template<Character C, DeviceSize N>
+        Void Insert(ConstCharIterator before_it, const C (&input)[N])
         {
             Insert(before_it, input, N - 1);
         }
 
-        void Insert(ConstCharIterator before_it, const String& str)
+        Void Insert(ConstCharIterator before_it, const String& str)
         {
             Insert(before_it, str.data, str.size);
         }
 
-        void EraseFirst(ConstCharIterator end_it) noexcept
+        Void EraseFirst(ConstCharIterator end_it) noexcept
         {
             auto addr = end_it.GetAddress();
             assert(addr >= this->data && addr <= (this->data + this->size));
 
-            size_t erase_size = addr - this->data;
+            DeviceSize erase_size = addr - this->data;
 
             this->size -= erase_size;
 
             memmove(this->data, addr, this->size);
         }
 
-        void EraseLast(ConstCharIterator first_it) noexcept
+        Void EraseLast(ConstCharIterator first_it) noexcept
         {
             auto addr = first_it.GetAddress();
             assert(addr >= this->data && addr <= (this->data + this->size));
 
-            size_t erase_size = (this->data + this->size) - addr;
+            DeviceSize erase_size = (this->data + this->size) - addr;
 
             this->size -= erase_size;
         }
 
-        void Erase(ConstCharIterator begin, ConstCharIterator end) noexcept
+        Void Erase(ConstCharIterator begin, ConstCharIterator end) noexcept
         {
             if(end == GetCharSentinel())
             {
@@ -391,9 +391,9 @@ namespace Core
             }
             else
             {
-                size_t erase_size = (end.GetAddress() - begin.GetAddress());
+                DeviceSize erase_size = (end.GetAddress() - begin.GetAddress());
 
-                size_t size_to_move = (this->data + this->size) - end.GetAddress();
+                DeviceSize size_to_move = (this->data + this->size) - end.GetAddress();
                 memmove(const_cast<UTF8Char*>(begin.GetAddress()), end.GetAddress(), size_to_move);
 
                 this->size -= erase_size;
@@ -461,7 +461,7 @@ namespace Core
             return out;
         }
 
-        template<Character C, size_t N>
+        template<Character C, DeviceSize N>
         String operator+(const C (&input)[N])
         {
             String out(this->allocator);
@@ -480,7 +480,7 @@ namespace Core
             return *this;
         }
 
-        template<Character C, size_t N>
+        template<Character C, DeviceSize N>
         String& operator+=(const C (&input)[N])
         {
             this->Append(input, N - 1);
@@ -488,12 +488,12 @@ namespace Core
             return *this;
         }
 
-        ConstIterator Find(const UTF8Char* input, size_t input_size) const noexcept
+        ConstIterator Find(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::FindInString(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
+        template<DeviceSize N>
         ConstIterator Find(const UTF8Char (&input)[N]) const noexcept
         {
             return Find(input, N - 1);
@@ -504,12 +504,12 @@ namespace Core
             return Find(str.data, str.size);
         }
 
-        ConstIterator FindReverse(const UTF8Char* input, size_t input_size) const noexcept
+        ConstIterator FindReverse(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::FindInStringReverse(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
+        template<DeviceSize N>
         ConstIterator FindReverse(const UTF8Char (&input)[N]) const noexcept
         {
             return FindReverse(input, N - 1);
@@ -520,62 +520,62 @@ namespace Core
             return FindReverse(str.data, str.size);
         }
 
-        bool StartsWith(const UTF8Char* input, size_t input_size) const noexcept
+        Bool StartsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::StringStartsWith(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
-        bool StartsWith(const UTF8Char (&input)[N]) const noexcept
+        template<DeviceSize N>
+        Bool StartsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return StartsWith(input, N - 1);
         }
 
-        bool StartsWith(const String& str) const noexcept
+        Bool StartsWith(const String& str) const noexcept
         {
             return StartsWith(str.data, str.size);
         }
 
-        bool EndsWith(const UTF8Char* input, size_t input_size) const noexcept
+        Bool EndsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::StringEndsWith(this->data, this->size, input, input_size);
         }
 
-        template<size_t N>
-        bool EndsWith(const UTF8Char (&input)[N]) const noexcept
+        template<DeviceSize N>
+        Bool EndsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return EndsWith(input, N - 1);
         }
 
-        bool EndsWith(const String& str) const noexcept
+        Bool EndsWith(const String& str) const noexcept
         {
             return EndsWith(str.data, str.size);
         }
 
-        bool operator==(const String& str) const noexcept
+        Bool operator==(const String& str) const noexcept
         {
             return ::Core::Detail::CompareStringsEquality(this->data, this->size, str.data, str.size);
         }
 
-        template<size_t N>
-        bool operator==(const UTF8Char (&input)[N]) const noexcept
+        template<DeviceSize N>
+        Bool operator==(const UTF8Char (&input)[N]) const noexcept
         {
             return ::Core::Detail::CompareStringsEquality(this->data, this->size, input, N - 1);
         }
 
-        bool operator<(const String& str) const noexcept
+        Bool operator<(const String& str) const noexcept
         {
             return ::Core::Detail::CompareStringsLexicallyLess(this->data, this->size, str.data, str.size);
         }
 
-        static MemoryRequirements GetMemoryRequirements(size_t reserve) noexcept
+        static MemoryRequirements GetMemoryRequirements(DeviceSize reserve) noexcept
         {
             return MemoryRequirements{.alignment = alignof(UTF8Char), .size = reserve};
         }
     private:
         UTF8Char* data;
-        size_t size;
-        size_t capacity;
+        DeviceSize size;
+        DeviceSize capacity;
         Allocator allocator;
     };
 

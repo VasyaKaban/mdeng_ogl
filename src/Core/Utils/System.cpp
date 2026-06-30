@@ -19,15 +19,13 @@ namespace Core
             else
             {
                 wchar_t* buffer = nullptr;
-                auto size =
-                    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                                       FORMAT_MESSAGE_IGNORE_INSERTS,
-                                   nullptr,
-                                   code,
-                                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                   reinterpret_cast<LPWSTR>(&buffer),
-                                   0,
-                                   nullptr);
+                auto size = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                           nullptr,
+                                           code,
+                                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                                           reinterpret_cast<LPWSTR>(&buffer),
+                                           0,
+                                           nullptr);
 
                 if(size == 0)
                     description = "Failed to allocate buffer for error message";
@@ -100,8 +98,7 @@ namespace Core
         char exe_path[PATH_MAX];
         auto exe_path_length = readlink("/proc/self/exe", exe_path, PATH_MAX);
         if(exe_path_length == -1)
-            throw std::runtime_error(
-                std::format("Failed to retrieve executable path. {}", strerror(errno)));
+            throw std::runtime_error(std::format("Failed to retrieve executable path. {}", strerror(errno)));
 
         return std::filesystem::path(exe_path, exe_path + exe_path_length);
 #endif
@@ -179,12 +176,12 @@ namespace Core
         return out;
     }
 
-    static bool IsValidNonPrefixUTF8Byte(char value) noexcept
+    static Bool IsValidNonPrefixUTF8Byte(char value) noexcept
     {
         return (value & 0b1100'0000) == 0b1000'0000;
     }
 
-    static char32_t GetNextUTF8Codepoint(std::string_view str, std::size_t& offset) noexcept
+    static char32_t GetNextUTF8Codepoint(std::string_view str, std::DeviceSize& offset) noexcept
     {
         if(offset == str.size())
             return 0;
@@ -201,8 +198,7 @@ namespace Core
             {
                 if(IsValidNonPrefixUTF8Byte(str[offset + 1]))
                 {
-                    res = (static_cast<char32_t>(str[offset] & 0b1101'1111) << 8) |
-                          (str[offset + 1] & 0b1011'1111);
+                    res = (static_cast<char32_t>(str[offset] & 0b1101'1111) << 8) | (str[offset + 1] & 0b1011'1111);
 
                     offset += 2;
                 }
@@ -212,12 +208,9 @@ namespace Core
         {
             if(str.size() - offset >= 3)
             {
-                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) &&
-                   IsValidNonPrefixUTF8Byte(str[offset + 2]))
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) && IsValidNonPrefixUTF8Byte(str[offset + 2]))
                 {
-                    res = (static_cast<char32_t>(str[offset] & 0b1110'1111) << 16) |
-                          (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 8) |
-                          (str[offset + 2] & 0b1011'1111);
+                    res = (static_cast<char32_t>(str[offset] & 0b1110'1111) << 16) | (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 8) | (str[offset + 2] & 0b1011'1111);
 
                     offset += 3;
                 }
@@ -227,14 +220,10 @@ namespace Core
         {
             if(str.size() - offset >= 4)
             {
-                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) &&
-                   IsValidNonPrefixUTF8Byte(str[offset + 2]) &&
-                   IsValidNonPrefixUTF8Byte(str[offset + 3]))
+                if(IsValidNonPrefixUTF8Byte(str[offset + 1]) && IsValidNonPrefixUTF8Byte(str[offset + 2]) && IsValidNonPrefixUTF8Byte(str[offset + 3]))
                 {
-                    res = (static_cast<char32_t>(str[offset] & 0b1111'0111) << 24) |
-                          (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 16) |
-                          (static_cast<char32_t>(str[offset + 2] & 0b1011'1111) << 8) |
-                          (str[offset + 3] & 0b1011'1111);
+                    res = (static_cast<char32_t>(str[offset] & 0b1111'0111) << 24) | (static_cast<char32_t>(str[offset + 1] & 0b1011'1111) << 16) |
+                          (static_cast<char32_t>(str[offset + 2] & 0b1011'1111) << 8) | (str[offset + 3] & 0b1011'1111);
 
                     offset += 4;
                 }
@@ -244,7 +233,7 @@ namespace Core
         return res;
     }
 
-    bool System::CompareUTF8(std::string_view str1, std::string_view str2) noexcept
+    Bool System::CompareUTF8(std::string_view str1, std::string_view str2) noexcept
     {
         //for each string get str1_codepoint and str2_codepoint
         //if str1_codepoint < str2_codepoint -> true
@@ -252,8 +241,8 @@ namespace Core
         //else continue
         //after all return false
 
-        std::size_t str1_offset = 0;
-        std::size_t str2_offset = 0;
+        std::DeviceSize str1_offset = 0;
+        std::DeviceSize str2_offset = 0;
 
         while(str1_offset != str1.size() && str2_offset != str2.size())
         {
@@ -274,12 +263,12 @@ namespace Core
         return false;
     }
 
-    bool System::IsUnicodeC0ControlCode(char value) noexcept
+    Bool System::IsUnicodeC0ControlCode(char value) noexcept
     {
         return (value >= 0 && value <= 31) || value == 127;
     }
 
-    bool System::IsUnicodeC0ControlCodeOrSpace(char value) noexcept
+    Bool System::IsUnicodeC0ControlCodeOrSpace(char value) noexcept
     {
         return IsUnicodeC0ControlCode(value) || value == 32;
     }
@@ -289,9 +278,9 @@ namespace Core
     static DWORD MAIN_THREAD_ID = 0;
 
     //do not care about thrad-safety -> we will call it only in wWinMain
-    void System::SetCmdShow(int cmd_show) noexcept
+    Void System::SetCmdShow(int cmd_show) noexcept
     {
-        static bool called = false;
+        static Bool called = false;
         if(!called)
         {
             CMD_SHOW = cmd_show;
@@ -299,9 +288,9 @@ namespace Core
         }
     }
 
-    void System::SetMainThreadID() noexcept
+    Void System::SetMainThreadID() noexcept
     {
-        static bool called = false;
+        static Bool called = false;
         if(!called)
         {
             MAIN_THREAD_ID = GetCurrentThreadId();
@@ -324,12 +313,12 @@ namespace Core
         return ::GetLastError();
     }
 
-    void System::SetLastError(DWORD code) noexcept
+    Void System::SetLastError(DWORD code) noexcept
     {
         ::SetLastError(code);
     }
 
-    [[noreturn]] void System::ThrowLastError()
+    [[noreturn]] Void System::ThrowLastError()
     {
         throw Win32Exception(System::GetLastError());
     }
@@ -339,20 +328,12 @@ namespace Core
         if(wstr.empty())
             return {};
 
-        auto req_size =
-            WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
+        auto req_size = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
         if(req_size == 0)
             throw GetLastError();
 
         std::string str(req_size, '\0');
-        auto res = WideCharToMultiByte(CP_UTF8,
-                                       0,
-                                       wstr.data(),
-                                       wstr.size(),
-                                       str.data(),
-                                       req_size,
-                                       nullptr,
-                                       nullptr);
+        auto res = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), str.data(), req_size, nullptr, nullptr);
 
         if(res == 0)
             throw GetLastError();
@@ -367,8 +348,7 @@ namespace Core
             throw GetLastError();
 
         std::wstring wstr(req_size, L'\0');
-        auto res =
-            MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), wstr.data(), wstr.size());
+        auto res = MultiByteToWideChar(CP_UTF8, 0, str.data(), str.size(), wstr.data(), wstr.size());
         if(res == 0)
             throw GetLastError();
 

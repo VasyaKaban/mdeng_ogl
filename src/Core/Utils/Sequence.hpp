@@ -94,7 +94,7 @@ namespace Core
         //om alloc -> copy left, place, copy right
         template<typename... Args>
         requires NoexceptConstructible<T, Args...> && (NoexceptMoveConstructible<T> || NoexceptCopyConstructible<T>)
-        void Insert(ConstIterator before_it, Args&&... args)
+        Void Insert(ConstIterator before_it, Args&&... args)
         {
             assert(before_it >= this->memory);
             assert(before_it <= this->memory + this->size);
@@ -138,7 +138,7 @@ namespace Core
 
         template<typename... Args>
         requires Constructible<T, Args...>
-        void Push(Args&&... args)
+        Void Push(Args&&... args)
         {
             if(this->capacity == this->size)
                 Reserve(this->size + 1);
@@ -148,12 +148,12 @@ namespace Core
             this->size++;
         }
 
-        void Erase(ConstIterator it) noexcept
+        Void Erase(ConstIterator it) noexcept
         {
             Erase(it, it + 1);
         }
 
-        void Erase(ConstIterator begin, ConstIterator end) noexcept
+        Void Erase(ConstIterator begin, ConstIterator end) noexcept
         {
             assert(end > begin);
             assert(begin >= this->memory);
@@ -175,7 +175,7 @@ namespace Core
             this->size -= steps;
         }
 
-        void EraseLast() noexcept
+        Void EraseLast() noexcept
         {
             assert(!IsEmpty());
 
@@ -184,7 +184,7 @@ namespace Core
             this->size--;
         }
 
-        void Reserve(DeviceSize reserve)
+        Void Reserve(DeviceSize reserve)
         requires NoexceptMoveConstructible<T> || NoexceptCopyConstructible<T>
         {
             if(this->capacity >= reserve)
@@ -221,7 +221,7 @@ namespace Core
             }
         }
 
-        void Clear() noexcept
+        Void Clear() noexcept
         {
             if(this->memory)
             {
@@ -231,7 +231,7 @@ namespace Core
             }
         }
 
-        bool IsEmpty() const noexcept
+        Bool IsEmpty() const noexcept
         {
             return this->size == 0;
         }
@@ -328,7 +328,7 @@ namespace Core
             return MemoryRequirements{.alignment = alignof(T), .size = sizeof(T) * reserve};
         }
     private:
-        static void MoveRight(T* data, DeviceSize size, DeviceSize steps) noexcept
+        static Void MoveRight(T* data, DeviceSize size, DeviceSize steps) noexcept
         requires NoexceptMoveConstructible<T> || NoexceptCopyConstructible<T>
         {
             if(size == 0)
@@ -352,7 +352,7 @@ namespace Core
             }
         }
 
-        static void MoveLeft(T* data, DeviceSize size, DeviceSize steps) noexcept
+        static Void MoveLeft(T* data, DeviceSize size, DeviceSize steps) noexcept
         requires NoexceptMoveConstructible<T> || NoexceptCopyConstructible<T>
         {
             if(size == 0)
@@ -376,7 +376,7 @@ namespace Core
             }
         }
 
-        void DestroyObjects() noexcept
+        Void DestroyObjects() noexcept
         {
             for(DeviceSize i = 0; i < this->size; i++)
                 (this->memory + i)->~T();

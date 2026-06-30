@@ -11,7 +11,7 @@
 namespace Core
 {
     template<UnsignedIntegral I>
-    constexpr bool IsPowerOf2(I value) noexcept
+    constexpr Bool IsPowerOf2(I value) noexcept
     {
         if(value == 0)
             return false;

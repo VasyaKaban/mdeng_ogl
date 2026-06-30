@@ -1,14 +1,14 @@
 #pragma once
 
-#include <concepts>
-#include <utility>
 #include <cassert>
+#include "Traits.hpp"
+#include "Types.hpp"
 
 namespace Core
 {
 
-    template<typename I, size_t Alignment, size_t Size>
-    requires std::same_as<std::remove_cvref_t<I>, I> && std::is_arithmetic_v<I> && (Size > 0)
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
+    requires SameAs<DropConstVolatileReference<I>, I> && Arithmetic<I> && (Size > 0)
     class Vector
     {
     public:
@@ -19,7 +19,7 @@ namespace Core
 
         constexpr Vector(I fill_value) noexcept
         {
-            for(size_t i = 0; i < Size; i++)
+            for(DeviceSize i = 0; i < Size; i++)
                 this->data[i] = fill_value;
         }
 
@@ -30,34 +30,34 @@ namespace Core
         Vector& operator=(Vector&&) = default;
 
         template<typename... Args>
-        requires(sizeof...(Args) <= Size) && (std::is_arithmetic_v<Args> && ...)
+        requires(sizeof...(Args) <= Size) && (Arithmetic<Args> && ...)
         constexpr Vector(Args... args) noexcept
             : data{static_cast<I>(args)...}
         {}
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector(const Vector<OI, OtherAlignment, OtherSize>& vec) noexcept
         {
-            size_t size = std::min(Size, OtherSize);
-            for(size_t i = 0; i < size; i++)
+            DeviceSize size = Min(Size, OtherSize);
+            for(DeviceSize i = 0; i < size; i++)
                 this->data[i] = vec[i];
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector(const Vector<OI, OtherAlignment, OtherSize>& vec, I fill_value) noexcept
             : Vector(vec)
         {
-            size_t size = std::min(Size, OtherSize);
+            DeviceSize size = Min(Size, OtherSize);
 
-            for(size_t i = size; i < Size; i++)
+            for(DeviceSize i = size; i < Size; i++)
                 this->data[i] = fill_value;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector& operator=(const Vector<OI, OtherAlignment, OtherSize>& vec) noexcept
         {
-            size_t size = std::min(Size, OtherSize);
-            for(size_t i = 0; i < size; i++)
+            DeviceSize size = Min(Size, OtherSize);
+            for(DeviceSize i = 0; i < size; i++)
                 this->data[i] = vec[i];
 
             return *this;
@@ -73,14 +73,14 @@ namespace Core
             return this->data;
         }
 
-        constexpr I& operator[](size_t index) noexcept
+        constexpr I& operator[](DeviceSize index) noexcept
         {
             assert(index < Size);
 
             return this->data[index];
         }
 
-        constexpr const I& operator[](size_t index) const noexcept
+        constexpr const I& operator[](DeviceSize index) const noexcept
         {
             assert(index < Size);
 
@@ -107,8 +107,7 @@ namespace Core
             return ConstIterator(this->data + Size);
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector operator+(T value) const noexcept
         {
             Vector out(*this);
@@ -119,8 +118,7 @@ namespace Core
             return out;
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector& operator+=(T value) noexcept
         {
             for(auto& comp: *this)
@@ -129,8 +127,7 @@ namespace Core
             return *this;
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector operator-(T value) const noexcept
         {
             Vector out(*this);
@@ -141,8 +138,7 @@ namespace Core
             return out;
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector& operator-=(T value) noexcept
         {
             for(auto& comp: *this)
@@ -151,8 +147,7 @@ namespace Core
             return *this;
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector operator*(T value) const noexcept
         {
             Vector out(*this);
@@ -163,8 +158,7 @@ namespace Core
             return out;
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector& operator*=(T value) noexcept
         {
             for(auto& comp: *this)
@@ -173,8 +167,7 @@ namespace Core
             return *this;
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector operator/(T value) const noexcept
         {
             Vector out(*this);
@@ -185,8 +178,7 @@ namespace Core
             return out;
         }
 
-        template<typename T>
-        requires std::is_arithmetic_v<T>
+        template<Arithmetic T>
         constexpr Vector& operator/=(T value) noexcept
         {
             for(auto& comp: *this)
@@ -195,87 +187,87 @@ namespace Core
             return *this;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector operator+(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
             Vector result(*this);
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 result[i] += vec.data[i];
 
             return result;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector& operator+=(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 this->data[i] += vec[i];
 
             return *this;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector operator-(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
             Vector result(*this);
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 result[i] -= vec.data[i];
 
             return result;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector& operator-=(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 this->data[i] -= vec[i];
 
             return *this;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector operator*(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
             Vector result(*this);
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 result[i] *= vec.data[i];
 
             return result;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector& operator*=(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 this->data[i] *= vec[i];
 
             return *this;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector operator/(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
             Vector result(*this);
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 result[i] /= vec.data[i];
 
             return result;
         }
 
-        template<typename OI, size_t OtherAlignment, size_t OtherSize>
+        template<typename OI, DeviceSize OtherAlignment, DeviceSize OtherSize>
         constexpr Vector& operator/=(const Vector<OI, OtherAlignment, OtherSize>& vec) const noexcept
         {
-            for(size_t i = 0; i < std::min(Size, OtherSize); i++)
+            for(DeviceSize i = 0; i < Min(Size, OtherSize); i++)
                 this->data[i] /= vec[i];
 
             return *this;
         }
 
-        bool operator==(const Vector& vec) const noexcept;
+        Bool operator==(const Vector& vec) const noexcept;
 
         constexpr auto GetLength() const noexcept
         {
-            using OutType = std::common_type_t<I, float>;
+            using OutType = CommonArithmetic<I, Float32>;
 
             OutType result = 0;
             for(const I comp: *this)
@@ -311,25 +303,25 @@ namespace Core
             return *this;
         }
 
-        template<typename OI, size_t OtherAlignment>
+        template<typename OI, DeviceSize OtherAlignment>
         constexpr auto Dot(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
         {
-            using OutType = std::common_type_t<I, OI, float>;
+            using OutType = CommonArithmetic<I, OI, Float32>;
 
             OutType result = 0;
-            for(size_t i = 0; i < Size; i++)
+            for(DeviceSize i = 0; i < Size; i++)
                 result += this->data[i] * vec.data[i];
 
             return result;
         }
 
-        template<typename OI, size_t OtherAlignment>
+        template<typename OI, DeviceSize OtherAlignment>
         constexpr auto Cos(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
         {
-            using OutType = std::common_type_t<I, OI, float>;
+            using OutType = CommonArithmetic<I, OI, Float32>;
 
             OutType result = 0;
-            for(size_t i = 0; i < Size; i++)
+            for(DeviceSize i = 0; i < Size; i++)
                 result += this->data[i] * vec.data[i];
 
             result *= GetInvertedLength();
@@ -339,19 +331,19 @@ namespace Core
         }
 
         //use it when we know that both vectors are normalized
-        template<typename OI, size_t OtherAlignment>
+        template<typename OI, DeviceSize OtherAlignment>
         constexpr auto RawCos(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
         {
             return Dot(vec);
         }
 
-        template<typename OI, size_t OtherAlignment>
+        template<typename OI, DeviceSize OtherAlignment>
         constexpr Vector Project(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
         {
-            using OutType = std::common_type_t<I, OI, float>;
+            using OutType = CommonArithmetic<I, OI, Float32>;
 
             OutType result = 0;
-            for(size_t i = 0; i < Size; i++)
+            for(DeviceSize i = 0; i < Size; i++)
                 result += this->data[i] * vec.data[i];
 
             result *= vec.GetInvertedLength();
@@ -359,7 +351,7 @@ namespace Core
             return Vector(vec) * result;
         }
 
-        template<typename OI, size_t OtherAlignment>
+        template<typename OI, DeviceSize OtherAlignment>
         requires(Size == 3)
         constexpr Vector Cross(const Vector<OI, OtherAlignment, Size>& vec) const noexcept
         {
@@ -387,7 +379,7 @@ namespace Core
             return *this;
         }
 
-        consteval static size_t GetSize() noexcept
+        consteval static DeviceSize GetSize() noexcept
         {
             return Size;
         }
@@ -399,49 +391,49 @@ namespace Core
     Vector(I fill_value) -> Vector<I, alignof(I), 1>;
 
     template<typename... Args>
-    Vector(Args...) -> Vector<std::common_type_t<Args...>, alignof(std::common_type_t<Args...>), sizeof...(Args)>;
+    Vector(Args...) -> Vector<CommonArithmetic<Args...>, alignof(CommonArithmetic<Args...>), sizeof...(Args)>;
 
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     Vector(const Vector<I, Alignment, Size>&) -> Vector<I, Alignment, Size>;
 
     //std compat
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     constexpr auto begin(const Vector<I, Alignment, Size>& vec) noexcept
     {
         return vec.GetIterator();
     }
 
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     constexpr auto begin(Vector<I, Alignment, Size>& vec) noexcept
     {
         return vec.GetIterator();
     }
 
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     constexpr auto begin(Vector<I, Alignment, Size>&& vec) noexcept
     {
-        return std::move(vec).GetIterator();
+        return Move(vec).GetIterator();
     }
 
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     constexpr auto end(const Vector<I, Alignment, Size>& vec) noexcept
     {
         return vec.GetSentinel();
     }
 
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     constexpr auto end(Vector<I, Alignment, Size>& vec) noexcept
     {
         return vec.GetSentinel();
     }
 
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     constexpr auto end(Vector<I, Alignment, Size>&& vec) noexcept
     {
-        return std::move(vec).GetSentinel();
+        return Move(vec).GetSentinel();
     }
 
-    template<typename I, size_t Alignment, size_t Size>
+    template<typename I, DeviceSize Alignment, DeviceSize Size>
     constexpr auto size(const Vector<I, Alignment, Size>& vec) noexcept
     {
         return Size;
@@ -451,25 +443,25 @@ namespace Core
     {
         namespace Scalar
         {
-            using Vector1i32 = Vector<int32_t, alignof(int32_t), 1>;
-            using Vector2i32 = Vector<int32_t, alignof(int32_t), 2>;
-            using Vector3i32 = Vector<int32_t, alignof(int32_t), 3>;
-            using Vector4i32 = Vector<int32_t, alignof(int32_t), 4>;
+            using Vector1i32 = Vector<Int32, alignof(Int32), 1>;
+            using Vector2i32 = Vector<Int32, alignof(Int32), 2>;
+            using Vector3i32 = Vector<Int32, alignof(Int32), 3>;
+            using Vector4i32 = Vector<Int32, alignof(Int32), 4>;
 
-            using Vector1ui32 = Vector<uint32_t, alignof(uint32_t), 1>;
-            using Vector2ui32 = Vector<uint32_t, alignof(uint32_t), 2>;
-            using Vector3ui32 = Vector<uint32_t, alignof(uint32_t), 3>;
-            using Vector4ui32 = Vector<uint32_t, alignof(uint32_t), 4>;
+            using Vector1ui32 = Vector<UInt32, alignof(UInt32), 1>;
+            using Vector2ui32 = Vector<UInt32, alignof(UInt32), 2>;
+            using Vector3ui32 = Vector<UInt32, alignof(UInt32), 3>;
+            using Vector4ui32 = Vector<UInt32, alignof(UInt32), 4>;
 
-            using Vector1f32 = Vector<float, alignof(float), 1>;
-            using Vector2f32 = Vector<float, alignof(float), 2>;
-            using Vector3f32 = Vector<float, alignof(float), 3>;
-            using Vector4f32 = Vector<float, alignof(float), 4>;
+            using Vector1f32 = Vector<Float32, alignof(Float32), 1>;
+            using Vector2f32 = Vector<Float32, alignof(Float32), 2>;
+            using Vector3f32 = Vector<Float32, alignof(Float32), 3>;
+            using Vector4f32 = Vector<Float32, alignof(Float32), 4>;
 
-            using Vector1f64 = Vector<double, alignof(double), 1>;
-            using Vector2f64 = Vector<double, alignof(double), 2>;
-            using Vector3f64 = Vector<double, alignof(double), 3>;
-            using Vector4f64 = Vector<double, alignof(double), 4>;
+            using Vector1f64 = Vector<Float64, alignof(Float64), 1>;
+            using Vector2f64 = Vector<Float64, alignof(Float64), 2>;
+            using Vector3f64 = Vector<Float64, alignof(Float64), 3>;
+            using Vector4f64 = Vector<Float64, alignof(Float64), 4>;
 
             using Vector1b32 = Vector1i32;
             using Vector2b32 = Vector2i32;
@@ -479,25 +471,25 @@ namespace Core
 
         namespace STD140
         {
-            using Vector1i32 = Vector<int32_t, alignof(int32_t), 1>;
-            using Vector2i32 = Vector<int32_t, alignof(int32_t) * 2, 2>;
-            using Vector3i32 = Vector<int32_t, alignof(int32_t) * 4, 3>;
-            using Vector4i32 = Vector<int32_t, alignof(int32_t) * 4, 4>;
+            using Vector1i32 = Vector<Int32, alignof(Int32), 1>;
+            using Vector2i32 = Vector<Int32, alignof(Int32) * 2, 2>;
+            using Vector3i32 = Vector<Int32, alignof(Int32) * 4, 3>;
+            using Vector4i32 = Vector<Int32, alignof(Int32) * 4, 4>;
 
-            using Vector1ui32 = Vector<uint32_t, alignof(uint32_t), 1>;
-            using Vector2ui32 = Vector<uint32_t, alignof(uint32_t) * 2, 2>;
-            using Vector3ui32 = Vector<uint32_t, alignof(uint32_t) * 4, 3>;
-            using Vector4ui32 = Vector<uint32_t, alignof(uint32_t) * 4, 4>;
+            using Vector1ui32 = Vector<UInt32, alignof(UInt32), 1>;
+            using Vector2ui32 = Vector<UInt32, alignof(UInt32) * 2, 2>;
+            using Vector3ui32 = Vector<UInt32, alignof(UInt32) * 4, 3>;
+            using Vector4ui32 = Vector<UInt32, alignof(UInt32) * 4, 4>;
 
-            using Vector1f32 = Vector<float, alignof(float), 1>;
-            using Vector2f32 = Vector<float, alignof(float) * 2, 2>;
-            using Vector3f32 = Vector<float, alignof(float) * 4, 3>;
-            using Vector4f32 = Vector<float, alignof(float) * 4, 4>;
+            using Vector1f32 = Vector<Float32, alignof(Float32), 1>;
+            using Vector2f32 = Vector<Float32, alignof(Float32) * 2, 2>;
+            using Vector3f32 = Vector<Float32, alignof(Float32) * 4, 3>;
+            using Vector4f32 = Vector<Float32, alignof(Float32) * 4, 4>;
 
-            using Vector1f64 = Vector<double, alignof(double), 1>;
-            using Vector2f64 = Vector<double, alignof(double) * 2, 2>;
-            using Vector3f64 = Vector<double, alignof(double) * 4, 3>;
-            using Vector4f64 = Vector<double, alignof(double) * 4, 4>;
+            using Vector1f64 = Vector<Float64, alignof(Float64), 1>;
+            using Vector2f64 = Vector<Float64, alignof(Float64) * 2, 2>;
+            using Vector3f64 = Vector<Float64, alignof(Float64) * 4, 3>;
+            using Vector4f64 = Vector<Float64, alignof(Float64) * 4, 4>;
 
             using Vector1b32 = Vector1i32;
             using Vector2b32 = Vector2i32;
@@ -507,25 +499,25 @@ namespace Core
 
         namespace STD430
         {
-            using Vector1i32 = Vector<int32_t, alignof(int32_t), 1>;
-            using Vector2i32 = Vector<int32_t, alignof(int32_t) * 2, 2>;
-            using Vector3i32 = Vector<int32_t, alignof(int32_t) * 4, 3>;
-            using Vector4i32 = Vector<int32_t, alignof(int32_t) * 4, 4>;
+            using Vector1i32 = Vector<Int32, alignof(Int32), 1>;
+            using Vector2i32 = Vector<Int32, alignof(Int32) * 2, 2>;
+            using Vector3i32 = Vector<Int32, alignof(Int32) * 4, 3>;
+            using Vector4i32 = Vector<Int32, alignof(Int32) * 4, 4>;
 
-            using Vector1ui32 = Vector<uint32_t, alignof(uint32_t), 1>;
-            using Vector2ui32 = Vector<uint32_t, alignof(uint32_t) * 2, 2>;
-            using Vector3ui32 = Vector<uint32_t, alignof(uint32_t) * 4, 3>;
-            using Vector4ui32 = Vector<uint32_t, alignof(uint32_t) * 4, 4>;
+            using Vector1ui32 = Vector<UInt32, alignof(UInt32), 1>;
+            using Vector2ui32 = Vector<UInt32, alignof(UInt32) * 2, 2>;
+            using Vector3ui32 = Vector<UInt32, alignof(UInt32) * 4, 3>;
+            using Vector4ui32 = Vector<UInt32, alignof(UInt32) * 4, 4>;
 
-            using Vector1f32 = Vector<float, alignof(float), 1>;
-            using Vector2f32 = Vector<float, alignof(float) * 2, 2>;
-            using Vector3f32 = Vector<float, alignof(float) * 4, 3>;
-            using Vector4f32 = Vector<float, alignof(float) * 4, 4>;
+            using Vector1f32 = Vector<Float32, alignof(Float32), 1>;
+            using Vector2f32 = Vector<Float32, alignof(Float32) * 2, 2>;
+            using Vector3f32 = Vector<Float32, alignof(Float32) * 4, 3>;
+            using Vector4f32 = Vector<Float32, alignof(Float32) * 4, 4>;
 
-            using Vector1f64 = Vector<double, alignof(double), 1>;
-            using Vector2f64 = Vector<double, alignof(double) * 2, 2>;
-            using Vector3f64 = Vector<double, alignof(double) * 4, 3>;
-            using Vector4f64 = Vector<double, alignof(double) * 4, 4>;
+            using Vector1f64 = Vector<Float64, alignof(Float64), 1>;
+            using Vector2f64 = Vector<Float64, alignof(Float64) * 2, 2>;
+            using Vector3f64 = Vector<Float64, alignof(Float64) * 4, 3>;
+            using Vector4f64 = Vector<Float64, alignof(Float64) * 4, 4>;
 
             using Vector1b32 = Vector1i32;
             using Vector2b32 = Vector2i32;

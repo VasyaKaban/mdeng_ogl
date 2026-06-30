@@ -1,6 +1,5 @@
 #pragma once
 
-#include <concepts>
 #include "Binary.hpp"
 #include "Traits.hpp"
 
@@ -10,8 +9,8 @@ namespace Core
     {
         struct ExpectedMetrics
         {
-            size_t alignment;
-            size_t size;
+            DeviceSize alignment;
+            DeviceSize size;
         };
 
         template<typename T, typename E>
@@ -31,13 +30,13 @@ namespace Core
     };
 
     template<typename T, typename E>
-    requires(!std::is_reference_v<T> && !std::is_volatile_v<T>) && (!std::is_reference_v<E> && !std::is_volatile_v<E>)
+    requires(!Reference<T> && !Volatile<T>) && (!Reference<E> && !Volatile<E>)
     class Expected
     {
         constexpr static Detail::ExpectedMetrics METRICS = Detail::GetExpectedMetrics<T, E>();
     public:
-        Expected() noexcept(std::is_nothrow_default_constructible_v<T>)
-        requires std::is_default_constructible_v<T>
+        Expected() noexcept(NoexceptDefaultConstructible<T>)
+        requires DefaultConstructible<T>
         {
             new(this->data) T;
             this->is_value_created = true;
@@ -51,8 +50,8 @@ namespace Core
                 reinterpret_cast<E*>(this->data)->~E();
         }
 
-        Expected(const Expected& ex) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<E>)
-        requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
+        Expected(const Expected& ex) noexcept(NoexceptCopyConstructible<T> && NoexceptCopyConstructible<E>)
+        requires CopyConstructible<T> && CopyConstructible<E>
         {
             if(ex.is_value_created)
                 new(this->data) T(*reinterpret_cast<const T*>(ex.data));
@@ -62,19 +61,19 @@ namespace Core
             this->is_value_created = ex.is_value_created;
         }
 
-        Expected(Expected&& ex) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
-        requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
+        Expected(Expected&& ex) noexcept(NoexceptMoveConstructible<T> && NoexceptMoveConstructible<E>)
+        requires MoveConstructible<T> && MoveConstructible<E>
         {
             if(ex.is_value_created)
-                new(this->data) T(std::move(*reinterpret_cast<const T*>(ex.data)));
+                new(this->data) T(Move(*reinterpret_cast<const T*>(ex.data)));
             else
-                new(this->data) E(std::move(*reinterpret_cast<const E*>(ex.data)));
+                new(this->data) E(Move(*reinterpret_cast<const E*>(ex.data)));
 
             this->is_value_created = ex.is_value_created;
         }
 
-        Expected& operator=(const Expected& ex) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<E>)
-        requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E> && std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<E>
+        Expected& operator=(const Expected& ex) noexcept(NoexceptCopyConstructible<T> && NoexceptCopyConstructible<E>)
+        requires CopyConstructible<T> && CopyConstructible<E> && NoexceptCopyConstructible<T> && NoexceptCopyConstructible<E>
         {
             this->~Expected();
 
@@ -88,67 +87,67 @@ namespace Core
             return *this;
         }
 
-        Expected& operator=(Expected&& ex) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>)
-        requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E> && std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E>
+        Expected& operator=(Expected&& ex) noexcept(NoexceptMoveConstructible<T> && NoexceptMoveConstructible<E>)
+        requires MoveConstructible<T> && MoveConstructible<E> && NoexceptMoveConstructible<T> && NoexceptMoveConstructible<E>
         {
             this->~Expected();
 
             if(ex.is_value_created)
-                new(this->data) T(std::move(ex).GetValue());
+                new(this->data) T(Move(ex).GetValue());
             else
-                new(this->data) E(std::move(ex).GetError());
+                new(this->data) E(Move(ex).GetError());
 
             this->is_value_created = ex.is_value_created;
 
             return *this;
         }
 
-        Expected(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires std::is_copy_constructible_v<T>
+        Expected(const T& value) noexcept(NoexceptCopyConstructible<T>)
+        requires CopyConstructible<T>
         {
             new(this->data) T(value);
             this->is_value_created = true;
         }
 
-        Expected(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires std::is_move_constructible_v<T>
+        Expected(T&& value) noexcept(NoexceptMoveConstructible<T>)
+        requires MoveConstructible<T>
         {
-            new(this->data) E(std::move(value));
+            new(this->data) E(Move(value));
             this->is_value_created = true;
         }
 
-        Expected(const E& error) noexcept(std::is_nothrow_copy_constructible_v<E>)
-        requires std::is_copy_constructible_v<E>
+        Expected(const E& error) noexcept(NoexceptCopyConstructible<E>)
+        requires CopyConstructible<E>
         {
             new(this->data) E(error);
             this->is_value_created = false;
         }
 
-        Expected(E&& error) noexcept(std::is_nothrow_move_constructible_v<E>)
-        requires std::is_move_constructible_v<E>
+        Expected(E&& error) noexcept(NoexceptMoveConstructible<E>)
+        requires MoveConstructible<E>
         {
-            new(this->data) E(std::move(error));
+            new(this->data) E(Move(error));
             this->is_value_created = false;
         }
 
-        template<typename U>
-        requires std::constructible_from<T, U> && std::is_nothrow_constructible_v<T, U>
-        Expected(InPlaceType<T>, U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
+        template<typename... Args>
+        requires Constructible<T, Args...>
+        Expected(InPlaceType<T>, Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
         {
-            new(this->data) T(std::forward<T>(value));
+            new(this->data) T(Forward(args)...);
             this->is_value_created = true;
         }
 
-        template<typename U>
-        requires std::constructible_from<E, U> && std::is_nothrow_constructible_v<E, U>
-        Expected(InPlaceType<E>, U&& value) noexcept(std::is_nothrow_constructible_v<E, U>)
+        template<typename... Args>
+        requires Constructible<E, Args...>
+        Expected(InPlaceType<E>, Args&&... args) noexcept(NoexceptConstructible<E, Args...>)
         {
-            new(this->data) E(std::forward<E>(value));
+            new(this->data) E(Forward(args)...);
             this->is_value_created = false;
         }
 
-        Expected& operator=(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires std::is_copy_constructible_v<T> && std::is_nothrow_copy_constructible_v<T>
+        Expected& operator=(const T& value) noexcept(NoexceptCopyConstructible<T>)
+        requires CopyConstructible<T> && NoexceptCopyConstructible<T>
         {
             this->~Expected();
 
@@ -159,20 +158,20 @@ namespace Core
             return *this;
         }
 
-        Expected& operator=(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires std::is_move_constructible_v<T> && std::is_nothrow_move_constructible_v<T>
+        Expected& operator=(T&& value) noexcept(NoexceptMoveConstructible<T>)
+        requires MoveConstructible<T> && NoexceptMoveConstructible<T>
         {
             this->~Expected();
 
-            new(this->data) T(std::move(value));
+            new(this->data) T(Move(value));
 
             this->is_value_created = true;
 
             return *this;
         }
 
-        Expected& operator=(const E& error) noexcept(std::is_nothrow_copy_constructible_v<E>)
-        requires std::is_copy_constructible_v<E> && std::is_nothrow_copy_constructible_v<E>
+        Expected& operator=(const E& error) noexcept(NoexceptCopyConstructible<E>)
+        requires CopyConstructible<E> && NoexceptCopyConstructible<E>
         {
             this->~Expected();
 
@@ -183,24 +182,24 @@ namespace Core
             return *this;
         }
 
-        Expected& operator=(E&& error) noexcept(std::is_nothrow_move_constructible_v<E>)
-        requires std::is_move_constructible_v<E> && std::is_nothrow_move_constructible_v<E>
+        Expected& operator=(E&& error) noexcept(NoexceptMoveConstructible<E>)
+        requires MoveConstructible<E> && NoexceptMoveConstructible<E>
         {
             this->~Expected();
 
-            new(this->data) E(std::move(error));
+            new(this->data) E(Move(error));
 
             this->is_value_created = false;
 
             return *this;
         }
 
-        bool HasValue() const noexcept
+        Bool HasValue() const noexcept
         {
             return this->is_value_created;
         }
 
-        bool HasError() const noexcept
+        Bool HasError() const noexcept
         {
             return !this->is_value_created;
         }
@@ -217,12 +216,12 @@ namespace Core
 
         T&& GetValue() && noexcept
         {
-            return std::move(*this).operator*();
+            return Move(*this).operator*();
         }
 
         const T&& GetValue() const&& noexcept
         {
-            return std::move(*this).operator*();
+            return Move(*this).operator*();
         }
 
         E& GetError() & noexcept
@@ -243,17 +242,17 @@ namespace Core
         {
             assert(!this->is_value_created);
 
-            return std::move(*reinterpret_cast<E*>(this->data));
+            return Move(*reinterpret_cast<E*>(this->data));
         }
 
         const E&& GetError() const&& noexcept
         {
             assert(!this->is_value_created);
 
-            return std::move(*reinterpret_cast<const E*>(this->data));
+            return Move(*reinterpret_cast<const E*>(this->data));
         }
 
-        explicit operator bool() const noexcept
+        explicit operator Bool() const noexcept
         {
             return this->is_value_created;
         }
@@ -276,14 +275,14 @@ namespace Core
         {
             assert(this->is_value_created);
 
-            return std::move(*reinterpret_cast<T*>(this->data));
+            return Move(*reinterpret_cast<T*>(this->data));
         }
 
         const T&& operator*() const&& noexcept
         {
             assert(this->is_value_created);
 
-            return std::move(*reinterpret_cast<const T*>(this->data));
+            return Move(*reinterpret_cast<const T*>(this->data));
         }
 
         T* operator->() noexcept
@@ -300,7 +299,7 @@ namespace Core
             return reinterpret_cast<const T*>(this->data);
         }
     private:
-        alignas(METRICS.alignment) char data[METRICS.size];
-        bool is_value_created;
+        alignas(METRICS.alignment) UInt8 data[METRICS.size];
+        Bool is_value_created;
     };
 };

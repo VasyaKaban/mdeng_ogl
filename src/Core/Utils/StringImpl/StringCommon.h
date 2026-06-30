@@ -2,6 +2,7 @@
 
 #include "../Types.hpp"
 #include "../Traits.hpp"
+#include "../Utility.hpp"
 
 namespace Core
 {
@@ -111,7 +112,7 @@ namespace Core
             return GetLength(reinterpret_cast<const UTF8Char*>(input), input_size);
         }
 
-        static void Convert(const Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+        static Void Convert(const Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
             return Convert(reinterpret_cast<const UTF8Char*>(input), input_size, output);
         }
@@ -127,7 +128,7 @@ namespace Core
                 return GetLength(reinterpret_cast<const UTF8Char*>(input), input_size);
         }
 
-        static void Convert(const WideChar* input, DeviceSize input_size, UTF8Char* output) noexcept
+        static Void Convert(const WideChar* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
             if constexpr(WIDE_CHAR_IS_UTF16)
                 Convert(reinterpret_cast<const UTF16Char*>(input), input_size, output);
@@ -179,9 +180,9 @@ namespace Core
             return res;
         }
 
-        static void Convert(const UTF8Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+        static Void Convert(const UTF8Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
-            memcpy(output, input, input_size);
+            CopyMemory(input, output, input_size);
         }
 
         //UTF16Char
@@ -220,7 +221,7 @@ namespace Core
             return res;
         }
 
-        static void Convert(const UTF16Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+        static Void Convert(const UTF16Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
             StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
 
@@ -245,7 +246,8 @@ namespace Core
                 }
 
                 auto utf8_codepoint = GetUTF8CodePoint(codepoint);
-                memcpy(output + res.output_size, utf8_codepoint.utf8.u8_data, utf8_codepoint.length);
+                for(DeviceSize i = 0; i < utf8_codepoint.length; i++)
+                    output[res.output_size + i] = utf8_codepoint.utf8.u8_data[i];
 
                 res.output_size += utf8_codepoint.length;
             }
@@ -264,13 +266,14 @@ namespace Core
             return res;
         }
 
-        static void Convert(const UTF32Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+        static Void Convert(const UTF32Char* input, DeviceSize input_size, UTF8Char* output) noexcept
         {
             StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
             while(res.input_offset != input_size)
             {
                 auto utf8_codepoint = GetUTF8CodePoint(input[res.input_offset]);
-                memcpy(output + res.output_size, utf8_codepoint.utf8.u8_data, utf8_codepoint.length);
+                for(DeviceSize i = 0; i < utf8_codepoint.length; i++)
+                    output[res.output_size + i] = utf8_codepoint.utf8.u8_data[i];
 
                 res.output_size += utf8_codepoint.length;
                 res.input_offset++;
@@ -327,7 +330,7 @@ namespace Core
                 return input_size;
         }
 
-        static void ConvertToUTF16(const UTF8Char* input, DeviceSize input_size, UTF16Char* output) noexcept
+        static Void ConvertToUTF16(const UTF8Char* input, DeviceSize input_size, UTF16Char* output) noexcept
         {
             DeviceSize output_offset = 0;
 
@@ -354,7 +357,7 @@ namespace Core
             }
         }
 
-        static void ConvertToUTF32(const UTF8Char* input, DeviceSize input_size, UTF32Char* output) noexcept
+        static Void ConvertToUTF32(const UTF8Char* input, DeviceSize input_size, UTF32Char* output) noexcept
         {
             DeviceSize output_offset = 0;
 
@@ -371,14 +374,14 @@ namespace Core
             }
         }
 
-        static void ConvertToWideChar(const UTF8Char* input, DeviceSize input_size, WideChar* output) noexcept
+        static Void ConvertToWideChar(const UTF8Char* input, DeviceSize input_size, WideChar* output) noexcept
         {
             if constexpr(WIDE_CHAR_IS_UTF16)
                 return ConvertToUTF16(input, input_size, reinterpret_cast<UTF16Char*>(output));
             else if constexpr(WIDE_CHAR_IS_UTF32)
                 return ConvertToUTF32(input, input_size, reinterpret_cast<UTF32Char*>(output));
             else
-                memcpy(output, input, input_size);
+                CopyMemory(input, output, input_size);
         }
     };
 

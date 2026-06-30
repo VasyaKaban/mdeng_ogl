@@ -108,6 +108,8 @@ Instance:
 * Extend Traits.hpp weith std-like traits and concepts ans use them
 * Use T (&&arr)[N] as initializer-list replacement
 * Change assert to self-implemented
+* System class -> check types
+* All .cpp files to Impl folder
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
 Path

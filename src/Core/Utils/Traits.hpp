@@ -455,8 +455,9 @@ namespace Core
         };
     };
 
-    template<Arithmetic T, Arithmetic... Types>
-    using CommonArithmetic = Detail::CommonArithmeticImpl<T, Types...>::Type;
+    template<Arithmetic... Types>
+    requires(sizeof...(Types) != 0)
+    using CommonArithmetic = Detail::CommonArithmeticImpl<Types...>::Type;
 
     template<typename T>
     concept StandardLayout = __is_standard_layout(T);
@@ -466,4 +467,20 @@ namespace Core
 
     template<typename T>
     concept Complex = requires(int T::*) { true; };
+
+    template<typename T>
+    concept Comparable = requires(T value) { value < value; };
+
+    template<typename T>
+    concept NoexceptComparable = requires(T value) {
+        { value < value } noexcept;
+    };
+
+    template<typename T>
+    concept EquallyComparable = requires(T value) { value == value; };
+
+    template<typename T>
+    concept NoexceptEquallyComparable = requires(T value) {
+        { value == value } noexcept;
+    };
 };

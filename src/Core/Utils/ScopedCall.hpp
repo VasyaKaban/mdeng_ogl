@@ -19,7 +19,7 @@ namespace Core
                 this->GetValue()();
         }
 
-        void Call() const noexcept(std::is_nothrow_invocable_v<F>)
+        Void Call() const noexcept(std::is_nothrow_invocable_v<F>)
         {
             if(this->HasValue())
                 this->GetValue()();

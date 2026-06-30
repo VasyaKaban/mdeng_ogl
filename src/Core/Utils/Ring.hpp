@@ -8,14 +8,14 @@ namespace Core
     {
         template<typename T, typename F>
         requires std::invocable<F, T*>
-        void RingForEach(T* data, size_t capacity, size_t size, T* next_pop, T* next_push, F&& func)
+        Void RingForEach(T* data, DeviceSize capacity, DeviceSize size, T* next_pop, T* next_push, F&& func)
         {
             if(next_pop == nullptr) //empty -> no-op
                 return;
 
             if(next_push == nullptr) //full -> iterate from begin to end
             {
-                for(size_t i = 0; i < size; i++)
+                for(DeviceSize i = 0; i < size; i++)
                     std::forward<F>(func)(data + i);
             }
             else
@@ -63,7 +63,7 @@ namespace Core
               allocator(allocator)
         {}
 
-        Ring(size_t reserve, Allocator allocator = GetGlobalAllocator())
+        Ring(DeviceSize reserve, Allocator allocator = GetGlobalAllocator())
             : Ring(allocator)
         {
             Reserve(reserve);
@@ -150,27 +150,27 @@ namespace Core
             return this->data;
         }
 
-        size_t GetSize() const noexcept
+        DeviceSize GetSize() const noexcept
         {
             return this->size;
         }
 
-        size_t GetCapacity() const noexcept
+        DeviceSize GetCapacity() const noexcept
         {
             return this->capacity;
         }
 
-        bool CanPop() const noexcept
+        Bool CanPop() const noexcept
         {
             return this->next_pop != nullptr;
         }
 
-        bool CanPush() const noexcept
+        Bool CanPush() const noexcept
         {
             return this->next_push != nullptr;
         }
 
-        void Push(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        Void Push(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
         requires std::copy_constructible<T>
         {
             assert(CanPush());
@@ -182,7 +182,7 @@ namespace Core
             this->size++;
         }
 
-        void Push(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
+        Void Push(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
         requires std::move_constructible<T>
         {
             assert(CanPush());
@@ -196,7 +196,7 @@ namespace Core
 
         template<typename U>
         requires std::constructible_from<T, U>
-        void Push(U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
+        Void Push(U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
         {
             assert(CanPush());
 
@@ -217,7 +217,7 @@ namespace Core
             return *this->next_pop;
         }
 
-        void Pop() noexcept
+        Void Pop() noexcept
         {
             assert(CanPop());
 
@@ -233,7 +233,7 @@ namespace Core
         //on full -> try grow
         //on linear -> try grow
         //otherwise only realloca
-        void Reserve(size_t reserve)
+        Void Reserve(DeviceSize reserve)
         requires std::is_nothrow_move_constructible_v<T> || std::copy_constructible<T>
         {
             if(this->capacity >= reserve)
@@ -249,7 +249,7 @@ namespace Core
             }
 
             T* new_memory = reinterpret_cast<T*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
-            size_t offset = 0;
+            DeviceSize offset = 0;
 
             try
             {
@@ -270,7 +270,7 @@ namespace Core
             }
             catch(...)
             {
-                for(size_t i = 0; i < offset; i++)
+                for(DeviceSize i = 0; i < offset; i++)
                     new_memory[i].~T();
 
                 this->allocator.Deallocate(new_memory);
@@ -299,7 +299,7 @@ namespace Core
             }
         }
 
-        void Clear() noexcept
+        Void Clear() noexcept
         {
             DestroyObjects();
 
@@ -307,12 +307,12 @@ namespace Core
             this->next_pop = nullptr;
         }
 
-        static MemoryRequirements GetMemoryRequirements(size_t reserve) noexcept
+        static MemoryRequirements GetMemoryRequirements(DeviceSize reserve) noexcept
         {
             return MemoryRequirements{.alignment = alignof(T), .size = sizeof(T) * reserve};
         }
     private:
-        void DestroyObjects() noexcept
+        Void DestroyObjects() noexcept
         {
             RingForEach(this->data,
                         this->capacity,
@@ -325,7 +325,7 @@ namespace Core
                         });
         }
 
-        void CorrectPointers(T*& moved_ptr, T*& static_ptr) noexcept
+        Void CorrectPointers(T*& moved_ptr, T*& static_ptr) noexcept
         {
             if(static_ptr == nullptr)
                 static_ptr = moved_ptr;
@@ -339,8 +339,8 @@ namespace Core
         }
     private:
         T* data;
-        size_t size;
-        size_t capacity;
+        DeviceSize size;
+        DeviceSize capacity;
         T* next_push;
         T* next_pop;
         Allocator allocator;

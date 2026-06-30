@@ -120,7 +120,7 @@ namespace Core
                 return GetAddress(node->template AsChainNode<ChainValueType>()->value);
             }
 
-            bool operator==(const ChainIterator& it) const noexcept
+            Bool operator==(const ChainIterator& it) const noexcept
             {
                 return this->node == it.node;
             }
@@ -214,12 +214,12 @@ namespace Core
             }
         }
 
-        size_t GetSize() const noexcept
+        DeviceSize GetSize() const noexcept
         {
             return this->size;
         }
 
-        bool IsEmpty() const noexcept
+        Bool IsEmpty() const noexcept
         {
             return this->size == 0;
         }
@@ -231,26 +231,26 @@ namespace Core
 
         template<typename... Args>
         requires Constructible<T, Args...>
-        void Insert(ConstIterator before_it, Args&&... args)
+        Void Insert(ConstIterator before_it, Args&&... args)
         {
             AllocateAndInsertNode(Forward(args)..., before_it.node);
         }
 
         template<typename... Args>
         requires Constructible<T, Args...>
-        void PushToBegin(Args&&... args)
+        Void PushToBegin(Args&&... args)
         {
             AllocateAndInsertNode(Forward(args)..., &this->base);
         }
 
         template<typename... Args>
         requires Constructible<T, Args...>
-        void PushToEnd(Args&&... args)
+        Void PushToEnd(Args&&... args)
         {
             AllocateAndInsertNode(Forward(args)..., this->base.prev);
         }
 
-        void Splice(ConstIterator before_it, Chain& chain, ConstIterator begin, ConstIterator end) noexcept
+        Void Splice(ConstIterator before_it, Chain& chain, ConstIterator begin, ConstIterator end) noexcept
         {
             Detail::ChainNodeBase* before_node = before_it.node;
 
@@ -264,10 +264,10 @@ namespace Core
             }
         }
 
-        void Clear() noexcept
+        Void Clear() noexcept
         {
             Node* node = this->base.next->AsChainNode<T>();
-            for(size_t i = 0; i < this->size; i++)
+            for(DeviceSize i = 0; i < this->size; i++)
             {
                 Detail::ChainNodeBase* next = node->next;
                 node->~Node();
@@ -280,17 +280,17 @@ namespace Core
             this->base = Detail::ChainNodeBase::SelfLinked(&this->base);
         }
 
-        void Erase(ConstIterator it) noexcept
+        Void Erase(ConstIterator it) noexcept
         {
             EraseAndFreeNode(it.node);
         }
 
-        void EraseFirst() noexcept
+        Void EraseFirst() noexcept
         {
             EraseAndFreeNode(this->base.next);
         }
 
-        void EraseLast() noexcept
+        Void EraseLast() noexcept
         {
             EraseAndFreeNode(this->base.prev);
         }
@@ -335,12 +335,12 @@ namespace Core
             return ConstIterator(&this->base);
         }
 
-        static MemoryRequirements GetMemoryRequirements(size_t size) noexcept
+        static MemoryRequirements GetMemoryRequirements(DeviceSize size) noexcept
         {
             return MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node) * size};
         }
     public:
-        void UpdateBase() noexcept //use on move when we must change first and last references to the base
+        Void UpdateBase() noexcept //use on move when we must change first and last references to the base
         {
             if(this->size == 0)
             {
@@ -353,7 +353,7 @@ namespace Core
             }
         }
 
-        void InsertNode(Detail::ChainNodeBase* prev_node,
+        Void InsertNode(Detail::ChainNodeBase* prev_node,
                         Node* node) noexcept //insert node right after prev_node
         {
             if(this->size == 0)
@@ -381,7 +381,7 @@ namespace Core
         }
 
         template<typename... Args>
-        void AllocateAndInsertNode(Args&&... args,
+        Void AllocateAndInsertNode(Args&&... args,
                                    Detail::ChainNodeBase* prev_node) //allocate node and insert right after prev_node
         {
             Node* node = static_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
@@ -399,7 +399,7 @@ namespace Core
             InsertNode(prev_node, node);
         }
 
-        void EraseNode(Node* node) noexcept //erase node without dealloc
+        Void EraseNode(Node* node) noexcept //erase node without dealloc
         {
             assert(this->size != 0);
 
@@ -421,7 +421,7 @@ namespace Core
             this->size--;
         }
 
-        void EraseAndFreeNode(Node* node) noexcept //erase node with dealloc
+        Void EraseAndFreeNode(Node* node) noexcept //erase node with dealloc
         {
             EraseNode(node);
 
@@ -430,7 +430,7 @@ namespace Core
         }
     private:
         Detail::ChainNodeBase base;
-        size_t size;
+        DeviceSize size;
         Allocator allocator;
     };
 

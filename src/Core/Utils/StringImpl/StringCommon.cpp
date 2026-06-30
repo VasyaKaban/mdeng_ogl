@@ -4,15 +4,15 @@ namespace Core
 {
     namespace Detail
     {
-        const char8_t* FindInString(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept
+        const char8_t* FindInString(const char8_t* data, DeviceSize data_size, const char8_t* input, DeviceSize input_size) noexcept
         {
             if(input_size == 0)
                 return nullptr;
 
-            size_t str_offset = 0;
+            DeviceSize str_offset = 0;
             while(data_size - str_offset >= input_size)
             {
-                size_t input_offset = 0;
+                DeviceSize input_offset = 0;
                 for(; input_offset < input_size; input_offset++)
                 {
                     if(input[input_offset] != data[str_offset + input_offset])
@@ -28,7 +28,7 @@ namespace Core
             return nullptr;
         }
 
-        const char8_t* FindInStringReverse(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept
+        const char8_t* FindInStringReverse(const char8_t* data, DeviceSize data_size, const char8_t* input, DeviceSize input_size) noexcept
         {
             if(input_size == 0)
                 return data + data_size;
@@ -38,10 +38,10 @@ namespace Core
 
             //1 2 3 4 5
             //      4 5
-            size_t str_offset = data_size - input_size;
+            DeviceSize str_offset = data_size - input_size;
             while(str_offset >= 0)
             {
-                size_t input_offset = 0;
+                DeviceSize input_offset = 0;
                 for(; input_offset < input_size; input_offset++)
                 {
                     if(input[input_offset] != data[str_offset + input_offset])
@@ -60,7 +60,7 @@ namespace Core
             return nullptr;
         }
 
-        bool StringStartsWith(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept
+        Bool StringStartsWith(const char8_t* data, DeviceSize data_size, const char8_t* input, DeviceSize input_size) noexcept
         {
             if(input_size == 0)
                 return true;
@@ -68,7 +68,7 @@ namespace Core
             if(data_size < input_size)
                 return false;
 
-            for(size_t i = 0; i < input_size; i++)
+            for(DeviceSize i = 0; i < input_size; i++)
             {
                 if(input[i] != data[i])
                     return false;
@@ -77,7 +77,7 @@ namespace Core
             return true;
         }
 
-        bool StringEndsWith(const char8_t* data, size_t data_size, const char8_t* input, size_t input_size) noexcept
+        Bool StringEndsWith(const char8_t* data, DeviceSize data_size, const char8_t* input, DeviceSize input_size) noexcept
         {
             if(input_size == 0)
                 return true;
@@ -85,8 +85,8 @@ namespace Core
             if(data_size < input_size)
                 return false;
 
-            size_t str_offset = (data_size - input_size);
-            for(size_t i = 0; i < input_size; i++)
+            DeviceSize str_offset = (data_size - input_size);
+            for(DeviceSize i = 0; i < input_size; i++)
             {
                 if(input[i] != data[str_offset + i])
                     return false;
@@ -95,7 +95,7 @@ namespace Core
             return true;
         }
 
-        bool CompareStringsEquality(const char8_t* data1, size_t data_size1, const char8_t* data2, size_t data_size2) noexcept
+        Bool CompareStringsEquality(const char8_t* data1, DeviceSize data_size1, const char8_t* data2, DeviceSize data_size2) noexcept
         {
             if(data_size1 == 0 && data_size2 == 0)
                 return true;
@@ -105,7 +105,7 @@ namespace Core
                 return memcmp(data1, data2, data_size1) == 0;
         }
 
-        bool CompareStringsLexicallyLess(const char8_t* data1, size_t data_size1, const char8_t* data2, size_t data_size2) noexcept
+        Bool CompareStringsLexicallyLess(const char8_t* data1, DeviceSize data_size1, const char8_t* data2, DeviceSize data_size2) noexcept
         {
             //for each string get str1_codepoint and str2_codepoint
             //if str1_codepoint < str2_codepoint -> true

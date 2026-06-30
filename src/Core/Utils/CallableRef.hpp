@@ -8,25 +8,25 @@ namespace Core
 {
     namespace Detail
     {
-        template<typename R, bool IsNoexcept, typename... Args>
-        constexpr R CallableRefCallerWrapperFunctionPointer(const void* memory, Args... args) noexcept(IsNoexcept)
+        template<typename R, Bool IsNoexcept, typename... Args>
+        constexpr R CallableRefCallerWrapperFunctionPointer(const Void* memory, Args... args) noexcept(IsNoexcept)
         {
-            return (*reinterpret_cast<R (*)(Args...)>(const_cast<void*>(memory)))(Forward(args)...);
+            return (*reinterpret_cast<R (*)(Args...)>(const_cast<Void*>(memory)))(Forward(args)...);
         }
 
         //C: const, Member: const
         //C: non-const, Member: non-const
         //C: non-const, Member: const -> make C as const
-        template<typename C, auto Member, typename R, bool IsNoexcept, typename... Args>
-        constexpr R CallableRefCallerWrapperClassMember(const void* memory, Args... args) noexcept(IsNoexcept)
+        template<typename C, auto Member, typename R, Bool IsNoexcept, typename... Args>
+        constexpr R CallableRefCallerWrapperClassMember(const Void* memory, Args... args) noexcept(IsNoexcept)
         {
             if constexpr(Const<C>)
                 return (reinterpret_cast<C*>(memory)->*Member)(Forward(args)...);
             else
-                return (reinterpret_cast<C*>(const_cast<void*>(memory))->*Member)(Forward(args)...);
+                return (reinterpret_cast<C*>(const_cast<Void*>(memory))->*Member)(Forward(args)...);
         }
 
-        template<typename R, bool IsConst, bool IsNoexcept, typename... Args>
+        template<typename R, Bool IsConst, Bool IsNoexcept, typename... Args>
         class CallableRefBase
         {
         public:
@@ -37,7 +37,7 @@ namespace Core
 
             CallableRefBase(R (*func_ptr)(Args...) noexcept(IsNoexcept)) noexcept
             requires(!IsConst)
-                : memory(reinterpret_cast<const void*>(func_ptr)),
+                : memory(reinterpret_cast<const Void*>(func_ptr)),
                   caller(&Detail::CallableRefCallerWrapperFunctionPointer<R, IsNoexcept, Args...>)
             {}
 
@@ -46,7 +46,7 @@ namespace Core
                 { (Forward(obj).*Member)(Forward(args)...) } -> SameAs<R>;
             }
             CallableRefBase(C&& obj, NonType<Member> = NonTypeArgument<Member>) noexcept
-                : memory(reinterpret_cast<const void*>(GetAddress(obj))),
+                : memory(reinterpret_cast<const Void*>(GetAddress(obj))),
                   caller(&Detail::CallableRefCallerWrapperClassMember<const DropConstVolatileReference<C>, Member, R, IsNoexcept>)
             {}
 
@@ -55,7 +55,7 @@ namespace Core
                 { (Forward(obj).*Member)(Forward(args)...) } -> SameAs<R>;
             }
             CallableRefBase(C&& obj, NonType<Member> = NonTypeArgument<Member>) noexcept
-                : memory(reinterpret_cast<const void*>(GetAddress(obj))),
+                : memory(reinterpret_cast<const Void*>(GetAddress(obj))),
                   caller(&Detail::CallableRefCallerWrapperClassMember<DropConstVolatileReference<C>, Member, R, IsNoexcept>)
             {}
 
@@ -70,13 +70,13 @@ namespace Core
                 return this->caller(this->memory, Forward(args)...);
             }
 
-            constexpr explicit operator bool() const noexcept
+            constexpr explicit operator Bool() const noexcept
             {
                 return this->caller != nullptr;
             }
         private:
-            const void* memory;
-            R (*caller)(const void* memory, Args... args) noexcept(IsNoexcept);
+            const Void* memory;
+            R (*caller)(const Void* memory, Args... args) noexcept(IsNoexcept);
         };
     };
 

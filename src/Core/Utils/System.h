@@ -68,26 +68,23 @@ namespace Core
         static std::optional<char32_t> UTF16ToUTF32(char16_t utf16[2]) noexcept;
 
         //alphanumeric comparator -> same as operator< result
-        static bool CompareUTF8(std::string_view str1, std::string_view str2) noexcept;
+        static Bool CompareUTF8(std::string_view str1, std::string_view str2) noexcept;
 
-        static bool IsUnicodeC0ControlCode(char value) noexcept; //with Delete
-        static bool IsUnicodeC0ControlCodeOrSpace(char value) noexcept;
+        static Bool IsUnicodeC0ControlCode(char value) noexcept; //with Delete
+        static Bool IsUnicodeC0ControlCodeOrSpace(char value) noexcept;
 
 #ifdef _WIN32
     private:
-        friend int WINAPI ::wWinMain(HINSTANCE instance,
-                                     HINSTANCE prev_instance,
-                                     PWSTR cmd_line,
-                                     int cmd_show);
-        static void SetCmdShow(int cmd_show) noexcept;
-        static void SetMainThreadID() noexcept;
+        friend int WINAPI ::wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line, int cmd_show);
+        static Void SetCmdShow(int cmd_show) noexcept;
+        static Void SetMainThreadID() noexcept;
     public:
         static int GetCmdShow() noexcept;
         static DWORD GetMainThreadID() noexcept;
 
         static DWORD GetLastError() noexcept;
-        static void SetLastError(DWORD code) noexcept;
-        [[noreturn]] static void ThrowLastError();
+        static Void SetLastError(DWORD code) noexcept;
+        [[noreturn]] static Void ThrowLastError();
         static std::string WideToUTF8(std::wstring_view wstr);
         static std::wstring UTF8ToWide(std::string_view str);
 

@@ -11,12 +11,12 @@ namespace Core
     {
         struct UnionMetrics
         {
-            size_t alignment;
-            size_t size;
+            DeviceSize alignment;
+            DeviceSize size;
         };
 
         template<typename T, typename... Types>
-        constexpr void AdjustUnionMetrics(UnionMetrics& metrics) noexcept
+        constexpr Void AdjustUnionMetrics(UnionMetrics& metrics) noexcept
         {
             if(alignof(T) > metrics.alignment)
                 metrics.alignment = alignof(T);
@@ -40,94 +40,94 @@ namespace Core
         }
 
         template<typename T>
-        constexpr void UnionDestructorWrapper(const char* data) noexcept
+        constexpr Void UnionDestructorWrapper(const char* data) noexcept
         {
             reinterpret_cast<const T*>(data)->~T();
         }
 
         template<typename T>
-        constexpr void UnionCopyConstructorWrapper(char* to, const char* from)
+        constexpr Void UnionCopyConstructorWrapper(char* to, const char* from)
         {
             new(to) T(*reinterpret_cast<const T*>(from));
         }
 
         template<typename T>
-        constexpr void UnionMoveConstructorWrapper(char* to, char* from)
+        constexpr Void UnionMoveConstructorWrapper(char* to, char* from)
         {
-            new(to) T(std::move(*reinterpret_cast<T*>(from)));
+            new(to) T(Move(*reinterpret_cast<T*>(from)));
         }
 
-        template<typename F, bool IsConst, bool IsRVlaue, typename T>
-        constexpr void UnionVisitorWrapper(F&& visitor, const char* data)
+        template<typename F, Bool IsConst, Bool IsRVlaue, typename T>
+        constexpr Void UnionVisitorWrapper(F&& visitor, const char* data)
         {
             if constexpr(IsConst)
             {
                 if constexpr(IsRVlaue)
-                    std::forward<F>(visitor)(std::move(*reinterpret_cast<const T*>(data)));
+                    Forward(visitor)(Move(*reinterpret_cast<const T*>(data)));
                 else
-                    std::forward<F>(visitor)(*reinterpret_cast<const T*>(data));
+                    Forward(visitor)(*reinterpret_cast<const T*>(data));
             }
             else
             {
                 if constexpr(IsRVlaue)
-                    std::forward<F>(visitor)(std::move(*reinterpret_cast<T*>(const_cast<char*>(data))));
+                    Forward(visitor)(Move(*reinterpret_cast<T*>(const_cast<char*>(data))));
                 else
-                    std::forward<F>(visitor)(*reinterpret_cast<T*>(const_cast<char*>(data)));
+                    Forward(visitor)(*reinterpret_cast<T*>(const_cast<char*>(data)));
             }
         }
     };
 
-    constexpr inline ptrdiff_t NON_ACTIVE_UNION_INDEX = -1;
+    constexpr inline Int64 NON_ACTIVE_UNION_INDEX = -1;
 
     template<typename... Types>
-    requires(sizeof...(Types) > 0 && (sizeof...(Types) - 1 <= std::numeric_limits<int64_t>::max())) && (std::same_as<std::remove_cvref_t<Types>, Types> && ...)
+    requires(sizeof...(Types) > 0 && (sizeof...(Types) - 1 <= NumericLimits<Int64>::Max)) && (SameAs<DropConstVolatileReference<Types>, Types> && ...)
     class Union
     {
         constexpr static Detail::UnionMetrics METRICS = Detail::GetUnionMetrics<Types...>();
         using VariadicTypes = Variadic<Types...>;
     public:
-        template<size_t Index>
+        template<DeviceSize Index>
         requires(Index < sizeof...(Types))
         using TypeOfIndex = typename VariadicTypes::template TypeOfIndex<Index>;
 
         template<typename T>
-        requires(std::same_as<T, Types> || ...)
-        constexpr static size_t IndexOfType = VariadicTypes::template IndexOfType<T>;
+        requires(SameAs<T, Types> || ...)
+        constexpr static DeviceSize IndexOfType = VariadicTypes::template IndexOfType<T>;
 
         Union() noexcept
             : active_index(NON_ACTIVE_UNION_INDEX)
         {}
 
-        template<std::integral auto Index, typename... Args>
-        requires(Index >= 0 && Index < sizeof...(Types)) && std::constructible_from<TypeOfIndex<Index>, Args...>
-        Union(NonType<Index>, Args&&... args) noexcept(std::is_nothrow_constructible_v<TypeOfIndex<Index>, Args...>)
+        template<Integral auto Index, typename... Args>
+        requires(Index >= 0 && Index < sizeof...(Types)) && Constructible<TypeOfIndex<Index>, Args...>
+        Union(NonType<Index>, Args&&... args) noexcept(NoexceptConstructible<TypeOfIndex<Index>, Args...>)
         {
-            new(this->data) TypeOfIndex<Index>(std::forward<Args>(args)...);
+            new(this->data) TypeOfIndex<Index>(Forward(args)...);
 
             this->active_index = Index;
         }
 
         template<typename T, typename... Args>
-        requires(std::same_as<T, Types> || ...)
-        Union(InPlaceType<T>, Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        requires(SameAs<T, Types> || ...)
+        Union(InPlaceType<T>, Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
         {
-            new(this->data) T(std::forward<Args>(args)...);
+            new(this->data) T(Forward(args)...);
 
             this->active_index = IndexOfType<T>;
         }
 
         ~Union()
         {
-            constexpr static void (*DESTRUCTORS[])(const char* data) = {&Detail::UnionDestructorWrapper<Types>...};
+            constexpr static Void (*DESTRUCTORS[])(const char* data) = {&Detail::UnionDestructorWrapper<Types>...};
 
             if(this->active_index != NON_ACTIVE_UNION_INDEX)
                 DESTRUCTORS[this->active_index](this->data);
         }
 
-        Union(const Union& un) noexcept((std::is_nothrow_copy_constructible_v<Types> && ...))
-        requires(std::copy_constructible<Types> && ...)
+        Union(const Union& un) noexcept((NoexceptCopyConstructible<Types> && ...))
+        requires(CopyConstructible<Types> && ...)
         {
-            constexpr static void (*COPY_CONSTRUCTORS[])(char* to, const char* from) = {&Detail::UnionCopyConstructorWrapper<Types>...};
+            constexpr static Void (*COPY_CONSTRUCTORS[])(char* to, const char* from) = {&Detail::UnionCopyConstructorWrapper<Types>...};
 
             if(un.GetActiveIndex() != NON_ACTIVE_UNION_INDEX)
             {
@@ -137,10 +137,10 @@ namespace Core
             this->active_index = un.active_index;
         }
 
-        Union(Union&& un) noexcept((std::is_nothrow_move_constructible_v<Types> && ...))
-        requires(std::move_constructible<Types> && ...)
+        Union(Union&& un) noexcept((NoexceptMoveConstructible<Types> && ...))
+        requires(MoveConstructible<Types> && ...)
         {
-            constexpr static void (*MOVE_CONSTRUCTORS[])(char* to, char* from) = {&Detail::UnionMoveConstructorWrapper<Types>...};
+            constexpr static Void (*MOVE_CONSTRUCTORS[])(char* to, char* from) = {&Detail::UnionMoveConstructorWrapper<Types>...};
 
             if(un.GetActiveIndex() != NON_ACTIVE_UNION_INDEX)
             {
@@ -150,10 +150,10 @@ namespace Core
             this->active_index = un.active_index;
         }
 
-        Union& operator=(const Union& un) noexcept((std::is_nothrow_copy_constructible_v<Types> && ...))
-        requires(std::copy_constructible<Types> && ...)
+        Union& operator=(const Union& un) noexcept((NoexceptCopyConstructible<Types> && ...))
+        requires(CopyConstructible<Types> && ...)
         {
-            constexpr static void (*COPY_CONSTRUCTORS[])(char* to, const char* from) = {&Detail::UnionCopyConstructorWrapper<Types>...};
+            constexpr static Void (*COPY_CONSTRUCTORS[])(char* to, const char* from) = {&Detail::UnionCopyConstructorWrapper<Types>...};
 
             this->Reset();
 
@@ -167,10 +167,10 @@ namespace Core
             return *this;
         }
 
-        Union& operator=(Union&& un) noexcept((std::is_nothrow_move_constructible_v<Types> && ...))
-        requires(std::move_constructible<Types> && ...)
+        Union& operator=(Union&& un) noexcept((NoexceptMoveConstructible<Types> && ...))
+        requires(MoveConstructible<Types> && ...)
         {
-            constexpr static void (*MOVE_CONSTRUCTORS[])(char* to, char* from) = {&Detail::UnionMoveConstructorWrapper<Types>...};
+            constexpr static Void (*MOVE_CONSTRUCTORS[])(char* to, char* from) = {&Detail::UnionMoveConstructorWrapper<Types>...};
 
             this->Reset();
 
@@ -184,12 +184,12 @@ namespace Core
             return *this;
         }
 
-        ptrdiff_t GetActiveIndex() const noexcept
+        decltype(NON_ACTIVE_UNION_INDEX) GetActiveIndex() const noexcept
         {
             return this->active_index;
         }
 
-        void Reset() noexcept
+        Void Reset() noexcept
         {
             if(this->active_index != NON_ACTIVE_UNION_INDEX)
             {
@@ -200,14 +200,14 @@ namespace Core
         }
 
         template<typename T>
-        requires(std::same_as<T, Types> || ...)
-        bool IsActive() const noexcept
+        requires(SameAs<T, Types> || ...)
+        Bool IsActive() const noexcept
         {
             return this->active_index == IndexOfType<T>;
         }
 
         //Get by Index
-        template<size_t Index>
+        template<DeviceSize Index>
         requires(Index < sizeof...(Types))
         TypeOfIndex<Index>& Get() & noexcept
         {
@@ -216,7 +216,7 @@ namespace Core
             return *reinterpret_cast<TypeOfIndex<Index>*>(this->data);
         }
 
-        template<size_t Index>
+        template<DeviceSize Index>
         requires(Index < sizeof...(Types))
         const TypeOfIndex<Index>& Get() const& noexcept
         {
@@ -225,27 +225,27 @@ namespace Core
             return *reinterpret_cast<const TypeOfIndex<Index>*>(this->data);
         }
 
-        template<size_t Index>
+        template<DeviceSize Index>
         requires(Index < sizeof...(Types))
         TypeOfIndex<Index>&& Get() && noexcept
         {
             assert(this->active_index == Index);
 
-            return std::move(*reinterpret_cast<TypeOfIndex<Index>*>(this->data));
+            return Move(*reinterpret_cast<TypeOfIndex<Index>*>(this->data));
         }
 
-        template<size_t Index>
+        template<DeviceSize Index>
         requires(Index < sizeof...(Types))
         const TypeOfIndex<Index>&& Get() const&& noexcept
         {
             assert(this->active_index == Index);
 
-            return std::move(*reinterpret_cast<const TypeOfIndex<Index>*>(this->data));
+            return Move(*reinterpret_cast<const TypeOfIndex<Index>*>(this->data));
         }
 
         //Get by Type
         template<typename T>
-        requires(std::same_as<T, Types> || ...)
+        requires(SameAs<T, Types> || ...)
         T& Get() noexcept
         {
             assert(this->active_index == IndexOfType<T>);
@@ -254,7 +254,7 @@ namespace Core
         }
 
         template<typename T>
-        requires(std::same_as<T, Types> || ...)
+        requires(SameAs<T, Types> || ...)
         const T& Get() const& noexcept
         {
             assert(this->active_index == IndexOfType<T>);
@@ -263,109 +263,108 @@ namespace Core
         }
 
         template<typename T>
-        requires(std::same_as<T, Types> || ...)
+        requires(SameAs<T, Types> || ...)
         T&& Get() && noexcept
         {
             assert(this->active_index == IndexOfType<T>);
 
-            return std::move(*reinterpret_cast<T*>(this->data));
+            return Move(*reinterpret_cast<T*>(this->data));
         }
 
         template<typename T>
-        requires(std::same_as<T, Types> || ...)
+        requires(SameAs<T, Types> || ...)
         const T&& Get() const&& noexcept
         {
             assert(this->active_index == IndexOfType<T>);
 
-            return std::move(*reinterpret_cast<const T*>(this->data));
+            return Move(*reinterpret_cast<const T*>(this->data));
         }
 
         //Set by Index
-        template<size_t Index, typename... Args>
-        requires(Index < sizeof...(Types)) && std::constructible_from<TypeOfIndex<Index>, Args...>
-        void Set(Args&&... args) noexcept(std::is_nothrow_constructible_v<TypeOfIndex<Index>, Args...>)
+        template<DeviceSize Index, typename... Args>
+        requires(Index < sizeof...(Types)) && Constructible<TypeOfIndex<Index>, Args...>
+        Void Set(Args&&... args) noexcept(NoexceptConstructible<TypeOfIndex<Index>, Args...>)
         {
             this->Reset();
 
-            new(this->data) TypeOfIndex<Index>(std::forward<Args>(args)...);
+            new(this->data) TypeOfIndex<Index>(Forward(args)...);
 
             this->active_index = Index;
         }
 
         //Set by Type
         template<typename T, typename... Args>
-        requires(std::same_as<T, Types> || ...) && std::constructible_from<T, Args...>
-        void Set(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        requires(SameAs<T, Types> || ...) && Constructible<T, Args...>
+        Void Set(Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
         {
             this->Reset();
 
-            new(this->data) T(std::forward<Args>(args)...);
+            new(this->data) T(Forward(args)...);
 
             this->active_index = IndexOfType<T>;
         }
 
         template<typename F>
-        requires(std::invocable<F, Types&> && ...)
-        bool Visit(F&& visitor) & noexcept((std::is_nothrow_invocable_v<F, Types&> && ...))
+        requires(Invocable<F, Types&> && ...)
+        Bool Visit(F&& visitor) & noexcept((NoexceptInvocable<F, Types&> && ...))
         {
             if(this->active_index == NON_ACTIVE_UNION_INDEX)
                 return false;
 
-            constexpr static void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, false, false, Types>...};
+            constexpr static Void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, false, false, Types>...};
 
-            VISITORS[this->active_index](std::forward<F>(visitor), this->data);
+            VISITORS[this->active_index](Forward(visitor), this->data);
 
             return true;
         }
 
         template<typename F>
-        requires(std::invocable<F, Types &&> && ...)
-        bool Visit(F&& visitor) && noexcept((std::is_nothrow_invocable_v<F, Types&&> && ...))
+        requires(Invocable<F, Types &&> && ...)
+        Bool Visit(F&& visitor) && noexcept((NoexceptInvocable<F, Types&&> && ...))
         {
             if(this->active_index == NON_ACTIVE_UNION_INDEX)
                 return false;
 
-            constexpr static void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, false, true, Types>...};
+            constexpr static Void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, false, true, Types>...};
 
-            VISITORS[this->active_index](std::forward<F>(visitor), this->data);
+            VISITORS[this->active_index](Forward(visitor), this->data);
 
             return true;
         }
 
         template<typename F>
-        requires(std::invocable<F, const Types&> && ...)
-        bool Visit(F&& visitor) const& noexcept((std::is_nothrow_invocable_v<F, const Types&> && ...))
+        requires(Invocable<F, const Types&> && ...)
+        Bool Visit(F&& visitor) const& noexcept((NoexceptInvocable<F, const Types&> && ...))
         {
             if(this->active_index == NON_ACTIVE_UNION_INDEX)
                 return false;
 
-            constexpr static void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, true, false, Types>...};
+            constexpr static Void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, true, false, Types>...};
 
-            VISITORS[this->active_index](std::forward<F>(visitor), this->data);
+            VISITORS[this->active_index](Forward(visitor), this->data);
 
             return true;
         }
 
         template<typename F>
-        requires(std::invocable<F, const Types &&> && ...)
-        bool Visit(F&& visitor) const&& noexcept((std::is_nothrow_invocable_v<F, const Types&&> && ...))
+        requires(Invocable<F, const Types &&> && ...)
+        Bool Visit(F&& visitor) const&& noexcept((NoexceptInvocable<F, const Types&&> && ...))
         {
             if(this->active_index == NON_ACTIVE_UNION_INDEX)
                 return false;
 
-            constexpr static void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, true, true, Types>...};
+            constexpr static Void (*VISITORS[])(F&& visitor, const char* data) = {&Detail::UnionVisitorWrapper<F, true, true, Types>...};
 
-            VISITORS[this->active_index](std::forward<F>(visitor), this->data);
+            VISITORS[this->active_index](Forward(visitor), this->data);
 
             return true;
         }
     private:
-        alignas(METRICS.alignment) char data[METRICS.size];
+        alignas(METRICS.alignment) UInt8 data[METRICS.size];
 
-        std::conditional_t<
-            std::numeric_limits<int8_t>::max() >= sizeof...(Types) - 1,
-            int8_t,
-            std::conditional_t<std::numeric_limits<int16_t>::max() >= sizeof...(Types) - 1, int16_t, std::conditional_t<std::numeric_limits<int32_t>::max() >= sizeof...(Types) - 1, int32_t, int64_t>>>
+        Conditional<NumericLimits<Int8>::Max >= sizeof...(Types) - 1,
+                    Int8,
+                    Conditional<NumericLimits<Int16>::Max >= sizeof...(Types) - 1, Int16, Conditional<NumericLimits<Int32>::Max >= sizeof...(Types) - 1, Int32, Int64>>>
             active_index;
     };
 };

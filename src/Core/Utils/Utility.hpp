@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Traits.hpp"
+#include <cstring>
 
 #ifdef _MSC_VER
 #    define CORE_ASSUME(COND, ...) __assume(COND __VA_OPT__(__VA_ARGS__));
@@ -45,7 +46,7 @@ namespace Core
 
     template<typename T>
     requires MoveConstructible<T> && MoveAssignable<T>
-    constexpr void Swap(T& value1, T& value2) noexcept(NoexceptMoveConstructible<T> && NoexceptMoveAssignable<T>)
+    constexpr Void Swap(T& value1, T& value2) noexcept(NoexceptMoveConstructible<T> && NoexceptMoveAssignable<T>)
     {
         T tmp_value(Move(value1));
         value1 = Move(value2);
@@ -58,5 +59,45 @@ namespace Core
         static_assert(!(Complex<T> && requires { value.operator&(); }), "Complex types with overloaded operator& are not supported. Use wrapper or remove operator& overloading");
 
         return &value;
+    }
+
+    template<typename T, typename C>
+    requires InvocableWithResult<C, Bool, T&&, T&&>
+    constexpr T&& Select(T&& value1, T&& value2, C&& comparator) noexcept(NoexceptInvocableWithResult<C, Bool, T&&, T&&>)
+    {
+        if(Forward(comparator)(Forward(value1), Forward(value2)))
+            return Forward(value1);
+
+        return Forward(value2);
+    }
+
+    template<typename T>
+    requires Comparable<T>
+    constexpr T&& Min(T&& value1, T&& value2) noexcept(NoexceptComparable<T>)
+    {
+        if(Forward(value1) < Forward(value2))
+            return Forward(value1);
+
+        return Forward(value2);
+    }
+
+    template<typename T>
+    requires Comparable<T>
+    constexpr T&& Max(T&& value1, T&& value2) noexcept(NoexceptComparable<T>)
+    {
+        if(Forward(value1) < Forward(value2))
+            return Forward(value2);
+
+        return Forward(value1);
+    }
+
+    inline Void CopyMemory(const Void* src, Void* dst, DeviceSize size) noexcept
+    {
+        memcpy(dst, src, size);
+    }
+
+    inline Void MoveMemory(const Void* src, Void* dst, DeviceSize size) noexcept
+    {
+        memmove(dst, src, size);
     }
 };

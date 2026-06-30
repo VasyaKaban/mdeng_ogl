@@ -10,7 +10,7 @@ namespace Core
     class alignas(UUID_SIZE) UUID
     {
     private:
-        consteval unsigned char HexToDec(char value) noexcept
+        consteval UInt8 HexToDec(UTF8Char value) noexcept
         {
             if(value >= '0' && value <= '9')
                 return value - '0';
@@ -22,7 +22,7 @@ namespace Core
             : data{}
         {}
 
-        consteval UUID(const unsigned char (&raw)[UUID_SIZE]) noexcept
+        consteval UUID(const UInt8 (&raw)[UUID_SIZE]) noexcept
         {
             for(DeviceSize i = 0; i < UUID_SIZE; i++)
                 this->data[i] = raw[i];
@@ -30,7 +30,9 @@ namespace Core
 
         //123e4567-e89b-12d3-a456-426655440000
         //8-4-4-4-12
-        consteval UUID(const char (&data)[37]) noexcept
+        template<DeviceSize N>
+        requires(N >= 36)
+        consteval UUID(const UTF8Char (&data)[N]) noexcept
         {
             int index = 0;
             DeviceSize data_index = 0;
@@ -61,9 +63,9 @@ namespace Core
         UUID& operator=(const UUID&) = default;
         UUID& operator=(UUID&&) = default;
 
-        bool operator==(const UUID&) const = default;
+        Bool operator==(const UUID&) const = default;
 
-        constexpr bool operator==(const unsigned char (&raw)[UUID_SIZE]) const noexcept
+        constexpr Bool operator==(const UInt8 (&raw)[UUID_SIZE]) const noexcept
         {
             for(DeviceSize i = 0; i < UUID_SIZE; i++)
             {
@@ -74,6 +76,6 @@ namespace Core
             return true;
         }
     public:
-        unsigned char data[UUID_SIZE];
+        UInt8 data[UUID_SIZE];
     };
 };

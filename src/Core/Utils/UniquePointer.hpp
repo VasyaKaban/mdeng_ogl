@@ -1,8 +1,5 @@
 #pragma once
 
-#include <type_traits>
-#include <concepts>
-#include <utility>
 #include "Traits.hpp"
 
 namespace Core
@@ -10,7 +7,7 @@ namespace Core
     template<typename T>
     struct UniquePointerDefaulDeleter
     {
-        constexpr void operator()(T* ptr) noexcept
+        constexpr Void operator()(T* ptr) noexcept
         {
             ::delete ptr;
         }
@@ -20,13 +17,13 @@ namespace Core
     concept DeleterFor = requires(D& deleter, T* ptr) { deleter(ptr); };
 
     template<typename T, typename D = UniquePointerDefaulDeleter<T>>
-    requires std::same_as<std::remove_cvref_t<D>, D> && (!std::is_array_v<T>)
+    requires SameAs<DropConstVolatileReference<D>, D> && (!Array<T>)
     class UniquePointer
     {
         static_assert(DeleterFor<D, T>);
     public:
-        constexpr UniquePointer() noexcept(std::is_nothrow_default_constructible_v<D>)
-        requires std::is_default_constructible_v<D>
+        constexpr UniquePointer() noexcept(NoexceptDefaultConstructible<D>)
+        requires DefaultConstructible<D>
             : ptr(nullptr),
               deleter()
         {}
@@ -40,39 +37,39 @@ namespace Core
         UniquePointer(const UniquePointer&) = delete;
 
         //Yes, firstly we need to move deleter and then ptr!
-        constexpr UniquePointer(UniquePointer&& p) noexcept(std::is_nothrow_move_constructible_v<D>)
-        requires std::move_constructible<D>
-            : deleter(std::move(p.deleter)),
-              ptr(std::exchange(p.ptr, nullptr))
+        constexpr UniquePointer(UniquePointer&& p) noexcept(NoexceptMoveConstructible<D>)
+        requires MoveConstructible<D>
+            : deleter(Move(p.deleter)),
+              ptr(Exchange(p.ptr, nullptr))
         {}
 
         UniquePointer& operator=(const UniquePointer&) = delete;
 
-        constexpr UniquePointer& operator=(UniquePointer&& p) noexcept(std::is_nothrow_move_assignable_v<D>)
-        requires std::is_move_assignable_v<D>
+        constexpr UniquePointer& operator=(UniquePointer&& p) noexcept(NoexceptMoveAssignable<D>)
+        requires MoveAssignable<D>
         {
             Reset();
 
-            this->deleter = std::move(p.deleter);
-            this->ptr = std::exchange(p.ptr, nullptr);
+            this->deleter = Move(p.deleter);
+            this->ptr = Exchange(p.ptr, nullptr);
 
             return *this;
         }
 
-        constexpr UniquePointer(T* ptr) noexcept(std::is_nothrow_default_constructible_v<D>)
-        requires std::is_default_constructible_v<D>
+        constexpr UniquePointer(T* ptr) noexcept(NoexceptDefaultConstructible<D>)
+        requires DefaultConstructible<D>
             : ptr(ptr),
               deleter()
         {}
 
-        constexpr UniquePointer(T* ptr, const D& deleter) noexcept(std::is_nothrow_copy_constructible_v<D>)
+        constexpr UniquePointer(T* ptr, const D& deleter) noexcept(NoexceptCopyConstructible<D>)
             : ptr(ptr),
               deleter(deleter)
         {}
 
-        constexpr UniquePointer(T* ptr, D&& deleter) noexcept(std::is_nothrow_move_constructible_v<D>)
+        constexpr UniquePointer(T* ptr, D&& deleter) noexcept(NoexceptMoveConstructible<D>)
             : ptr(ptr),
-              deleter(std::move(deleter))
+              deleter(Move(deleter))
         {}
 
         constexpr T* GetData() noexcept
@@ -95,7 +92,7 @@ namespace Core
             return this->deleter;
         }
 
-        constexpr void Reset(T* new_ptr = nullptr)
+        constexpr Void Reset(T* new_ptr = nullptr)
         {
             if(this->ptr)
                 deleter(this->ptr);
@@ -105,10 +102,10 @@ namespace Core
 
         constexpr T* Release() noexcept
         {
-            return std::exchange(this->ptr, nullptr);
+            return Exchange(this->ptr, nullptr);
         }
 
-        constexpr explicit operator bool() const noexcept
+        constexpr explicit operator Bool() const noexcept
         {
             return this->ptr != nullptr;
         }
@@ -121,5 +118,5 @@ namespace Core
     UniquePointer(T*) -> UniquePointer<T>;
 
     template<typename T, typename D>
-    UniquePointer(T*, D&& deleter) -> UniquePointer<T, std::remove_cvref_t<D>>;
+    UniquePointer(T*, D&& deleter) -> UniquePointer<T, DropConstVolatileReference<D>>;
 };

@@ -25,23 +25,23 @@ namespace Core
 
         ~RC() = default;
     private:
-        constexpr void IncrementRefs() noexcept
+        constexpr Void IncrementRefs() noexcept
         {
             refs++;
         }
 
-        constexpr void DecrementRefs() noexcept
+        constexpr Void DecrementRefs() noexcept
         {
             assert(refs != 0);
             refs--;
         }
 
-        constexpr bool IsAlive() const noexcept
+        constexpr Bool IsAlive() const noexcept
         {
             return refs != 0;
         }
     private:
-        std::size_t refs;
+        std::DeviceSize refs;
     };
 
     template<typename T>
@@ -140,7 +140,7 @@ namespace Core
             return *this;
         }
 
-        constexpr void Reset(T* new_ptr = nullptr) noexcept
+        constexpr Void Reset(T* new_ptr = nullptr) noexcept
         {
             Drop();
 
@@ -149,7 +149,7 @@ namespace Core
                 ptr->RC::IncrementRefs();
         }
 
-        constexpr std::size_t GetRefCount() const noexcept
+        constexpr std::DeviceSize GetRefCount() const noexcept
         {
             if(ptr == nullptr)
                 return 0;
@@ -162,7 +162,7 @@ namespace Core
             return ptr;
         }
 
-        constexpr explicit operator bool() const noexcept
+        constexpr explicit operator Bool() const noexcept
         {
             return ptr != nullptr;
         }
@@ -177,7 +177,7 @@ namespace Core
             return ptr;
         }
     private:
-        constexpr void Drop() noexcept
+        constexpr Void Drop() noexcept
         {
             if(ptr != nullptr)
             {

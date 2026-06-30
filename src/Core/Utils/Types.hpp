@@ -22,8 +22,9 @@ inline namespace CoreTypes
     using Char = char;
     using WideChar = wchar_t;
 
-    static_assert(sizeof(bool) == 1);
     using Bool = bool;
+    static_assert(sizeof(Bool) == 1);
+
     using Bool32 = Int32;
 
     using DeviceSize = UInt64;
@@ -181,6 +182,6 @@ namespace Core
     {
         constexpr static Bool Min = false;
         constexpr static Bool Max = true;
-        constexpr static DeviceSize Bits = 8 * sizeof(bool);
+        constexpr static DeviceSize Bits = 8 * sizeof(Bool);
     };
 };

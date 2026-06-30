@@ -6,7 +6,7 @@
 
 namespace Core
 {
-#define CORE_INTERFACE_ID(VALUE) constexpr static UUID INTERFACE_IDENTITY = VALUE;
+#define CORE_INTERFACE_ID(VALUE) constexpr static UUID INTERFACE_IDENTITY = u8##VALUE;
 #define CORE_INTERFACE_GET_ID(CLASS, ...) CLASS __VA_OPT__(, __VA_ARGS__)::INTERFACE_IDENTITY
 
     class CORE_API Interface
@@ -18,9 +18,9 @@ namespace Core
 
         //Cast: check that current object implements(has in hierarchy class with current ClassID) and performs inner cast to the desired class type(with possible class disambiguation)
         //This methods should be implemented for interfaces and for classes(in case of ambiguation)
-        virtual const void* Cast(const UUID& id) const noexcept;
-        virtual void Acquire() noexcept = 0;
-        virtual void Release() noexcept = 0;
+        virtual const Void* Cast(const UUID& id) const noexcept;
+        virtual Void Acquire() noexcept = 0;
+        virtual Void Release() noexcept = 0;
     };
 
     //both To and From can be const or not
@@ -32,7 +32,7 @@ namespace Core
         const auto& id = CORE_INTERFACE_GET_ID(DropConstVolatileReference<To>);
 
         if constexpr(SameAs<DropConstVolatileReference<From>, From>)
-            return static_cast<To*>(const_cast<void*>(from->Cast(id)));
+            return static_cast<To*>(const_cast<Void*>(from->Cast(id)));
         else
             return static_cast<To*>(from->Cast(id));
     }
@@ -121,7 +121,7 @@ namespace Core
             return *this;
         }
 
-        void Reset() noexcept
+        Void Reset() noexcept
         {
             if(this->obj)
             {
@@ -135,7 +135,7 @@ namespace Core
             return this->obj;
         }
 
-        explicit operator bool() const noexcept
+        explicit operator Bool() const noexcept
         {
             return this->obj != nullptr;
         }

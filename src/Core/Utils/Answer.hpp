@@ -1,65 +1,65 @@
 #pragma once
 
-#include <concepts>
 #include <cassert>
+#include "Traits.hpp"
 
 namespace Core
 {
     template<typename T>
-    requires(!std::is_reference_v<T> && !std::is_volatile_v<T>)
-    class Nullable
+    requires(!Reference<T> && !Volatile<T>)
+    class Answer
     {
     public:
-        Nullable() noexcept
+        Answer() noexcept
             : is_created(false)
         {}
 
-        Nullable(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires std::copy_constructible<T>
+        Answer(const T& value) noexcept(NoexceptCopyConstructible<T>)
+        requires CopyConstructible<T>
         {
             new(this->data) T(value);
             this->is_created = true;
         }
 
-        Nullable(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires std::move_constructible<T>
+        Answer(T&& value) noexcept(NoexceptMoveConstructible<T>)
+        requires MoveConstructible<T>
         {
-            new(this->data) T(std::move(value));
+            new(this->data) T(Move(value));
             this->is_created = true;
         }
 
         template<typename... Args>
-        Nullable(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-        requires std::constructible_from<T, Args...>
+        Answer(Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
+        requires Constructible<T, Args...>
         {
-            new(this->data) T(std::forward<Args>(args)...);
+            new(this->data) T(Forward(args)...);
             this->is_created = true;
         }
 
-        ~Nullable()
+        ~Answer()
         {
             if(this->is_created)
                 reinterpret_cast<T*>(this->data)->~T();
         }
 
-        Nullable(const Nullable& null) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires std::copy_constructible<T>
+        Answer(const Answer& null) noexcept(NoexceptCopyConstructible<T>)
+        requires CopyConstructible<T>
             : is_created(null.is_created)
         {
             if(null.is_created)
                 new(this->data) T(null.GetValue());
         }
 
-        Nullable(Nullable&& null) noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires std::move_constructible<T>
+        Answer(Answer&& null) noexcept(NoexceptMoveConstructible<T>)
+        requires MoveConstructible<T>
             : is_created(null.is_created)
         {
             if(null.is_created)
-                new(this->data) T(std::move(null).GetValue());
+                new(this->data) T(Move(null).GetValue());
         }
 
-        Nullable& operator=(const Nullable& null) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires std::copy_constructible<T>
+        Answer& operator=(const Answer& null) noexcept(NoexceptCopyConstructible<T>)
+        requires CopyConstructible<T>
         {
             this->is_created = null.is_created;
 
@@ -67,17 +67,17 @@ namespace Core
                 new(this->data) T(null.GetValue());
         }
 
-        Nullable& operator=(Nullable&& null) noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires std::move_constructible<T>
+        Answer& operator=(Answer&& null) noexcept(NoexceptMoveConstructible<T>)
+        requires MoveConstructible<T>
         {
             this->is_created = null.is_created;
 
             if(null.is_created)
-                new(this->data) T(std::move(null).GetValue());
+                new(this->data) T(Move(null).GetValue());
         }
 
-        Nullable& operator=(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
-        requires std::copy_constructible<T>
+        Answer& operator=(const T& value) noexcept(NoexceptCopyConstructible<T>)
+        requires CopyConstructible<T>
         {
             this->Clear();
 
@@ -87,45 +87,45 @@ namespace Core
             return *this;
         }
 
-        Nullable& operator=(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
-        requires std::move_constructible<T>
+        Answer& operator=(T&& value) noexcept(NoexceptMoveConstructible<T>)
+        requires MoveConstructible<T>
         {
             this->Clear();
 
-            new(this->data) T(std::move(value));
+            new(this->data) T(Move(value));
             this->is_created = true;
 
             return *this;
         }
 
         template<typename U>
-        Nullable& operator=(U&& value) noexcept(std::is_nothrow_constructible_v<T, U>)
-        requires std::constructible_from<T, U>
+        Answer& operator=(U&& value) noexcept(NoexceptConstructible<T, U>)
+        requires Constructible<T, U>
         {
             this->Clear();
 
-            new(this->data) T(std::forward<U>(value));
+            new(this->data) T(Forward(value));
             this->is_created = true;
 
             return *this;
         }
 
         template<typename... Args>
-        void CreateInPlace(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>)
-        requires std::constructible_from<T, Args...>
+        Void CreateInPlace(Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
+        requires Constructible<T, Args...>
         {
             this->Clear();
 
-            new(this->data) T(std::forward<Args>(args)...);
+            new(this->data) T(Forward(args)...);
             this->is_created = true;
         }
 
-        bool HasValue() const noexcept
+        Bool HasValue() const noexcept
         {
             return this->is_created;
         }
 
-        void Clear() noexcept
+        Void Clear() noexcept
         {
             if(this->is_created)
             {
@@ -147,15 +147,15 @@ namespace Core
 
         T&& GetValue() && noexcept
         {
-            return std::move(*this).operator*();
+            return Move(*this).operator*();
         }
 
         const T&& GetValue() const&& noexcept
         {
-            return std::move(*this).operator*();
+            return Move(*this).operator*();
         }
 
-        explicit operator bool() const noexcept
+        explicit operator Bool() const noexcept
         {
             return this->is_created;
         }
@@ -178,14 +178,14 @@ namespace Core
         {
             assert(this->is_created);
 
-            return std::move(*reinterpret_cast<T*>(this->data));
+            return Move(*reinterpret_cast<T*>(this->data));
         }
 
         const T&& operator*() const&& noexcept
         {
             assert(this->is_created);
 
-            return std::move(*reinterpret_cast<const T*>(this->data));
+            return Move(*reinterpret_cast<const T*>(this->data));
         }
 
         T* operator->() noexcept
@@ -202,10 +202,10 @@ namespace Core
             return reinterpret_cast<const T*>(this->data);
         }
     private:
-        alignas(alignof(T)) char data[sizeof(T)];
-        bool is_created;
+        alignas(alignof(T)) UInt8 data[sizeof(T)];
+        Bool is_created;
     };
 
     template<typename T>
-    Nullable(T&&) -> Nullable<std::remove_reference_t<T>>;
+    Answer(T&&) -> Answer<DropReference<T>>;
 };

@@ -64,7 +64,7 @@ namespace Core
             this->size = sp.size;
         }
 
-        constexpr bool IsEmpty() const noexcept
+        constexpr Bool IsEmpty() const noexcept
         {
             return this->size == 0;
         }

@@ -72,7 +72,7 @@ namespace Core
             return *this;
         }
 
-        bool IsEmpty() const noexcept
+        Bool IsEmpty() const noexcept
         {
             return this->size == 0;
         }
@@ -149,50 +149,50 @@ namespace Core
             return FindReverse(str.data, str.size);
         }
 
-        bool StartsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
+        Bool StartsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::StringStartsWith(this->data, this->size, input, input_size);
         }
 
         template<DeviceSize N>
-        bool StartsWith(const UTF8Char (&input)[N]) const noexcept
+        Bool StartsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return StartsWith(input, N - 1);
         }
 
-        bool StartsWith(const StringView& str) const noexcept
+        Bool StartsWith(const StringView& str) const noexcept
         {
             return StartsWith(str.data, str.size);
         }
 
-        bool EndsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
+        Bool EndsWith(const UTF8Char* input, DeviceSize input_size) const noexcept
         {
             return ::Core::Detail::StringEndsWith(this->data, this->size, input, input_size);
         }
 
         template<DeviceSize N>
-        bool EndsWith(const UTF8Char (&input)[N]) const noexcept
+        Bool EndsWith(const UTF8Char (&input)[N]) const noexcept
         {
             return EndsWith(input, N - 1);
         }
 
-        bool EndsWith(const StringView& str) const noexcept
+        Bool EndsWith(const StringView& str) const noexcept
         {
             return EndsWith(str.data, str.size);
         }
 
-        bool operator==(const StringView& str) const noexcept
+        Bool operator==(const StringView& str) const noexcept
         {
             return ::Core::Detail::CompareStringsEquality(this->data, this->size, str.data, str.size);
         }
 
         template<DeviceSize N>
-        bool operator==(const UTF8Char (&input)[N]) const noexcept
+        Bool operator==(const UTF8Char (&input)[N]) const noexcept
         {
             return ::Core::Detail::CompareStringsEquality(this->data, this->size, input, N - 1);
         }
 
-        bool operator<(const StringView& str) const noexcept
+        Bool operator<(const StringView& str) const noexcept
         {
             return ::Core::Detail::CompareStringsLexicallyLess(this->data, this->size, str.data, str.size);
         }

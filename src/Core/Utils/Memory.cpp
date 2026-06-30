@@ -3,7 +3,7 @@
 
 namespace Core
 {
-    void* RuntimeAllocateMemory(const MemoryRequirements& req) noexcept
+    Void* RuntimeAllocateMemory(const MemoryRequirements& req) noexcept
     {
 #ifdef _MSC_VER
         return _aligned_malloc(req.size, req.alignment);
@@ -12,7 +12,7 @@ namespace Core
 #endif
     }
 
-    void RuntimeDeallocateMemory(void* ptr) noexcept
+    Void RuntimeDeallocateMemory(Void* ptr) noexcept
     {
 #ifdef _MSC_VER
         return _aligned_free(ptr);
@@ -24,7 +24,7 @@ namespace Core
     Allocator1::~Allocator1()
     {}
 
-    const void* Allocator1::Cast(const UUID& id) const noexcept
+    const Void* Allocator1::Cast(const UUID& id) const noexcept
     {
         if(id == CORE_INTERFACE_GET_ID(Allocator1))
             return this;
@@ -38,17 +38,17 @@ namespace Core
         GlobalAllocator() = default;
         virtual ~GlobalAllocator() = default;
 
-        virtual void Acquire() noexcept override
+        virtual Void Acquire() noexcept override
         {
             //noop
         }
 
-        virtual void Release() noexcept override
+        virtual Void Release() noexcept override
         {
             //noop
         }
 
-        virtual void* Allocate(const MemoryRequirements& req) override
+        virtual Void* Allocate(const MemoryRequirements& req) override
         {
             if(!IsPowerOf2(req.alignment))
                 CORE_THROW_EXCEPTION_MOCK("Alignment is not power of two")
@@ -57,24 +57,24 @@ namespace Core
             if(!Align(new_req.size, new_req.alignment))
                 CORE_THROW_EXCEPTION_MOCK("Too many memory requested")
 
-            void* ptr = RuntimeAllocateMemory(new_req);
+            Void* ptr = RuntimeAllocateMemory(new_req);
             if(!ptr)
                 CORE_THROW_EXCEPTION_MOCK("Bad alloc")
 
             return ptr;
         }
 
-        virtual void Deallocate(void* ptr) noexcept override
+        virtual Void Deallocate(Void* ptr) noexcept override
         {
             RuntimeDeallocateMemory(ptr);
         }
 
-        virtual bool Grow(void* ptr, DeviceSize size) noexcept override
+        virtual Bool Grow(Void* ptr, DeviceSize size) noexcept override
         {
             return false;
         }
 
-        virtual bool Trim(void* ptr, DeviceSize size) noexcept override
+        virtual Bool Trim(Void* ptr, DeviceSize size) noexcept override
         {
             return false;
         }
@@ -92,27 +92,27 @@ namespace Core
         return this->handle;
     }
 
-    Allocator::operator bool() const noexcept
+    Allocator::operator Bool() const noexcept
     {
-        return static_cast<bool>(this->handle);
+        return static_cast<Bool>(this->handle);
     }
 
-    void* Allocator::Allocate(const MemoryRequirements& req)
+    Void* Allocator::Allocate(const MemoryRequirements& req)
     {
         return this->handle->Allocate(req);
     }
 
-    void Allocator::Deallocate(void* ptr) noexcept
+    Void Allocator::Deallocate(Void* ptr) noexcept
     {
         return this->handle->Deallocate(ptr);
     }
 
-    bool Allocator::Grow(void* ptr, DeviceSize size) noexcept
+    Bool Allocator::Grow(Void* ptr, DeviceSize size) noexcept
     {
         return this->handle->Grow(ptr, size);
     }
 
-    bool Allocator::Trim(void* ptr, DeviceSize size) noexcept
+    Bool Allocator::Trim(Void* ptr, DeviceSize size) noexcept
     {
         return this->handle->Trim(ptr, size);
     }
