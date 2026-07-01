@@ -17,4 +17,52 @@ namespace Core
         else
             return value;
     }
+
+    //true -> no-saturating happened
+    template<UnsignedIntegral I>
+    constexpr Bool SaturatingAdd(I value1, I value2, I& result) noexcept
+    {
+        if(NumericLimits<I>::Max - value2 >= value1)
+        {
+            result = value1 + value2;
+            return true;
+        }
+
+        result = NumericLimits<I>::Max;
+        return false;
+    }
+
+    template<UnsignedIntegral I>
+    constexpr Bool SaturatingSub(I value1, I value2, I& result) noexcept
+    {
+        if(value1 >= value2)
+        {
+            result = value1 - value2;
+            return true;
+        }
+
+        result = 0;
+        return false;
+    }
+
+    template<UnsignedIntegral I>
+    constexpr Bool SaturatingMul(I value1, I value2, I& result) noexcept
+    {
+        if(value1 == 0 || value2 == 0)
+        {
+            result = 0;
+            return true;
+        }
+
+        I rem = NumericLimits<I>::Max / value2;
+
+        if(rem >= value1)
+        {
+            result = value1 * value2;
+            return true;
+        }
+
+        result = NumericLimits<I>::Max;
+        return false;
+    }
 };
