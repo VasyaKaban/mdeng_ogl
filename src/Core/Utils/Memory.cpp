@@ -1,5 +1,6 @@
 #include "Memory.h"
 #include "Binary.hpp"
+#include <malloc.h>
 
 namespace Core
 {

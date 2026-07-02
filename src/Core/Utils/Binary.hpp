@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include "Traits.hpp"
+#include "Math.hpp"
 
 namespace Core
 {
@@ -31,7 +32,7 @@ namespace Core
             return true;
 
         auto div = size / alignment;
-        if(!SaturatingAdd(div, 1, div))
+        if(!SaturatingAdd(div, static_cast<decltype(div)>(1), div))
             return false;
 
         size = div * alignment;

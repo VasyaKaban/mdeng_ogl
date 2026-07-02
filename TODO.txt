@@ -101,11 +101,8 @@ Instance:
 * Add reverse iterator and sentinel
 * Change typename U to typename Args to insert/Push object
 * Ring -> use Reserve in Push instad of assert 
-* Saturating math
 * Args... for constructor for conatiners
-* Use Core scalar types as usings
 * Use Types.hpp everywhere
-* Extend Traits.hpp weith std-like traits and concepts ans use them
 * Use T (&&arr)[N] as initializer-list replacement
 * Change assert to self-implemented
 * System class -> check types
