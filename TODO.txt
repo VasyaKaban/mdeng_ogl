@@ -107,6 +107,7 @@ Instance:
 * Change assert to self-implemented
 * System class -> check types
 * All .cpp files to Impl folder
+* Small string optimization
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
 Path
