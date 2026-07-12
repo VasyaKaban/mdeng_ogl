@@ -15,5 +15,3 @@
 #        define CORE_API_TEMPLATE extern
 #    endif
 #endif
-
-#define CORE_THROW_EXCEPTION_MOCK(ARG, ...) throw ARG;

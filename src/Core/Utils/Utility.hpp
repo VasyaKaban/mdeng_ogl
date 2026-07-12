@@ -91,12 +91,12 @@ namespace Core
         return Forward(value1);
     }
 
-    inline Void CopyMemory(const Void* src, Void* dst, DeviceSize size) noexcept
+    inline Void CopyNonOverlappedMemory(const Void* src, Void* dst, DeviceSize size) noexcept
     {
         memcpy(dst, src, size);
     }
 
-    inline Void MoveMemory(const Void* src, Void* dst, DeviceSize size) noexcept
+    inline Void CopyOverlappedMemory(const Void* src, Void* dst, DeviceSize size) noexcept
     {
         memmove(dst, src, size);
     }

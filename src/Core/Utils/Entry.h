@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Span.hpp"
-#include "StringView.hpp"
-#include "String.hpp"
+#include "StringView.h"
+#include "String.h"
 #include "Sequence.hpp"
 #include "System.h"
 

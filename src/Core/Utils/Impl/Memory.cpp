@@ -1,5 +1,6 @@
-#include "Memory.h"
-#include "Binary.hpp"
+#include "../Memory.h"
+#include "../Binary.hpp"
+#include "../CommonExceptions.h"
 #include <malloc.h>
 
 namespace Core
@@ -52,15 +53,15 @@ namespace Core
         virtual Void* Allocate(const MemoryRequirements& req) override
         {
             if(!IsPowerOf2(req.alignment))
-                CORE_THROW_EXCEPTION_MOCK("Alignment is not power of two")
+                throw AllocationException(req, AllocationExceptionType::BadMemoryRequirements);
 
             MemoryRequirements new_req(req);
             if(!Align(new_req.size, new_req.alignment))
-                CORE_THROW_EXCEPTION_MOCK("Too many memory requested")
+                throw AllocationException(req, AllocationExceptionType::OutOfMemory);
 
             Void* ptr = RuntimeAllocateMemory(new_req);
             if(!ptr)
-                CORE_THROW_EXCEPTION_MOCK("Bad alloc")
+                throw AllocationException(req, AllocationExceptionType::OutOfMemory);
 
             return ptr;
         }

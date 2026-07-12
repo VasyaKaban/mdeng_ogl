@@ -108,8 +108,14 @@ Instance:
 * System class -> check types
 * All .cpp files to Impl folder
 * Small string optimization
-* Maybe remove plain string iterator and use CharIterator?
 * Non-template classes -> to .cpp files 
+* StringCharIterator -> backtrack + maybe save length save on init/operator++/operator--
+* Format as Formatter objects(as concept) with chaining method model:
+    IntegerFormatter(123).Mode(NumberFormatterMode::Binary).Width(width=5, filler=0) or
+    ... operator _fmt(...)
+    123_fmt.Mode(NumberFormatterMode::Binary).Width(width=5, filler=0)
+* Date/Time
+* Random generator
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
 Path

@@ -214,6 +214,44 @@ namespace Core
             }
         }
 
+        template<typename U, DeviceSize N>
+        requires Constructible<T, const U&>
+        Chain(const U (&init_list)[N], Allocator allocator = GetGlobalAllocator())
+            : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
+              size(0),
+              allocator(allocator)
+        {
+            try
+            {
+                for(const auto& value: init_list)
+                    PushToEnd(value);
+            }
+            catch(...)
+            {
+                Clear();
+                throw;
+            }
+        }
+
+        template<typename U, DeviceSize N>
+        requires Constructible<T, U&&>
+        Chain(U (&&init_list)[N], Allocator allocator = GetGlobalAllocator())
+            : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
+              size(0),
+              allocator(allocator)
+        {
+            try
+            {
+                for(auto&& value: Forward(init_list))
+                    PushToEnd(Forward(value));
+            }
+            catch(...)
+            {
+                Clear();
+                throw;
+            }
+        }
+
         DeviceSize GetSize() const noexcept
         {
             return this->size;
