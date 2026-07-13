@@ -87,11 +87,4 @@ namespace Core
     {
         return Forward(path).GetSentinel();
     }
-
-    template<typename T>
-    requires SameAs<DropConstVolatileReference<T>, Path>
-    auto size(T&& path) noexcept
-    {
-        return Forward(path).GetSize();
-    }
 };

@@ -111,6 +111,7 @@ Instance:
 * Non-template classes -> to .cpp files 
 * Optimize String/StringView creation from already validated UTF-8 data. We can firstly validate data and then pass only validated one
 * Optimize Non-utf8 chars conversion to Path(remove dynamic allocation)
+* GetSize() for String-like objects to GetByteSize()
 * Format:
         3.14_fmt("<10.2f")
 
