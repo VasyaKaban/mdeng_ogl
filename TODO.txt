@@ -110,10 +110,43 @@ Instance:
 * Small string optimization
 * Non-template classes -> to .cpp files 
 * StringCharIterator -> backtrack + maybe save length save on init/operator++/operator--
-* Format as Formatter objects(as concept) with chaining method model:
-    IntegerFormatter(123).Mode(NumberFormatterMode::Binary).Width(width=5, filler=0) or
-    ... operator _fmt(...)
-    123_fmt.Mode(NumberFormatterMode::Binary).Width(width=5, filler=0)
+* Format:
+        3.14_fmt("<10.2f")
+
+        struct IntegerFormatterWrapper
+        {
+            Uint64 value;
+
+            IntegerFormatterWrapper operator(StringView format) noexcept
+            {
+                return IntegerFormatterWrapper(value, format);
+            }
+        };
+
+        IntegerFormatterWrapper operator""_fmt(unsigned long long int value) noexcept
+        {
+            return IntegerFormatterWrapper(value);
+        }
+
+        String str = "world";
+
+        Format("Hello ", str, ". It is not a ", 3.14_fmt(".5"), " but rather a ", 3.14f)
+
+
+        template<typename T>
+        struct Formatter
+        {
+            ...
+        };
+
+        Formatter has it's own methods that Format impl will use.
+        We can create explicit instantiation for Formatter like Formatter<String>.
+        By default Formatter<T> will use the same-named methods from T itself so we can create fmt-like attributes via wrappers
+
+        example:
+        Formatter<String> -> explicit instantiation
+        Formatter<Uint64> -> explicit instantiation(inner implementation will use IntegerFormatterWrapper with default format)
+        Formatter<IntegerFormatterWrapper> -> use methods from IntegerFormatterWrapper
 * Date/Time
 * Random generator
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
