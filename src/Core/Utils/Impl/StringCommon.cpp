@@ -59,6 +59,15 @@ namespace Core
                    static_cast<UTF32Char>(input[3] & 0b0011'1111);
     }
 
+    const UTF8Char* StringEncoder::BacktrackUTF8(const UTF8Char* data) noexcept
+    {
+        data--;
+        while(((*data) & 0b1100'0000) == 0b1000'0000)
+            data--;
+
+        return data;
+    }
+
     //char
     StringEncoderLengthResult StringEncoder::GetLength(const Char* input, DeviceSize input_size) noexcept
     {

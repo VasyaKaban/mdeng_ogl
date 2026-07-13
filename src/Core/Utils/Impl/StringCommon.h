@@ -53,6 +53,7 @@ namespace Core
         static DeviceSize GetCodePointSize(UTF32Char codepoint) noexcept;
         static UTF8CodePoint GetUTF8CodePoint(UTF32Char codepoint) noexcept;
         static UTF32Char GetUTF32Codepoint(const UTF8Char* input) noexcept;
+        static const UTF8Char* BacktrackUTF8(const UTF8Char* data) noexcept;
 
         //char
         static StringEncoderLengthResult GetLength(const Char* input, DeviceSize input_size) noexcept;
@@ -116,6 +117,23 @@ namespace Core
                 UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(this->data);
                 auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
                 this->data += utf8.length;
+
+                return *this;
+            }
+
+            StringCharIterator operator--(int) noexcept
+            {
+                StringCharIterator out(*this);
+
+                --(*this);
+
+                return out;
+            }
+
+            StringCharIterator& operator--() noexcept
+            {
+                auto ptr = StringEncoder::BacktrackUTF8(this->data);
+                this->data = const_cast<C*>(ptr);
 
                 return *this;
             }

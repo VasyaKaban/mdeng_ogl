@@ -109,7 +109,6 @@ Instance:
 * All .cpp files to Impl folder
 * Small string optimization
 * Non-template classes -> to .cpp files 
-* StringCharIterator -> backtrack + maybe save length save on init/operator++/operator--
 * Format:
         3.14_fmt("<10.2f")
 
