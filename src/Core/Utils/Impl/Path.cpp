@@ -128,7 +128,7 @@ namespace Core
                     {
                         token_index = PathMatrixIndex::Current;
                         token = u8".";
-                        input = StringView(Advance(input.GetIterator(), 2), input.GetSentinel());
+                        input = StringView(AdvanceForward(input.GetIterator(), 2), input.GetSentinel());
                         SkipPathMultipleSlashes(input);
                     }
                     else if(input == u8".")
@@ -141,7 +141,7 @@ namespace Core
                     {
                         token_index = PathMatrixIndex::Back;
                         token = u8"..";
-                        input = StringView(Advance(input.GetIterator(), 3), input.GetSentinel());
+                        input = StringView(AdvanceForward(input.GetIterator(), 3), input.GetSentinel());
                         SkipPathMultipleSlashes(input);
                     }
                     else if(input == u8"..")

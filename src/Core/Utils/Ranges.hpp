@@ -70,10 +70,19 @@ namespace Core
     }
 
     template<ForwardIterator I>
-    constexpr I Advance(I iter, DeviceSize steps) noexcept(noexcept(++iter))
+    constexpr I AdvanceForward(I iter, DeviceSize steps) noexcept(noexcept(++iter))
     {
         for(DeviceSize i = 0; i < steps; i++)
             ++iter;
+
+        return iter;
+    }
+
+    template<BidirectionalIterator I>
+    constexpr I AdvanceBack(I iter, DeviceSize steps) noexcept(noexcept(--iter))
+    {
+        for(DeviceSize i = 0; i < steps; i++)
+            --iter;
 
         return iter;
     }
