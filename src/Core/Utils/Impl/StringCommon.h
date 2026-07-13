@@ -158,6 +158,7 @@ namespace Core
             }
 
             operator StringCharIterator<const C>() const noexcept
+            requires(!Const<C>)
             {
                 return StringCharIterator<const C>(this->data);
             }

@@ -111,11 +111,4 @@ namespace Core
     {
         return Forward(str).GetSentinel();
     }
-
-    template<typename T>
-    requires SameAs<DropConstVolatileReference<T>, StringView>
-    auto size(T&& str) noexcept
-    {
-        return Forward(str).GetSize();
-    }
 };
