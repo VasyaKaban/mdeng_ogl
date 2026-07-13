@@ -194,11 +194,6 @@ namespace Core
         return res;
     }
 
-    Void String::Prepend(const String& str)
-    {
-        Prepend(str.data, str.size);
-    }
-
     namespace Detail
     {
         template<Character C>
@@ -310,6 +305,16 @@ namespace Core
         }
     };
 
+    Void String::Prepend(const String& str)
+    {
+        Prepend(str.data, str.size);
+    }
+
+    Void String::Prepend(ConstIterator begin, ConstIterator end)
+    {
+        Prepend(begin.GetAddress(), end.GetAddress() - begin.GetAddress());
+    }
+
     Void String::Prepend(const Char* input, DeviceSize input_size)
     {
         Detail::StringPrependImpl(input, input_size, this->data, this->size, this->capacity, this->allocator);
@@ -340,6 +345,11 @@ namespace Core
         Append(str.data, str.size);
     }
 
+    Void String::Append(ConstIterator begin, ConstIterator end)
+    {
+        Append(begin.GetAddress(), end.GetAddress() - begin.GetAddress());
+    }
+
     Void String::Append(const Char* input, DeviceSize input_size)
     {
         Detail::StringAppendImpl(input, input_size, this->data, this->size, this->capacity, this->allocator);
@@ -368,6 +378,11 @@ namespace Core
     Void String::Insert(ConstIterator before_it, const String& str)
     {
         Insert(before_it, str.data, str.size);
+    }
+
+    Void String::Insert(ConstIterator before_it, ConstIterator begin, ConstIterator end)
+    {
+        Insert(before_it, begin.GetAddress(), end.GetAddress() - begin.GetAddress());
     }
 
     Void String::Insert(ConstIterator before_it, const Char* input, DeviceSize input_size)

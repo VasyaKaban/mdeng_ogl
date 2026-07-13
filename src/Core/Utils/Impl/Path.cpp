@@ -1,6 +1,7 @@
 #include "../Path.h"
 #include "../Types.hpp"
 #include "../StringView.h"
+#include "../Ranges.hpp"
 
 namespace Core
 {
@@ -16,42 +17,37 @@ namespace Core
             PathMatrixIndexSize
         };
 
-        using ConcatFunction = DeviceSize /*new size*/ (*)(UTF8Char* current_str, DeviceSize current_str_size, const UTF8Char* input_str, DeviceSize input_str_size);
+        using ConcatFunction = Void (*)(String& current, const StringView& input);
 
-        DeviceSize PathMatrixAppendToPath(UTF8Char* current_str, DeviceSize current_str_size, const UTF8Char* input_str, DeviceSize input_str_size)
+        Void PathMatrixAppendToPath(String& current, const StringView& input)
         {
-            current_str[current_str_size] = u8'/';
-            CopyNonOverlappedMemory(input_str, current_str + current_str_size + 1, input_str_size);
-
-            return current_str_size + 1 + input_str_size;
+            current.Append(u8"/");
+            current.Append(input.GetIterator(), input.GetSentinel());
         };
 
-        DeviceSize PathMatrixNoOp(UTF8Char* current_str, DeviceSize current_str_size, const UTF8Char* input_str, DeviceSize input_str_size)
+        Void PathMatrixNoOp(String& current, const StringView& input)
         {
-            return current_str_size;
+            //noop
+            return;
         };
 
-        DeviceSize PathMatrixCopyContent(UTF8Char* current_str, DeviceSize current_str_size, const UTF8Char* input_str, DeviceSize input_str_size)
+        Void PathMatrixCopyContent(String& current, const StringView& input)
         {
-            CopyNonOverlappedMemory(input_str, current_str + current_str_size, input_str_size);
-
-            return current_str_size + input_str_size;
+            current.Append(input.GetIterator(), input.GetSentinel());
         };
 
-        DeviceSize PathMatrixAssert(UTF8Char* current_str, DeviceSize current_str_size, const UTF8Char* input_str, DeviceSize input_str_size)
+        Void PathMatrixAssert(String& current, const StringView& input)
         {
             assert(false);
-
-            return current_str_size;
         };
 
-        DeviceSize PathMatrixBacktrace(UTF8Char* current_str, DeviceSize current_str_size, const UTF8Char* input_str, DeviceSize input_str_size)
+        Void PathMatrixBacktrace(String& current, const StringView& input)
         {
-            auto slash_ptr = Core::Detail::FindInStringReverse(current_str, current_str_size, u8"/", 1);
-            if(slash_ptr == nullptr) //no slash -> empty
-                return 0;
+            auto it = current.FindReverse(u8"/");
+            if(it == current.GetSentinel()) //no slash -> empty
+                current.Clear();
             else
-                return slash_ptr - current_str;
+                current.EraseLast(++it);
         };
 
         constexpr static ConcatFunction PathConcatMatrix[PathMatrixIndex::PathMatrixIndexSize][PathMatrixIndex::PathMatrixIndexSize] = {
@@ -112,8 +108,10 @@ namespace Core
         //result restrictions:
         //no tail /(exception -> root)
         //no .
-        static void ConcatPaths(StringView current, StringView input)
+        static void ConcatPaths(String& current, StringView input)
         {
+            current.Reserve(current.GetSize() + input.GetSize());
+
             while(!input.IsEmpty())
             {
                 StringView token;
@@ -126,6 +124,49 @@ namespace Core
                 }
                 else if(input.StartsWith(u8"."))
                 {
+                    if(input.StartsWith(u8"./"))
+                    {
+                        token_index = PathMatrixIndex::Current;
+                        token = u8".";
+                        input = StringView(Advance(input.GetIterator(), 2), input.GetSentinel());
+                        SkipPathMultipleSlashes(input);
+                    }
+                    else if(input == u8".")
+                    {
+                        token_index = PathMatrixIndex::Current;
+                        token = u8".";
+                        input = StringView();
+                    }
+                    else if(input.StartsWith(u8"../"))
+                    {
+                        token_index = PathMatrixIndex::Back;
+                        token = u8"..";
+                        input = StringView(Advance(input.GetIterator(), 3), input.GetSentinel());
+                        SkipPathMultipleSlashes(input);
+                    }
+                    else if(input == u8"..")
+                    {
+                        token_index = PathMatrixIndex::Back;
+                        token = u8"..";
+                        input = StringView();
+                    }
+                    else
+                    {
+                        token_index = PathMatrixIndex::Part;
+
+                        auto it = input.Find(u8"/");
+                        if(it == input.GetSentinel())
+                        {
+                            token = input;
+                            input = StringView();
+                        }
+                        else
+                        {
+                            token = StringView(input.GetIterator(), it);
+                            input = StringView(it, input.GetSentinel());
+                            SkipPathMultipleSlashes(input);
+                        }
+                    }
                 }
                 else
                 {
@@ -144,106 +185,170 @@ namespace Core
                         SkipPathMultipleSlashes(input);
                     }
                 }
+
+                PathMatrixIndex current_token_index = PathMatrixIndex::Empty;
+                if(!current.IsEmpty())
+                {
+                    if(current.EndsWith(u8"/"))
+                        current_token_index = PathMatrixIndex::Root;
+                    else if(current.EndsWith(u8"/..") || current == u8"..")
+                        current_token_index = PathMatrixIndex::Back;
+                    else if(current.EndsWith(u8"/.") || current == u8".")
+                        current_token_index = PathMatrixIndex::Current;
+                    else
+                        current_token_index = PathMatrixIndex::Part;
+                }
+
+                PathConcatMatrix[current_token_index][token_index](current, token);
             }
         }
-
-        /*
-def AddPath(app_path: str) -> str:
-    while len(app_path) != 0:
-        token = ""
-        token_index = EMPTY_INDEX
-        if app_path.startswith("/"):
-            token_index = ROOT_INDEX
-            token = "/"
-            app_path = SkipSlashes(app_path)
-        elif app_path.startswith("."):
-            if app_path.startswith("./"):
-                token_index = CURRENT_INDEX
-                token = "."
-                app_path = app_path[2:]
-                app_path = SkipSlashes(app_path)
-            elif app_path == ".":
-                token_index = CURRENT_INDEX
-                token = "."
-                app_path = ""
-            elif app_path.startswith("../"):
-                token_index = BACK_INDEX
-                token = ".."
-                app_path = app_path[3:]
-                app_path = SkipSlashes(app_path)
-            elif app_path == "..":
-                token_index = BACK_INDEX
-                token = ".."
-                app_path = ""
-            else:
-                slash_index = app_path.find("/")
-                if slash_index == -1:
-                    token_index = FILE_INDEX
-                    token = f"{app_path}"
-                    app_path = ""
-                else:
-                    token_index = FILE_INDEX
-                    token = f"{app_path[0:slash_index]}"
-                    app_path = app_path[slash_index:]
-                    app_path = SkipSlashes(app_path)
-        else:
-            slash_index = app_path.find("/")
-            if slash_index == -1:
-                token_index = FILE_INDEX
-                token = f"{app_path}"
-                app_path = ""
-            else:
-                token_index = FILE_INDEX
-                token = f"{app_path[0:slash_index]}"
-                app_path = app_path[slash_index:]
-                app_path = SkipSlashes(app_path)
-
-        result_token_index = EMPTY_INDEX
-        if len(result) != 0:
-            if result.endswith("/"):
-                if result == "/":
-                    result_token_index = ROOT_INDEX
-            elif result.endswith("/..") or result == "..":
-                result_token_index = BACK_INDEX
-            elif result.endswith("/.") or result == ".":
-                result_token_index = CURRENT_INDEX
-            else:
-                result_token_index = FILE_INDEX     
-
-        result = CONCAT_MATRIX[result_token_index][token_index](result, token)
-
-    return result*/
     };
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    Path::Path(Allocator allocator = GetGlobalAllocator());
-    Path::Path(DeviceSize reserve, Allocator allocator = GetGlobalAllocator());
-    Path::~Path();
-    Path::Path(const Path& path);
-    Path::Path(Path&& path) noexcept;
-    Path& Path::operator=(const Path& path);
-    Path& Path::operator=(Path&& path) noexcept;
+    Path::Path(Allocator allocator)
+        : data(allocator)
+    {}
 
-    Path::Path(const StringView& str, Allocator allocator = GetGlobalAllocator());
-    Path& Path::operator=(StringView str);
+    Path::Path(DeviceSize reserve, Allocator allocator)
+        : data(reserve, allocator)
+    {}
 
-    Path::Path(Detail::StringCharIterator<const UTF8Char> begin, Detail::StringCharIterator<const UTF8Char> end, Allocator allocator = GetGlobalAllocator());
-    Path::Path(const Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-    Path::Path(const WideChar* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-    Path::Path(const UTF8Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-    Path::Path(const UTF16Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-    Path::Path(const UTF32Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
+    Path::~Path()
+    {}
 
-    Path& Path::Append(const Path& path);
-    Path& Path::Append(Iterator begin, Iterator end);
+    Path::Path(const Path& path)
+        : data(path.data)
+    {}
 
-    Path Path::operator/(const Path& path);
-    Path& Path::operator/=(const Path& path);
+    Path::Path(Path&& path) noexcept
+        : data(Move(path.data))
+    {}
 
-    Path& Path::Back();
-    Path Path::operator<<(DeviceSize steps);
-    Path& Path::operator<<=(DeviceSize steps);
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    Path& Path::operator=(const Path& path)
+    {
+        this->data = path.data;
+
+        return *this;
+    }
+
+    Path& Path::operator=(Path&& path) noexcept
+    {
+        this->data = Move(path.data);
+
+        return *this;
+    }
+
+    Path::Path(const StringView& str, Allocator allocator)
+        : data(str.GetSize(), allocator)
+    {
+        Detail::ConcatPaths(this->data, str);
+    }
+
+    Path& Path::operator=(StringView str)
+    {
+        this->data.Clear();
+
+        Detail::ConcatPaths(this->data, str);
+
+        return *this;
+    }
+
+    Path::Path(StringView::Iterator begin, StringView::Iterator end, Allocator allocator)
+        : Path(StringView(begin, end), allocator)
+    {}
+
+    Path::Path(const Char* input, DeviceSize input_size, Allocator allocator)
+        : Path(reinterpret_cast<const UTF8Char*>(input), input_size, allocator)
+    {}
+
+    Path::Path(const WideChar* input, DeviceSize input_size, Allocator allocator)
+        : data(allocator)
+    {
+        String tmp(input, input_size);
+        Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
+    }
+
+    Path::Path(const UTF8Char* input, DeviceSize input_size, Allocator allocator)
+        : data(input_size, allocator)
+    {
+        Detail::ConcatPaths(this->data, StringView(input, input_size));
+    }
+
+    Path::Path(const UTF16Char* input, DeviceSize input_size, Allocator allocator)
+        : data(allocator)
+    {
+        String tmp(input, input_size);
+        Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
+    }
+
+    Path::Path(const UTF32Char* input, DeviceSize input_size, Allocator allocator)
+        : data(allocator)
+    {
+        String tmp(input, input_size);
+        Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
+    }
+
+    Path& Path::Append(const Path& path)
+    {
+        Detail::ConcatPaths(this->data, path.GetData());
+
+        return *this;
+    }
+
+    Path Path::operator/(const Path& path)
+    {
+        Path copy(GetSize() + path.GetSize(), GetAllocator());
+        copy.Append(*this);
+        copy.Append(path);
+
+        return copy;
+    }
+
+    Path& Path::operator/=(const Path& path)
+    {
+        Append(path);
+
+        return *this;
+    }
+
+    Path& Path::Back()
+    {
+        Detail::ConcatPaths(this->data, StringView(u8"../"));
+
+        return *this;
+    }
+
+    Path Path::operator<<(DeviceSize steps)
+    {
+        Path copy(*this);
+
+        copy <<= steps;
+
+        return copy;
+    }
+
+    Path& Path::operator<<=(DeviceSize steps)
+    {
+        for(DeviceSize i = 0; i < steps; i++)
+        {
+            if(this->data == u8"/")
+                break;
+            else if(this->data.IsEmpty())
+            {
+                this->data.Reserve((steps - i) * (sizeof(u8"../") - 1));
+                for(; i < steps; i++)
+                {
+                    Back();
+                }
+
+                break;
+            }
+            else
+                Back();
+        }
+
+        return *this;
+    }
+
     StringView Path::GetExtension() const noexcept
     {
         if(IsEmpty() || IsAbsolute())
@@ -319,12 +424,12 @@ def AddPath(app_path: str) -> str:
         return this->data.FlushUnusedReserve();
     }
 
-    Iterator Path::GetIterator() const noexcept
+    Path::Iterator Path::GetIterator() const noexcept
     {
         return Detail::PathPartIterator(StringView(this->data.GetIterator(), this->data.GetSentinel()), this->data.GetIterator());
     }
 
-    Iterator Path::GetSentinel() const noexcept
+    Path::Iterator Path::GetSentinel() const noexcept
     {
         return Detail::PathPartIterator(StringView(this->data.GetIterator(), this->data.GetSentinel()), this->data.GetSentinel());
     }

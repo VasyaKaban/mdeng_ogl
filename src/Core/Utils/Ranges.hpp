@@ -68,4 +68,13 @@ namespace Core
     {
         Sort(begin, begin + size, Forward(comparator));
     }
+
+    template<ForwardIterator I>
+    constexpr I Advance(I iter, DeviceSize steps) noexcept(noexcept(++iter))
+    {
+        for(DeviceSize i = 0; i < steps; i++)
+            ++iter;
+
+        return iter;
+    }
 };

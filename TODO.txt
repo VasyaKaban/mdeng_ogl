@@ -109,6 +109,8 @@ Instance:
 * All .cpp files to Impl folder
 * Small string optimization
 * Non-template classes -> to .cpp files 
+* Optimize String/StringView creation from already validated UTF-8 data. We can firstly validate data and then pass only validated one
+* Optimize Non-utf8 chars conversion to Path(remove dynamic allocation)
 * Format:
         3.14_fmt("<10.2f")
 
@@ -150,7 +152,6 @@ Instance:
 * Random generator
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
-Path
 PathView
 File
 Pool<T>

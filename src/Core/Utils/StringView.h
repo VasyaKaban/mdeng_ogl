@@ -3,6 +3,7 @@
 #include <cassert>
 #include "Core/API.h"
 #include "Impl/StringCommon.h"
+#include "RangeTraits.hpp"
 
 namespace Core
 {
@@ -58,6 +59,22 @@ namespace Core
         StringView& operator=(const UTF8Char (&input)[N]) noexcept
         {
             StringView view(input);
+            *this = view;
+
+            return *this;
+        }
+
+        template<Range R>
+        requires Constructible<StringView::Iterator, RangeIterator<R>>
+        StringView(R&& rng) noexcept
+            : StringView(Forward(rng).GetIterator(), Forward(rng).GetSentinel())
+        {}
+
+        template<Range R>
+        requires Constructible<StringView::Iterator, RangeIterator<R>>
+        StringView& operator=(R&& rng) noexcept
+        {
+            StringView view(Forward(rng).GetIterator(), Forward(rng).GetSentinel());
             *this = view;
 
             return *this;

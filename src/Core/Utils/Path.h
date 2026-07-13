@@ -21,7 +21,7 @@ namespace Core
         Path(const StringView& str, Allocator allocator = GetGlobalAllocator());
         Path& operator=(StringView str);
 
-        Path(Detail::StringCharIterator<const UTF8Char> begin, Detail::StringCharIterator<const UTF8Char> end, Allocator allocator = GetGlobalAllocator());
+        Path(StringView::Iterator begin, StringView::Iterator end, Allocator allocator = GetGlobalAllocator());
         Path(const Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
         Path(const WideChar* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
         Path(const UTF8Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
@@ -29,7 +29,6 @@ namespace Core
         Path(const UTF32Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
 
         Path& Append(const Path& path);
-        Path& Append(Iterator begin, Iterator end);
 
         Path operator/(const Path& path);
         Path& operator/=(const Path& path);

@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include "Memory.h"
+#include "RangeTraits.hpp"
 #include "Utility.hpp"
 #include "Impl/StringCommon.h"
 
@@ -47,6 +48,7 @@ namespace Core
         Bool FlushUnusedReserve() noexcept;
 
         Void Prepend(const String& str);
+        Void Prepend(ConstIterator begin, ConstIterator end);
         Void Prepend(const Char* input, DeviceSize input_size);
         Void Prepend(const WideChar* input, DeviceSize input_size);
         Void Prepend(const UTF8Char* input, DeviceSize input_size);
@@ -54,6 +56,7 @@ namespace Core
         Void Prepend(const UTF32Char* input, DeviceSize input_size);
 
         Void Append(const String& str);
+        Void Append(ConstIterator begin, ConstIterator end);
         Void Append(const Char* input, DeviceSize input_size);
         Void Append(const WideChar* input, DeviceSize input_size);
         Void Append(const UTF8Char* input, DeviceSize input_size);
@@ -61,6 +64,7 @@ namespace Core
         Void Append(const UTF32Char* input, DeviceSize input_size);
 
         Void Insert(ConstIterator before_it, const String& str);
+        Void Insert(ConstIterator before_it, ConstIterator begin, ConstIterator end);
         Void Insert(ConstIterator before_it, const Char* input, DeviceSize input_size);
         Void Insert(ConstIterator before_it, const WideChar* input, DeviceSize input_size);
         Void Insert(ConstIterator before_it, const UTF8Char* input, DeviceSize input_size);
@@ -109,6 +113,23 @@ namespace Core
             *this = String(this->allocator);
 
             this->Append(input, N - 1);
+
+            return *this;
+        }
+
+        template<Range R>
+        requires Constructible<String::ConstIterator, RangeIterator<R>>
+        String(R&& rng, Allocator allocator = GetGlobalAllocator()) noexcept
+            : String(Forward(rng).GetIterator(), Forward(rng).GetSentinel(), allocator)
+        {}
+
+        template<Range R>
+        requires Constructible<String::ConstIterator, RangeIterator<R>>
+        String& operator=(R&& rng) noexcept
+        {
+            *this = String(this->allocator);
+
+            this->Append(Forward(rng).GetIterator(), Forward(rng).GetSentinel());
 
             return *this;
         }
