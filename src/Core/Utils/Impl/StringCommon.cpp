@@ -74,7 +74,7 @@ namespace Core
         return GetLength(reinterpret_cast<const UTF8Char*>(input), input_size);
     }
 
-    Void StringEncoder::Convert(const Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+    DeviceSize StringEncoder::Convert(const Char* input, DeviceSize input_size, UTF8Char* output) noexcept
     {
         return Convert(reinterpret_cast<const UTF8Char*>(input), input_size, output);
     }
@@ -90,14 +90,14 @@ namespace Core
             return GetLength(reinterpret_cast<const UTF8Char*>(input), input_size);
     }
 
-    Void StringEncoder::Convert(const WideChar* input, DeviceSize input_size, UTF8Char* output) noexcept
+    DeviceSize StringEncoder::Convert(const WideChar* input, DeviceSize input_size, UTF8Char* output) noexcept
     {
         if constexpr(WIDE_CHAR_IS_UTF16)
-            Convert(reinterpret_cast<const UTF16Char*>(input), input_size, output);
+            return Convert(reinterpret_cast<const UTF16Char*>(input), input_size, output);
         else if(WIDE_CHAR_IS_UTF32)
-            Convert(reinterpret_cast<const UTF32Char*>(input), input_size, output);
+            return Convert(reinterpret_cast<const UTF32Char*>(input), input_size, output);
         else
-            Convert(reinterpret_cast<const UTF8Char*>(input), input_size, output);
+            return Convert(reinterpret_cast<const UTF8Char*>(input), input_size, output);
     }
 
     //UTF8Char
@@ -142,9 +142,11 @@ namespace Core
         return res;
     }
 
-    Void StringEncoder::Convert(const UTF8Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+    DeviceSize StringEncoder::Convert(const UTF8Char* input, DeviceSize input_size, UTF8Char* output) noexcept
     {
         CopyNonOverlappedMemory(input, output, input_size);
+
+        return input_size;
     }
 
     //UTF16Char
@@ -183,7 +185,7 @@ namespace Core
         return res;
     }
 
-    Void StringEncoder::Convert(const UTF16Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+    DeviceSize StringEncoder::Convert(const UTF16Char* input, DeviceSize input_size, UTF8Char* output) noexcept
     {
         StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
 
@@ -213,6 +215,8 @@ namespace Core
 
             res.output_size += utf8_codepoint.length;
         }
+
+        return res.output_size;
     }
 
     //UTF32Char
@@ -228,7 +232,7 @@ namespace Core
         return res;
     }
 
-    Void StringEncoder::Convert(const UTF32Char* input, DeviceSize input_size, UTF8Char* output) noexcept
+    DeviceSize StringEncoder::Convert(const UTF32Char* input, DeviceSize input_size, UTF8Char* output) noexcept
     {
         StringEncoderLengthResult res = {.input_offset = 0, .output_size = 0};
         while(res.input_offset != input_size)
@@ -240,6 +244,8 @@ namespace Core
             res.output_size += utf8_codepoint.length;
             res.input_offset++;
         }
+
+        return res.output_size;
     }
 
     //utf8 to other
@@ -292,7 +298,7 @@ namespace Core
             return input_size;
     }
 
-    Void StringEncoder::ConvertToUTF16(const UTF8Char* input, DeviceSize input_size, UTF16Char* output) noexcept
+    DeviceSize StringEncoder::ConvertToUTF16(const UTF8Char* input, DeviceSize input_size, UTF16Char* output) noexcept
     {
         DeviceSize output_offset = 0;
 
@@ -317,9 +323,11 @@ namespace Core
 
             input_offset += utf8.length;
         }
+
+        return output_offset;
     }
 
-    Void StringEncoder::ConvertToUTF32(const UTF8Char* input, DeviceSize input_size, UTF32Char* output) noexcept
+    DeviceSize StringEncoder::ConvertToUTF32(const UTF8Char* input, DeviceSize input_size, UTF32Char* output) noexcept
     {
         DeviceSize output_offset = 0;
 
@@ -334,16 +342,21 @@ namespace Core
             output_offset++;
             input_offset += utf8.length;
         }
+
+        return output_offset;
     }
 
-    Void StringEncoder::ConvertToWideChar(const UTF8Char* input, DeviceSize input_size, WideChar* output) noexcept
+    DeviceSize StringEncoder::ConvertToWideChar(const UTF8Char* input, DeviceSize input_size, WideChar* output) noexcept
     {
         if constexpr(WIDE_CHAR_IS_UTF16)
             return ConvertToUTF16(input, input_size, reinterpret_cast<UTF16Char*>(output));
         else if constexpr(WIDE_CHAR_IS_UTF32)
             return ConvertToUTF32(input, input_size, reinterpret_cast<UTF32Char*>(output));
         else
+        {
             CopyNonOverlappedMemory(input, output, input_size);
+            return input_size;
+        }
     }
 
     namespace Detail

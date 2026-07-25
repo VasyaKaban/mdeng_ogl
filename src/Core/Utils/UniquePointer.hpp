@@ -5,18 +5,19 @@
 namespace Core
 {
     template<typename T>
-    struct UniquePointerDefaulDeleter
+    struct UniquePointerDefaultDeleter
     {
         constexpr Void operator()(T* ptr) noexcept
         {
-            ::delete ptr;
+            ptr->~T();
+            RuntimeDeallocateMemory(ptr);
         }
     };
 
     template<typename D, typename T>
     concept DeleterFor = requires(D& deleter, T* ptr) { deleter(ptr); };
 
-    template<typename T, typename D = UniquePointerDefaulDeleter<T>>
+    template<typename T, typename D = UniquePointerDefaultDeleter<T>>
     requires SameAs<DropConstVolatileReference<D>, D> && (!Array<T>)
     class UniquePointer
     {

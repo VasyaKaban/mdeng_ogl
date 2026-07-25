@@ -11,8 +11,7 @@ void EntryPoint(Core::Span<const Core::StringView> arguments);
 #ifdef _WIN32
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line, int cmd_show)
 {
-    Core::System::SetCmdShow(cmd_show);
-    Core::System::SetMainThreadID();
+    Core::System::Init(Core::Win32SystemInitInfo{.cmd_show = cmd_show, .main_thread_id = GetCurrentThreadId()});
 
     int argc = 0;
     auto args = CommandLineToArgvW(cmd_line, &argc);
@@ -35,14 +34,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line,
     EntryPoint(Core::Span(arguments.GetData(), arguments.GetSize()));
     return 0;
 }
-#elif defined(linux)
-int main(int argc, char** argv)
-{
-    Core::Sequence<Core::StringView> arguments(argc);
-    for(int i = 0; int < argc; i++)
-        arguments[i] = Core::StringView(reinterpret_cast<const UTF8Char*>(argv[i]), strlen(argv[i]));
-
-    EntryPoint(Core::Span(arguments.GetData(), arguments.GetSize()));
-    return 0;
-}
+#else
+#    error "Not implemented
 #endif

@@ -221,6 +221,18 @@ namespace Core
             }
         }
 
+        Void Resize(DeviceSize new_size)
+        requires DefaultConstructible<T>
+        {
+            Reserve(new_size);
+
+            for(DeviceSize i = this->size; i < new_size; i++)
+            {
+                new(this->memory + i) T;
+                this->size++;
+            }
+        }
+
         Void Clear() noexcept
         {
             if(this->memory)

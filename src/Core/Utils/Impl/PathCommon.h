@@ -8,6 +8,12 @@ namespace Core
 {
     namespace Detail
     {
+        //if we have path like this: /folder1/folder2/file
+        //then this path will be iterated in the next order:
+        // /
+        // folder1/
+        // folder2/
+        // file
         class CORE_API PathPartIterator
         {
         public:
@@ -26,10 +32,15 @@ namespace Core
             Bool operator==(const PathPartIterator& it) const noexcept;
 
             StringView operator*() const noexcept;
+
+            StringView::Iterator GetDataIterator() const noexcept;
+            StringView::Iterator GetDataSentinel() const noexcept;
         private:
             StringView data;
-            StringView::Iterator begin;
-            StringView::Iterator end;
+
+            //lazy data
+            mutable StringView::Iterator begin;
+            mutable StringView::Iterator end;
         };
     };
 };

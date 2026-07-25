@@ -256,6 +256,10 @@ namespace Core
         : Path(StringView(begin, end), allocator)
     {}
 
+    Path::Path(Iterator begin, Iterator end, Allocator allocator)
+        : Path(StringView(begin.GetDataIterator(), end.GetDataIterator()))
+    {}
+
     Path::Path(const Char* input, DeviceSize input_size, Allocator allocator)
         : Path(reinterpret_cast<const UTF8Char*>(input), input_size, allocator)
     {}
@@ -294,7 +298,51 @@ namespace Core
         return *this;
     }
 
-    Path Path::operator/(const Path& path)
+    Path& Path::Append(Iterator begin, Iterator end)
+    {
+        Detail::ConcatPaths(this->data, StringView(begin.GetDataIterator(), end.GetDataIterator()));
+
+        return *this;
+    }
+
+    Path& Path::Append(const Char* input, DeviceSize input_size)
+    {
+        return Append(reinterpret_cast<const UTF8Char*>(input), input_size);
+    }
+
+    Path& Path::Append(const WideChar* input, DeviceSize input_size)
+    {
+        String tmp(input, input_size);
+        Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
+
+        return *this;
+    }
+
+    Path& Path::Append(const UTF8Char* input, DeviceSize input_size)
+    {
+        String tmp(input, input_size);
+        Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
+
+        return *this;
+    }
+
+    Path& Path::Append(const UTF16Char* input, DeviceSize input_size)
+    {
+        String tmp(input, input_size);
+        Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
+
+        return *this;
+    }
+
+    Path& Path::Append(const UTF32Char* input, DeviceSize input_size)
+    {
+        String tmp(input, input_size);
+        Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
+
+        return *this;
+    }
+
+    Path Path::operator/(const Path& path) const
     {
         Path copy(GetSize() + path.GetSize(), GetAllocator());
         copy.Append(*this);
@@ -317,7 +365,7 @@ namespace Core
         return *this;
     }
 
-    Path Path::operator<<(DeviceSize steps)
+    Path Path::operator<<(DeviceSize steps) const
     {
         Path copy(*this);
 
@@ -381,7 +429,7 @@ namespace Core
 
     Bool Path::IsAbsolute() const noexcept
     {
-        return (this->IsEmpty() ? false : this->data.GetData()[0] == u8'/');
+        return this->data.StartsWith(u8"/");
     }
 
     Bool Path::IsEmpty() const noexcept

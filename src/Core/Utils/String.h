@@ -120,7 +120,7 @@ namespace Core
         template<Range R>
         requires Constructible<String::ConstIterator, RangeIterator<R>>
         String(R&& rng, Allocator allocator = GetGlobalAllocator()) noexcept
-            : String(Forward(rng).GetIterator(), Forward(rng).GetSentinel(), allocator)
+            : String(String::ConstIterator(Forward(rng).GetIterator()), String::ConstIterator(Forward(rng).GetSentinel()), allocator)
         {}
 
         template<Range R>
@@ -129,7 +129,7 @@ namespace Core
         {
             *this = String(this->allocator);
 
-            this->Append(Forward(rng).GetIterator(), Forward(rng).GetSentinel());
+            this->Append(String::ConstIterator(Forward(rng).GetIterator()), String::ConstIterator(Forward(rng).GetSentinel()));
 
             return *this;
         }

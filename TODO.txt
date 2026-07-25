@@ -150,11 +150,13 @@ Instance:
         Formatter<Uint64> -> explicit instantiation(inner implementation will use IntegerFormatterWrapper with default format)
         Formatter<IntegerFormatterWrapper> -> use methods from IntegerFormatterWrapper
 * Date/Time
-* Random generator
+* add CORE_API for classes and functions - CHECK!!!
+* check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
-PathView
 File
+InputStream(as template for File)
+OutputStream(as template for File)
 Pool<T>
 RawPool
 Callable<R (Args... ?...) ?>

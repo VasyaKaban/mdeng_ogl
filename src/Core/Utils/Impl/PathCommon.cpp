@@ -4,7 +4,7 @@ namespace Core
 {
     namespace Detail
     {
-        static void AdvancePathIterators(const StringView& data, StringView::Iterator& begin, StringView::Iterator& end) noexcept
+        static Void AdvancePathIterators(const StringView& data, StringView::Iterator& begin, StringView::Iterator& end) noexcept
         {
             if(begin != data.GetSentinel()) //not end
             {
@@ -23,9 +23,7 @@ namespace Core
             : data(data),
               begin(begin),
               end(begin)
-        {
-            AdvancePathIterators(this->data, this->begin, this->end);
-        }
+        {}
 
         PathPartIterator PathPartIterator::operator++(int) noexcept
         {
@@ -38,21 +36,35 @@ namespace Core
 
         PathPartIterator& PathPartIterator::operator++() noexcept
         {
-            this->begin = this->end;
+            if(this->begin == this->end) //advance
+                AdvancePathIterators(this->data, this->begin, this->end);
 
-            AdvancePathIterators(this->data, this->begin, this->end);
+            this->begin = this->end;
 
             return *this;
         }
 
         Bool PathPartIterator::operator==(const PathPartIterator& it) const noexcept
         {
-            return this->data == it.data && this->begin == it.begin && this->end == it.end;
+            return this->begin == it.begin;
         }
 
         StringView PathPartIterator::operator*() const noexcept
         {
+            if(this->begin == this->end) //advance
+                AdvancePathIterators(this->data, this->begin, this->end);
+
             return StringView(this->begin, this->end);
+        }
+
+        StringView::Iterator PathPartIterator::GetDataIterator() const noexcept
+        {
+            return this->begin;
+        }
+
+        StringView::Iterator PathPartIterator::GetDataSentinel() const noexcept
+        {
+            return this->end;
         }
     };
 };

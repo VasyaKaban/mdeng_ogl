@@ -5,7 +5,7 @@
 
 namespace Core
 {
-    class Path
+    class CORE_API Path
     {
     public:
         using Iterator = Detail::PathPartIterator;
@@ -22,6 +22,7 @@ namespace Core
         Path& operator=(StringView str);
 
         Path(StringView::Iterator begin, StringView::Iterator end, Allocator allocator = GetGlobalAllocator());
+        Path(Iterator begin, Iterator end, Allocator allocator = GetGlobalAllocator());
         Path(const Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
         Path(const WideChar* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
         Path(const UTF8Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
@@ -29,12 +30,18 @@ namespace Core
         Path(const UTF32Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
 
         Path& Append(const Path& path);
+        Path& Append(Iterator begin, Iterator end);
+        Path& Append(const Char* input, DeviceSize input_size);
+        Path& Append(const WideChar* input, DeviceSize input_size);
+        Path& Append(const UTF8Char* input, DeviceSize input_size);
+        Path& Append(const UTF16Char* input, DeviceSize input_size);
+        Path& Append(const UTF32Char* input, DeviceSize input_size);
 
-        Path operator/(const Path& path);
+        Path operator/(const Path& path) const;
         Path& operator/=(const Path& path);
 
         Path& Back();
-        Path operator<<(DeviceSize steps);
+        Path operator<<(DeviceSize steps) const;
         Path& operator<<=(DeviceSize steps);
 
         StringView GetExtension() const noexcept;
@@ -66,6 +73,23 @@ namespace Core
         Path& operator=(const C (&input)[N]) noexcept
         {
             this->operator=(StringView(input));
+
+            return *this;
+        }
+
+        template<Range R>
+        requires Constructible<Path::Iterator, RangeIterator<R>>
+        Path(R&& rng, Allocator allocator = GetGlobalAllocator()) noexcept
+            : Path(Path::Iterator(Forward(rng).GetIterator()), Path::Iterator(Forward(rng).GetSentinel()), allocator)
+        {}
+
+        template<Range R>
+        requires Constructible<Path::Iterator, RangeIterator<R>>
+        Path& operator=(R&& rng) noexcept
+        {
+            *this = Path(this->data.GetAllocator());
+
+            this->Append(Path::Iterator(Forward(rng).GetIterator()), Path::Iterator(Forward(rng).GetSentinel()));
 
             return *this;
         }

@@ -47,6 +47,7 @@ namespace Core
     constexpr inline UTF32Char TWO_UTF16_CODE_UNITS_FIRST_CODE_POINT = 0x1'00'00;
 
     //Let 'char' to be a valid UTF8 char
+    //Convert functions return output_size
     //TODO: add enum VariableLengthEncoding for 'char' decode
     struct CORE_API StringEncoder
     {
@@ -57,32 +58,32 @@ namespace Core
 
         //char
         static StringEncoderLengthResult GetLength(const Char* input, DeviceSize input_size) noexcept;
-        static Void Convert(const Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
+        static DeviceSize Convert(const Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
 
         //WideChar
         static StringEncoderLengthResult GetLength(const WideChar* input, DeviceSize input_size) noexcept;
-        static Void Convert(const WideChar* input, DeviceSize input_size, UTF8Char* output) noexcept;
+        static DeviceSize Convert(const WideChar* input, DeviceSize input_size, UTF8Char* output) noexcept;
 
         //UTF8Char
         static StringEncoderLengthResult GetLength(const UTF8Char* input, DeviceSize input_size) noexcept;
-        static Void Convert(const UTF8Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
+        static DeviceSize Convert(const UTF8Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
 
         //UTF16Char
         static StringEncoderLengthResult GetLength(const UTF16Char* input, DeviceSize input_size) noexcept;
-        static Void Convert(const UTF16Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
+        static DeviceSize Convert(const UTF16Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
 
         //UTF32Char
         static StringEncoderLengthResult GetLength(const UTF32Char* input, DeviceSize input_size) noexcept;
-        static Void Convert(const UTF32Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
+        static DeviceSize Convert(const UTF32Char* input, DeviceSize input_size, UTF8Char* output) noexcept;
 
         //utf8 to other
         static DeviceSize GetUTF16Size(const UTF8Char* input, DeviceSize input_size) noexcept;
         static DeviceSize GetUTF32Size(const UTF8Char* input, DeviceSize input_size) noexcept;
         static DeviceSize GetWideCharSize(const UTF8Char* input, DeviceSize input_size) noexcept;
 
-        static Void ConvertToUTF16(const UTF8Char* input, DeviceSize input_size, UTF16Char* output) noexcept;
-        static Void ConvertToUTF32(const UTF8Char* input, DeviceSize input_size, UTF32Char* output) noexcept;
-        static Void ConvertToWideChar(const UTF8Char* input, DeviceSize input_size, WideChar* output) noexcept;
+        static DeviceSize ConvertToUTF16(const UTF8Char* input, DeviceSize input_size, UTF16Char* output) noexcept;
+        static DeviceSize ConvertToUTF32(const UTF8Char* input, DeviceSize input_size, UTF32Char* output) noexcept;
+        static DeviceSize ConvertToWideChar(const UTF8Char* input, DeviceSize input_size, WideChar* output) noexcept;
     };
 
     namespace Detail
@@ -93,7 +94,8 @@ namespace Core
         {
         public:
             explicit StringCharIterator(C* data) noexcept
-                : data(data)
+                : data(data),
+                  is_adjusted(false)
             {}
 
             StringCharIterator() = default;
@@ -114,9 +116,10 @@ namespace Core
 
             StringCharIterator& operator++() noexcept
             {
-                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(this->data);
-                auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
-                this->data += utf8.length;
+                this->operator*(); //explicit call to operator* to adjust data
+
+                this->data += this->utf8.length;
+                this->is_adjusted = false;
 
                 return *this;
             }
@@ -134,6 +137,7 @@ namespace Core
             {
                 auto ptr = StringEncoder::BacktrackUTF8(this->data);
                 this->data = const_cast<C*>(ptr);
+                this->is_adjusted = false;
 
                 return *this;
             }
@@ -146,10 +150,14 @@ namespace Core
 
             CodePoint operator*() const noexcept
             {
-                UTF32Char utf32 = StringEncoder::GetUTF32Codepoint(this->data);
-                auto utf8 = StringEncoder::GetUTF8CodePoint(utf32);
+                if(!this->is_adjusted)
+                {
+                    this->utf32 = StringEncoder::GetUTF32Codepoint(this->data);
+                    this->utf8 = StringEncoder::GetUTF8CodePoint(utf32);
+                    this->is_adjusted = true;
+                }
 
-                return CodePoint{.utf8 = utf8, .utf32 = utf32};
+                return CodePoint{.utf8 = this->utf8, .utf32 = this->utf32};
             }
 
             C* GetAddress() const noexcept
@@ -164,6 +172,11 @@ namespace Core
             }
         private:
             C* data;
+
+            //lazy data
+            mutable UTF32Char utf32;
+            mutable UTF8CodePoint utf8;
+            mutable Bool is_adjusted; //guard for lazy operator* evaluation(for end iterator)
         };
 
         //string utils
