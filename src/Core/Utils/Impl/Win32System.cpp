@@ -61,7 +61,8 @@ namespace Core
                 throw Win32Exception(last_error);
         }
 
-        Win32SystemDataInstance.executable_path = TranslateFromWin32PathToAbsolutePath(name.GetData(), size);
+        TranslateFromWin32PathToAbsolutePath(name.GetData(), size, Win32SystemDataInstance.executable_path);
+        Win32SystemDataInstance.executable_path.Back(); //erase filename
     }
 
     Void Win32System::GetRandomBytes(UInt8* output, DeviceSize size)
@@ -107,23 +108,33 @@ namespace Core
         return String(undecorated_string, res);
     }
 
-    Void Win32System::TranslateAbsolutePathToWin32Path(const PathView& path, WideChar* output)
+    Sequence<WideChar>* Win32System::GetThreadLocalWideCharBuffer() noexcept
+    {
+        thread_local Sequence<WideChar> buffer;
+
+        return &buffer;
+    }
+
+    Void Win32System::TranslateAbsolutePathToWin32Path(const PathView& path, Sequence<WideChar>& output)
     {
         assert(path.IsAbsolute());
 
-        //prefix
-        CopyNonOverlappedMemory(AbsolutePathPrefix, output, AbsolutePathPrefixSize * sizeof(WideChar));
-
-        WideChar* post_prefix_output = output + AbsolutePathPrefixSize;
-
         auto ptr = (++path.GetData().GetIterator()).GetAddress(); //skip POSIX root
 
-        DeviceSize output_size = StringEncoder::ConvertToWideChar(ptr, path.GetSize() - 1, post_prefix_output);
+        DeviceSize output_size = AbsolutePathImplementationReserve /*prefix + null-term*/ + StringEncoder::GetUTF16Size(ptr, path.GetSize() - 1); //path without POSIX root
+        output.Resize(output_size);
 
-        post_prefix_output[output_size] = L'\0';
+        //prefix
+        CopyNonOverlappedMemory(AbsolutePathPrefix, output.GetData(), AbsolutePathPrefixSize * sizeof(WideChar));
+
+        WideChar* post_prefix_output = output.GetData() + AbsolutePathPrefixSize;
+
+        DeviceSize null_term_pos = StringEncoder::ConvertToWideChar(ptr, path.GetSize() - 1, post_prefix_output);
+
+        post_prefix_output[null_term_pos] = L'\0';
     }
 
-    Path Win32System::TranslateFromWin32PathToAbsolutePath(WideChar* input, DeviceSize input_size, Allocator allocator) //changes \ to / and removes prefix
+    Void Win32System::TranslateFromWin32PathToAbsolutePath(WideChar* input, DeviceSize input_size, Path& output) //changes \ to / and removes prefix
     {
         //erase prefix
         if(input_size >= 4)
@@ -154,11 +165,11 @@ namespace Core
 
         auto res = StringEncoder::GetLength(input, input_size);
 
-        Path path(res.output_size + 1, allocator); //+1 for root
-        path.Append(u8"/");
-        path.Append(input, input_size);
+        output.Clear();
+        output.Reserve(res.output_size + 1); //+1 for root
 
-        return path;
+        output.Append(u8"/");
+        output.Append(input, input_size);
     }
 };
 

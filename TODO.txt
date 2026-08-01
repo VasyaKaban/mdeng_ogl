@@ -154,7 +154,6 @@ Instance:
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
-File
 InputStream(as template for File)
 OutputStream(as template for File)
 Pool<T>

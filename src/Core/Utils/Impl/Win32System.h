@@ -21,6 +21,7 @@
 #    include "../Path.h"
 #    include "../Exception.h"
 #    include "../PathView.h"
+#    include "../Sequence.hpp"
 
 namespace Core
 {
@@ -64,11 +65,14 @@ namespace Core
         constexpr static WideChar AbsolutePathPrefix[AbsolutePathPrefixSize] = {L'\\', L'\\', L'?', L'\\'};
         constexpr static DeviceSize AbsolutePathImplementationReserve = AbsolutePathPrefixSize + 1; //prefix + null-term
 
-        static Void TranslateAbsolutePathToWin32Path(const PathView& path, WideChar* output); //only for absolute paths
-        static Path TranslateFromWin32PathToAbsolutePath(WideChar* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator()); //changes \ to / and removes prefix
+        static Sequence<WideChar>* GetThreadLocalWideCharBuffer() noexcept;
+
+        static Void TranslateAbsolutePathToWin32Path(const PathView& path, Sequence<WideChar>& output); //only for absolute paths
+        static Void TranslateFromWin32PathToAbsolutePath(WideChar* input, DeviceSize input_size, Path& output); //changes \ to / and removes prefix
     };
 
     using System = Win32System;
+    using SystemException = Win32Exception;
 };
 
 #endif
