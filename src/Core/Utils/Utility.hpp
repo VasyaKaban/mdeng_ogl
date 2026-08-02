@@ -81,6 +81,22 @@ namespace Core
         return Forward(value2);
     }
 
+    template<typename T, DeviceSize N>
+    requires Comparable<T> && (N > 0)
+    constexpr const T& Min(const T (&values)[N]) noexcept(NoexceptComparable<T>)
+    {
+        if constexpr(N == 1)
+            return values[0];
+        else
+        {
+            const T& target = values[0];
+            for(DeviceSize i = 1; i < N; i++)
+                target = Min(target, values[i]);
+
+            return target;
+        }
+    }
+
     template<typename T>
     requires Comparable<T>
     constexpr T&& Max(T&& value1, T&& value2) noexcept(NoexceptComparable<T>)
@@ -89,6 +105,22 @@ namespace Core
             return Forward(value2);
 
         return Forward(value1);
+    }
+
+    template<typename T, DeviceSize N>
+    requires Comparable<T> && (N > 0)
+    constexpr const T& Max(const T (&values)[N]) noexcept(NoexceptComparable<T>)
+    {
+        if constexpr(N == 1)
+            return values[0];
+        else
+        {
+            const T& target = values[0];
+            for(DeviceSize i = 1; i < N; i++)
+                target = Max(target, values[i]);
+
+            return target;
+        }
     }
 
     inline Void CopyNonOverlappedMemory(const Void* src, Void* dst, DeviceSize size) noexcept

@@ -119,10 +119,9 @@ namespace Core
         return this->handle->Trim(ptr, size);
     }
 
-    static GlobalAllocator GLOBAL_ALLOCATOR;
-
+    static GlobalAllocator GlobalAllocatorObject;
     Allocator GetGlobalAllocator() noexcept
     {
-        return Allocator(&GLOBAL_ALLOCATOR);
+        return Allocator(&GlobalAllocatorObject);
     }
 };

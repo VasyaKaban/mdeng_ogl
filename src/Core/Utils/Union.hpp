@@ -16,24 +16,9 @@ namespace Core
         };
 
         template<typename T, typename... Types>
-        constexpr Void AdjustUnionMetrics(UnionMetrics& metrics) noexcept
-        {
-            if(alignof(T) > metrics.alignment)
-                metrics.alignment = alignof(T);
-
-            if(sizeof(T) > metrics.size)
-                metrics.size = sizeof(T);
-
-            if constexpr(sizeof...(Types) != 0)
-                AdjustUnionMetrics<Types...>(metrics);
-        }
-
-        template<typename T, typename... Types>
         constexpr UnionMetrics GetUnionMetrics() noexcept
         {
-            UnionMetrics metrics = {.alignment = 0, .size = 0};
-            AdjustUnionMetrics<T, Types...>(metrics);
-
+            UnionMetrics metrics = {.alignment = Max(alignof(T), alignof(Types)...), .size = Max(sizeof(T), sizeof(Types)...)};
             Align(metrics.size, metrics.alignment);
 
             return metrics;

@@ -163,65 +163,81 @@ Thread + Semaphores, barriers, fences, mutexes, ...
 Quaternion
 regex -> via PCRE???
 
-Root:
-	Unix: /
-	Windows: \\?\
+Map<typename K, typename V, typename C, typename Mappings...[static 1]>
 
-so
-static Path GetRoot()
+template<auto KeyPtr, MapKeyPolicy Policy>
+struct MapKey {};
+
+struct Key
 {
-	if(WIN32)
-		return "//?/"; //let's keep non-back slash
-	else if(Unix)
-		return "/";
-	else
-		error();
-}
+    int k0;
+    float k1;
+    char k2;
+};
 
-class Path:
-	String data;
-	bool is_normalized; -> update every call to MakeAbsolute or path append
-	
-//same for PathView
+struct Data{};
 
-for every inner call copy data to temporary buffer and change separators
+struct Comparator
+{
+    Bool operator()(...);
+};
 
-RCPointer:
-	T* ptr
-	where T: 
-		size_t IncrementRefs() noexcept;
-		size_t DecrementRefs() noecxept;
-		void operator delete(T* ptr) noexcept;
-		
-		
-class RC -> non-atomic counter. delete via class
-class ARC -> atomi counter. delete via class
+Map<Key, Data, Comparator, 
+    MapKey<&Key::k0, MapKeyPolicy::Unique>, MapKey<&Key::k2, MapKeyPolicy::Multiple>>;
 
-	
-class Container:
-	...
-	Allocator* allocator;
-	
-	+ void* ReleaseMemory(bool destroy_objects)
-	
-class RCPointer:
-	T* ptr
-	Allocator* allocator
-	
-	+ void* ReleaseMemory(bool destroy_objects);
-	
-class UniquePointer:
-	T* ptr
-	Allocator* allocator
 
-	+ void* ReleaseMemory(bool destroy_objects);//use it when we wnat to handle object itself or when we reset the inner allocator explicitly
-	
+          E|Root|
+            / \
+          L/   \R
+          v     \
+        |10|     \
+        / \       \
+      L/   \R      \
+      v     v       \
+    B|5|   |15|      \
+    ^                /
+    |_______________/
 
-class Allocator:
-	virtual void* Allocate(const MemoryRequirements& req) = 0;
-	virtual void Deallocate(void* ptr) = 0;
-	
-	+ void ResetAllocations();
+use map and HahTable with one key like in std but create new methods for releasing node from this containers.
+
+HashTableNode:
+    ...bla-bla-bla pointers
+    K key
+    DeviceSize key_hash
+    T data
+
+MapNode:
+    ...bla-bla-bla pointers
+    K key
+    HashTableNode data
+
+HashTable: use null-allocator
+Map: use null-allocator
+
+class TaskTree<T>:
+    HashTable<String, T + MapIterator, Multiple> hash_table
+    Map<UInt64, HashTableNode + HashTableIterator, Unique> map
+    Allocator allocator
+
+Insert:
+    Allocate MapNode from allocator
+    fill MapNode.HashTableNode content: key, key_hash, data
+    fill MapNode content: key
+    insert MapNode.HashTableNode as self-allocated node
+    on success: insert MapNode as self-allocated node
+
+Delete:
+    find key in HashTable
+    on success release node from HashTable
+    release node from Map
+    delete node with Map.allocator
+
+
+
+Map -> order:
+    Key -> u64, data: HashTableIterator
+HashTable -> search:
+    Key -> string, data: MapIterator
 
 aligned(min=sizeof(u64)) PoolNode:
     ...padding in case of small block before
@@ -235,23 +251,6 @@ aligned(min=sizeof(u64)) PoolNode:
         u64 prev_free
     ...data(aligned to data alignment)
     ...pad to fill PollNode alignment(sizeof(u64))
-
-
-
-Queue:
-    Allocator allocator
-    Chain<Pool> free_pools
-    Chain<Pool> active_pools
-
-Pool:
-    T data[SIZE]
-    T* front -> nullptr if empty
-
-Change <typename U> to both versions of const T& and T&& for push and insert 
-
-FunctionWrapper:
-    ...function[fucntion_size]
-    Allocator allocator
 	
 Function:
 	const void* memory; -> small function or pointer to wrapper
@@ -259,34 +258,3 @@ Function:
     u1 is_small_function
 	R(*caller)(void *memory, Args...);
 	void(*destroyer)(void* memory) noexcept;
-
-
-Types... -> Unique
-Union:
-    Ctor<T>(NonType<T>, U&&);
-    Get<T or Index> -> T&
-    Set<T or Index>(U&&) -> T&
-
-Win32:
-    only . and ..
-Unix:
-    same rules for . and .. but ...+ is a valid folder name
-
-root:
-    DRIVE: -> Win32
-    / -> Unix
-
-Add \\?\ for absolute Win32 folder
-
-for Unix forbid only Null and /
-for Win32 firbid:
-    Null, /, \, :, *, ?, ", <, >, |
-
-So use POSIX rules for Path class and change it only when we check for root path
-Use / as separator
-Use \ as separator on Win32
-Absolue on Posix -> starts with /
-Absolute on Win32 -> starts with DRIVE:
-Store Path and PathView as vallid UTF-8 string. On OS API access copy buffer to temporary buffer and append '\0'. For Win32 also translate into UTF-16 and map all / and \ as \
-Treat ..+ as folder but on Win32 it will throw exception
-DO not care about forbidden names and symbols on Win32 but it will throw exception
