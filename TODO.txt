@@ -152,6 +152,7 @@ Instance:
 * Date/Time
 * add CORE_API for classes and functions - CHECK!!!
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
+* check Sentinel concept -> maybe make Sentinel also have a Iterator concept?
 Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
 UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
 InputStream(as template for File)
