@@ -6,6 +6,9 @@
 
 namespace Core
 {
+    template<typename K, typename V, typename C>
+    class BinaryTree;
+
     namespace Detail
     {
         struct CORE_API BinaryTreeNodeBase
@@ -19,6 +22,7 @@ namespace Core
         };
 
         CORE_API BinaryTreeNodeBase*& GetRootBeginIteratorNode(BinaryTreeNodeBase* root) noexcept;
+        CORE_API BinaryTreeNodeBase* const& GetRootBeginIteratorNode(const BinaryTreeNodeBase* root) noexcept;
         CORE_API Void Balance(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept;
         CORE_API Void ApplyNodeInsert(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept;
         CORE_API Void DetachNode(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept;
@@ -44,6 +48,9 @@ namespace Core
         template<typename K, typename V> //K is always const, but V may be const and non-const
         class BinaryTreeIterator
         {
+            template<typename T>
+            friend class ::Core::BinaryTree;
+
             constexpr static Bool IsConstIterator = Const<V>;
             using NodeType = Conditional<IsConstIterator, const BinaryTreeNodeBase*, BinaryTreeNodeBase*>;
         public:

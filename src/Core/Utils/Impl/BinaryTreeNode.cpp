@@ -230,6 +230,11 @@ namespace Core
             return root->right;
         }
 
+        CORE_API BinaryTreeNodeBase* const& GetRootBeginIteratorNode(const BinaryTreeNodeBase* root) noexcept
+        {
+            return root->right;
+        }
+
         Void Balance(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept
         {
             while(node != root)

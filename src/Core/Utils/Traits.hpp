@@ -395,6 +395,11 @@ namespace Core
                                               { static_cast<F&&>(func)(args...) } noexcept -> SameAs<R>;
                                           });
 
+    template<typename F, typename... Args>
+    using InvokeResult = decltype([](F&& func, Args&&...args){
+        return Forward(func)(Forward(args)...);
+    }());
+
     template<typename T>
     concept FloatingPoint = SameAs<T, Float32> || SameAs<T, Float64>;
 
@@ -469,18 +474,62 @@ namespace Core
     concept Complex = requires(int T::*) { true; };
 
     template<typename T>
-    concept Comparable = requires(T value) { value < value; };
+    concept CompareResultLessComparable = requires(T value) {
+        { value < 0 } noexcept;
+    };
 
     template<typename T>
-    concept NoexceptComparable = requires(T value) {
+    concept CompareResultLessOrEqualComparable = requires(T value) {
+        { value <= 0 } noexcept;
+    };
+
+    template<typename T>
+    concept CompareResultEqualComparable = requires(T value) {
+        { value == 0 } noexcept;
+    };
+
+    template<typename T>
+    concept CompareResultGreaterComparable = requires(T value) {
+        { value > 0 } noexcept;
+    };
+
+    template<typename T>
+    concept CompareResultGreaterOrEqualComparable = requires(T value) {
+        { value >= 0 } noexcept;
+    };
+
+    template<typename T>
+    concept CompareResultNotEqualComparable = requires(T value) {
+        { value != 0 } noexcept;
+    };
+
+    template<typename T>
+    concept LessComparable = requires(T value) {
         { value < value } noexcept;
     };
 
     template<typename T>
-    concept EquallyComparable = requires(T value) { value == value; };
+    concept tLessOrEqualComparable = requires(T value) {
+        { value <= value } noexcept;
+    };
 
     template<typename T>
-    concept NoexceptEquallyComparable = requires(T value) {
+    concept EqualComparable = requires(T value) {
         { value == value } noexcept;
+    };
+
+    template<typename T>
+    concept GreaterComparable = requires(T value) {
+        { value > value } noexcept;
+    };
+
+    template<typename T>
+    concept GreaterOrEqualComparable = requires(T value) {
+        { value >= value } noexcept;
+    };
+
+    template<typename T>
+    concept NotEqualComparable = requires(T value) {
+        { value != value } noexcept;
     };
 };
