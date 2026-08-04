@@ -6,7 +6,23 @@
 
 namespace Core
 {
-    template<typename K, typename V, typename C>
+    /*
+          E|Root|
+            / \
+          L/   \R
+          v     \
+        |10|     \
+        / \       \
+      L/   \R      \
+      v     v       \
+    B|5|   |15|      \
+    ^                /
+    |_______________/
+    
+    
+    */
+
+    template<typename K, typename V>
     class BinaryTree;
 
     namespace Detail
@@ -18,7 +34,10 @@ namespace Core
             BinaryTreeNodeBase* right;
             UInt8 height;
 
+            BinaryTreeNodeBase() noexcept;
             BinaryTreeNodeBase(BinaryTreeNodeBase* parent, BinaryTreeNodeBase* left, BinaryTreeNodeBase* right, UInt8 height) noexcept;
+
+            static BinaryTreeNodeBase SelfLinkedRoot(BinaryTreeNodeBase* root) noexcept;
         };
 
         CORE_API BinaryTreeNodeBase*& GetRootBeginIteratorNode(BinaryTreeNodeBase* root) noexcept;
@@ -39,16 +58,13 @@ namespace Core
         };
 
         template<typename K, typename V>
-        struct BinaryTreeNode : BinaryTreeNodeBase
-        {
-            //BinaryTreeNodeBase
-            BinaryTreeNodeKeyValuePair<K, V> pair;
-        };
+        struct BinaryTreeNode : BinaryTreeNodeBase, BinaryTreeNodeKeyValuePair<K, V>
+        {};
 
         template<typename K, typename V> //K is always const, but V may be const and non-const
         class BinaryTreeIterator
         {
-            template<typename T>
+            template<typename OK, typename OV>
             friend class ::Core::BinaryTree;
 
             constexpr static Bool IsConstIterator = Const<V>;

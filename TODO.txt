@@ -153,8 +153,7 @@ Instance:
 * add CORE_API for classes and functions - CHECK!!!
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
 * check Sentinel concept -> maybe make Sentinel also have a Iterator concept?
-Map(via MultiKey)<V, K, Keys...> -> Key(s) as Key typename, Comparator typename and policy 
-UnorderedMap//Map and UnorderedMap with policy<V, K, Keys...> -> Key(s) as Key typename, EqualComparator typename, hasher typename and policy 
+HashChain
 InputStream(as template for File)
 OutputStream(as template for File)
 Pool<T>
@@ -164,40 +163,6 @@ Thread + Semaphores, barriers, fences, mutexes, ...
 Quaternion
 regex -> via PCRE???
 
-Map<typename K, typename V, typename C, typename Mappings...[static 1]>
-
-template<auto KeyPtr, MapKeyPolicy Policy>
-struct MapKey {};
-
-struct Key
-{
-    int k0;
-    float k1;
-    char k2;
-};
-
-struct Data{};
-
-struct Comparator
-{
-    Bool operator()(...);
-};
-
-Map<Key, Data, Comparator, 
-    MapKey<&Key::k0, MapKeyPolicy::Unique>, MapKey<&Key::k2, MapKeyPolicy::Multiple>>;
-
-
-          E|Root|
-            / \
-          L/   \R
-          v     \
-        |10|     \
-        / \       \
-      L/   \R      \
-      v     v       \
-    B|5|   |15|      \
-    ^                /
-    |_______________/
 
 use map and HahTable with one key like in std but create new methods for releasing node from this containers.
 

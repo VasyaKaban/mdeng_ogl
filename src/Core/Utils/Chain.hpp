@@ -2,6 +2,7 @@
 
 #include "Memory.h"
 #include "RangeTraits.hpp"
+#include "Utility.hpp"
 
 namespace Core
 {
@@ -271,21 +272,21 @@ namespace Core
         requires Constructible<T, Args...>
         Void Insert(ConstIterator before_it, Args&&... args)
         {
-            AllocateAndInsertNode(Forward(args)..., before_it.node);
+            AllocateAndInsertNode(before_it.node, Forward(args)...);
         }
 
         template<typename... Args>
         requires Constructible<T, Args...>
         Void PushToBegin(Args&&... args)
         {
-            AllocateAndInsertNode(Forward(args)..., &this->base);
+            AllocateAndInsertNode(&this->base, Forward(args)...);
         }
 
         template<typename... Args>
         requires Constructible<T, Args...>
         Void PushToEnd(Args&&... args)
         {
-            AllocateAndInsertNode(Forward(args)..., this->base.prev);
+            AllocateAndInsertNode(this->base.prev, Forward(args)...);
         }
 
         Void Splice(ConstIterator before_it, Chain& chain, ConstIterator begin, ConstIterator end) noexcept
@@ -419,8 +420,7 @@ namespace Core
         }
 
         template<typename... Args>
-        Void AllocateAndInsertNode(Args&&... args,
-                                   Detail::ChainNodeBase* prev_node) //allocate node and insert right after prev_node
+        Void AllocateAndInsertNode(Detail::ChainNodeBase* prev_node, Args&&... args) //allocate node and insert right after prev_node
         {
             Node* node = static_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
@@ -497,3 +497,9 @@ namespace Core
         return Forward(chain).GetSize();
     }
 };
+
+Void foo()
+{
+    Core::Chain<int> ch;
+    ch.PushToBegin(1);
+}

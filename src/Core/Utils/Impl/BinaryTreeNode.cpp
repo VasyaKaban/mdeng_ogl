@@ -5,6 +5,18 @@ namespace Core
 {
     namespace Detail
     {
+        BinaryTreeNodeBase::BinaryTreeNodeBase() noexcept
+            : parent(nullptr),
+              left(nullptr),
+              right(nullptr),
+              height(0)
+        {}
+
+        BinaryTreeNodeBase BinaryTreeNodeBase::SelfLinkedRoot(BinaryTreeNodeBase* root) noexcept
+        {
+            return BinaryTreeNodeBase(nullptr, nullptr, root, 0);
+        }
+
         BinaryTreeNodeBase::BinaryTreeNodeBase(BinaryTreeNodeBase* parent, BinaryTreeNodeBase* left, BinaryTreeNodeBase* right, UInt8 height) noexcept
             : parent(parent),
               left(left),

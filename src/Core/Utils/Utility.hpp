@@ -72,7 +72,7 @@ namespace Core
     }
 
     template<typename T>
-    requires LessComparable<T>
+    requires LessComparable<T, T>
     constexpr T&& Min(T&& value1, T&& value2) noexcept
     {
         if(Forward(value1) < Forward(value2))
@@ -82,7 +82,7 @@ namespace Core
     }
 
     template<typename T, DeviceSize N>
-    requires LessComparable<T> && (N > 0)
+    requires LessComparable<T, T> && (N > 0)
     constexpr const T& Min(const T (&values)[N]) noexcept
     {
         if constexpr(N == 1)
@@ -98,7 +98,7 @@ namespace Core
     }
 
     template<typename T>
-    requires LessComparable<T>
+    requires LessComparable<T, T>
     constexpr T&& Max(T&& value1, T&& value2) noexcept
     {
         if(Forward(value1) < Forward(value2))
@@ -108,7 +108,7 @@ namespace Core
     }
 
     template<typename T, DeviceSize N>
-    requires LessComparable<T> && (N > 0)
+    requires LessComparable<T, T> && (N > 0)
     constexpr const T& Max(const T (&values)[N]) noexcept
     {
         if constexpr(N == 1)

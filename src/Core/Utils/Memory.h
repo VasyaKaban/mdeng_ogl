@@ -54,3 +54,9 @@ namespace Core
 
     CORE_API Allocator GetGlobalAllocator() noexcept;
 };
+
+//placement new workaround
+constexpr Void* operator new(DeviceSize count, Void* ptr) noexcept
+{
+    return ptr;
+}
