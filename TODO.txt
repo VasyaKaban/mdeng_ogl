@@ -153,7 +153,11 @@ Instance:
 * add CORE_API for classes and functions - CHECK!!!
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
 * check Sentinel concept -> maybe make Sentinel also have a Iterator concept?
-HashChain
+HashChain:
+    we going to use bucket model of the hash table without automatic-resize on load factor exceed
+    newly created nodes will be inserted as the last node of the bucket list
+    all nodes will form the single list for iteration
+    no sub-ranges for buckets -> not needed(I think so...)
 InputStream(as template for File)
 OutputStream(as template for File)
 Pool<T>
