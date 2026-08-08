@@ -35,9 +35,7 @@ namespace Core
         if(!SaturatingAdd(div, static_cast<decltype(div)>(1), div))
             return false;
 
-        size = div * alignment;
-
-        return true;
+        return SaturatingMul(div, alignment, size);
     }
 
     template<UnsignedIntegral I>
