@@ -45,7 +45,7 @@ namespace Core
         if(this->handle == nullptr)
             return;
 
-        auto res = WaitForMultipleObjects(1, &this->handle, true, INFINITE);
+        auto res = WaitForSingleObject(&this->handle, INFINITE);
         if(res != WAIT_OBJECT_0)
             throw SystemException(GetLastError());
     }
@@ -61,7 +61,7 @@ namespace Core
             throw SystemException(GetLastError());
         }
 
-        auto res = WaitForMultipleObjects(1, &info->event, true, INFINITE);
+        auto res = WaitForSingleObject(&info->event, INFINITE);
         CloseHandle(info->event);
 
         if(res != WAIT_OBJECT_0)
