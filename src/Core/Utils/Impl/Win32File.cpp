@@ -1,4 +1,6 @@
-#include "Win32File.h"
+#ifdef _WIN32
+
+#    include "Win32File.h"
 
 namespace Core
 {
@@ -180,3 +182,5 @@ namespace Core
         return UInt64(written_bytes_count);
     }
 };
+
+#endif

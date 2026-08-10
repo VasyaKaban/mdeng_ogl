@@ -182,7 +182,7 @@ OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instea
 
 
 Callable<R (Args... ?...) ?>
-Thread + Semaphores, barriers, fences, mutexes, ...
+Semaphores, barriers, fences, mutexes, ...
 Quaternion
 regex -> via PCRE???
 
