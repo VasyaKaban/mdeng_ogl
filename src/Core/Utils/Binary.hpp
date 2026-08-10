@@ -18,6 +18,24 @@ namespace Core
     }
 
     template<UnsignedIntegral I>
+    constexpr I GetPowerOf2(I value) noexcept
+    {
+        if(IsPowerOf2(value))
+            return value;
+
+        I output = 0;
+        while(value != 0)
+        {
+            output <<= 1;
+            output |= 0b1;
+
+            value >>= 1;
+        }
+
+        return output + 1;
+    }
+
+    template<UnsignedIntegral I>
     constexpr Bool Align(I& size, I alignment) noexcept
     {
         assert(alignment != 0);
@@ -52,6 +70,16 @@ namespace Core
         address = reinterpret_cast<UInt8*>(int_address);
 
         return true;
+    }
+
+    template<UnsignedIntegral I>
+    constexpr Bool IsAlignedAddress(UInt8* address, I alignment) noexcept
+    {
+        assert(alignment != 0);
+
+        DeviceSize int_address = *reinterpret_cast<DeviceSize*>(address);
+
+        return int_address % alignment == 0;
     }
 
     template<UnsignedIntegral I>

@@ -62,23 +62,23 @@ namespace Core
     }
 
     template<typename T, typename C>
-    requires InvocableWithResult<C, Bool, T&&, T&&>
-    constexpr T&& Select(T&& value1, T&& value2, C&& comparator) noexcept(NoexceptInvocableWithResult<C, Bool, T&&, T&&>)
+    requires InvocableWithResult<C, Bool, const T&, const T&>
+    constexpr const T& Select(const T& value1, const T& value2, C&& comparator) noexcept(NoexceptInvocableWithResult<C, Bool, T&&, T&&>)
     {
-        if(Forward(comparator)(Forward(value1), Forward(value2)))
-            return Forward(value1);
+        if(Forward(comparator)(value1, value2))
+            return value1;
 
-        return Forward(value2);
+        return value2;
     }
 
     template<typename T>
     requires LessComparable<T, T>
-    constexpr T&& Min(T&& value1, T&& value2) noexcept
+    constexpr const T& Min(const T& value1, const T& value2) noexcept
     {
-        if(Forward(value1) < Forward(value2))
-            return Forward(value1);
+        if(value1 < value2)
+            return value1;
 
-        return Forward(value2);
+        return value2;
     }
 
     template<typename T, DeviceSize N>
@@ -99,12 +99,12 @@ namespace Core
 
     template<typename T>
     requires LessComparable<T, T>
-    constexpr T&& Max(T&& value1, T&& value2) noexcept
+    constexpr const T& Max(const T& value1, const T& value2) noexcept
     {
-        if(Forward(value1) < Forward(value2))
-            return Forward(value2);
+        if(value1 < value2)
+            return value2;
 
-        return Forward(value1);
+        return value1;
     }
 
     template<typename T, DeviceSize N>

@@ -154,6 +154,7 @@ Instance:
 * add CORE_API for classes and functions - CHECK!!!
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
 * check Sentinel concept -> maybe make Sentinel also have a Iterator concept?
+* robust checks(asserts) in ALL containers
 HashChain:
     we going to use bucket model of the hash table without automatic-resize on load factor exceed
     newly created nodes will be inserted as the last node of the bucket list
@@ -161,8 +162,25 @@ HashChain:
     no sub-ranges for buckets -> not needed(I think so...)
 InputStream(as template for File)
 OutputStream(as template for File)
-Pool<T>
-RawPool
+OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instead of plain memory with headers. Use it for device non-local allocations:
+    Node:
+        bool is_free
+        Node* global_prev
+        Node* global_prev
+        Node* free_prev//only when is_free=true
+        Node* free_next//only when is_free=true
+        ...private^
+        DeviceSize offset
+        DeviceSize size
+
+    OverlayMemoryPool:
+        DeviceSize outer_offset
+        Node* free_nodes
+
+        Allocate(req) -> Node* as masked Handle
+        Deallocate(Handle*) -> Void
+
+
 Callable<R (Args... ?...) ?>
 Thread + Semaphores, barriers, fences, mutexes, ...
 Quaternion
@@ -216,92 +234,3 @@ Function:
     u1 is_small_function
 	R(*caller)(void *memory, Args...);
 	void(*destroyer)(void* memory) noexcept;
-
-
-
-size = 48
-struct FreeNode
-{
-    Bool(as u64) is_free = true;
-	PoolNode* local_list_prev;
-	PoolNode* local_list_next;
-	PoolNode* global_list_prev;
-	PoolNode* global_list_next;
-	DeviceSize size;
-};
-
-size = 32 or 40 with header_offset
-struct AllocatedNode
-{
-    Bool(as u1 of u64) is_free = false;
-	DeviceSize(as u63 of u64) data_offset;//start from header offset=0
-	PoolNode* global_list_prev;
-	PoolNode* global_list_next;
-	DeviceSize size;
-	...padding
-	DeviceSize header_offset;//how many bytes we should subtract from data pointer to get address of it's header
-	...data with possible unused padding in tail
-};
-
-
-
-void* ptr = Allocate()
-PoolNode* node = (PoolNode*)(ptr - *(DeviceSize*)(ptr - sizeof(DeviceSize)))
-
-Allocate(alignment, size):
-	for free_blk : free_blocks:
-		if(!(free_blk.size >= 56 + size))
-			continue;
-			
-		addr = GetAlignedAddress(mem_start=free_blk + 56, mem_size=free_blk.size - 56, req_align=alignemnt, req_size=size)
-		if(OutOfBounds(addr, free_blk))
-			continue;
-			
-		if((free_blk + free_blk.size) - addr > SMALL_BLK_SIZE):
-			DecoupleWithTailLeave(free_blk)
-		else:
-			DecoupleFull(free_blk)
-			
-		return addr
-		
-Free(ptr):
-	PoolNode* node = (PoolNode*)(ptr - *(DeviceSize*)(ptr - sizeof(DeviceSize)))
-	assert(!node->is_free)
-	...
-
-Scheme:
-    Allocate() -> O(Count(FreeBlocks))
-    Free() -> O(K where K=CountOfNeighboursBeforeMeetFreeNode(Node))
-
-It is a generic scheme without small blocks optimization. In case of small blocks we can preallocate big heaps of memory, segment them into some fixed-size blocks and use fast push/pop scheme to allocate/free them
-ex:
-SegmentTable:
-    0 -> 256    -> stack of blocks with size=256
-    1 -> 1024   -> stack of blocks with size=1024
-    2 -> 4096   -> stack of blocks with size=4096
-    3 -> 65536  -> stack of blocks with size=65536
-    ...
-    all that is bigger than last size will go to the generic heap
-    in case when we primarly allocate on startup this scheme will be OK
-
-
-                              +-------------------------------------+
-                              |                                     |
-                              |                                     |
-###################           |        ###################          |         ###################                    ###################                    ###################
-#                 #           |        #                 #          |         #                 #                    #                 #                    #                 #
-#      free       #<----------+        #      nfree      #          +-------->#      free       #<------------------>#      free       #<------------------>#      free       #
-#                 #                    #                 #                    #                 #                    #                 #                    #                 #
-##############@####                    ####@#########@####                    ####@#########@####                    ####@#########@####                    ####@#########@####
-              ^                            ^         ^                            ^         ^                            ^         ^                            ^         ^                            
-              |                            |         |                            |         |                            |         |                            |         |                            
-               \                          /           \                          /           \                          /           \                          /           \                          
-                \                        /             \                        /             \                        /             \                        /             \                        
-                 \______           _____/               \______           _____/               \______           _____/               \______           _____/               \______         
-                        |         |                            |         |                            |         |                            |         |                            |         
-                        v         v                            v         v                            v         v                            v         v                            v        
-                    ####@#########@####                    ####@#########@####                    ####@#########@####                    ####@#########@####                    ####@##############
-                    #                 #                    #                 #                    #                 #                    #                 #                    #                 #
-                    #      nfree      #                    #      nfree      #                    #      nfree      #                    #      nfree      #                    #      nfree      #
-                    #                 #                    #                 #                    #                 #                    #                 #                    #                 #
-                    ###################                    ###################                    ###################                    ###################                    ###################
