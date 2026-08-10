@@ -39,6 +39,22 @@ namespace Core
     }
 
     template<UnsignedIntegral I>
+    constexpr Bool AlignAddress(UInt8*& address, I buffer_size, I required_alignment) noexcept
+    {
+        assert(required_alignment != 0);
+
+        DeviceSize int_address = *reinterpret_cast<DeviceSize*>(address);
+        auto rem = int_address % required_alignment;
+        if(rem > buffer_size)
+            return false;
+
+        int_address += rem;
+        address = reinterpret_cast<UInt8*>(int_address);
+
+        return true;
+    }
+
+    template<UnsignedIntegral I>
     constexpr DeviceSize CountBits(I value) noexcept
     {
         DeviceSize result = 0;
