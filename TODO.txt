@@ -183,6 +183,12 @@ OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instea
 
 Callable<R (Args... ?...) ?>
 mutexes, atomics, ...
+Atomics:
+    Atomic*Op**Bits**Order* -> AtomicStore64Release(Int64* dst, Int64 value);
+    Mask them as following:
+    
+    template<Integral I>
+    AtomicStoreRelease(I &&dst, I value);
 Quaternion
 regex -> via PCRE???
 
