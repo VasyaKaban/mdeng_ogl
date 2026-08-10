@@ -52,6 +52,8 @@ namespace Core
 
         Void Wait();
 
+        Void Detach();
+
         template<typename F, typename Arg>
         requires Invocable<F, Arg> && (!RValueReference<F> && !RValueReference<Arg>)
         static Win32Thread Execute(F&& func, Arg&& arg)

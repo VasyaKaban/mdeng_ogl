@@ -50,6 +50,11 @@ namespace Core
             throw SystemException(GetLastError());
     }
 
+    Void Win32Thread::Detach()
+    {
+        this->handle = nullptr;
+    }
+
     Win32Thread Win32Thread::ExecuteImpl(Detail::Win32ThreadInfo* info)
     {
 #    pragma message("To ScopedCall")
