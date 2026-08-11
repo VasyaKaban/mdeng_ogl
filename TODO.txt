@@ -182,7 +182,7 @@ OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instea
 
 
 Callable<R (Args... ?...) ?>
-Quaternion
+Quaternion + Slerp(Vector)
 regex -> via PCRE???
 
 
