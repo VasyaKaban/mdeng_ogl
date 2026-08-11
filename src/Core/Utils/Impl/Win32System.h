@@ -10,6 +10,8 @@
 #    include <dbghelp.h>
 #    include <ntstatus.h>
 #    include <NTSecAPI.h>
+#    include <intrin.h>
+#    include <winnt.h>
 
 #    undef CreateWindow
 #    undef CreateSemaphore

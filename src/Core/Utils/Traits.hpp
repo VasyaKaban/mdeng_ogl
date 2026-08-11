@@ -416,6 +416,12 @@ namespace Core
     template<typename T>
     concept Arithmetic = FloatingPoint<T> || Integral<T>;
 
+    template<Integral I>
+    using MakeUnsignedIntegral = Conditional<sizeof(I) == 8, UInt8, Conditional<sizeof(I) == 16, UInt16, Conditional<sizeof(I) == 32, UInt32, UInt64>>>;
+
+    template<Integral I>
+    using MakeSignedIntegral = Conditional<sizeof(I) == 8, Int8, Conditional<sizeof(I) == 16, Int16, Conditional<sizeof(I) == 32, Int32, Int64>>>;
+
     namespace Detail
     {
         template<typename T, typename... Types>
