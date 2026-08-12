@@ -94,6 +94,40 @@ Instance:
             GetSwapchain
             ...
 
+* OpenGL: CommandBuffer(primary and secondary) logic:
+    void glDrawArrays(GLenum mode, GLint first, GLsizei count);
+    enum class CommandType : UInt32
+    {
+        DrawArrays = 1,
+        ...
+    };
+
+    struct alignas(8) CommandBase
+    {
+        CommandType type;
+    };
+
+    struct alignas(8) DrawArraysCommand
+    {
+        CommandType type = DrawArrays;
+        GLenum mode;
+        GLint first;
+        GLsizei count
+    };
+
+    using CommandDispatcher = DeviceSize (*)(const GLContext* ctx, GLState* state, const CommandBase* command);
+
+    CommandDispatcher CommandDispatchers[...];
+    CommandDispatchers[CommandType::DrawArrays] = [](const GLContext* ctx, GLState* state, const CommandBase* command) -> DeviceSize
+    {
+        DrawArraysCommand* cmd = command;
+        ctx->glDrawArrays(cmd->mode, cmd->first, cmd->count);
+
+        return sizeof(DrawArraysCommand);//offset
+    };
+
+    GLState -> for some state saving when using commands
+
 * WindowSubsystem: CharacterInputEvent -> change utf32 and utf8[4] to string buffer due to the possible complex codepoints sequence like emoji
 * Get rid of MAX_PATH 
 * Constants as Index not INDEX???
