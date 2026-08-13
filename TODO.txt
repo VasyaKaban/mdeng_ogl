@@ -189,6 +189,7 @@ Instance:
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
 * check Sentinel concept -> maybe make Sentinel also have a Iterator concept?
 * robust checks(asserts) in ALL containers
+* check all const_cast's
 HashChain:
     we going to use bucket model of the hash table without automatic-resize on load factor exceed
     newly created nodes will be inserted as the last node of the bucket list
@@ -213,7 +214,6 @@ OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instea
 
         Allocate(req) -> Node* as masked Handle
         Deallocate(Handle*) -> Void
-
 
 Callable<R (Args... ?...) ?>
 Quaternion + Slerp(Vector)
@@ -261,9 +261,12 @@ Map -> order:
 HashTable -> search:
     Key -> string, data: MapIterator
 	
-Function:
-	const void* memory; -> small function or pointer to wrapper
-    u63 size
+Function<R, Args...>:
+	(?const) void* memory;
+    Allocator allocator;
     u1 is_small_function
-	R(*caller)(void *memory, Args...);
-	void(*destroyer)(void* memory) noexcept;
+    u63 size
+	R(*caller)(void *memory, Args...) noexcept(...);
+	void(*destroy)(void* memory) noexcept;
+    void(*copy)(const void* from, void* to, bool is_small) noexcept(...);
+    void(*move)(void* from, void* to, bool is_small) noexcept(...);
