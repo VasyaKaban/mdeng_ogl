@@ -508,4 +508,26 @@ namespace Core
     concept NotEqualComparable = requires(T value1, U value2) {
         { value1 != value2 } noexcept -> SameAs<Bool>;
     };
+
+    template<DeviceSize... Indices>
+    struct IndexSequence
+    {};
+
+    namespace Detail
+    {
+        template<DeviceSize N, DeviceSize... Indices>
+        struct MakeIndexSequenceImpl
+        {
+            using Type = MakeIndexSequenceImpl<N - 1, N - 1, Indices...>::Type;
+        };
+
+        template<DeviceSize... Indices>
+        struct MakeIndexSequenceImpl<0, Indices...>
+        {
+            using Type = IndexSequence<Indices...>;
+        };
+    };
+
+    template<DeviceSize N>
+    using MakeIndexSequence = Detail::MakeIndexSequenceImpl<N>::Type;
 };

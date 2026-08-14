@@ -262,10 +262,11 @@ HashTable -> search:
     Key -> string, data: MapIterator
 	
 Function<R, Args...>:
-	(?const) void* memory;
+	const void* memory;//place small function within pointer
     Allocator allocator;
-    u1 is_small_function
-    u63 size
+    MemoryRequirements req: 
+        alignment 
+        size
 	R(*caller)(void *memory, Args...) noexcept(...);
 	void(*destroy)(void* memory) noexcept;
     void(*copy)(const void* from, void* to, bool is_small) noexcept(...);
