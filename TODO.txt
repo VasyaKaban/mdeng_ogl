@@ -188,7 +188,7 @@ Instance:
 * add CORE_API for classes and functions - CHECK!!!
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
 * check Sentinel concept -> maybe make Sentinel also have a Iterator concept?
-* robust checks(asserts) in ALL containers
+* robust checks(asserts) in ALL containers(+ also check Impl and Attach/Detach for parent/children links)
 * check all const_cast's
 HashChain:
     we going to use bucket model of the hash table without automatic-resize on load factor exceed

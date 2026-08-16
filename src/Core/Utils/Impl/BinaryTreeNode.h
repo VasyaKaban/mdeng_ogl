@@ -18,12 +18,8 @@ namespace Core
     B|5|   |15|      \
     ^                /
     |_______________/
-    
-    
-    */
 
-    template<typename K, typename V>
-    class BinaryTree;
+    */
 
     namespace Detail
     {
@@ -37,18 +33,19 @@ namespace Core
             BinaryTreeNodeBase() noexcept;
             BinaryTreeNodeBase(BinaryTreeNodeBase* parent, BinaryTreeNodeBase* left, BinaryTreeNodeBase* right, UInt8 height) noexcept;
 
-            static BinaryTreeNodeBase SelfLinkedRoot(BinaryTreeNodeBase* root) noexcept;
+            BinaryTreeNodeBase*& GetRootBeginIteratorNode() noexcept;
+            BinaryTreeNodeBase* const& GetRootBeginIteratorNode() const noexcept;
+
+            Void Balance(BinaryTreeNodeBase* root) noexcept;
+            Void Insert(BinaryTreeNodeBase* parent, BinaryTreeNodeBase*& parent_branch, BinaryTreeNodeBase* root) noexcept; //call it when you insert you node after all pointers linking
+            Void Detach(BinaryTreeNodeBase* root) noexcept; //call it when you want to detach node
+
+            Void InitRootNode(Bool is_empty_tree) noexcept;
+
+            //we use const node but we can const_cast to drop constness
+            const BinaryTreeNodeBase* InOrderNodeForwardTraversal() const noexcept;
+            const BinaryTreeNodeBase* InOrderNodeReverseTraversal() const noexcept;
         };
-
-        CORE_API BinaryTreeNodeBase*& GetRootBeginIteratorNode(BinaryTreeNodeBase* root) noexcept;
-        CORE_API BinaryTreeNodeBase* const& GetRootBeginIteratorNode(const BinaryTreeNodeBase* root) noexcept;
-        CORE_API Void Balance(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept;
-        CORE_API Void ApplyNodeInsert(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept;
-        CORE_API Void DetachNode(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept;
-
-        //we use const node but we can const_cast to drop constness
-        CORE_API const BinaryTreeNodeBase* InOrderNodeForwardTraversal(const BinaryTreeNodeBase* node) noexcept;
-        CORE_API const BinaryTreeNodeBase* InOrderNodeReverseTraversal(const BinaryTreeNodeBase* node) noexcept;
 
         template<typename K, typename V>
         struct BinaryTreeNodeKeyValuePair
@@ -64,9 +61,6 @@ namespace Core
         template<typename K, typename V> //K is always const, but V may be const and non-const
         class BinaryTreeIterator
         {
-            template<typename OK, typename OV>
-            friend class ::Core::BinaryTree;
-
             constexpr static Bool IsConstIterator = Const<V>;
             using NodeType = Conditional<IsConstIterator, const BinaryTreeNodeBase*, BinaryTreeNodeBase*>;
         public:
@@ -97,7 +91,7 @@ namespace Core
 
             BinaryTreeIterator& operator++() noexcept
             {
-                this->node = const_cast<NodeType>(InOrderNodeForwardTraversal(this->node));
+                this->node = const_cast<NodeType>(this->node->InOrderNodeForwardTraversal());
 
                 return *this;
             }
@@ -113,7 +107,7 @@ namespace Core
 
             BinaryTreeIterator& operator--() noexcept
             {
-                this->node = const_cast<NodeType>(InOrderNodeReverseTraversal(this->node));
+                this->node = const_cast<NodeType>(this->node->InOrderNodeReverseTraversal());
 
                 return *this;
             }
@@ -132,6 +126,11 @@ namespace Core
             Bool operator==(const BinaryTreeIterator<OK, OV>& it) const noexcept
             {
                 return this->node == it.node;
+            }
+
+            NodeType GetNode() const noexcept
+            {
+                return this->node;
             }
 
             operator BinaryTreeIterator<K, const V>() const noexcept

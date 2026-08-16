@@ -27,10 +27,12 @@ namespace Core
         using ConstNode = Detail::BinaryTreeNode<K, const V>;
 
         BinaryTree(Allocator allocator = GetGlobalAllocator())
-            : base(Detail::BinaryTreeNodeBase::SelfLinkedRoot(&this->base)),
+            : base(),
               size(0),
               allocator(allocator)
-        {}
+        {
+            this->base.InitRootNode(true);
+        }
 
         ~BinaryTree()
         {
@@ -46,10 +48,13 @@ namespace Core
         }
 
         BinaryTree(BinaryTree&& tree) noexcept
-            : base(Exchange(tree.base, Node::SelfLinkedRoot(&tree.base))),
+            : base(tree.base),
               size(Exchange(tree.size, 0)),
               allocator(tree.allocator)
-        {}
+        {
+            this->base.InitRootNode(this->size == 0);
+            tree.base.InitRootNode(true);
+        }
 
         BinaryTree& operator=(const BinaryTree& tree)
         requires CopyConstructible<K> && CopyConstructible<V>
@@ -66,9 +71,12 @@ namespace Core
         {
             Clear();
 
-            this->base = Exchange(tree.base, Node::SelfLinkedRoot(&tree.base));
+            this->base = tree.base;
             this->size = Exchange(tree.size, 0);
             this->allocator = tree.allocator;
+
+            this->base.InitRootNode(this->size == 0);
+            tree.base.InitRootNode(true);
 
             return *this;
         }
@@ -136,8 +144,8 @@ namespace Core
 
         Void Erase(ConstIterator it) noexcept
         {
-            Detail::BinaryTreeNodeBase* node = const_cast<Detail::BinaryTreeNodeBase*>(it.node);
-            Detail::DetachNode(node, &base);
+            Detail::BinaryTreeNodeBase* node = const_cast<Detail::BinaryTreeNodeBase*>(it.GetNode());
+            node->Detach(&this->base);
 
             this->size--;
 
@@ -156,14 +164,16 @@ namespace Core
         BinaryTreeInsertResult<K, V> InsertUnique(OK&& key, OV&& value)
         {
             Node* node = nullptr;
+            Detail::BinaryTreeNodeBase* parent = nullptr;
+            Bool is_left_branch = false;
 
             if(IsEmpty())
             {
                 //allocate and create node
                 node = AllocateAndInitNode(Forward(key), Forward(value));
 
-                this->base.left = node;
-                node->parent = &this->base;
+                parent = &this->base;
+                is_left_branch = true;
             }
             else
             {
@@ -182,8 +192,9 @@ namespace Core
                         {
                             node = AllocateAndInitNode(Forward(key), Forward(value));
 
-                            cmp_node->right = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = false;
+
                             break;
                         }
                     }
@@ -195,15 +206,16 @@ namespace Core
                         {
                             node = AllocateAndInitNode(Forward(key), Forward(value));
 
-                            cmp_node->left = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = true;
                             break;
                         }
                     }
                 }
             }
 
-            Detail::ApplyNodeInsert(node, &this->base);
+            node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
+            this->size++;
 
             return {.it = Iterator(node), .inserted = true};
         }
@@ -213,14 +225,16 @@ namespace Core
         Iterator InsertMultiple(OK&& key, OV&& value)
         {
             Node* node = nullptr;
+            Detail::BinaryTreeNodeBase* parent = nullptr;
+            Bool is_left_branch = false;
 
             if(IsEmpty())
             {
                 //allocate and create node
                 node = AllocateAndInitNode(Forward(key), Forward(value));
 
-                this->base.left = node;
-                node->parent = &this->base;
+                parent = &this->base;
+                is_left_branch = true;
             }
             else
             {
@@ -237,8 +251,8 @@ namespace Core
                         {
                             node = AllocateAndInitNode(Forward(key), Forward(value));
 
-                            cmp_node->right = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = false;
                             break;
                         }
                     }
@@ -250,15 +264,16 @@ namespace Core
                         {
                             node = AllocateAndInitNode(Forward(key), Forward(value));
 
-                            cmp_node->left = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = true;
                             break;
                         }
                     }
                 }
             }
 
-            Detail::ApplyNodeInsert(node, &this->base);
+            node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
+            this->size++;
 
             return Iterator(node);
         }
@@ -273,8 +288,8 @@ namespace Core
 
         Node* Detach(ConstIterator it) noexcept
         {
-            Detail::BinaryTreeNodeBase* node = const_cast<Detail::BinaryTreeNodeBase*>(it.node);
-            Detail::DetachNode(node, &this->base);
+            Detail::BinaryTreeNodeBase* node = const_cast<Detail::BinaryTreeNodeBase*>(it.GetNode());
+            node->Detach(&this->base);
 
             this->size--;
 
@@ -287,10 +302,13 @@ namespace Core
             node->right = nullptr;
             node->height = 1;
 
+            Detail::BinaryTreeNodeBase* parent = nullptr;
+            Bool is_left_branch = false;
+
             if(IsEmpty())
             {
-                this->base.left = node;
-                node->parent = &this->base;
+                parent = &this->base;
+                is_left_branch = true;
             }
             else
             {
@@ -307,8 +325,8 @@ namespace Core
                             cmp_node = cmp_node->right;
                         else
                         {
-                            cmp_node->right = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = false;
                             break;
                         }
                     }
@@ -318,15 +336,16 @@ namespace Core
                             cmp_node = cmp_node->left;
                         else
                         {
-                            cmp_node->left = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = true;
                             break;
                         }
                     }
                 }
             }
 
-            Detail::ApplyNodeInsert(node, &this->base);
+            node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
+            this->size++;
 
             return {.it = Iterator(node), .inserted = true};
         }
@@ -337,10 +356,13 @@ namespace Core
             node->right = nullptr;
             node->height = 1;
 
+            Detail::BinaryTreeNodeBase* parent = nullptr;
+            Bool is_left_branch = false;
+
             if(IsEmpty())
             {
-                this->base.left = node;
-                node->parent = &this->base;
+                parent = &this->base;
+                is_left_branch = true;
             }
             else
             {
@@ -354,8 +376,8 @@ namespace Core
                             cmp_node = cmp_node->right;
                         else
                         {
-                            cmp_node->right = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = false;
                             break;
                         }
                     }
@@ -365,27 +387,28 @@ namespace Core
                             cmp_node = cmp_node->left;
                         else
                         {
-                            cmp_node->left = node;
-                            node->parent = cmp_node;
+                            parent = cmp_node;
+                            is_left_branch = true;
                             break;
                         }
                     }
                 }
             }
 
-            Detail::ApplyNodeInsert(node, &this->base);
+            node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
+            this->size++;
 
             return Iterator(node);
         }
 
         Iterator GetIterator() noexcept
         {
-            return Iterator(Detail::GetRootBeginIteratorNode(&this->base));
+            return Iterator(this->base.GetRootBeginIteratorNode());
         }
 
         ConstIterator GetIterator() const noexcept
         {
-            return ConstIterator(Detail::GetRootBeginIteratorNode(&this->base));
+            return ConstIterator(this->base.GetRootBeginIteratorNode());
         }
 
         Iterator GetSentinel() noexcept
@@ -403,19 +426,6 @@ namespace Core
             return MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node) * reserve};
         }
     private:
-        Void UpdateBase() noexcept
-        {
-            if(this->size == 0)
-            {
-                this->base = Detail::BinaryTreeNodeBase::SelfLinkedRoot(&this->base);
-            }
-            else
-            {
-                this->base.left->parent = &this->base;
-                Detail::GetRootBeginIteratorNode(&this->base)->parent = &this->base;
-            }
-        }
-
         template<typename OK, typename OV>
         Node* AllocateAndInitNode(OK&& key, OV&& value)
         {

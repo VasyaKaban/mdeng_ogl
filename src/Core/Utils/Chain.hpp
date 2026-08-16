@@ -3,133 +3,10 @@
 #include "Memory.h"
 #include "RangeTraits.hpp"
 #include "Utility.hpp"
+#include "Impl/ChainNode.h"
 
 namespace Core
 {
-    template<typename T>
-    class Chain;
-
-    namespace Detail
-    {
-        template<typename T>
-        struct ChainNode;
-
-        struct ChainNodeBase
-        {
-            ChainNodeBase* prev;
-            ChainNodeBase* next;
-
-            ChainNodeBase(ChainNodeBase* prev = nullptr, ChainNodeBase* next = nullptr) noexcept
-                : prev(prev),
-                  next(next)
-            {}
-
-            static ChainNodeBase SelfLinked(ChainNodeBase* node) noexcept
-            {
-                return ChainNodeBase(node, node);
-            }
-
-            template<typename T>
-            ChainNode<T>* AsChainNode() noexcept
-            {
-                return static_cast<ChainNode<T>*>(this);
-            }
-        };
-
-        template<typename T>
-        struct ChainNode : ChainNodeBase
-        {
-            T value;
-
-            template<typename... Args>
-            requires Constructible<T, Args...>
-            ChainNode(Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
-                : ChainNodeBase(),
-                  value(Forward(args)...)
-            {}
-
-            ~ChainNode() = default;
-
-            ChainNode(const ChainNode&) = delete;
-            ChainNode(ChainNode&&) = delete;
-            ChainNode& operator=(const ChainNode&) = delete;
-            ChainNode& operator=(ChainNode&&) = delete;
-        };
-
-        template<typename U>
-        class ChainIterator
-        {
-            template<typename T>
-            friend class ::Core::Chain;
-
-            using ChainValueType = DropConstVolatileReference<U>;
-            using Base = Conditional<Const<U>, const Detail::ChainNodeBase, Detail::ChainNodeBase>;
-
-            ChainIterator(Base* node) noexcept
-                : node(node)
-            {}
-        public:
-            ChainIterator() noexcept
-                : node(nullptr)
-            {}
-
-            ~ChainIterator() = default;
-            ChainIterator(const ChainIterator&) = default;
-            ChainIterator(ChainIterator&&) = default;
-            ChainIterator& operator=(const ChainIterator&) = default;
-            ChainIterator& operator=(ChainIterator&&) = default;
-
-            ChainIterator operator++(int) noexcept
-            {
-                ChainIterator ret(this->node);
-
-                ++(*this);
-
-                return ret;
-            }
-
-            ChainIterator& operator++() noexcept
-            {
-                this->node = this->node->next;
-
-                return *this;
-            }
-
-            ChainIterator operator--(int) noexcept
-            {
-                ChainIterator ret(this->node);
-
-                this->node = this->node->prev;
-
-                return ret;
-            }
-
-            ChainIterator& operator--() noexcept
-            {
-                this->node = this->node->prev;
-
-                return *this;
-            }
-
-            U& operator*() const noexcept
-            {
-                return node->template AsChainNode<ChainValueType>()->value;
-            }
-
-            U* operator->() const noexcept
-            {
-                return GetAddress(node->template AsChainNode<ChainValueType>()->value);
-            }
-
-            Bool operator==(const ChainIterator& it) const noexcept
-            {
-                return this->node == it.node;
-            }
-        private:
-            Base* node;
-        };
-    };
-
     template<typename T>
     class Chain
     {
@@ -379,54 +256,14 @@ namespace Core
             return MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node) * size};
         }
     public:
-        Void UpdateBase() noexcept //use on move when we must change first and last references to the base
-        {
-            if(this->size == 0)
-            {
-                this->base = Detail::ChainNodeBase::SelfLinked(&this->base);
-            }
-            else
-            {
-                this->base.next->prev = &this->base;
-                this->base.prev->next = &this->base;
-            }
-        }
-
-        Void InsertNode(Detail::ChainNodeBase* prev_node,
-                        Node* node) noexcept //insert node right after prev_node
-        {
-            if(this->size == 0)
-            {
-                assert(prev_node == &this->base);
-
-                this->base.next = node;
-                this->base.prev = node;
-
-                node->next = &this->base;
-                node->prev = &this->base;
-            }
-            else
-            {
-                Detail::ChainNodeBase* next_node = prev_node->next;
-
-                prev_node->next = node;
-                next_node->prev = node;
-
-                node->next = next_node;
-                node->prev = prev_node;
-            }
-
-            this->size++;
-        }
-
-        template<typename... Args>
-        Void AllocateAndInsertNode(Detail::ChainNodeBase* prev_node, Args&&... args) //allocate node and insert right after prev_node
+        template<typename OT>
+        Void AllocateAndInitNode(OT&& value) //allocate node and insert right after prev_node
         {
             Node* node = static_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
             try
             {
-                new(node) Node(Forward(args)...);
+                new(node) Node{Detail::ChainNodeBase(), Forward(value)};
             }
             catch(...)
             {
@@ -434,37 +271,7 @@ namespace Core
                 throw;
             }
 
-            InsertNode(prev_node, node);
-        }
-
-        Void EraseNode(Node* node) noexcept //erase node without dealloc
-        {
-            assert(this->size != 0);
-
-            Node* prev_node = node->prev;
-            Node* next_node = node->next;
-
-            if(this->size == 1)
-            {
-                assert(prev_node == next_node && prev_node == &this->base);
-
-                this->base = Detail::ChainNodeBase::SelfLinked(&this->base);
-            }
-            else
-            {
-                prev_node->next = next_node;
-                next_node->prev = prev_node;
-            }
-
-            this->size--;
-        }
-
-        Void EraseAndFreeNode(Node* node) noexcept //erase node with dealloc
-        {
-            EraseNode(node);
-
-            node->~Node();
-            this->allocator.Deallocate(node);
+            return node;
         }
     private:
         Detail::ChainNodeBase base;
@@ -497,9 +304,3 @@ namespace Core
         return Forward(chain).GetSize();
     }
 };
-
-Void foo()
-{
-    Core::Chain<int> ch;
-    ch.PushToBegin(1);
-}

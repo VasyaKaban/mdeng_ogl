@@ -12,11 +12,6 @@ namespace Core
               height(0)
         {}
 
-        BinaryTreeNodeBase BinaryTreeNodeBase::SelfLinkedRoot(BinaryTreeNodeBase* root) noexcept
-        {
-            return BinaryTreeNodeBase(nullptr, nullptr, root, 0);
-        }
-
         BinaryTreeNodeBase::BinaryTreeNodeBase(BinaryTreeNodeBase* parent, BinaryTreeNodeBase* left, BinaryTreeNodeBase* right, UInt8 height) noexcept
             : parent(parent),
               left(left),
@@ -237,18 +232,20 @@ namespace Core
             Swap(node1->height, node2->height);
         }
 
-        BinaryTreeNodeBase*& GetRootBeginIteratorNode(BinaryTreeNodeBase* root) noexcept
+        BinaryTreeNodeBase*& BinaryTreeNodeBase::GetRootBeginIteratorNode() noexcept
         {
-            return root->right;
+            return this->right;
         }
 
-        CORE_API BinaryTreeNodeBase* const& GetRootBeginIteratorNode(const BinaryTreeNodeBase* root) noexcept
+        BinaryTreeNodeBase* const& BinaryTreeNodeBase::GetRootBeginIteratorNode() const noexcept
         {
-            return root->right;
+            return this->right;
         }
 
-        Void Balance(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept
+        Void BinaryTreeNodeBase::Balance(BinaryTreeNodeBase* root) noexcept
         {
+            BinaryTreeNodeBase* node = this;
+
             while(node != root)
             {
                 switch(SelectRotationType(node))
@@ -272,70 +269,91 @@ namespace Core
             }
         }
 
-        Void ApplyNodeInsert(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept
+        Void BinaryTreeNodeBase::Insert(BinaryTreeNodeBase* parent, BinaryTreeNodeBase*& parent_branch, BinaryTreeNodeBase* root) noexcept
         {
-            BinaryTreeNodeBase*& begin_node = GetRootBeginIteratorNode(root);
-            if(node->parent == begin_node) //new begin
-                begin_node = node;
+            parent_branch = this;
+            this->parent = parent;
 
-            Balance(node, root);
+            BinaryTreeNodeBase*& begin_node = root->GetRootBeginIteratorNode();
+            if(this->parent == begin_node) //new begin
+                begin_node = this;
+
+            this->Balance(root);
         }
 
-        Void DetachNode(BinaryTreeNodeBase* node, BinaryTreeNodeBase* root) noexcept
+        Void BinaryTreeNodeBase::Detach(BinaryTreeNodeBase* root) noexcept
         {
-            if(IsLeafNode(node)) //with possible iterator change
+            if(IsLeafNode(this)) //with possible iterator change
             {
-                BinaryTreeNodeBase*& begin_node = GetRootBeginIteratorNode(root);
-                if(begin_node == node)
-                    begin_node = node->parent;
+                BinaryTreeNodeBase*& begin_node = root->GetRootBeginIteratorNode();
+                if(begin_node == this)
+                    begin_node = this->parent;
 
-                Balance(node->parent, root);
+                this->parent->Balance(root);
             }
             else
             {
                 do
                 {
-                    auto left_height = GetNodeHeight(node->left);
-                    auto right_height = GetNodeHeight(node->right);
+                    auto left_height = GetNodeHeight(this->left);
+                    auto right_height = GetNodeHeight(this->right);
 
                     BinaryTreeNodeBase* repl_node = nullptr;
                     if(left_height > right_height)
                     {
-                        repl_node = node->left;
+                        repl_node = this->left;
                         while(repl_node->right != nullptr)
                             repl_node = repl_node->right;
                     }
                     else
                     {
-                        repl_node = node->right;
+                        repl_node = this->right;
                         while(repl_node->left != nullptr)
                             repl_node = repl_node->left;
                     }
 
                     if(IsLeafNode(repl_node))
                     {
-                        RelinkNodes(repl_node, node);
-                        BinaryTreeNodeBase* new_parent = node->parent;
+                        RelinkNodes(repl_node, this);
+                        BinaryTreeNodeBase* new_parent = this->parent;
 
-                        if(new_parent->left == node)
+                        if(new_parent->left == this)
                             new_parent->left = nullptr;
                         else
                             new_parent->right = nullptr;
 
-                        Balance(new_parent, root);
+                        new_parent->Balance(root);
                     }
                     else
                     {
                         //recurse detach
-                        RelinkNodes(repl_node, node);
+                        RelinkNodes(repl_node, this);
                     }
                 }
-                while(!IsLeafNode(node));
+                while(!IsLeafNode(this));
             }
         }
 
-        const BinaryTreeNodeBase* InOrderNodeForwardTraversal(const BinaryTreeNodeBase* node) noexcept
+        static Void SetSelfLinkedNode(BinaryTreeNodeBase* root) noexcept
         {
+            *root = BinaryTreeNodeBase(nullptr, nullptr, root, 0);
+        }
+
+        Void BinaryTreeNodeBase::InitRootNode(Bool is_empty_tree) noexcept
+        {
+            if(is_empty_tree == 0)
+                SetSelfLinkedNode(this);
+            else
+            {
+                this->left->parent = this;
+                this->GetRootBeginIteratorNode()->parent = this;
+            }
+        }
+
+        const BinaryTreeNodeBase* BinaryTreeNodeBase::InOrderNodeForwardTraversal() const noexcept
+        {
+            const BinaryTreeNodeBase* node = this;
+
             if(IsLeafNode(node))
             {
                 if(node->parent->left == node)
@@ -373,8 +391,10 @@ namespace Core
             }
         }
 
-        const BinaryTreeNodeBase* InOrderNodeReverseTraversal(const BinaryTreeNodeBase* node) noexcept
+        const BinaryTreeNodeBase* BinaryTreeNodeBase::InOrderNodeReverseTraversal() const noexcept
         {
+            const BinaryTreeNodeBase* node = this;
+
             if(IsLeafNode(node))
             {
                 if(node->parent->right == node)
