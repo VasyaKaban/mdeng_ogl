@@ -148,43 +148,6 @@ Instance:
 * Optimize Non-utf8 chars conversion to Path(remove dynamic allocation)
 * GetSize() for String-like objects to GetByteSize()
 * remove CountBits as switch and change it to HW popcnt...
-* Format:
-        3.14_fmt("<10.2f")
-
-        struct IntegerFormatterWrapper
-        {
-            Uint64 value;
-
-            IntegerFormatterWrapper operator(StringView format) noexcept
-            {
-                return IntegerFormatterWrapper(value, format);
-            }
-        };
-
-        IntegerFormatterWrapper operator""_fmt(unsigned long long int value) noexcept
-        {
-            return IntegerFormatterWrapper(value);
-        }
-
-        String str = "world";
-
-        Format("Hello ", str, ". It is not a ", 3.14_fmt(".5"), " but rather a ", 3.14f)
-
-
-        template<typename T>
-        struct Formatter
-        {
-            ...
-        };
-
-        Formatter has it's own methods that Format impl will use.
-        We can create explicit instantiation for Formatter like Formatter<String>.
-        By default Formatter<T> will use the same-named methods from T itself so we can create fmt-like attributes via wrappers
-
-        example:
-        Formatter<String> -> explicit instantiation
-        Formatter<Uint64> -> explicit instantiation(inner implementation will use IntegerFormatterWrapper with default format)
-        Formatter<IntegerFormatterWrapper> -> use methods from IntegerFormatterWrapper
 * Date/Time
 * add CORE_API for classes and functions - CHECK!!!
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
@@ -195,6 +158,11 @@ Instance:
 * Check all methods in containers to match the same naming
 * In collections change Clear() to explicit destructor call(like in HashChain we do not clear slots)
 * stdin, stdout, stderr as files?
+* Format:
+    use Formatter as object for attributes
+    add float to format
+    add some attributes from python/c++ std::format
+    use formatter with attributes via: Core::Fmt(123).Width(10).Fill('*').Arrange(FormatArrange::Center) 
 InputStream(as template for File)
 OutputStream(as template for File)
 OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instead of plain memory with headers. Use it for device non-local allocations:
@@ -217,6 +185,7 @@ OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instea
 
 Callable<R (Args... ?...) ?>
 Quaternion + Slerp(Vector)
+Math functions(wrapper over math.h)
 regex -> via PCRE???
 
 
