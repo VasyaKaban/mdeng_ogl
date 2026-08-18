@@ -84,8 +84,8 @@ namespace Core
         requires CopyConstructible<K> && CopyConstructible<V>
             : HashChain(chain.slot_count, chain.allocator)
         {
-            for(const auto& [k, v, h]: chain)
-                InsertMultiple(k, v, h);
+            for(const auto& [k, v, _]: chain)
+                InsertMultiple(k, v);
         }
 
         HashChain(HashChain&& chain) noexcept
@@ -106,8 +106,8 @@ namespace Core
 
             this->allocator = tree.allocator;
 
-            for(const auto& [k, v, h]: tree)
-                InsertMultiple(k, v, h);
+            for(const auto& [k, v, _]: tree)
+                InsertMultiple(k, v);
         }
 
         HashChain& operator=(HashChain&& chain) noexcept

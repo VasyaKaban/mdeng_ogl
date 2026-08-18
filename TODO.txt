@@ -193,8 +193,8 @@ Instance:
 * check all const_cast's
 * Node datch/attach for Chain
 * Check all methods in containers to match the same naming
-* HashChain -> check when slot_count = 0!
 * In collections change Clear() to explicit destructor call(like in HashChain we do not clear slots)
+* stdin, stdout, stderr as files?
 InputStream(as template for File)
 OutputStream(as template for File)
 OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instead of plain memory with headers. Use it for device non-local allocations:
