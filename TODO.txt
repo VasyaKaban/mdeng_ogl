@@ -127,6 +127,7 @@ Instance:
     };
 
     GLState -> for some state saving when using commands
+* For OpenGL commands restrict push constants/uniforms to the some limit(min(uniform_limit, 128)) for example. We also must not overflow command buffer allocated block for push constants
 
 * WindowSubsystem: CharacterInputEvent -> change utf32 and utf8[4] to string buffer due to the possible complex codepoints sequence like emoji
 * Get rid of MAX_PATH 
@@ -190,11 +191,10 @@ Instance:
 * check Sentinel concept -> maybe make Sentinel also have a Iterator concept?
 * robust checks(asserts) in ALL containers(+ also check Impl and Attach/Detach for parent/children links)
 * check all const_cast's
-HashChain:
-    we going to use bucket model of the hash table without automatic-resize on load factor exceed
-    newly created nodes will be inserted as the last node of the bucket list
-    all nodes will form the single list for iteration
-    no sub-ranges for buckets -> not needed(I think so...)
+* Node datch/attach for Chain
+* Check all methods in containers to match the same naming
+* HashChain -> check when slot_count = 0!
+* In collections change Clear() to explicit destructor call(like in HashChain we do not clear slots)
 InputStream(as template for File)
 OutputStream(as template for File)
 OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instead of plain memory with headers. Use it for device non-local allocations:
@@ -218,7 +218,6 @@ OverlayMemoryPool -> same interface as MemoryPool but uses lists of nodes instea
 Callable<R (Args... ?...) ?>
 Quaternion + Slerp(Vector)
 regex -> via PCRE???
-* UpdateBase for BinaryTree and Chain to the Common file and move chain methds to the common file
 
 
 use map and HahTable with one key like in std but create new methods for releasing node from this containers.

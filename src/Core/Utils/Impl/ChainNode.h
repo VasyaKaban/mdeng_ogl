@@ -42,17 +42,18 @@ namespace Core
         class ChainIterator
         {
             constexpr static Bool IsConstIterator = Const<T>;
-            using NodeType = Conditional<IsConstIterator, const Detail::ChainNodeBase, Detail::ChainNodeBase>;
+            using NodeType = Conditional<IsConstIterator, const Detail::ChainNodeBase*, Detail::ChainNodeBase*>;
         public:
-            explicit ChainIterator(ChainIterator* node) noexcept
+            explicit ChainIterator(ChainNodeBase* node) noexcept
                 : node(node)
             {}
 
-            explicit ChainIterator(const ChainIterator* node) noexcept
+            explicit ChainIterator(const ChainNodeBase* node) noexcept
             requires IsConstIterator
                 : node(node)
             {}
 
+            ChainIterator() = default;
             ~ChainIterator() = default;
             ChainIterator(const ChainIterator&) = default;
             ChainIterator(ChainIterator&&) = default;

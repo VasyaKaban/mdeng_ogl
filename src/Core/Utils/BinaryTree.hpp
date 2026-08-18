@@ -6,19 +6,19 @@
 
 namespace Core
 {
-    template<typename K, typename V>
-    struct BinaryTreeInsertResult
-    {
-        Detail::BinaryTreeIterator<K, V> it;
-        Bool inserted;
-    };
-
     //for policy(unique or multiple) use separate functions
     template<typename K, typename V>
     class BinaryTree
     {
-        static_assert(SameAs<K, DropConstVolatileReference<K>> && SameAs<V, DropConstVolatileReference<V>> && LessComparable<const K, const K> && EqualComparable<const K, const K> &&
-                      GreaterComparable<const K, const K>);
+        static_assert(SameAs<K, DropConstVolatileReference<K>> && SameAs<V, DropConstVolatileReference<V>> && LessComparable<const K&, const K&> && EqualComparable<const K&, const K&> &&
+                      GreaterComparable<const K&, const K&>);
+
+        struct FindInsertParentNodeResult
+        {
+            Detail::BinaryTreeNodeBase* node;
+            Bool is_left_branch;
+            Bool success; //use it when using Unique methods. true -> inserted, false -> exist
+        };
     public:
         using Iterator = Detail::BinaryTreeIterator<K, V>;
         using ConstIterator = Detail::BinaryTreeIterator<K, const V>;
@@ -97,7 +97,7 @@ namespace Core
         }
 
         template<typename OK>
-        requires EqualComparable<const K, OK> && LessComparable<const K, OK>
+        requires EqualComparable<const K&, OK> && LessComparable<const K&, OK>
         Iterator Find(OK&& key) noexcept
         {
             if(IsEmpty())
@@ -120,7 +120,7 @@ namespace Core
         }
 
         template<typename OK>
-        requires EqualComparable<const K, OK> && LessComparable<const K, OK>
+        requires EqualComparable<const K&, OK> && LessComparable<const K&, OK>
         ConstIterator Find(OK&& key) const noexcept
         {
             if(IsEmpty())
@@ -160,59 +160,14 @@ namespace Core
         }
 
         template<typename OK, typename OV>
-        requires Constructible<K, OK> && Constructible<V, OV> && EqualComparable<const K, OK> && LessComparable<const K, OK>
-        BinaryTreeInsertResult<K, V> InsertUnique(OK&& key, OV&& value)
+        requires Constructible<K, OK> && Constructible<V, OV> && EqualComparable<const K&, OK> && LessComparable<const K&, OK>
+        InsertResult<Iterator> InsertUnique(OK&& key, OV&& value)
         {
-            Node* node = nullptr;
-            Detail::BinaryTreeNodeBase* parent = nullptr;
-            Bool is_left_branch = false;
+            auto [parent, is_left_branch, success] = FindInsertParentNode(Forward(key), true);
+            if(!success)
+                return {.it = Iterator(parent), .inserted = false};
 
-            if(IsEmpty())
-            {
-                //allocate and create node
-                node = AllocateAndInitNode(Forward(key), Forward(value));
-
-                parent = &this->base;
-                is_left_branch = true;
-            }
-            else
-            {
-                Detail::BinaryTreeNodeBase* cmp_node = this->base.left;
-                while(true)
-                {
-                    const K& cmp_node_key = static_cast<Node*>(cmp_node)->key;
-
-                    if(cmp_node_key == Forward(key))
-                        return {.it = Iterator(cmp_node), .inserted = false};
-                    else if(cmp_node_key < Forward(key))
-                    {
-                        if(cmp_node->right != nullptr)
-                            cmp_node = cmp_node->right;
-                        else
-                        {
-                            node = AllocateAndInitNode(Forward(key), Forward(value));
-
-                            parent = cmp_node;
-                            is_left_branch = false;
-
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if(cmp_node->left != nullptr)
-                            cmp_node = cmp_node->left;
-                        else
-                        {
-                            node = AllocateAndInitNode(Forward(key), Forward(value));
-
-                            parent = cmp_node;
-                            is_left_branch = true;
-                            break;
-                        }
-                    }
-                }
-            }
+            Node* node = AllocateAndInitNode(Forward(key), Forward(value));
 
             node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
             this->size++;
@@ -224,53 +179,9 @@ namespace Core
         requires Constructible<K, OK> && Constructible<V, OV> && LessComparable<const K, OK>
         Iterator InsertMultiple(OK&& key, OV&& value)
         {
-            Node* node = nullptr;
-            Detail::BinaryTreeNodeBase* parent = nullptr;
-            Bool is_left_branch = false;
+            auto [parent, is_left_branch, success] = FindInsertParentNode(Forward(key), false);
 
-            if(IsEmpty())
-            {
-                //allocate and create node
-                node = AllocateAndInitNode(Forward(key), Forward(value));
-
-                parent = &this->base;
-                is_left_branch = true;
-            }
-            else
-            {
-                Detail::BinaryTreeNodeBase* cmp_node = this->base.left;
-                while(true)
-                {
-                    const K& cmp_node_key = static_cast<Node*>(cmp_node)->key;
-
-                    if(cmp_node_key < Forward(key))
-                    {
-                        if(cmp_node->right != nullptr)
-                            cmp_node = cmp_node->right;
-                        else
-                        {
-                            node = AllocateAndInitNode(Forward(key), Forward(value));
-
-                            parent = cmp_node;
-                            is_left_branch = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if(cmp_node->left != nullptr)
-                            cmp_node = cmp_node->left;
-                        else
-                        {
-                            node = AllocateAndInitNode(Forward(key), Forward(value));
-
-                            parent = cmp_node;
-                            is_left_branch = true;
-                            break;
-                        }
-                    }
-                }
-            }
+            Node* node = AllocateAndInitNode(Forward(key), Forward(value));
 
             node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
             this->size++;
@@ -296,53 +207,15 @@ namespace Core
             return static_cast<Node*>(node);
         }
 
-        BinaryTreeInsertResult<K, V> AttachUnique(Node* node) noexcept
+        InsertResult<Iterator> AttachUnique(Node* node) noexcept
         {
+            auto [parent, is_left_branch, success] = FindInsertParentNode(node->key, true);
+            if(!success)
+                return {.it = Iterator(parent), .inserted = false};
+
             node->left = nullptr;
             node->right = nullptr;
             node->height = 1;
-
-            Detail::BinaryTreeNodeBase* parent = nullptr;
-            Bool is_left_branch = false;
-
-            if(IsEmpty())
-            {
-                parent = &this->base;
-                is_left_branch = true;
-            }
-            else
-            {
-                Detail::BinaryTreeNodeBase* cmp_node = this->base.left;
-                while(true)
-                {
-                    const K& cmp_node_key = static_cast<Node*>(cmp_node)->key;
-
-                    if(cmp_node_key == node->key)
-                        return {.it = Iterator(cmp_node), .inserted = false};
-                    else if(cmp_node_key < node->key)
-                    {
-                        if(cmp_node->right != nullptr)
-                            cmp_node = cmp_node->right;
-                        else
-                        {
-                            parent = cmp_node;
-                            is_left_branch = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if(cmp_node->left != nullptr)
-                            cmp_node = cmp_node->left;
-                        else
-                        {
-                            parent = cmp_node;
-                            is_left_branch = true;
-                            break;
-                        }
-                    }
-                }
-            }
 
             node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
             this->size++;
@@ -352,48 +225,11 @@ namespace Core
 
         Iterator AttachMultiple(Node* node) noexcept
         {
+            auto [parent, is_left_branch, success] = FindInsertParentNode(node->key, true);
+
             node->left = nullptr;
             node->right = nullptr;
             node->height = 1;
-
-            Detail::BinaryTreeNodeBase* parent = nullptr;
-            Bool is_left_branch = false;
-
-            if(IsEmpty())
-            {
-                parent = &this->base;
-                is_left_branch = true;
-            }
-            else
-            {
-                Detail::BinaryTreeNodeBase* cmp_node = this->base.left;
-                while(true)
-                {
-                    const K& cmp_node_key = static_cast<Node*>(cmp_node)->key;
-                    if(cmp_node_key < node->key)
-                    {
-                        if(cmp_node->right != nullptr)
-                            cmp_node = cmp_node->right;
-                        else
-                        {
-                            parent = cmp_node;
-                            is_left_branch = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        if(cmp_node->left != nullptr)
-                            cmp_node = cmp_node->left;
-                        else
-                        {
-                            parent = cmp_node;
-                            is_left_branch = true;
-                            break;
-                        }
-                    }
-                }
-            }
 
             node->Insert(parent, (is_left_branch ? parent->left : parent->right), &this->base);
             this->size++;
@@ -433,7 +269,7 @@ namespace Core
 
             try
             {
-                new(node) Node{Detail::BinaryTreeNodeBase(), Detail::BinaryTreeNodeKeyValuePair<K, V>(Forward(key), Forward(value))};
+                new(node) Node(Detail::BinaryTreeNodeBase(), Detail::BinaryTreeNodeKeyValuePair<K, V>(Forward(key), Forward(value)));
             }
             catch(...)
             {
@@ -442,6 +278,53 @@ namespace Core
             }
 
             return node;
+        }
+
+        template<typename OK>
+        FindInsertParentNodeResult FindInsertParentNode(OK&& key, Bool is_unqiue_policy)
+        {
+            Detail::BinaryTreeNodeBase* parent = nullptr;
+            Bool is_left_branch = false;
+
+            if(IsEmpty())
+            {
+                parent = &this->base;
+                is_left_branch = true;
+            }
+            else
+            {
+                Detail::BinaryTreeNodeBase* cmp_node = this->base.left;
+                while(true)
+                {
+                    const K& cmp_node_key = static_cast<Node*>(cmp_node)->key;
+
+                    if(is_unqiue_policy && cmp_node_key == Forward(key))
+                        return FindInsertParentNodeResult{.node = cmp_node_key, .is_left_branch = false, .success = false};
+                    else if(cmp_node_key < Forward(key))
+                    {
+                        if(cmp_node->right != nullptr)
+                            cmp_node = cmp_node->right;
+                        else
+                        {
+                            parent = cmp_node;
+                            is_left_branch = false;
+                        }
+                    }
+                    else
+                    {
+                        if(cmp_node->left != nullptr)
+                            cmp_node = cmp_node->left;
+                        else
+                        {
+                            parent = cmp_node;
+                            is_left_branch = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return FindInsertParentNodeResult{.node = parent, .is_left_branch = is_left_branch, .success = true};
         }
     private:
         Detail::BinaryTreeNodeBase base; //end iterator + base.right == begin

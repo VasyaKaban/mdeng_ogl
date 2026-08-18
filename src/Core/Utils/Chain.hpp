@@ -4,6 +4,7 @@
 #include "RangeTraits.hpp"
 #include "Utility.hpp"
 #include "Impl/ChainNode.h"
+#include "Ranges.hpp"
 
 namespace Core
 {
@@ -18,10 +19,12 @@ namespace Core
         using ConstIterator = Detail::ChainIterator<const T>;
 
         Chain(Allocator allocator = GetGlobalAllocator()) noexcept
-            : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
+            : base(),
               size(0),
               allocator(allocator)
-        {}
+        {
+            this->base.InitBaseNode(true);
+        }
 
         ~Chain()
         {
@@ -29,57 +32,59 @@ namespace Core
         }
 
         Chain(const Chain& chain)
-            : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
+            : base(),
               size(0),
               allocator(chain.allocator)
         {
-            Chain tmp_chain(chain.allocator);
-            for(const auto& value: chain)
-                tmp_chain.PushToEnd(value);
+            this->base.InitBaseNode(true);
 
-            *this = Move(tmp_chain);
+            for(const auto& value: chain)
+                PushToEnd(value);
         }
 
         Chain(Chain&& chain) noexcept
-            : base(Exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base))),
+            : base(chain.base),
               size(Exchange(chain.size, 0)),
               allocator(chain.allocator)
         {
-            UpdateBase();
+            this->base.InitBaseNode(false);
+            chain.base.InitBaseNode(true);
         }
 
         Chain& operator=(const Chain& chain)
         {
-            *this = Chain(this->allocator);
+            Clear();
 
-            Chain tmp_chain(chain.allocator);
+            this->allocator = chain.allocator;
+
             for(const auto& value: chain)
-                tmp_chain.PushToEnd(value);
-
-            *this = Move(tmp_chain);
+                PushToEnd(value);
 
             return *this;
         }
 
         Chain& operator=(Chain&& chain) noexcept
         {
-            this->~Chain();
+            Clear();
 
-            this->base = Exchange(chain.base, Detail::ChainNodeBase::SelfLinked(&chain.base));
+            this->base = chain.base;
             this->size = Exchange(chain.size, 0);
             this->allocator = chain.allocator;
 
-            UpdateBase();
+            this->base.InitBaseNode(false);
+            chain.base.InitBaseNode(true);
 
             return *this;
         }
 
         template<Range R>
         Chain(R&& values, Allocator allocator = GetGlobalAllocator())
-            : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
+            : base(),
               size(0),
               allocator(allocator)
         {
+            base.InitBaseNode(true);
+
             try
             {
                 for(auto&& value: Forward(values))
@@ -95,10 +100,12 @@ namespace Core
         template<typename U, DeviceSize N>
         requires Constructible<T, const U&>
         Chain(const U (&init_list)[N], Allocator allocator = GetGlobalAllocator())
-            : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
+            : base(),
               size(0),
               allocator(allocator)
         {
+            base.InitBaseNode(true);
+
             try
             {
                 for(const auto& value: init_list)
@@ -114,10 +121,12 @@ namespace Core
         template<typename U, DeviceSize N>
         requires Constructible<T, U&&>
         Chain(U (&&init_list)[N], Allocator allocator = GetGlobalAllocator())
-            : base(Detail::ChainNodeBase::SelfLinked(&this->base)),
+            : base(),
               size(0),
               allocator(allocator)
         {
+            base.InitBaseNode(true);
+
             try
             {
                 for(auto&& value: Forward(init_list))
@@ -149,86 +158,74 @@ namespace Core
         requires Constructible<T, Args...>
         Void Insert(ConstIterator before_it, Args&&... args)
         {
-            AllocateAndInsertNode(before_it.node, Forward(args)...);
+            Detail::ChainNodeBase* before_node = const_cast<Detail::ChainNodeBase*>(before_it.GetNode());
+
+            Node* node = AllocateAndInitNode(Forward(args)...);
+
+            node->Insert(before_node, &this->base);
+
+            this->size++;
         }
 
         template<typename... Args>
         requires Constructible<T, Args...>
         Void PushToBegin(Args&&... args)
         {
-            AllocateAndInsertNode(&this->base, Forward(args)...);
+            Insert(GetSentinel(), Forward(args)...);
         }
 
         template<typename... Args>
         requires Constructible<T, Args...>
         Void PushToEnd(Args&&... args)
         {
-            AllocateAndInsertNode(this->base.prev, Forward(args)...);
-        }
-
-        Void Splice(ConstIterator before_it, Chain& chain, ConstIterator begin, ConstIterator end) noexcept
-        {
-            Detail::ChainNodeBase* before_node = before_it.node;
-
-            for(auto it = begin; it != end; it++)
-            {
-                Node* it_node = it.node;
-                chain.EraseNode(it_node);
-                InsertNode(before_node, it_node);
-
-                before_node = before_node->next;
-            }
+            Insert(AdvanceBack(GetSentinel(), 1), Forward(args)...);
         }
 
         Void Clear() noexcept
         {
-            Node* node = this->base.next->AsChainNode<T>();
-            for(DeviceSize i = 0; i < this->size; i++)
-            {
-                Detail::ChainNodeBase* next = node->next;
-                node->~Node();
-                this->allocator.Deallocate(node);
-
-                node = next->AsChainNode<T>();
-            }
-
-            this->size = 0;
-            this->base = Detail::ChainNodeBase::SelfLinked(&this->base);
+            for(auto it = GetIterator(); it != GetSentinel(); it++)
+                Erase(it);
         }
 
         Void Erase(ConstIterator it) noexcept
         {
-            EraseAndFreeNode(it.node);
+            Detail::ChainNodeBase* node = const_cast<Detail::ChainNodeBase*>(it.GetNode());
+
+            node->Detach(&this->base);
+            static_cast<Node*>(node)->~Node();
+            this->allocator.Deallocate(node);
+
+            this->size--;
         }
 
         Void EraseFirst() noexcept
         {
-            EraseAndFreeNode(this->base.next);
+            Erase(GetIterator());
         }
 
         Void EraseLast() noexcept
         {
-            EraseAndFreeNode(this->base.prev);
+            Erase(AdvanceBack(GetSentinel(), 1));
         }
 
         T& GetFirst() noexcept
         {
-            return this->base.next->AsChainNode<T>()->value;
+            return *GetIterator();
         }
 
         const T& GetFirst() const noexcept
         {
-            return this->base.next->AsChainNode<T>()->value;
+            return *GetIterator();
         }
 
         T& GetLast() noexcept
         {
-            return this->base.prev->AsChainNode<T>()->value;
+            return *AdvanceBack(GetSentinel(), 1);
         }
 
         const T& GetLast() const noexcept
         {
-            return this->base.prev->AsChainNode<T>()->value;
+            return *AdvanceBack(GetSentinel(), 1);
         }
 
         Iterator GetIterator() noexcept
@@ -256,14 +253,14 @@ namespace Core
             return MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node) * size};
         }
     public:
-        template<typename OT>
-        Void AllocateAndInitNode(OT&& value) //allocate node and insert right after prev_node
+        template<typename... Args>
+        Node* AllocateAndInitNode(Args&&... args) //allocate node and insert right after prev_node
         {
             Node* node = static_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
             try
             {
-                new(node) Node{Detail::ChainNodeBase(), Forward(value)};
+                new(node) Node(Detail::ChainNodeBase(), Forward(args)...);
             }
             catch(...)
             {

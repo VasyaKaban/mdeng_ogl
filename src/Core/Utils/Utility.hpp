@@ -15,6 +15,13 @@
 
 namespace Core
 {
+    template<typename It>
+    struct InsertResult
+    {
+        It it;
+        Bool inserted;
+    };
+
     constexpr Bool IsConstantContext() noexcept
     {
         return __builtin_is_constant_evaluated();
