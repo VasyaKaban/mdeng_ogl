@@ -1,6 +1,8 @@
 #pragma once
 
-#ifdef _WIN32
+#include "../Platform.h"
+
+#if CORE_PLATFORM_CURRENT == CORE_PLATFORM_WIN32
 #    define UNICODE
 #    define _UNICODE
 #    define _CRT_SECURE_NO_WARNINGS
@@ -27,6 +29,8 @@
 
 namespace Core
 {
+    class Win32File;
+
     class CORE_API Win32Exception : public Exception
     {
     public:

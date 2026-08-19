@@ -8,7 +8,7 @@
 
 void EntryPoint(Core::Span<const Core::StringView> arguments);
 
-#ifdef _WIN32
+#if CORE_PLATFORM_CURRENT == CORE_PLATFORM_WIN32
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev_instance, PWSTR cmd_line, int cmd_show)
 {
     Core::System::Init(Core::Win32SystemInitInfo{.cmd_show = cmd_show, .main_thread_id = GetCurrentThreadId()});

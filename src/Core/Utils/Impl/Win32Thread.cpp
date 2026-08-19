@@ -1,4 +1,6 @@
-#ifdef _WIN32
+#include "../Platform.h"
+
+#if CORE_PLATFORM_CURRENT == CORE_PLATFORM_WIN32
 
 #    include "Win32Thread.h"
 

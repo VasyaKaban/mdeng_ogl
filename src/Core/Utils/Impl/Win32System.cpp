@@ -1,7 +1,10 @@
-#ifdef _WIN32
+#include "../Platform.h"
+
+#if CORE_PLATFORM_CURRENT == CORE_PLATFORM_WIN32
 
 #    include "Win32System.h"
 #    include "../Sequence.hpp"
+#    include "Win32File.h"
 
 namespace Core
 {
@@ -34,6 +37,9 @@ namespace Core
         Int32 cmd_show;
         DWORD main_thread_id;
         Path executable_path;
+        Win32File stdin;
+        Win32File stdout;
+        Win32File stderr;
     };
 
     static Win32SystemData Win32SystemDataInstance = {};
@@ -106,6 +112,21 @@ namespace Core
             throw Win32Exception(GetLastError());
 
         return String(undecorated_string, res);
+    }
+
+    Win32File& Win32System::GetStdIn() noexcept
+    {
+        return Win32SystemDataInstance.stdin;
+    }
+
+    Win32File& Win32System::GetStdOut() noexcept
+    {
+        return Win32SystemDataInstance.stdout;
+    }
+
+    Win32File& Win32System::GetStdErr() noexcept
+    {
+        return Win32SystemDataInstance.stderr;
     }
 
     Sequence<WideChar>* Win32System::GetThreadLocalWideCharBuffer() noexcept

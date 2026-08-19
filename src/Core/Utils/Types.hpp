@@ -23,13 +23,32 @@ inline namespace CoreTypes
     using WideChar = wchar_t;
 
     using Bool = bool;
-    static_assert(sizeof(Bool) == 1);
 
     using Bool32 = Int32;
 
     using DeviceSize = UInt64;
 
     using Void = void;
+
+    static_assert(sizeof(Int8) == 1);
+    static_assert(sizeof(Int16) == 2);
+    static_assert(sizeof(Int32) == 4);
+    static_assert(sizeof(Int64) == 8);
+
+    static_assert(sizeof(UInt8) == 1);
+    static_assert(sizeof(UInt16) == 2);
+    static_assert(sizeof(UInt32) == 4);
+    static_assert(sizeof(UInt64) == 8);
+
+    static_assert(sizeof(Float32) == 4);
+    static_assert(sizeof(Float64) == 8);
+
+    static_assert(sizeof(UTF8Char) == 1);
+    static_assert(sizeof(UTF16Char) == 2);
+    static_assert(sizeof(UTF32Char) == 4);
+
+    static_assert(sizeof(Char) == 1);
+    static_assert(sizeof(DeviceSize) == sizeof(Void*));
 };
 
 namespace Core
@@ -159,7 +178,7 @@ namespace Core
     };
 #endif
 
-#ifdef _WIN32
+#if CORE_PLATFORM_CURRENT == CORE_PLATFORM_WIN32
     template<>
     struct NumericLimits<WideChar>
     {
@@ -167,7 +186,7 @@ namespace Core
         constexpr static WideChar Max = 65'535;
         constexpr static DeviceSize Bits = 8 * sizeof(WideChar);
     };
-#elif defined(__linux__)
+#elif CORE_PLATFORM_CURRENT == CORE_PLATFORM_LINUX
     template<>
     struct NumericLimits<WideChar>
     {

@@ -3,16 +3,6 @@
 #include "Traits.hpp"
 #include <cstring>
 
-#ifdef _MSC_VER
-#    define CORE_ASSUME(COND, ...) __assume(COND __VA_OPT__(__VA_ARGS__));
-#    define CORE_UNREACHABLE() __assume(0);
-#else
-#    define CORE_ASSUME(COND, ...) [[gnu::assume(COND __VA_OPT__(__VA_ARGS__))]];
-#    define CORE_UNREACHABLE() __builtin_unreachable();
-#endif
-
-#define CORE_ASSUME_ALIGNED(PTR, ALIGNMENT, ...) CORE_ASSUME(reinterpret_cast<DeviceSize>(PTR) % (ALIGNMENT __VA_OPT__(__VA_ARGS__)) == 0)
-
 namespace Core
 {
     template<typename It>

@@ -147,7 +147,6 @@ Instance:
 * Optimize String/StringView creation from already validated UTF-8 data. We can firstly validate data and then pass only validated one
 * Optimize Non-utf8 chars conversion to Path(remove dynamic allocation)
 * GetSize() for String-like objects to GetByteSize()
-* remove CountBits as switch and change it to HW popcnt...
 * Date/Time
 * add CORE_API for classes and functions - CHECK!!!
 * check for TriviallyConstructible types in Resize() methods to skip loop + add for String types
@@ -158,6 +157,9 @@ Instance:
 * Check all methods in containers to match the same naming
 * In collections change Clear() to explicit destructor call(like in HashChain we do not clear slots)
 * stdin, stdout, stderr as files?
+* The hell is going on with resize and reserve? Add methods for Sequence and String for object resize(fill data with default values)
+* Do not check const Character[N] against UTF8 restrictions(they are already checked)
+* OwningPointer(or what naming?) + Interface without explicit Acquire() and Release() methods -> use them via OwningPointer
 * Format:
     use Formatter as object for attributes
     add float to format
@@ -231,12 +233,151 @@ HashTable -> search:
     Key -> string, data: MapIterator
 	
 Function<R, Args...>:
-	const void* memory;//place small function within pointer
+	const void* memory;//as object + counter
+    DeviceSize counter_offset
     Allocator allocator;
-    MemoryRequirements req: 
-        alignment 
-        size
 	R(*caller)(void *memory, Args...) noexcept(...);
 	void(*destroy)(void* memory) noexcept;
-    void(*copy)(const void* from, void* to, bool is_small) noexcept(...);
-    void(*move)(void* from, void* to, bool is_small) noexcept(...);
+
+
+OwningPointerBlock<T>:
+    T obj;
+    Allocator allocator;
+    DeviceSize counter;
+    DeviceSize (*adjust_counter)(DeviceSize* counter, Bool is_add) noexcept;
+
+
+DLL: comes with interface class so Acquire() and Release() must be implemented on the implementation side
+Owningpointer: all good but if we remove Acquire() and Release() from Interface how we are suppose to deal with Allocator?
+
+OwningPointerBlock<T>
+{
+    virtual Void Acquire();
+    virtual Void Release();
+    virtual T* GetObject();
+};
+
+NoOpPointerBlock<T>
+{
+    T obj;
+
+    virtual Void Acquire() 
+    {
+
+    }
+
+    virtual Void Release()
+    {
+        
+    }
+
+    virtual T* GetObject()
+    {
+        return &this->obj;
+    }
+};
+
+RuntimeAllocatorResourcePointerBlock<T>
+{
+    T obj;
+    DeviceSize counter;
+
+    virtual Void Acquire() 
+    {
+        this->counter++;
+    }
+
+    virtual Void Release()//false -> do not relase
+    {
+        this->counter--;
+        
+        if(this->counter == 0)
+        {
+            obj.~T();
+            RuntimeDeallocate(this);
+        }
+    }
+
+    virtual T* GetObject()
+    {
+        return &this->obj;
+    }
+};
+
+DynamicPlainResourcePointerBlock<T>
+{
+    T obj;
+    DeviceSize counter;
+    Allocator allocator;
+
+    virtual Void Acquire() 
+    {
+        this->counter++;
+    }
+
+    virtual Void Release()
+    {
+        this->counter--;
+        
+        if(this->counter == 0)
+        {
+            obj.~T();
+            this->allocator.Deallocate(this);
+        }
+    }
+
+    virtual T* GetObject()
+    {
+        return &this->obj;
+    }
+};
+
+DynamicAtomicResourcePointerBlock<T>
+{
+    T obj;
+    DeviceSize counter;
+    Allocator allocator;
+
+    virtual Void Acquire() 
+    {
+        AtomicAdd<MemoryOrder::Relaxed>(*this->counter, 1);
+    }
+
+    virtual Void Release()
+    {
+        DeviceSize prev = AtomicSubtract<MemoryOrder::AcquireRelease>(*this->counter, 1);
+        
+        if(prev == 0)
+        {
+            obj.~T();
+            this->allocator.Deallocate(this);
+        }
+    }
+
+    virtual T* GetObject()
+    {
+        return &this->obj;
+    }
+};
+
+OwningPointer<T>
+{
+    OwningPointerBlock<T>* block;
+    T* obj;
+
+    OwningPointer(OwningPointerBlock<T>* block)
+    {
+        block->Acquire();
+        this->block = block;
+
+        this->obj =this->block->GetObject();
+    }
+
+    OwningPointer(OwningPointerBlock<T>* block)
+    {
+        block->Acquire();
+        this->block = block;
+
+        this->obj =this->block->GetObject();
+    }
+};

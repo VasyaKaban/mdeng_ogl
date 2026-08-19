@@ -1,6 +1,8 @@
 #pragma once
 
-#ifdef _WIN32
+#include "Utils/Platform.h"
+
+#if CORE_PLATFORM_CURRENT == CORE_PLATFORM_WIN32
 #    ifdef CORE_API_EXPORT
 #        define CORE_API __declspec(dllexport)
 #    else

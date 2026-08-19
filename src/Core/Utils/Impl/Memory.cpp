@@ -7,7 +7,7 @@ namespace Core
 {
     Void* RuntimeAllocateMemory(const MemoryRequirements& req) noexcept
     {
-#ifdef _MSC_VER
+#if CORE_COMPILER_CURRENT == CORE_COMPILER_MSVC
         return _aligned_malloc(req.size, req.alignment);
 #else
         return aligned_alloc(req.alignment, req.size)
@@ -16,7 +16,7 @@ namespace Core
 
     Void RuntimeDeallocateMemory(Void* ptr) noexcept
     {
-#ifdef _MSC_VER
+#if CORE_COMPILER_CURRENT == CORE_COMPILER_MSVC
         return _aligned_free(ptr);
 #else
         return free(ptr);
