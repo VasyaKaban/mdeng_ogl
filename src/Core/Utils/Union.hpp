@@ -18,7 +18,7 @@ namespace Core
         template<typename T, typename... Types>
         constexpr UnionMetrics GetUnionMetrics() noexcept
         {
-            UnionMetrics metrics = {.alignment = Max(alignof(T), alignof(Types)...), .size = Max(sizeof(T), sizeof(Types)...)};
+            UnionMetrics metrics = {.alignment = Max({alignof(T), alignof(Types)...}), .size = Max({sizeof(T), sizeof(Types)...})};
             Align(metrics.size, metrics.alignment);
 
             return metrics;

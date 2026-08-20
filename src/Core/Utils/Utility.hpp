@@ -86,11 +86,14 @@ namespace Core
             return values[0];
         else
         {
-            const T& target = values[0];
+            DeviceSize target_index = 0;
             for(DeviceSize i = 1; i < N; i++)
-                target = Min(target, values[i]);
+            {
+                if(values[target_index] > values[i])
+                    target_index = i;
+            }
 
-            return target;
+            return values[target_index];
         }
     }
 
@@ -112,11 +115,14 @@ namespace Core
             return values[0];
         else
         {
-            const T& target = values[0];
+            DeviceSize target_index = 0;
             for(DeviceSize i = 1; i < N; i++)
-                target = Max(target, values[i]);
+            {
+                if(values[target_index] < values[i])
+                    target_index = i;
+            }
 
-            return target;
+            return values[target_index];
         }
     }
 
