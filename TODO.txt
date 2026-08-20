@@ -163,6 +163,7 @@ Instance:
 * SharedBlock with atomic counters -> use atomic access memory granularity(constructive and destructive interference size)
 * For all #if ARCH, PLATFORM, COMPILER add #else -> #error to check in future!
 * AtomicCounterSharedBlock!
+* Add final qual to the SharedBlock-like classes?
 * Format:
     use Formatter as object for attributes
     add float to format
