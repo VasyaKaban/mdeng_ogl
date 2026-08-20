@@ -65,8 +65,10 @@ namespace Core
         static String DecorateDynamicLibraryName(StringView name);
         static String UndecorateSymbol(StringView name);
 
-        //only for absolute paths
+        static DeviceSize GetConcurrentShareGranularityAlignment() noexcept; //destructive
+        static DeviceSize GetConcurrentShareGranularitySize() noexcept; //constructive
 
+        //only for absolute paths
         constexpr static DeviceSize AbsolutePathPrefixSize = 4;
         constexpr static WideChar AbsolutePathPrefix[AbsolutePathPrefixSize] = {L'\\', L'\\', L'?', L'\\'};
         constexpr static DeviceSize AbsolutePathImplementationReserve = AbsolutePathPrefixSize + 1; //prefix + null-term

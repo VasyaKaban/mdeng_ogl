@@ -160,6 +160,9 @@ Instance:
 * The hell is going on with resize and reserve? Add methods for Sequence and String for object resize(fill data with default values)
 * Do not check const Character[N] against UTF8 restrictions(they are already checked)
 * OwningPointer(or what naming?) + Interface without explicit Acquire() and Release() methods -> use them via OwningPointer
+* SharedBlock with atomic counters -> use atomic access memory granularity(constructive and destructive interference size)
+* For all #if ARCH, PLATFORM, COMPILER add #else -> #error to check in future!
+* AtomicCounterSharedBlock!
 * Format:
     use Formatter as object for attributes
     add float to format

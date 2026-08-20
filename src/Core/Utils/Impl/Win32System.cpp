@@ -4,7 +4,6 @@
 
 #    include "Win32System.h"
 #    include "../Sequence.hpp"
-#    include "Win32File.h"
 
 namespace Core
 {
@@ -37,9 +36,7 @@ namespace Core
         Int32 cmd_show;
         DWORD main_thread_id;
         Path executable_path;
-        Win32File stdin;
-        Win32File stdout;
-        Win32File stderr;
+        DeviceSize cache_granularity;
     };
 
     static Win32SystemData Win32SystemDataInstance = {};
@@ -69,6 +66,40 @@ namespace Core
 
         TranslateFromWin32PathToAbsolutePath(name.GetData(), size, Win32SystemDataInstance.executable_path);
         Win32SystemDataInstance.executable_path.Back(); //erase filename
+
+#    if CORE_ARCH_CURRENT == CORE_ARCH_AMD64
+        Win32SystemDataInstance.cache_granularity = 128; //let's use 128 bytes instead of 64 to cover Intel's spatial prefetcher
+#    else
+#        error "Unsupported arch"
+#    endif
+
+        DWORD cache_buffer_size = 0;
+        if(GetLogicalProcessorInformationEx(RelationCache, nullptr, &cache_buffer_size) != TRUE)
+            throw Win32Exception(GetLastError());
+
+        Sequence<UInt8> cache_buffer;
+        cache_buffer.Resize(cache_buffer_size);
+
+        PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX cache_info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(cache_buffer.GetData());
+        if(GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP::RelationCache, cache_info, &cache_buffer_size) != TRUE)
+            throw Win32Exception(GetLastError());
+
+        DWORD cache_buffer_offset = 0;
+        while(cache_buffer_offset < cache_buffer_size)
+        {
+            cache_info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(cache_buffer.GetData() + cache_buffer_offset);
+
+            if(cache_info->Relationship == RelationCache)
+            {
+                if(cache_info->Cache.Level == 1 && cache_info->Cache.Type == PROCESSOR_CACHE_TYPE::CacheData)
+                {
+                    if(Win32SystemDataInstance.cache_granularity < cache_info->Cache.LineSize)
+                        Win32SystemDataInstance.cache_granularity = cache_info->Cache.LineSize;
+                }
+            }
+
+            cache_buffer_offset += cache_info->Size;
+        }
     }
 
     Void Win32System::GetRandomBytes(UInt8* output, DeviceSize size)
@@ -114,19 +145,14 @@ namespace Core
         return String(undecorated_string, res);
     }
 
-    Win32File& Win32System::GetStdIn() noexcept
+    DeviceSize Win32System::GetConcurrentShareGranularityAlignment() noexcept
     {
-        return Win32SystemDataInstance.stdin;
+        return Win32SystemDataInstance.cache_granularity;
     }
 
-    Win32File& Win32System::GetStdOut() noexcept
+    DeviceSize Win32System::GetConcurrentShareGranularitySize() noexcept
     {
-        return Win32SystemDataInstance.stdout;
-    }
-
-    Win32File& Win32System::GetStdErr() noexcept
-    {
-        return Win32SystemDataInstance.stderr;
+        return Win32SystemDataInstance.cache_granularity;
     }
 
     Sequence<WideChar>* Win32System::GetThreadLocalWideCharBuffer() noexcept
