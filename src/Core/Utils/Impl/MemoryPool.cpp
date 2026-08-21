@@ -27,7 +27,7 @@ namespace Core
         return field & PoolNodeDataOffsetsMask;
     }
 
-    MemoryPool::MemoryPool(Allocator allocator, DeviceSize size)
+    MemoryPool::MemoryPool(SharedPointer<Allocator> allocator, DeviceSize size)
         : free_list(nullptr),
           allocator(allocator)
     {
@@ -41,7 +41,7 @@ namespace Core
             }
         }
 
-        Void* ptr = this->allocator.Allocate(MemoryRequirements{.alignment = MemoryPool::BaseHeaderGranularity, .size = size});
+        Void* ptr = this->allocator->Allocate(MemoryRequirements{.alignment = MemoryPool::BaseHeaderGranularity, .size = size});
 
         this->memory = Span(reinterpret_cast<UInt8*>(ptr), size);
 
@@ -53,7 +53,7 @@ namespace Core
     MemoryPool::~MemoryPool()
     {
         if(!this->memory.IsEmpty())
-            this->allocator.Deallocate(this->memory.GetData());
+            this->allocator->Deallocate(this->memory.GetData());
     }
 
     MemoryPool::MemoryPool(MemoryPool&& pool) noexcept

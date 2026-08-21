@@ -3,14 +3,14 @@
 
 namespace Core
 {
-    String::String(Allocator allocator) noexcept
+    String::String(SharedPointer<Allocator> allocator) noexcept
         : data(nullptr),
           size(0),
           capacity(0),
           allocator(allocator)
     {}
 
-    String::String(DeviceSize reserve, Allocator allocator) noexcept
+    String::String(DeviceSize reserve, SharedPointer<Allocator> allocator) noexcept
         : String(allocator)
     {
         Reserve(reserve);
@@ -19,7 +19,7 @@ namespace Core
     String::~String()
     {
         if(this->data)
-            this->allocator.Deallocate(this->data);
+            this->allocator->Deallocate(this->data);
     }
 
     String::String(const String& str)
@@ -59,35 +59,35 @@ namespace Core
         return *this;
     }
 
-    String::String(ConstIterator begin, ConstIterator end, Allocator allocator)
+    String::String(ConstIterator begin, ConstIterator end, SharedPointer<Allocator> allocator)
         : String(begin.GetAddress(), end.GetAddress() - begin.GetAddress(), allocator)
     {}
 
-    String::String(const Char* input, DeviceSize input_size, Allocator allocator)
+    String::String(const Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : String(allocator)
     {
         this->Append(input, input_size);
     }
 
-    String::String(const WideChar* input, DeviceSize input_size, Allocator allocator)
+    String::String(const WideChar* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : String(allocator)
     {
         this->Append(input, input_size);
     }
 
-    String::String(const UTF8Char* input, DeviceSize input_size, Allocator allocator)
+    String::String(const UTF8Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : String(allocator)
     {
         this->Append(input, input_size);
     }
 
-    String::String(const UTF16Char* input, DeviceSize input_size, Allocator allocator)
+    String::String(const UTF16Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : String(allocator)
     {
         this->Append(input, input_size);
     }
 
-    String::String(const UTF32Char* input, DeviceSize input_size, Allocator allocator)
+    String::String(const UTF32Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : String(allocator)
     {
         this->Append(input, input_size);
@@ -108,7 +108,7 @@ namespace Core
         return this->capacity;
     }
 
-    Allocator String::GetAllocator() const noexcept
+    SharedPointer<Allocator> String::GetAllocator() const noexcept
     {
         return this->allocator;
     }
@@ -135,23 +135,23 @@ namespace Core
 
     namespace Detail
     {
-        Void StringReserveImpl(DeviceSize reserve, UTF8Char*& str_data, DeviceSize str_size, DeviceSize& str_capacity, Allocator& str_allocator)
+        Void StringReserveImpl(DeviceSize reserve, UTF8Char*& str_data, DeviceSize str_size, DeviceSize& str_capacity, SharedPointer<Allocator>& str_allocator)
         {
             if(str_capacity >= reserve)
                 return;
 
-            if(str_data != nullptr && str_allocator.Grow(str_data, reserve)) //try grow
+            if(str_data != nullptr && str_allocator->Grow(str_data, reserve)) //try grow
             {
                 str_capacity = reserve;
             }
             else //allocate new buffer
             {
-                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(str_allocator.Allocate(String::GetMemoryRequirements(reserve)));
+                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(str_allocator->Allocate(String::GetMemoryRequirements(reserve)));
 
                 CopyNonOverlappedMemory(str_data, new_memory, str_size);
 
                 if(str_data != nullptr)
-                    str_allocator.Deallocate(str_data);
+                    str_allocator->Deallocate(str_data);
 
                 str_data = new_memory;
                 str_capacity = reserve;
@@ -177,7 +177,7 @@ namespace Core
             res = true;
         else if(this->size == 0 && this->capacity != 0)
         {
-            this->allocator.Deallocate(this->data);
+            this->allocator->Deallocate(this->data);
 
             this->data = nullptr;
             this->capacity = 0;
@@ -186,7 +186,7 @@ namespace Core
         }
         else if(this->capacity > this->size)
         {
-            res = allocator.Trim(this->data, this->size);
+            res = allocator->Trim(this->data, this->size);
             if(res)
                 this->capacity = this->size;
         }
@@ -197,7 +197,7 @@ namespace Core
     namespace Detail
     {
         template<Character C>
-        Void StringPrependImpl(const C* input, DeviceSize input_size, UTF8Char*& str_data, DeviceSize& str_size, DeviceSize& str_capacity, Allocator& str_allocator)
+        Void StringPrependImpl(const C* input, DeviceSize input_size, UTF8Char*& str_data, DeviceSize& str_size, DeviceSize& str_capacity, SharedPointer<Allocator>& str_allocator)
         {
             if(input_size == 0)
                 return;
@@ -213,7 +213,7 @@ namespace Core
                 CopyOverlappedMemory(str_data, str_data + length_res.output_size, str_size); //move old data
                 StringEncoder::Convert(input, input_size, str_data); //copy new data
             }
-            else if(str_data != nullptr && str_allocator.Grow(str_data, new_size))
+            else if(str_data != nullptr && str_allocator->Grow(str_data, new_size))
             {
                 CopyOverlappedMemory(str_data, str_data + length_res.output_size, str_size); //move old data
                 StringEncoder::Convert(input, input_size, str_data); //copy new data
@@ -222,7 +222,7 @@ namespace Core
             }
             else
             {
-                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(str_allocator.Allocate(String::GetMemoryRequirements(new_size)));
+                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(str_allocator->Allocate(String::GetMemoryRequirements(new_size)));
 
                 StringEncoder::Convert(input, input_size, new_memory); //copy new data
                 CopyNonOverlappedMemory(str_data, new_memory + length_res.output_size, str_size);
@@ -230,7 +230,7 @@ namespace Core
                 str_capacity = new_size;
 
                 if(str_data != nullptr)
-                    str_allocator.Deallocate(str_data);
+                    str_allocator->Deallocate(str_data);
 
                 str_data = new_memory;
             }
@@ -239,7 +239,7 @@ namespace Core
         }
 
         template<Character C>
-        Void StringAppendImpl(const C* input, DeviceSize input_size, UTF8Char*& str_data, DeviceSize& str_size, DeviceSize& str_capacity, Allocator& str_allocator)
+        Void StringAppendImpl(const C* input, DeviceSize input_size, UTF8Char*& str_data, DeviceSize& str_size, DeviceSize& str_capacity, SharedPointer<Allocator>& str_allocator)
         {
             if(input_size == 0)
                 return;
@@ -256,8 +256,13 @@ namespace Core
         }
 
         template<Character C>
-        Void
-        StringInBoundsInsertImpl(String::ConstIterator before_it, const C* input, DeviceSize input_size, UTF8Char*& str_data, DeviceSize& str_size, DeviceSize& str_capacity, Allocator& str_allocator)
+        Void StringInBoundsInsertImpl(String::ConstIterator before_it,
+                                      const C* input,
+                                      DeviceSize input_size,
+                                      UTF8Char*& str_data,
+                                      DeviceSize& str_size,
+                                      DeviceSize& str_capacity,
+                                      SharedPointer<Allocator>& str_allocator)
         {
             if(input_size == 0)
                 return;
@@ -278,7 +283,7 @@ namespace Core
                 CopyOverlappedMemory(second_part_start_ptr, second_part_final_ptr, second_part_size); //move second part
                 StringEncoder::Convert(input, input_size, second_part_start_ptr); //copy new data
             }
-            else if(str_data != nullptr && str_allocator.Grow(str_data, new_size))
+            else if(str_data != nullptr && str_allocator->Grow(str_data, new_size))
             {
                 CopyOverlappedMemory(second_part_start_ptr, second_part_final_ptr, second_part_size); //move second part
                 StringEncoder::Convert(input, input_size, second_part_start_ptr); //copy new data
@@ -287,7 +292,7 @@ namespace Core
             }
             else
             {
-                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(str_allocator.Allocate(MemoryRequirements{.alignment = alignof(UTF8Char), .size = new_size}));
+                UTF8Char* new_memory = reinterpret_cast<UTF8Char*>(str_allocator->Allocate(MemoryRequirements{.alignment = alignof(UTF8Char), .size = new_size}));
 
                 CopyNonOverlappedMemory(str_data, new_memory, first_part_size);
                 StringEncoder::Convert(input, input_size, new_memory + first_part_size);
@@ -296,7 +301,7 @@ namespace Core
                 str_capacity = new_size;
 
                 if(str_data != nullptr)
-                    str_allocator.Deallocate(str_data);
+                    str_allocator->Deallocate(str_data);
 
                 str_data = new_memory;
             }

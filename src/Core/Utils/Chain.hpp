@@ -18,7 +18,7 @@ namespace Core
         using Iterator = Detail::ChainIterator<T>;
         using ConstIterator = Detail::ChainIterator<const T>;
 
-        Chain(Allocator allocator = GetGlobalAllocator()) noexcept
+        Chain(SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept
             : base(),
               size(0),
               allocator(allocator)
@@ -78,7 +78,7 @@ namespace Core
         }
 
         template<Range R>
-        Chain(R&& values, Allocator allocator = GetGlobalAllocator())
+        Chain(R&& values, SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : base(),
               size(0),
               allocator(allocator)
@@ -99,7 +99,7 @@ namespace Core
 
         template<typename U, DeviceSize N>
         requires Constructible<T, const U&>
-        Chain(const U (&init_list)[N], Allocator allocator = GetGlobalAllocator())
+        Chain(const U (&init_list)[N], SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : base(),
               size(0),
               allocator(allocator)
@@ -120,7 +120,7 @@ namespace Core
 
         template<typename U, DeviceSize N>
         requires Constructible<T, U&&>
-        Chain(U (&&init_list)[N], Allocator allocator = GetGlobalAllocator())
+        Chain(U (&&init_list)[N], SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : base(),
               size(0),
               allocator(allocator)
@@ -149,7 +149,7 @@ namespace Core
             return this->size == 0;
         }
 
-        Allocator GetAllocator() const noexcept
+        SharedPointer<Allocator> GetAllocator() const noexcept
         {
             return this->allocator;
         }
@@ -193,7 +193,7 @@ namespace Core
 
             node->Detach(&this->base);
             static_cast<Node*>(node)->~Node();
-            this->allocator.Deallocate(node);
+            this->allocator->Deallocate(node);
 
             this->size--;
         }
@@ -256,7 +256,7 @@ namespace Core
         template<typename... Args>
         Node* AllocateAndInitNode(Args&&... args) //allocate node and insert right after prev_node
         {
-            Node* node = static_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
+            Node* node = static_cast<Node*>(this->allocator->Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
             try
             {
@@ -264,7 +264,7 @@ namespace Core
             }
             catch(...)
             {
-                this->allocator.Deallocate(node);
+                this->allocator->Deallocate(node);
                 throw;
             }
 
@@ -273,7 +273,7 @@ namespace Core
     private:
         Detail::ChainNodeBase base;
         DeviceSize size;
-        Allocator allocator;
+        SharedPointer<Allocator> allocator;
     };
 
     template<Range R>

@@ -20,7 +20,7 @@ namespace Core
     namespace Detail
     {
         template<typename T, typename... Args>
-        String FormatImpl(Allocator& allocator, DeviceSize size, T&& arg, Args&&... args)
+        String FormatImpl(SharedPointer<Allocator>& allocator, DeviceSize size, T&& arg, Args&&... args)
         {
             //if we pass actual Formatter<...>(for example in case of Core::Fmt) then we should use it instead of creating Formatter<Formatter<...>>
             using ArgType = DropConstVolatileReference<T>;
@@ -44,7 +44,7 @@ namespace Core
 
     template<typename... Args>
     requires(Formattable<DropConstVolatileReference<Args>> && ...)
-    String Format(Allocator allocator, Args&&... args)
+    String Format(SharedPointer<Allocator> allocator, Args&&... args)
     {
         if constexpr(sizeof...(args) == 0)
             return String(allocator);

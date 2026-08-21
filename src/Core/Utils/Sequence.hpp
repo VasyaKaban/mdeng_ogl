@@ -14,14 +14,14 @@ namespace Core
         using Iterator = T*;
         using ConstIterator = const T*;
 
-        Sequence(Allocator allocator = GetGlobalAllocator()) noexcept
+        Sequence(SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept
             : memory(nullptr),
               size(0),
               capacity(0),
               allocator(allocator)
         {}
 
-        Sequence(DeviceSize reserve, Allocator allocator = GetGlobalAllocator()) noexcept
+        Sequence(DeviceSize reserve, SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept
             : Sequence(allocator)
         {
             Reserve(reserve);
@@ -33,7 +33,7 @@ namespace Core
             {
                 DestroyObjects();
 
-                this->allocator.Deallocate(this->memory);
+                this->allocator->Deallocate(this->memory);
             }
         }
 
@@ -79,7 +79,7 @@ namespace Core
         }
 
         template<SizedRange R>
-        Sequence(R&& values, Allocator allocator = GetGlobalAllocator())
+        Sequence(R&& values, SharedPointer<Allocator> allocator = GetGlobalAllocator())
         {
             Sequence tmp_seq(size(Forward(values)), allocator);
 
@@ -105,7 +105,7 @@ namespace Core
                 new(const_cast<T*>(before_it) + 1) T(Forward(args)...);
                 this->size++;
             }
-            else if(this->memory != nullptr && this->allocator.Grow(this->memory, sizeof(T) * (this->size + 1))) //move right and place
+            else if(this->memory != nullptr && this->allocator->Grow(this->memory, sizeof(T) * (this->size + 1))) //move right and place
             {
                 MoveRight(const_cast<T*>(before_it) + 1, GetSentinel() - (before_it + 1), 1);
                 new(const_cast<T*>(before_it) + 1) T(Forward(args)...);
@@ -190,13 +190,13 @@ namespace Core
             if(this->capacity >= reserve)
                 return;
 
-            if(this->memory != nullptr && this->allocator.Grow(this->memory, sizeof(T) * reserve)) //try grow
+            if(this->memory != nullptr && this->allocator->Grow(this->memory, sizeof(T) * reserve)) //try grow
             {
                 this->capacity = reserve;
             }
             else //allocate new buffer
             {
-                T* new_memory = reinterpret_cast<T*>(this->allocator.Allocate(GetMemoryRequirements(reserve)));
+                T* new_memory = reinterpret_cast<T*>(this->allocator->Allocate(GetMemoryRequirements(reserve)));
 
                 for(DeviceSize i = 0; i < this->size; i++)
                 {
@@ -213,7 +213,7 @@ namespace Core
                 if(this->memory)
                 {
                     DestroyObjects();
-                    this->allocator.Deallocate(this->memory);
+                    this->allocator->Deallocate(this->memory);
                 }
 
                 this->memory = new_memory;
@@ -296,7 +296,7 @@ namespace Core
             return this->memory[this->size - 1];
         }
 
-        Allocator GetAllocator() const noexcept
+        SharedPointer<Allocator> GetAllocator() const noexcept
         {
             return this->allocator;
         }
@@ -397,7 +397,7 @@ namespace Core
         T* memory;
         DeviceSize size;
         DeviceSize capacity;
-        Allocator allocator;
+        SharedPointer<Allocator> allocator;
     };
 
     template<SizedRange R>

@@ -10,24 +10,24 @@ namespace Core
     public:
         using Iterator = Detail::PathPartIterator;
 
-        Path(Allocator allocator = GetGlobalAllocator());
-        Path(DeviceSize reserve, Allocator allocator = GetGlobalAllocator());
+        Path(SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        Path(DeviceSize reserve, SharedPointer<Allocator> allocator = GetGlobalAllocator());
         ~Path();
         Path(const Path& path);
         Path(Path&& path) noexcept;
         Path& operator=(const Path& path);
         Path& operator=(Path&& path) noexcept;
 
-        Path(const StringView& str, Allocator allocator = GetGlobalAllocator());
+        Path(const StringView& str, SharedPointer<Allocator> allocator = GetGlobalAllocator());
         Path& operator=(StringView str);
 
-        Path(StringView::Iterator begin, StringView::Iterator end, Allocator allocator = GetGlobalAllocator());
-        Path(Iterator begin, Iterator end, Allocator allocator = GetGlobalAllocator());
-        Path(const Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        Path(const WideChar* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        Path(const UTF8Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        Path(const UTF16Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        Path(const UTF32Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
+        Path(StringView::Iterator begin, StringView::Iterator end, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        Path(Iterator begin, Iterator end, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        Path(const Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        Path(const WideChar* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        Path(const UTF8Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        Path(const UTF16Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        Path(const UTF32Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
 
         Path& Append(const Path& path);
         Path& Append(Iterator begin, Iterator end);
@@ -51,7 +51,7 @@ namespace Core
         Bool IsEmpty() const noexcept;
         DeviceSize GetSize() const noexcept;
         DeviceSize GetCapacity() const noexcept;
-        Allocator GetAllocator() const noexcept;
+        SharedPointer<Allocator> GetAllocator() const noexcept;
         StringView GetData() const noexcept;
 
         Void Reserve(DeviceSize reserve);
@@ -65,7 +65,7 @@ namespace Core
 
         //for all (&input)[N] erase last character -> we do not hold null-terminated character
         template<Character C, DeviceSize N>
-        Path(const C (&input)[N], Allocator allocator = GetGlobalAllocator())
+        Path(const C (&input)[N], SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : Path(input, N - 1, allocator)
         {}
 
@@ -79,7 +79,7 @@ namespace Core
 
         template<Range R>
         requires Constructible<Path::Iterator, RangeIterator<R>>
-        Path(R&& rng, Allocator allocator = GetGlobalAllocator()) noexcept
+        Path(R&& rng, SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept
             : Path(Path::Iterator(Forward(rng).GetIterator()), Path::Iterator(Forward(rng).GetSentinel()), allocator)
         {}
 

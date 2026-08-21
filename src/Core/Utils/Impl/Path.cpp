@@ -204,11 +204,11 @@ namespace Core
         }
     };
 
-    Path::Path(Allocator allocator)
+    Path::Path(SharedPointer<Allocator> allocator)
         : data(allocator)
     {}
 
-    Path::Path(DeviceSize reserve, Allocator allocator)
+    Path::Path(DeviceSize reserve, SharedPointer<Allocator> allocator)
         : data(reserve, allocator)
     {}
 
@@ -237,7 +237,7 @@ namespace Core
         return *this;
     }
 
-    Path::Path(const StringView& str, Allocator allocator)
+    Path::Path(const StringView& str, SharedPointer<Allocator> allocator)
         : data(str.GetSize(), allocator)
     {
         Detail::ConcatPaths(this->data, str);
@@ -252,39 +252,39 @@ namespace Core
         return *this;
     }
 
-    Path::Path(StringView::Iterator begin, StringView::Iterator end, Allocator allocator)
+    Path::Path(StringView::Iterator begin, StringView::Iterator end, SharedPointer<Allocator> allocator)
         : Path(StringView(begin, end), allocator)
     {}
 
-    Path::Path(Iterator begin, Iterator end, Allocator allocator)
+    Path::Path(Iterator begin, Iterator end, SharedPointer<Allocator> allocator)
         : Path(StringView(begin.GetDataIterator(), end.GetDataIterator()))
     {}
 
-    Path::Path(const Char* input, DeviceSize input_size, Allocator allocator)
+    Path::Path(const Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : Path(reinterpret_cast<const UTF8Char*>(input), input_size, allocator)
     {}
 
-    Path::Path(const WideChar* input, DeviceSize input_size, Allocator allocator)
+    Path::Path(const WideChar* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : data(allocator)
     {
         String tmp(input, input_size);
         Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
     }
 
-    Path::Path(const UTF8Char* input, DeviceSize input_size, Allocator allocator)
+    Path::Path(const UTF8Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : data(input_size, allocator)
     {
         Detail::ConcatPaths(this->data, StringView(input, input_size));
     }
 
-    Path::Path(const UTF16Char* input, DeviceSize input_size, Allocator allocator)
+    Path::Path(const UTF16Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : data(allocator)
     {
         String tmp(input, input_size);
         Detail::ConcatPaths(this->data, StringView(tmp.GetIterator(), tmp.GetSentinel()));
     }
 
-    Path::Path(const UTF32Char* input, DeviceSize input_size, Allocator allocator)
+    Path::Path(const UTF32Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator)
         : data(allocator)
     {
         String tmp(input, input_size);
@@ -447,7 +447,7 @@ namespace Core
         return this->data.GetCapacity();
     }
 
-    Allocator Path::GetAllocator() const noexcept
+    SharedPointer<Allocator> Path::GetAllocator() const noexcept
     {
         return this->data.GetAllocator();
     }

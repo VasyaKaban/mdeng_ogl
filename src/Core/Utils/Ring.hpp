@@ -343,6 +343,6 @@ namespace Core
         DeviceSize capacity;
         T* next_push;
         T* next_pop;
-        Allocator allocator;
+        SharedPointer<Allocator> allocator;
     };
 };

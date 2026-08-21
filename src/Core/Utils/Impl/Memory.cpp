@@ -1,6 +1,7 @@
 #include "../Memory.h"
 #include "../Binary.hpp"
 #include "../CommonExceptions.h"
+#include "../SharedBlocks.hpp"
 #include <malloc.h>
 
 namespace Core
@@ -23,32 +24,22 @@ namespace Core
 #endif
     }
 
-    Allocator1::~Allocator1()
+    Allocator::~Allocator()
     {}
 
-    const Void* Allocator1::Cast(const UUID& id) const noexcept
+    Void* Allocator::Cast(const UUID& id) noexcept
     {
-        if(id == CORE_INTERFACE_GET_ID(Allocator1))
+        if(id == CORE_INTERFACE_GET_ID(Allocator))
             return this;
 
         return this->Interface::Cast(id);
     }
 
-    class GlobalAllocator final : public Allocator1
+    class GlobalAllocator final : public Allocator
     {
     public:
         GlobalAllocator() = default;
         virtual ~GlobalAllocator() = default;
-
-        virtual Void Acquire() noexcept override
-        {
-            //noop
-        }
-
-        virtual Void Release() noexcept override
-        {
-            //noop
-        }
 
         virtual Void* Allocate(const MemoryRequirements& req) override
         {
@@ -82,46 +73,10 @@ namespace Core
         }
     };
 
-    Allocator::Allocator() noexcept
-        : handle()
-    {}
-    Allocator::Allocator(InterfacePointer<Allocator1> handle) noexcept
-        : handle(handle)
-    {}
+    static NoOpSharedBlock<GlobalAllocator, Allocator> GlobalAllocatorSharedBlockInstance{};
 
-    InterfacePointer<Allocator1> Allocator::GetHandle() const noexcept
+    SharedPointer<Allocator> GetGlobalAllocator() noexcept
     {
-        return this->handle;
-    }
-
-    Allocator::operator Bool() const noexcept
-    {
-        return static_cast<Bool>(this->handle);
-    }
-
-    Void* Allocator::Allocate(const MemoryRequirements& req)
-    {
-        return this->handle->Allocate(req);
-    }
-
-    Void Allocator::Deallocate(Void* ptr) noexcept
-    {
-        return this->handle->Deallocate(ptr);
-    }
-
-    Bool Allocator::Grow(Void* ptr, DeviceSize size) noexcept
-    {
-        return this->handle->Grow(ptr, size);
-    }
-
-    Bool Allocator::Trim(Void* ptr, DeviceSize size) noexcept
-    {
-        return this->handle->Trim(ptr, size);
-    }
-
-    static GlobalAllocator GlobalAllocatorObject;
-    Allocator GetGlobalAllocator() noexcept
-    {
-        return Allocator(&GlobalAllocatorObject);
+        return SharedPointer<Allocator>(&GlobalAllocatorSharedBlockInstance);
     }
 };

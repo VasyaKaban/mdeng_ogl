@@ -26,7 +26,7 @@ namespace Core
         using Node = Detail::BinaryTreeNode<K, V>;
         using ConstNode = Detail::BinaryTreeNode<K, const V>;
 
-        BinaryTree(Allocator allocator = GetGlobalAllocator())
+        BinaryTree(SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : base(),
               size(0),
               allocator(allocator)
@@ -91,7 +91,7 @@ namespace Core
             return this->size;
         }
 
-        Allocator GetAllocator() const noexcept
+        SharedPointer<Allocator> GetAllocator() const noexcept
         {
             return this->allocator;
         }
@@ -150,7 +150,7 @@ namespace Core
             this->size--;
 
             static_cast<Node*>(node)->~Node();
-            this->allocator.Deallocate(node);
+            this->allocator->Deallocate(node);
         }
 
         Void Erase(ConstIterator it, ConstIterator sent) noexcept
@@ -265,7 +265,7 @@ namespace Core
         template<typename OK, typename OV>
         Node* AllocateAndInitNode(OK&& key, OV&& value)
         {
-            Node* node = reinterpret_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
+            Node* node = reinterpret_cast<Node*>(this->allocator->Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
             try
             {
@@ -273,7 +273,7 @@ namespace Core
             }
             catch(...)
             {
-                allocator.Deallocate(node);
+                allocator->Deallocate(node);
                 throw;
             }
 
@@ -329,7 +329,7 @@ namespace Core
     private:
         Detail::BinaryTreeNodeBase base; //end iterator + base.right == begin
         DeviceSize size;
-        Allocator allocator;
+        SharedPointer<Allocator> allocator;
     };
 
     //std compat

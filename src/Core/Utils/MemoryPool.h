@@ -70,7 +70,7 @@ namespace Core
 
     static_assert(sizeof(MemoryPoolFreeNode) >= (sizeof(MemoryPoolAllocatedNode) + sizeof(MemoryPoolAllocatedNodeDataPrefixHeader)));
 
-    //We do not implement Allocator1 interface due to the different purposes.
+    //We do not implement Allocator interface due to the different purposes.
     //If you need to use MemoryPool as Allocator then create wrapper over this class
     class CORE_API MemoryPool
     {
@@ -78,7 +78,7 @@ namespace Core
         //specify minimal alignment and size power of the allocatable buffer
         constexpr static DeviceSize BaseHeaderGranularity = GetPowerOf2(Max(sizeof(MemoryPoolFreeNode), sizeof(MemoryPoolAllocatedNode) + sizeof(MemoryPoolAllocatedNodeDataPrefixHeader)));
 
-        MemoryPool(Allocator allocator, DeviceSize size);
+        MemoryPool(SharedPointer<Allocator> allocator, DeviceSize size);
         ~MemoryPool();
         MemoryPool(const MemoryPool&) = delete;
         MemoryPool(MemoryPool&& pool) noexcept;
@@ -91,7 +91,7 @@ namespace Core
         DeviceSize GetSize() const noexcept;
     private:
         MemoryPoolFreeNode* free_list;
-        Allocator allocator;
+        SharedPointer<Allocator> allocator;
         Span<UInt8> memory;
     };
 };

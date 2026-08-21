@@ -47,7 +47,7 @@ namespace Core
         using Node = Detail::ChainNode<HashChainNodeKeyValueHashTuple<K, V>>;
         using ConstNode = Detail::ChainNode<const HashChainNodeKeyValueHashTuple<K, V>>;
 
-        HashChain(Allocator allocator = GetGlobalAllocator())
+        HashChain(SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : base(),
               slots(nullptr),
               slot_count(0),
@@ -57,12 +57,12 @@ namespace Core
             this->base.InitBaseNode(true);
         }
 
-        HashChain(DeviceSize slot_count, Allocator allocator = GetGlobalAllocator())
+        HashChain(DeviceSize slot_count, SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : HashChain(allocator)
         {
             if(slot_count != 0)
             {
-                this->slots = reinterpret_cast<HashChainSlot*>(allocator.Allocate(MemoryRequirements{.alignment = alignof(HashChainSlot), .size = sizeof(HashChainSlot) * slot_count}));
+                this->slots = reinterpret_cast<HashChainSlot*>(allocator->Allocate(MemoryRequirements{.alignment = alignof(HashChainSlot), .size = sizeof(HashChainSlot) * slot_count}));
                 for(DeviceSize i = 0; i < slot_count; i++)
                     new(this->slots + i) HashChainSlot{.first = nullptr};
             }
@@ -77,7 +77,7 @@ namespace Core
             for(DeviceSize i = 0; i < slot_count; i++)
                 this->slots[i].~HashChainSlot();
 
-            this->allocator.Deallocate(this->slots);
+            this->allocator->Deallocate(this->slots);
         }
 
         HashChain(const HashChain& chain)
@@ -146,7 +146,7 @@ namespace Core
             return this->slot_count;
         }
 
-        Allocator GetAllocator() const noexcept
+        SharedPointer<Allocator> GetAllocator() const noexcept
         {
             return this->allocator;
         }
@@ -221,7 +221,7 @@ namespace Core
             this->size--;
 
             static_cast<Node*>(node)->~Node();
-            this->allocator.Deallocate(node);
+            this->allocator->Deallocate(node);
         }
 
         Void Erase(ConstIterator it, ConstIterator sent) noexcept
@@ -398,7 +398,7 @@ namespace Core
         template<typename OK, typename OV>
         Node* AllocateAndInitNode(OK&& key, OV&& value, DeviceSize hash)
         {
-            Node* node = reinterpret_cast<Node*>(this->allocator.Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
+            Node* node = reinterpret_cast<Node*>(this->allocator->Allocate(MemoryRequirements{.alignment = alignof(Node), .size = sizeof(Node)}));
 
             try
             {
@@ -406,7 +406,7 @@ namespace Core
             }
             catch(...)
             {
-                allocator.Deallocate(node);
+                allocator->Deallocate(node);
                 throw;
             }
 
@@ -483,7 +483,7 @@ namespace Core
         HashChainSlot* slots;
         DeviceSize slot_count;
         DeviceSize size;
-        Allocator allocator;
+        SharedPointer<Allocator> allocator;
     };
 
     //std compat

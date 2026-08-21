@@ -19,6 +19,7 @@
 #    undef CreateSemaphore
 #    undef MemoryBarrier
 #    undef GetMessage
+#    undef GetObject
 
 #    include "../../API.h"
 #    include "../Types.hpp"

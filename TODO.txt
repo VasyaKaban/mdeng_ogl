@@ -164,7 +164,6 @@ Instance:
 * For all #if ARCH, PLATFORM, COMPILER add #else -> #error to check in future!
 * AtomicCounterSharedBlock!
 * Add final qual to the SharedBlock-like classes?
-* Maybe remove constructive size and leave only destructive?
 * Format:
     use Formatter as object for attributes
     add float to format

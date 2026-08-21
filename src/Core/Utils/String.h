@@ -19,25 +19,25 @@ namespace Core
         using Iterator = Detail::StringCharIterator<UTF8Char>;
         using ConstIterator = Detail::StringCharIterator<const UTF8Char>;
 
-        String(Allocator allocator = GetGlobalAllocator()) noexcept;
-        String(DeviceSize reserve, Allocator allocator = GetGlobalAllocator()) noexcept;
+        String(SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept;
+        String(DeviceSize reserve, SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept;
         ~String();
         String(const String& str);
         String(String&& str) noexcept;
         String& operator=(const String& str);
         String& operator=(String&& str) noexcept;
-        String(ConstIterator begin, ConstIterator end, Allocator allocator = GetGlobalAllocator());
+        String(ConstIterator begin, ConstIterator end, SharedPointer<Allocator> allocator = GetGlobalAllocator());
 
-        String(const Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        String(const WideChar* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        String(const UTF8Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        String(const UTF16Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
-        String(const UTF32Char* input, DeviceSize input_size, Allocator allocator = GetGlobalAllocator());
+        String(const Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        String(const WideChar* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        String(const UTF8Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        String(const UTF16Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
+        String(const UTF32Char* input, DeviceSize input_size, SharedPointer<Allocator> allocator = GetGlobalAllocator());
 
         Bool IsEmpty() const noexcept;
         DeviceSize GetSize() const noexcept;
         DeviceSize GetCapacity() const noexcept;
-        Allocator GetAllocator() const noexcept;
+        SharedPointer<Allocator> GetAllocator() const noexcept;
         UTF8Char* GetData() noexcept;
         const UTF8Char* GetData() const noexcept;
         Char* GetDataAsNativeChar() noexcept;
@@ -103,7 +103,7 @@ namespace Core
 
         //for all (&input)[N] erase last character -> we do not hold null-terminated character
         template<Character C, DeviceSize N>
-        String(const C (&input)[N], Allocator allocator = GetGlobalAllocator())
+        String(const C (&input)[N], SharedPointer<Allocator> allocator = GetGlobalAllocator())
             : String(input, N - 1, allocator)
         {}
 
@@ -119,7 +119,7 @@ namespace Core
 
         template<Range R>
         requires Constructible<String::ConstIterator, RangeIterator<R>>
-        String(R&& rng, Allocator allocator = GetGlobalAllocator()) noexcept
+        String(R&& rng, SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept
             : String(String::ConstIterator(Forward(rng).GetIterator()), String::ConstIterator(Forward(rng).GetSentinel()), allocator)
         {}
 
@@ -205,7 +205,7 @@ namespace Core
         UTF8Char* data;
         DeviceSize size;
         DeviceSize capacity;
-        Allocator allocator;
+        SharedPointer<Allocator> allocator;
     };
 
     //std compat
