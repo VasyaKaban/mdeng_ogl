@@ -12,7 +12,6 @@ namespace Core
     template<typename Type, typename Represent = Type>
     class NoOpSharedBlock : public SharedBlock<Represent>
     {
-        static_assert(BaseOf<Represent, Type>);
     public:
         NoOpSharedBlock() noexcept(NoexceptDefaultConstructible<Type>)
         requires DefaultConstructible<Type>
@@ -56,51 +55,53 @@ namespace Core
 
         virtual Represent* GetObject() noexcept override
         {
+            static_assert(BaseOf<Represent, Type>);
+
             return &this->obj;
         }
     private:
         Type obj;
     };
 
-    template<typename T>
-    class AllocatedPlainCounterSharedBlock : public SharedBlock<T>
+    template<typename Type, typename Represent = Type>
+    class AllocatedPlainCounterSharedBlock : public SharedBlock<Represent>
     {
-        AllocatedPlainCounterSharedBlock(SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept(NoexceptDefaultConstructible<T>)
-        requires DefaultConstructible<T>
+        AllocatedPlainCounterSharedBlock(SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept(NoexceptDefaultConstructible<Type>)
+        requires DefaultConstructible<Type>
             : obj(),
               allocator(allocator),
               shared_counter(0),
               weak_counter(0)
-        {}
+        {
+            new(this->obj) Type;
+        }
 
         template<typename U>
-        requires Constructible<T, U>
-        AllocatedPlainCounterSharedBlock(U&& value, SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept(NoexceptConstructible<T, U>)
-            : obj(Forward(value)),
-              allocator(allocator),
-              shared_counter(0),
-              weak_counter(0)
-        {}
+        requires Constructible<Type, U>
+        AllocatedPlainCounterSharedBlock(U&& value, SharedPointer<Allocator> allocator = GetGlobalAllocator()) noexcept(NoexceptConstructible<Type, U>)
+            : AllocatedPlainCounterSharedBlock(allocator)
+        {
+            new(this->obj) Type(Forward(value));
+        }
 
         template<typename... Args>
-        requires Constructible<T, Args...>
-        AllocatedPlainCounterSharedBlock(SharedPointer<Allocator> allocator, Args&&... args) noexcept(NoexceptConstructible<T, Args...>)
-            : obj(Forward(args)...),
-              allocator(allocator),
-              shared_counter(0),
-              weak_counter(0)
-        {}
+        requires Constructible<Type, Args...>
+        AllocatedPlainCounterSharedBlock(SharedPointer<Allocator> allocator, Args&&... args) noexcept(NoexceptConstructible<Type, Args...>)
+            : AllocatedPlainCounterSharedBlock(allocator)
+        {
+            new(this->obj) Type(Forward(args)...);
+        }
 
-        virtual ~AllocatedPlainCounterSharedBlock() override;
+        virtual ~AllocatedPlainCounterSharedBlock() override = default;
     public:
-        static AllocatedPlainCounterSharedBlock* Create(SharedPointer<Allocator> allocator = GetGlobalAllocator())
-        requires DefaultConstructible<T>
+        static SharedPointer<Represent> Create(SharedPointer<Allocator> allocator = GetGlobalAllocator())
+        requires DefaultConstructible<Type>
         {
             Void* ptr = allocator->Allocate(MemoryRequirements{.alignment = alignof(AllocatedPlainCounterSharedBlock), .size = sizeof(AllocatedPlainCounterSharedBlock)});
 
             try
             {
-                return new(ptr) AllocatedPlainCounterSharedBlock(allocator);
+                return SharedPointer<Represent>(new(ptr) AllocatedPlainCounterSharedBlock(allocator));
             }
             catch(...)
             {
@@ -110,14 +111,14 @@ namespace Core
         }
 
         template<typename U>
-        requires Constructible<T, U>
+        requires Constructible<Type, U>
         static AllocatedPlainCounterSharedBlock* Create(U&& value, SharedPointer<Allocator> allocator = GetGlobalAllocator())
         {
             Void* ptr = allocator->Allocate(MemoryRequirements{.alignment = alignof(AllocatedPlainCounterSharedBlock), .size = sizeof(AllocatedPlainCounterSharedBlock)});
 
             try
             {
-                return new(ptr) AllocatedPlainCounterSharedBlock(Forward(value), allocator);
+                return SharedPointer<Represent>(new(ptr) AllocatedPlainCounterSharedBlock(Forward(value), allocator));
             }
             catch(...)
             {
@@ -127,14 +128,14 @@ namespace Core
         }
 
         template<typename... Args>
-        requires Constructible<T, Args...>
+        requires Constructible<Type, Args...>
         static AllocatedPlainCounterSharedBlock* Create(SharedPointer<Allocator> allocator, Args&&... args)
         {
             Void* ptr = allocator->Allocate(MemoryRequirements{.alignment = alignof(AllocatedPlainCounterSharedBlock), .size = sizeof(AllocatedPlainCounterSharedBlock)});
 
             try
             {
-                return new(ptr) AllocatedPlainCounterSharedBlock(allocator, Forward(args)...);
+                return SharedPointer<Represent>(new(ptr) AllocatedPlainCounterSharedBlock(allocator, Forward(args)...));
             }
             catch(...)
             {
@@ -161,20 +162,9 @@ namespace Core
 
             if(this->shared_counter == 0)
             {
-                obj->~T();
+                obj->~Type();
                 if(this->weak_counter == 0)
-                {
-#pragma message("Should we explicitly call this->allocator->~SharedPointer<Allocator>()? Maybe make like in Atomic variant....")
-                    /*
-Layout:
-    AllocatedPlainCounterSharedBlock::vptr
-    T obj;
-    SharedPointer<>
-*/
-
-                    SharedPointer<Allocator> moved_allocator = Move(this->allocator);
-                    moved_allocator->Deallocate(this);
-                }
+                    Destroy();
             }
         }
 
@@ -189,12 +179,8 @@ Layout:
 
             this->weak_counter--;
 
-            if(this->weak_counter == 0)
-            {
-#pragma message("Should we explicitly call this->allocator->~SharedPointer<Allocator>()? Maybe make like in Atomic variant...")
-                SharedPointer<Allocator> moved_allocator = Move(this->allocator);
-                moved_allocator->Deallocate(this);
-            }
+            if(this->weak_counter == 0 && this->shared_counter == 0)
+                Destroy();
         }
 
         virtual Bool TryAcquireShared() noexcept override
@@ -209,14 +195,24 @@ Layout:
             return this->shared_counter == 0;
         }
 
-        virtual T* GetObject() noexcept override
+        virtual Represent* GetObject() noexcept override
         {
+            static_assert(BaseOf<Represent, Type>);
+
             CORE_DEBUG_ASSERTION(this->shared_counter != 0)
 
             return &this->obj;
         }
     private:
-        T obj;
+        Void Destroy() noexcept
+        {
+            SharedPointer<Allocator> moved_allocator = Move(this->allocator);
+
+            this->~AllocatedPlainCounterSharedBlock();
+            moved_allocator->Deallocate(this);
+        }
+    private:
+        alignas(alignof(Type)) UInt8 obj[sizeof(Type)];
         SharedPointer<Allocator> allocator;
         DeviceSize shared_counter;
         DeviceSize weak_counter;

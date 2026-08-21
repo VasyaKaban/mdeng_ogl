@@ -164,6 +164,8 @@ Instance:
 * For all #if ARCH, PLATFORM, COMPILER add #else -> #error to check in future!
 * AtomicCounterSharedBlock!
 * Add final qual to the SharedBlock-like classes?
+* Acquire and Release methods in SharedBlock as private and friend for Shared and Weak pointers?
+* Move static_asserts that is not concepts in classes to the points where we should check them. They will blame us even if we don't use them as concepts but as a static_asserts inside a class body
 * Format:
     use Formatter as object for attributes
     add float to format
