@@ -166,6 +166,10 @@ Instance:
 * Add final qual to the SharedBlock-like classes?
 * Acquire and Release methods in SharedBlock as private and friend for Shared and Weak pointers?
 * Move static_asserts that is not concepts in classes to the points where we should check them. They will blame us even if we don't use them as concepts but as a static_asserts inside a class body
+* Add Launder(???) -> use cases:
+    1. Access new object via the old pointer
+    2. Access new object by reinterpret_cast that have inside either const or reference fields(fields that have constant initialization so compiler can deside to use the old values)
+    Who will use const or reference fields???
 * Format:
     use Formatter as object for attributes
     add float to format
