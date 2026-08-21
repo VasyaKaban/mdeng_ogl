@@ -170,6 +170,7 @@ Instance:
     1. Access new object via the old pointer
     2. Access new object by reinterpret_cast that have inside either const or reference fields(fields that have constant initialization so compiler can deside to use the old values)
     Who will use const or reference fields???
+* On Launder add -> mark all reinterpret_cast's
 * Format:
     use Formatter as object for attributes
     add float to format
