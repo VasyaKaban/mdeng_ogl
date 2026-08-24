@@ -162,7 +162,7 @@ namespace Core
 
             if(this->shared_counter == 0)
             {
-                obj->~Type();
+                reinterpret_cast<Type*>(this->obj)->~Type();
                 if(this->weak_counter == 0)
                     Destroy();
             }
@@ -201,7 +201,7 @@ namespace Core
 
             CORE_DEBUG_ASSERTION(this->shared_counter != 0)
 
-            return &this->obj;
+            return reinterpret_cast<Type*>(this->obj);
         }
     private:
         Void Destroy() noexcept

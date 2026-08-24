@@ -36,7 +36,8 @@ namespace Core
         Int32 cmd_show;
         DWORD main_thread_id;
         Path executable_path;
-        DeviceSize cache_granularity;
+        DeviceSize concurrent_share_granularity_alignment;
+        DeviceSize concurrent_share_granularity_size;
     };
 
     static Win32SystemData Win32SystemDataInstance = {};
@@ -68,7 +69,8 @@ namespace Core
         Win32SystemDataInstance.executable_path.Back(); //erase filename
 
 #    if CORE_ARCH_CURRENT == CORE_ARCH_AMD64
-        Win32SystemDataInstance.cache_granularity = 128; //let's use 128 bytes instead of 64 to cover Intel's spatial prefetcher
+        Win32SystemDataInstance.concurrent_share_granularity_alignment = 128; //let's use 128 bytes instead of 64 to cover Intel's spatial prefetcher
+        Win32SystemDataInstance.concurrent_share_granularity_size = 64; //let's use 64 bytes because it's a min value for L1 cache line size
 #    else
 #        error "Unsupported arch"
 #    endif
@@ -93,8 +95,11 @@ namespace Core
             {
                 if(cache_info->Cache.Level == 1 && cache_info->Cache.Type == PROCESSOR_CACHE_TYPE::CacheData)
                 {
-                    if(Win32SystemDataInstance.cache_granularity < cache_info->Cache.LineSize)
-                        Win32SystemDataInstance.cache_granularity = cache_info->Cache.LineSize;
+                    if(Win32SystemDataInstance.concurrent_share_granularity_alignment < cache_info->Cache.LineSize)
+                        Win32SystemDataInstance.concurrent_share_granularity_alignment = cache_info->Cache.LineSize;
+
+                    if(Win32SystemDataInstance.concurrent_share_granularity_size > cache_info->Cache.LineSize)
+                        Win32SystemDataInstance.concurrent_share_granularity_size = cache_info->Cache.LineSize;
                 }
             }
 
@@ -147,12 +152,12 @@ namespace Core
 
     DeviceSize Win32System::GetConcurrentShareGranularityAlignment() noexcept
     {
-        return Win32SystemDataInstance.cache_granularity;
+        return Win32SystemDataInstance.concurrent_share_granularity_alignment;
     }
 
     DeviceSize Win32System::GetConcurrentShareGranularitySize() noexcept
     {
-        return Win32SystemDataInstance.cache_granularity;
+        return Win32SystemDataInstance.concurrent_share_granularity_size;
     }
 
     Sequence<WideChar>* Win32System::GetThreadLocalWideCharBuffer() noexcept

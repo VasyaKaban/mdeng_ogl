@@ -18,6 +18,12 @@ namespace Core
     }
 
     template<typename T>
+    constexpr T* Launder(T* ptr) noexcept
+    {
+        return __builtin_launder(ptr);
+    }
+
+    template<typename T>
     constexpr DropReference<T>&& Move(T&& value) noexcept
     {
         return static_cast<DropReference<T>&&>(value);
