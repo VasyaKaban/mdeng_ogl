@@ -530,4 +530,16 @@ namespace Core
 
     template<DeviceSize N>
     using MakeIndexSequence = Detail::MakeIndexSequenceImpl<N>::Type;
+
+    namespace Detail
+    {
+        template<typename T>
+        struct IdentityImpl
+        {
+            using Type = T;
+        };
+    };
+
+    template<typename T>
+    using Identity = Detail::IdentityImpl<T>::Type;
 };

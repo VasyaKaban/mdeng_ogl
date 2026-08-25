@@ -21,7 +21,7 @@ namespace Core
 
     template<MemoryOrder Order, Integral I>
     requires(Order == MemoryOrder::Relaxed || Order == MemoryOrder::Release || Order == MemoryOrder::SequentialConsistency)
-    Void AtomicStore(I& dst, I value) noexcept
+    Void AtomicStore(I& dst, Identity<I> value) noexcept
     {
         if constexpr(Order != MemoryOrder::Relaxed)
             _ReadWriteBarrier();
@@ -70,7 +70,7 @@ namespace Core
     }
 
     template<MemoryOrder Order, Integral I>
-    I AtomicAdd(I& dst, I value) noexcept
+    I AtomicAdd(I& dst, Identity<I> value) noexcept
     {
         //Ignore Order -> no fences on X86
         if constexpr(sizeof(I) == 8)
@@ -92,14 +92,14 @@ namespace Core
     }
 
     template<MemoryOrder Order, Integral I>
-    I AtomicSubtract(I& dst, I value) noexcept
+    I AtomicSubtract(I& dst, Identity<I> value) noexcept
     {
         //There is no Subtract in WinAPI??? -> use two's complement negation with add
         return AtomicAdd<Order>(dst, I(0) - value);
     }
 
     template<MemoryOrder Order, Integral I>
-    I AtomicAnd(I& dst, I value) noexcept
+    I AtomicAnd(I& dst, Identity<I> value) noexcept
     {
         //Ignore Order -> no fences on X86
         if constexpr(sizeof(I) == 8)
@@ -121,7 +121,7 @@ namespace Core
     }
 
     template<MemoryOrder Order, Integral I>
-    I AtomicOr(I& dst, I value) noexcept
+    I AtomicOr(I& dst, Identity<I> value) noexcept
     {
         //Ignore Order -> no fences on X86
         if constexpr(sizeof(I) == 8)
@@ -143,7 +143,7 @@ namespace Core
     }
 
     template<MemoryOrder Order, Integral I>
-    I AtomicXor(I& dst, I value) noexcept
+    I AtomicXor(I& dst, Identity<I> value) noexcept
     {
         //Ignore Order -> no fences on X86
         if constexpr(sizeof(I) == 8)
@@ -165,7 +165,7 @@ namespace Core
     }
 
     template<MemoryOrder Order, Integral I>
-    I AtomicExchange(I& dst, I value) noexcept
+    I AtomicExchange(I& dst, Identity<I> value) noexcept
     {
         //Ignore Order -> no fences on X86
         if constexpr(sizeof(I) == 8)
@@ -190,7 +190,7 @@ namespace Core
     //dst != expected -> expected = dst
     template<MemoryOrder SuccessOrder, MemoryOrder FailureOrder, Integral I>
     requires(FailureOrder == MemoryOrder::Relaxed || FailureOrder == MemoryOrder::Acquire || FailureOrder == MemoryOrder::SequentialConsistency)
-    Bool AtomicCompareExchangeStrong(I& dst, I& expected, I desired) noexcept
+    Bool AtomicCompareExchangeStrong(I& dst, Identity<I>& expected, Identity<I> desired) noexcept
     {
         //Ignore Order -> no fences on X86
         if constexpr(sizeof(I) == 8)
@@ -233,7 +233,7 @@ namespace Core
 
     template<MemoryOrder SuccessOrder, MemoryOrder FailureOrder, Integral I>
     requires(FailureOrder == MemoryOrder::Relaxed || FailureOrder == MemoryOrder::Acquire || FailureOrder == MemoryOrder::SequentialConsistency)
-    Bool AtomicCompareExchangeWeak(I& dst, I& expected, I desired) noexcept
+    Bool AtomicCompareExchangeWeak(I& dst, Identity<I>& expected, Identity<I> desired) noexcept
     {
         return AtomicCompareExchangeStrong<SuccessOrder, FailureOrder>(dst, expected, desired);
     }

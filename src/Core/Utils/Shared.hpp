@@ -40,7 +40,7 @@ namespace Core
               obj(nullptr)
         {}
 
-        SharedPointer(SharedBlock<T>* block, SharedBlockAcquirePolicy policy = SharedBlockAcquirePolicy::Acquire) noexcept
+        SharedPointer(SharedBlock<T>* block, SharedBlockAcquirePolicy policy) noexcept
             : SharedPointer()
         {
             Reset(block, policy);
@@ -55,7 +55,7 @@ namespace Core
         SharedPointer(const SharedPointer& ptr) noexcept
             : SharedPointer()
         {
-            Reset(ptr.block);
+            Reset(ptr.block, SharedBlockAcquirePolicy::Acquire);
         }
 
         SharedPointer(SharedPointer&& ptr) noexcept
@@ -65,7 +65,7 @@ namespace Core
 
         SharedPointer& operator=(const SharedPointer& ptr) noexcept
         {
-            Reset(ptr.block);
+            Reset(ptr.block, SharedBlockAcquirePolicy::Acquire);
 
             return *this;
         }
@@ -95,7 +95,7 @@ namespace Core
             return this->block;
         }
 
-        Void Reset(SharedBlock<T>* block, SharedBlockAcquirePolicy policy = SharedBlockAcquirePolicy::Acquire) noexcept
+        Void Reset(SharedBlock<T>* block, SharedBlockAcquirePolicy policy) noexcept
         {
             this->~SharedPointer();
 
@@ -133,7 +133,7 @@ namespace Core
             : block(nullptr)
         {}
 
-        WeakPointer(SharedBlock<T>* block, SharedBlockAcquirePolicy policy = SharedBlockAcquirePolicy::Acquire) noexcept
+        WeakPointer(SharedBlock<T>* block, SharedBlockAcquirePolicy policy) noexcept
             : WeakPointer()
         {
             Reset(block, policy);
@@ -142,7 +142,7 @@ namespace Core
         WeakPointer(const SharedPointer<T>& ptr) noexcept
             : WeakPointer()
         {
-            Reset(ptr.GetBlock());
+            Reset(ptr.GetBlock(), SharedBlockAcquirePolicy::Acquire);
         }
 
         ~WeakPointer()
@@ -154,7 +154,7 @@ namespace Core
         WeakPointer(const WeakPointer& ptr) noexcept
             : WeakPointer()
         {
-            Reset(ptr.block);
+            Reset(ptr.block, SharedBlockAcquirePolicy::Acquire);
         }
 
         WeakPointer(WeakPointer&& ptr) noexcept
@@ -163,7 +163,7 @@ namespace Core
 
         WeakPointer& operator=(const WeakPointer& ptr) noexcept
         {
-            Reset(ptr.block);
+            Reset(ptr.block, SharedBlockAcquirePolicy::Acquire);
 
             return *this;
         }
@@ -198,7 +198,7 @@ namespace Core
             return SharedPointer<T>{};
         }
 
-        Void Reset(SharedBlock<T>* block, SharedBlockAcquirePolicy policy = SharedBlockAcquirePolicy::Acquire) noexcept
+        Void Reset(SharedBlock<T>* block, SharedBlockAcquirePolicy policy) noexcept
         {
             this->~WeakPointer();
 
