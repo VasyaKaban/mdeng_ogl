@@ -171,6 +171,7 @@ Instance:
     2. Access new object by reinterpret_cast that have inside either const or reference fields(fields that have constant initialization so compiler can deside to use the old values)
     Who will use const or reference fields???
 * On Launder add -> mark all reinterpret_cast's
+* InvocableWithResult why do we use two branches instead of one Forward???
 * Format:
     use Formatter as object for attributes
     add float to format
